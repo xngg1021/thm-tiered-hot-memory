@@ -1,0 +1,30 @@
+{
+  "protocol": 2,
+  "workflow_run": 34042410130,
+  "benchmark_commit": "702ad5c7973f7376e575734948847204cf5a4b0c",
+  "artifact_id": 9992240586,
+  "artifact_name": "thm-retrieval-metrics-protocol2",
+  "artifact_sha256": "3facba77d1f5cbf6f1e76b57a43b44a6246fa6325ba9092afb1e22b3537893b9",
+  "dataset_sha256": "79fa87e90f04081343b8c8debecb80a9a6842b76a7aa537dc9fdf651ea698ff4",
+  "dataset_upstream_commit": "3eb6f2c585f5e1699204e3c3bdf7adc5c28cb376",
+  "dataset_matches_pinned_reference": true,
+  "counter": "cl100k_base",
+  "idf_scope": "one_database_per_conversation",
+  "main_denominator": 1532,
+  "generation_calls": 0,
+  "judge_calls": 0,
+  "semantic_model_id": "sentence-transformers/all-MiniLM-L6-v2@1110a243fdf4706b3f48f1d95db1a4f5529b4d41",
+  "metrics": {
+    "literal": {"any_gold_hit_rate": 0.5678851174934726, "all_gold_hit_rate": 0.4660574412532637, "macro_evidence_recall": 0.5103254706819828, "micro_evidence_recall": 0.3986342296201451, "candidate_any_gold_rate": 0.7878590078328982, "empty_context_rate": 0, "mean_budget_used": 583.711038961039, "mrr": 0.3813655248870654, "ndcg": 0.3965384282291587, "latency_ms": {"p50": 23.207217000006608, "p95": 24.069428500011725, "p99": 25.045267109982056, "mean": 23.07703508896049}},
+    "sparse": {"any_gold_hit_rate": 0.693864229765013, "all_gold_hit_rate": 0.5652741514360313, "macro_evidence_recall": 0.6242655135748504, "micro_evidence_recall": 0.5138711054204012, "candidate_any_gold_rate": 0.9242819843342036, "empty_context_rate": 0, "mean_budget_used": 583.9272727272727, "mrr": 0.49735432467155705, "ndcg": 0.5072407862532129, "latency_ms": {"p50": 26.043442000002415, "p95": 34.55271174997314, "p99": 37.57981274002218, "mean": 26.49902090779232}},
+    "dense": {"any_gold_hit_rate": 0.5110966057441253, "all_gold_hit_rate": 0.40013054830287204, "macro_evidence_recall": 0.44948524829081216, "micro_evidence_recall": 0.37900128040973113, "candidate_any_gold_rate": 0.8453002610966057, "empty_context_rate": 0, "mean_budget_used": 584.3116883116883, "mrr": 0.2866981383136736, "ndcg": 0.3104216440641239, "latency_ms": {"p50": 34.565139999983785, "p95": 36.05601999997248, "p99": 37.53915841995534, "mean": 35.30048742013059}},
+    "hybrid": {"any_gold_hit_rate": 0.7134464751958225, "all_gold_hit_rate": 0.5763707571801566, "macro_evidence_recall": 0.6395782970472867, "micro_evidence_recall": 0.5381988903115663, "candidate_any_gold_rate": 0.9725848563968669, "empty_context_rate": 0, "mean_budget_used": 585.7746753246753, "mrr": 0.45882291301677725, "ndcg": 0.4813371834472406, "latency_ms": {"p50": 44.235094500038485, "p95": 57.87548020002191, "p99": 63.09372288999725, "mean": 45.256141761688376}}
+  },
+  "sparse_budget_sweep": {
+    "300": {"any_gold_hit_rate": 0.6057441253263708, "all_gold_hit_rate": 0.4902088772845953, "macro_evidence_recall": 0.5412322579432995, "mean_budget_used": 284.1272727272727, "mrr": 0.4823651000870322, "ndcg": 0.47546846496753065, "latency_ms": {"p50": 15.513063000007321, "p95": 20.38611109997106, "p99": 22.39235252998411, "mean": 15.694172200649994}},
+    "600": {"any_gold_hit_rate": 0.693864229765013, "all_gold_hit_rate": 0.5652741514360313, "macro_evidence_recall": 0.6242655135748504, "mean_budget_used": 583.9272727272727, "mrr": 0.49735432467155705, "ndcg": 0.5072407862532129, "latency_ms": {"p50": 26.043442000002415, "p95": 34.55271174997314, "p99": 37.57981274002218, "mean": 26.49902090779232}},
+    "1200": {"any_gold_hit_rate": 0.7617493472584856, "all_gold_hit_rate": 0.6279373368146214, "macro_evidence_recall": 0.6917053171475344, "mean_budget_used": 1182.4766233766234, "mrr": 0.5028150986142118, "ndcg": 0.5278675830055697, "latency_ms": {"p50": 46.12658100000999, "p95": 61.77732094999726, "p99": 66.4049122899919, "mean": 46.90463070259718}}
+  },
+  "synthetic_decay": {"selected_on_development": "bounded_power@3d", "selected_heldout_result": 0.5638888888888889, "policy_installed": false, "data_source": "synthetic-regime-switch-v1"},
+  "limits": ["Retrieval evidence coverage is not answer accuracy.", "Protocol 2 isolates one FTS database per conversation; production multi-scope indexing may use different corpus statistics.", "Synthetic decay sweep is not user-specific calibration."]
+}
