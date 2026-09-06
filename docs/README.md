@@ -17,6 +17,8 @@
 | [1.2 召回、scan、decay 与 Hermes 集成](09-retrieval-and-measurement.md) | 稀疏/语义召回、预算、零权重观察、衰退、真实 Hermes 生命周期 E2E 与真实 hit 标定入口 |
 | [1.2 召回扩展复核与性能补修](10-recall-integration-review.md) | 召回、缓存、数据库安全与评测协议修复的施工记录 |
 | [1.3 Harness 适配](11-harness-adapters.md) | harness-neutral recall、Hermes 完整 lifecycle、OpenAI Agents、LangChain/LangGraph、MCP v2、OpenClaw 及 Claude/Codex/Gemini MCP 边界 |
+| [版本历史与恢复地图](12-version-history.md) | 从初始研究稿到 1.3 的精确 commit、archive 分支、恢复边界和未来版本纪律 |
+| [机器可读版本谱系](../versions/history.json) | 精确 SHA、显式版本证据、development boundaries 与不可恢复范围 |
 | [LoCoMo 与曲线实验协议](../research/recall/README.md) | 数据来源、分母、tokenizer、时序和 protocol 定义 |
 | [Protocol 2 完整实测](../reports/2026-09-06-recall-protocol2.md) | 10 段 LoCoMo、1,986 题；600 token 主表、300/600/1200 sparse sweep、MRR/nDCG/p99 与边界 |
 | [Protocol 2 机器可读摘要](../reports/2026-09-06-recall-protocol2-summary.json) | workflow、commit、artifact digest、dataset digest、模型身份与精确指标 |
@@ -43,6 +45,7 @@
 - Protocol 2 benchmark：[research/recall/benchmark.py](../research/recall/benchmark.py)
 - 合成 decay sweep：[research/recall/decay_replay.py](../research/recall/decay_replay.py)
 - **真实用户本地 decay trace 导出**：[research/recall/decay_from_index.py](../research/recall/decay_from_index.py)。它只导出 entry ID、单位成本和显式 hit 日期，不上传记忆文本；真实 trace 应留在私有本地路径。
+- 版本历史校验：[scripts/check_version_history.py](../scripts/check_version_history.py)
 - 代表性回归测试：[tests/test_engine.py](../tests/test_engine.py)、[tests/test_review_repairs.py](../tests/test_review_repairs.py)、[tests/test_harness_core.py](../tests/test_harness_core.py)
 - 文档检查：[scripts/check_docs.py](../scripts/check_docs.py)
 - 历史公式回归：[scripts/thm_numeric_audit.py](../scripts/thm_numeric_audit.py)
