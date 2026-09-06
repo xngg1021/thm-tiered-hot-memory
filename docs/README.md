@@ -31,12 +31,12 @@
 ## 当前可运行材料
 
 - 索引维护：[scripts/thm.py](../scripts/thm.py)
-- 召回与 provider：[thm/](../thm)
+- 召回与 provider：[thm/retrieval.py](../thm/retrieval.py) 与 [thm/hermes_plugin.py](../thm/hermes_plugin.py)
 - Protocol 2 benchmark：[research/recall/benchmark.py](../research/recall/benchmark.py)
 - 合成 decay sweep：[research/recall/decay_replay.py](../research/recall/decay_replay.py)
 - **真实用户本地 decay trace 导出**：[research/recall/decay_from_index.py](../research/recall/decay_from_index.py)。它只导出 entry ID、单位成本和显式 hit 日期，不上传记忆文本；真实 trace 应留在私有本地路径。
 - Hermes E2E runner：[research/hermes_e2e.py](../research/hermes_e2e.py)
-- 全部单元/回归测试：[tests/](../tests)
+- 代表性回归测试：[tests/test_engine.py](../tests/test_engine.py)、[tests/test_review_repairs.py](../tests/test_review_repairs.py)、[tests/test_decay_calibration_export.py](../tests/test_decay_calibration_export.py)
 - 文档检查：[scripts/check_docs.py](../scripts/check_docs.py)
 - 历史公式回归：[scripts/thm_numeric_audit.py](../scripts/thm_numeric_audit.py)
 
