@@ -29,7 +29,9 @@ class HermesWarmDirectoryTests(unittest.TestCase):
     def make_profile(self, root):
         mem = Path(root) / "memories"
         state = mem / ".thm"
-        mem.mkdir(parents=True)
+        warm_dir = mem / "warm"
+        warm_dir.mkdir(parents=True)
+        (warm_dir / "database.md").write_text("source body", encoding="utf-8")
         (mem / "MEMORY.md").write_text(
             "hot setting\n§\nwarm database secret body", encoding="utf-8"
         )
@@ -73,6 +75,7 @@ class HermesWarmDirectoryTests(unittest.TestCase):
             self.assertNotIn("warm database", first)
             self.assertLessEqual(provider.counter(first), 400)
 
+            (mem / "warm" / "updated.md").write_text("updated source", encoding="utf-8")
             catalog.write_text(
                 json.dumps({"items": {warm["id"]: {"locator": "warm/updated.md"}}}),
                 encoding="utf-8",
@@ -86,7 +89,10 @@ class HermesWarmDirectoryTests(unittest.TestCase):
             self.assertNotEqual(second, first)
             status = json.loads(provider.handle_tool_call("thm_recall_status", {}))
             self.assertTrue(status["warm_directory"]["enabled"])
-            self.assertEqual(status["warm_directory"]["snapshot_refresh"], "session_boundary_only")
+            self.assertTrue(status["warm_directory"]["locator_targets_verified"])
+            self.assertEqual(
+                status["warm_directory"]["snapshot_refresh"], "session_boundary_only"
+            )
             provider.shutdown()
 
             after = {
@@ -117,6 +123,41 @@ class HermesWarmDirectoryTests(unittest.TestCase):
                 {"scope": "scope", "warm_directory_budget": 400}
             )
             with self.assertRaisesRegex(ValueError, "unknown item id ghost"):
+                provider.initialize("s", hermes_home=root)
+
+    def test_missing_selected_locator_target_fails_opt_in_initialization(self):
+        provider_module = self.provider_module()
+        with tempfile.TemporaryDirectory() as root:
+            _mem, _state, warm, catalog = self.make_profile(root)
+            catalog.write_text(
+                json.dumps({"items": {warm["id"]: {"locator": "warm/missing.md"}}}),
+                encoding="utf-8",
+            )
+            provider = provider_module.THMProvider(
+                {"scope": "scope", "warm_directory_budget": 400}
+            )
+            with self.assertRaisesRegex(ValueError, "target does not exist"):
+                provider.initialize("s", hermes_home=root)
+
+    def test_locator_symlink_escape_is_rejected_when_supported(self):
+        provider_module = self.provider_module()
+        with tempfile.TemporaryDirectory() as root, tempfile.TemporaryDirectory() as outside:
+            mem, _state, warm, catalog = self.make_profile(root)
+            external = Path(outside) / "external.md"
+            external.write_text("outside", encoding="utf-8")
+            link = mem / "warm" / "escape.md"
+            try:
+                link.symlink_to(external)
+            except (OSError, NotImplementedError):
+                self.skipTest("symlink creation unavailable")
+            catalog.write_text(
+                json.dumps({"items": {warm["id"]: {"locator": "warm/escape.md"}}}),
+                encoding="utf-8",
+            )
+            provider = provider_module.THMProvider(
+                {"scope": "scope", "warm_directory_budget": 400}
+            )
+            with self.assertRaisesRegex(ValueError, "escapes memories directory"):
                 provider.initialize("s", hermes_home=root)
 
     def test_warm_budget_validation(self):

@@ -34,6 +34,29 @@ def _warm_budget(value) -> int:
     return budget
 
 
+def _validate_selected_locators(mem_dir: Path, report: dict) -> None:
+    """Ensure every injected locator resolves to an existing file inside memories/."""
+    root = mem_dir.resolve()
+    selected = report.get("selected", [])
+    if not isinstance(selected, list):
+        raise ValueError("THM warm directory selected rows are invalid")
+    for row in selected:
+        if not isinstance(row, dict) or not isinstance(row.get("locator"), str):
+            raise ValueError("THM warm directory selected locator is invalid")
+        locator = row["locator"]
+        candidate = mem_dir / locator
+        try:
+            resolved = candidate.resolve(strict=True)
+        except FileNotFoundError as exc:
+            raise ValueError(f"THM warm locator target does not exist: {locator}") from exc
+        try:
+            resolved.relative_to(root)
+        except ValueError as exc:
+            raise ValueError(f"THM warm locator escapes memories directory: {locator}") from exc
+        if not resolved.is_file():
+            raise ValueError(f"THM warm locator target is not a file: {locator}")
+
+
 class THMProvider(_BaseTHMProvider):
     """Current THM provider; 1.4 warm-directory injection defaults to disabled."""
 
@@ -111,6 +134,7 @@ class THMProvider(_BaseTHMProvider):
             budget=self._warm_directory_budget - header_units,
             count_units=lambda text: self.counter("- " + text),
         )
+        _validate_selected_locators(mem_dir, report)
         lines = report["lines"]
         if not lines:
             self._warm_directory_report = report
@@ -122,6 +146,7 @@ class THMProvider(_BaseTHMProvider):
         report = dict(report)
         report["budget"] = self._warm_directory_budget
         report["budget_used"] = total
+        report["locator_targets_verified"] = True
         self._warm_directory_report = report
         self._warm_directory_block = block
 
@@ -167,6 +192,11 @@ class THMProvider(_BaseTHMProvider):
                     len(self._warm_directory_report.get("lines", []))
                     if isinstance(self._warm_directory_report, dict)
                     else 0
+                ),
+                "locator_targets_verified": (
+                    self._warm_directory_report.get("locator_targets_verified", False)
+                    if isinstance(self._warm_directory_report, dict)
+                    else False
                 ),
                 "snapshot_refresh": "session_boundary_only",
             }
