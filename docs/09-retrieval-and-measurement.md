@@ -77,13 +77,15 @@ export THM_RECALL_SCOPE=demo
 
 The selected scope must already exist in `<hermes_home>/memories/.thm/recall.sqlite3`. THM occupies Hermes' single external-provider slot; it does not auto-export conversations or rewrite native memory files.
 
-A pinned-upstream integration run has now exercised the **real** Hermes discovery and provider lifecycle rather than only a contract double. Run `34042345020` used THM commit `2d55f944ec066bdb26444db633d2a686fd22ec2d` and Hermes `77915e344cb0cd8e20661d4a7b393f987a2eef32`. It verified pip entry-point discovery, `MemoryProvider` type admission, `MemoryManager` admission, current-query prefetch, Hermes memory-context fencing, recall status, session switching, and that `on_memory_write` clears recall status without becoming a hit or changing the derived recall database. See [the permanent report](../reports/2026-09-06-hermes-e2e.md).
+A pinned-upstream integration run has exercised the **real** Hermes discovery and provider lifecycle rather than only a contract double. Run `34042345020` used THM commit `2d55f944ec066bdb26444db633d2a686fd22ec2d` and Hermes `77915e344cb0cd8e20661d4a7b393f987a2eef32`. It verified pip entry-point discovery, `MemoryProvider` type admission, `MemoryManager` admission, current-query prefetch, Hermes memory-context fencing, recall status, session switching, and that `on_memory_write` clears recall status without becoming a hit or changing the derived recall database. See [the permanent report](../reports/2026-09-06-hermes-e2e.md).
 
 That is a provider-lifecycle E2E with synthetic evidence and zero model calls; it is not an answer-generation E2E or a real-user quality measurement.
 
 ## Benchmark protocol
 
-The historical protocol-1 numbers remain immutable evidence. Protocol 2 corrects LoCoMo category names, creates one FTS database per conversation so IDF statistics cannot leak across conversations, and adds MRR, nDCG and p99. The heavy workflow asserts `protocol == 2`, the pinned dataset digest and `idf_scope == one_database_per_conversation` before accepting an artifact. Current measured protocol-2 results are published in a separate report after that workflow completes.
+The historical protocol-1 numbers remain immutable evidence. Protocol 2 corrects LoCoMo category names, creates one FTS database per conversation so IDF statistics cannot leak across conversations, and adds MRR, nDCG and p99. The heavy workflow asserts `protocol == 2`, the pinned dataset digest and `idf_scope == one_database_per_conversation` before accepting an artifact.
+
+Protocol 2 completed successfully in workflow run `34042410130` at THM commit `702ad5c7973f7376e575734948847204cf5a4b0c`. On the principal 1,532 fully resolved non-adversarial questions at a 600 `cl100k_base` evidence-token slice, any-gold coverage was **56.79% literal**, **69.39% sparse**, **51.11% dense**, and **71.34% hybrid**. Sparse p95 retrieval+packing latency was **34.55 ms**; hybrid was **57.88 ms**. See the [full Protocol 2 report](../reports/2026-09-06-recall-protocol2.md) and [machine-readable summary](../reports/2026-09-06-recall-protocol2-summary.json). These remain retrieval metrics, not generated-answer accuracy.
 
 ## Generation evaluation
 
