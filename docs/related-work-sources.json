@@ -1,0 +1,1027 @@
+{
+  "schema_version": 1,
+  "read_date": "2026-09-06",
+  "evidence_levels": {
+    "D": "official documentation or pinned README, no execution",
+    "S": "selected source definitions, no execution",
+    "L": "license text and component scope",
+    "M": "release metadata or official availability announcement",
+    "P": "paper abstract and submission/version metadata only"
+  },
+  "notes": [
+    "所有性能比较均未复现；未发布排行榜。",
+    "本清单不复制来源正文或源码；固定 commit 不代表已发布包版本。",
+    "在线文档未取得 commit 时为 null；读取失败页面不作为功能证据。",
+    "thm docs/03-validation-contract.md 保留自己的历史 upstream pin，本清单使用另一次读取快照。"
+  ],
+  "systems": [
+    {
+      "id": "hermes",
+      "name": "Hermes",
+      "read_date": "2026-09-06",
+      "scope": "原生记忆与 provider 生命周期；MIT",
+      "sources": [
+        {
+          "commit": "9a84bee265daad14340a80d7585928cd8ea1f9eb",
+          "evidence": "D",
+          "path": "README.md",
+          "section": "A closed learning loop; Memory; License",
+          "url": "https://raw.githubusercontent.com/NousResearch/hermes-agent/9a84bee265daad14340a80d7585928cd8ea1f9eb/README.md"
+        },
+        {
+          "commit": "9a84bee265daad14340a80d7585928cd8ea1f9eb",
+          "evidence": "L",
+          "path": "LICENSE",
+          "section": "License text; root/component scope",
+          "url": "https://github.com/NousResearch/hermes-agent/blob/9a84bee265daad14340a80d7585928cd8ea1f9eb/LICENSE"
+        },
+        {
+          "commit": null,
+          "evidence": "D",
+          "path": null,
+          "section": "How It Works; OpenViking; Mem0; Hindsight",
+          "url": "https://hermes-agent.nousresearch.com/docs/user-guide/features/memory-providers/",
+          "version": "Live official documentation read on 2026-09-06; not assumed identical to repository HEAD"
+        }
+      ],
+      "unverified": [
+        "当前安装的 provider 启用状态、请求边界、故障和删除传播未实测",
+        "本次未执行该系统或复现其性能评测。"
+      ]
+    },
+    {
+      "id": "reme",
+      "name": "ReMe",
+      "read_date": "2026-09-06",
+      "scope": "文件来源、派生索引与召回；Apache-2.0",
+      "sources": [
+        {
+          "commit": "0eba6ea831c915ca92e4c501785951dc00538a41",
+          "evidence": "D",
+          "path": "README.md",
+          "section": "Why ReMe; Environment Variables; docs/en/memory_as_file.md 的 source/daily/digest/metadata、Sources、delete、reindex 段",
+          "url": "https://raw.githubusercontent.com/agentscope-ai/ReMe/0eba6ea831c915ca92e4c501785951dc00538a41/README.md"
+        },
+        {
+          "commit": "0eba6ea831c915ca92e4c501785951dc00538a41",
+          "evidence": "D",
+          "path": "docs/en/memory_as_file.md",
+          "section": "Why ReMe; Environment Variables; docs/en/memory_as_file.md 的 source/daily/digest/metadata、Sources、delete、reindex 段",
+          "url": "https://raw.githubusercontent.com/agentscope-ai/ReMe/0eba6ea831c915ca92e4c501785951dc00538a41/docs/en/memory_as_file.md"
+        },
+        {
+          "commit": "0eba6ea831c915ca92e4c501785951dc00538a41",
+          "evidence": "L",
+          "path": "LICENSE",
+          "section": "License text; root/component scope",
+          "url": "https://github.com/agentscope-ai/ReMe/blob/0eba6ea831c915ca92e4c501785951dc00538a41/LICENSE"
+        }
+      ],
+      "unverified": [
+        "原子移动、断电恢复及全部来源删除传播未实测",
+        "本次未执行该系统或复现其性能评测。"
+      ]
+    },
+    {
+      "id": "signet",
+      "name": "Signet",
+      "read_date": "2026-09-06",
+      "scope": "来源与当前知识分离；Apache-2.0",
+      "sources": [
+        {
+          "commit": "77ae26b1a3f3b67ff2cee21f27c863d7e69fce37",
+          "evidence": "D",
+          "path": "README.md",
+          "section": "Why Signet; Harness support; Development; License",
+          "url": "https://raw.githubusercontent.com/Signet-AI/signetai/77ae26b1a3f3b67ff2cee21f27c863d7e69fce37/README.md"
+        },
+        {
+          "commit": "77ae26b1a3f3b67ff2cee21f27c863d7e69fce37",
+          "evidence": "L",
+          "path": "LICENSE",
+          "section": "License text; root/component scope",
+          "url": "https://raw.githubusercontent.com/Signet-AI/signetai/77ae26b1a3f3b67ff2cee21f27c863d7e69fce37/LICENSE"
+        },
+        {
+          "commit": null,
+          "evidence": "D",
+          "path": null,
+          "section": "What Signet stores; How it works",
+          "url": "https://docs.signetai.sh/what-is-signet/",
+          "version": "Live official documentation read on 2026-09-06; not assumed identical to repository HEAD"
+        },
+        {
+          "commit": null,
+          "evidence": "D",
+          "path": null,
+          "section": "Overview; The old extraction and decision worker is retired",
+          "url": "https://docs.signetai.sh/pipeline/extraction-decisions/",
+          "version": "Live official documentation read on 2026-09-06; not assumed identical to repository HEAD"
+        },
+        {
+          "commit": null,
+          "evidence": "D",
+          "path": null,
+          "section": "Inference profile examples: privacy local_only / remote_ok",
+          "url": "https://docs.signetai.sh/configuration/inference-routing/",
+          "version": "Live official documentation read on 2026-09-06; not assumed identical to repository HEAD"
+        }
+      ],
+      "unverified": [
+        "部署配置、跨宿主隔离、删除传播和恢复未实测",
+        "本次未执行该系统或复现其性能评测。"
+      ]
+    },
+    {
+      "id": "openviking",
+      "name": "OpenViking",
+      "read_date": "2026-09-06",
+      "scope": "阅读深度、检索轨迹；主项目 AGPLv3，CLI/示例另列",
+      "sources": [
+        {
+          "commit": "0c5147cae26aec8d6d93445ec6ad86d5faff4035",
+          "evidence": "D",
+          "path": "README.md",
+          "section": "Introduction; Three loading tiers; Quick start; Integrations; License",
+          "url": "https://raw.githubusercontent.com/volcengine/OpenViking/0c5147cae26aec8d6d93445ec6ad86d5faff4035/README.md"
+        },
+        {
+          "commit": "0c5147cae26aec8d6d93445ec6ad86d5faff4035",
+          "evidence": "L",
+          "path": "LICENSE",
+          "section": "License text; root/component scope",
+          "url": "https://raw.githubusercontent.com/volcengine/OpenViking/0c5147cae26aec8d6d93445ec6ad86d5faff4035/LICENSE"
+        },
+        {
+          "commit": "0c5147cae26aec8d6d93445ec6ad86d5faff4035",
+          "evidence": "L",
+          "path": "crates/LICENSE",
+          "section": "License text; root/component scope",
+          "url": "https://github.com/volcengine/OpenViking/blob/0c5147cae26aec8d6d93445ec6ad86d5faff4035/crates/LICENSE"
+        },
+        {
+          "commit": "0c5147cae26aec8d6d93445ec6ad86d5faff4035",
+          "evidence": "L",
+          "path": "examples/LICENSE",
+          "section": "License text; root/component scope",
+          "url": "https://github.com/volcengine/OpenViking/blob/0c5147cae26aec8d6d93445ec6ad86d5faff4035/examples/LICENSE"
+        }
+      ],
+      "unverified": [
+        "实际检索、所有第三方组件许可及部署恢复未实测",
+        "本次未执行该系统或复现其性能评测。"
+      ]
+    },
+    {
+      "id": "memos",
+      "name": "MemOS",
+      "read_date": "2026-09-06",
+      "scope": "本地插件、完整系统和云产品分别描述；根 Apache-2.0",
+      "sources": [
+        {
+          "commit": "78a372a4fc853a24d2a78efa3b4bbbd27ab9f7ad",
+          "evidence": "D",
+          "path": "README.md",
+          "section": "README: Quick start / Plugin; apps README: What it is / Layout / Configuration",
+          "url": "https://raw.githubusercontent.com/MemTensor/MemOS/78a372a4fc853a24d2a78efa3b4bbbd27ab9f7ad/README.md"
+        },
+        {
+          "commit": "78a372a4fc853a24d2a78efa3b4bbbd27ab9f7ad",
+          "evidence": "D",
+          "path": "apps/memos-local-plugin/README.md",
+          "section": "README: Quick start / Plugin; apps README: What it is / Layout / Configuration",
+          "url": "https://github.com/MemTensor/MemOS/blob/78a372a4fc853a24d2a78efa3b4bbbd27ab9f7ad/apps/memos-local-plugin/README.md"
+        },
+        {
+          "commit": "78a372a4fc853a24d2a78efa3b4bbbd27ab9f7ad",
+          "evidence": "L",
+          "path": "LICENSE",
+          "section": "License text; root/component scope",
+          "url": "https://github.com/MemTensor/MemOS/blob/78a372a4fc853a24d2a78efa3b4bbbd27ab9f7ad/LICENSE"
+        }
+      ],
+      "unverified": [
+        "完整自托管服务依赖清单、跨产品功能等价及数据外发未实测",
+        "本次未执行该系统或复现其性能评测。"
+      ]
+    },
+    {
+      "id": "letta",
+      "name": "Letta / MemFS",
+      "read_date": "2026-09-06",
+      "scope": "当前 Letta Code / App Server 根 Apache-2.0，LICENSE 的品牌资产排除另计；旧 V1 archive、Cloud 服务分别记录",
+      "sources": [
+        {
+          "commit": "4511fa0bc91f68fbab32b91f694617271ea9012b",
+          "evidence": "L",
+          "path": "LICENSE",
+          "section": "License text; root/component scope",
+          "url": "https://github.com/letta-ai/letta/blob/4511fa0bc91f68fbab32b91f694617271ea9012b/LICENSE"
+        },
+        {
+          "commit": null,
+          "evidence": "D",
+          "path": null,
+          "section": "Overview; In-context vs out-of-context; Search; Git; Cloud vs local",
+          "url": "https://docs.letta.com/concepts/memfs",
+          "version": "Live official documentation read on 2026-09-06; not assumed identical to repository HEAD"
+        },
+        {
+          "commit": "4511fa0bc91f68fbab32b91f694617271ea9012b",
+          "evidence": "D",
+          "path": "README.md",
+          "section": "Current source; Historical source / retired V1 archive",
+          "url": "https://github.com/letta-ai/letta/blob/4511fa0bc91f68fbab32b91f694617271ea9012b/README.md"
+        },
+        {
+          "commit": "701f2a5367828847313876c735ade27b9df97689",
+          "evidence": "D",
+          "path": "README.md",
+          "section": "Architecture; Letta Cloud; License",
+          "url": "https://github.com/letta-ai/letta-code/blob/701f2a5367828847313876c735ade27b9df97689/README.md"
+        },
+        {
+          "commit": "701f2a5367828847313876c735ade27b9df97689",
+          "evidence": "L",
+          "path": "LICENSE",
+          "section": "Root license",
+          "url": "https://github.com/letta-ai/letta-code/blob/701f2a5367828847313876c735ade27b9df97689/LICENSE"
+        }
+      ],
+      "unverified": [
+        "未用开源 runtime 的许可推定 Letta Cloud 完整服务端许可",
+        "未安装或测试 MemFS 同步、搜索、删除和恢复"
+      ]
+    },
+    {
+      "id": "hindsight",
+      "name": "Hindsight",
+      "read_date": "2026-09-06",
+      "scope": "retain / recall / reflect；MIT",
+      "sources": [
+        {
+          "commit": "424601520456a6d06a81b2fdc709a0d023d800af",
+          "evidence": "D",
+          "path": "README.md",
+          "section": "Quick Start; LLM Wrapper; Memory Types; The Three Operations",
+          "url": "https://raw.githubusercontent.com/vectorize-io/hindsight/424601520456a6d06a81b2fdc709a0d023d800af/README.md"
+        },
+        {
+          "commit": "424601520456a6d06a81b2fdc709a0d023d800af",
+          "evidence": "L",
+          "path": "LICENSE",
+          "section": "License text; root/component scope",
+          "url": "https://github.com/vectorize-io/hindsight/blob/424601520456a6d06a81b2fdc709a0d023d800af/LICENSE"
+        }
+      ],
+      "unverified": [
+        "删除级联、崩溃恢复、各集成默认配置未实测",
+        "本次未执行该系统或复现其性能评测。"
+      ]
+    },
+    {
+      "id": "mem0",
+      "name": "Mem0",
+      "read_date": "2026-09-06",
+      "scope": "README 与配置类抽查；Apache-2.0；托管版另列",
+      "sources": [
+        {
+          "commit": "dae67f74f5cc7bf138c7d7d6f9cec5ce4b4373b3",
+          "evidence": "D",
+          "path": "README.md",
+          "section": "New Memory Algorithm (April 2026); Quickstart; License",
+          "url": "https://raw.githubusercontent.com/mem0ai/mem0/dae67f74f5cc7bf138c7d7d6f9cec5ce4b4373b3/README.md"
+        },
+        {
+          "commit": "dae67f74f5cc7bf138c7d7d6f9cec5ce4b4373b3",
+          "evidence": "S",
+          "path": "mem0/configs/base.py",
+          "section": "Configuration class defaults and validators",
+          "url": "https://github.com/mem0ai/mem0/blob/dae67f74f5cc7bf138c7d7d6f9cec5ce4b4373b3/mem0/configs/base.py"
+        },
+        {
+          "commit": "dae67f74f5cc7bf138c7d7d6f9cec5ce4b4373b3",
+          "evidence": "S",
+          "path": "mem0/llms/configs.py",
+          "section": "Configuration class defaults and validators",
+          "url": "https://github.com/mem0ai/mem0/blob/dae67f74f5cc7bf138c7d7d6f9cec5ce4b4373b3/mem0/llms/configs.py"
+        },
+        {
+          "commit": "dae67f74f5cc7bf138c7d7d6f9cec5ce4b4373b3",
+          "evidence": "S",
+          "path": "mem0/embeddings/configs.py",
+          "section": "Configuration class defaults and validators",
+          "url": "https://github.com/mem0ai/mem0/blob/dae67f74f5cc7bf138c7d7d6f9cec5ce4b4373b3/mem0/embeddings/configs.py"
+        },
+        {
+          "commit": "dae67f74f5cc7bf138c7d7d6f9cec5ce4b4373b3",
+          "evidence": "S",
+          "path": "mem0/vector_stores/configs.py",
+          "section": "Configuration class defaults and validators",
+          "url": "https://github.com/mem0ai/mem0/blob/dae67f74f5cc7bf138c7d7d6f9cec5ce4b4373b3/mem0/vector_stores/configs.py"
+        },
+        {
+          "commit": "dae67f74f5cc7bf138c7d7d6f9cec5ce4b4373b3",
+          "evidence": "S",
+          "path": "mem0/configs/vector_stores/qdrant.py",
+          "section": "Configuration class defaults and validators",
+          "url": "https://github.com/mem0ai/mem0/blob/dae67f74f5cc7bf138c7d7d6f9cec5ce4b4373b3/mem0/configs/vector_stores/qdrant.py"
+        },
+        {
+          "commit": "dae67f74f5cc7bf138c7d7d6f9cec5ce4b4373b3",
+          "evidence": "L",
+          "path": "LICENSE",
+          "section": "License text; root/component scope",
+          "url": "https://github.com/mem0ai/mem0/blob/dae67f74f5cc7bf138c7d7d6f9cec5ce4b4373b3/LICENSE"
+        }
+      ],
+      "unverified": [
+        "README 算法说明未逐函数复核；实际网络流量、遥测及全存储删除未实测",
+        "本次未执行该系统或复现其性能评测。"
+      ]
+    },
+    {
+      "id": "graphiti",
+      "name": "Graphiti / Zep",
+      "read_date": "2026-09-06",
+      "scope": "时间图引擎；Apache-2.0；Zep 服务另列",
+      "sources": [
+        {
+          "commit": "547422865cca9fb5a82915c074d899428c145ff4",
+          "evidence": "D",
+          "path": "README.md",
+          "section": "Overview; Features; Requirements; Usage; Graphiti vs Zep",
+          "url": "https://raw.githubusercontent.com/getzep/graphiti/547422865cca9fb5a82915c074d899428c145ff4/README.md"
+        },
+        {
+          "commit": "547422865cca9fb5a82915c074d899428c145ff4",
+          "evidence": "L",
+          "path": "LICENSE",
+          "section": "License text; root/component scope",
+          "url": "https://github.com/getzep/graphiti/blob/547422865cca9fb5a82915c074d899428c145ff4/LICENSE"
+        }
+      ],
+      "unverified": [
+        "旧 Zep 社区版不作为当前平台证据；删除级联、恢复和性能未实测",
+        "本次未执行该系统或复现其性能评测。"
+      ]
+    },
+    {
+      "id": "clawmem",
+      "name": "ClawMem",
+      "read_date": "2026-09-06",
+      "scope": "宿主钩子、混合检索与生命周期；MIT",
+      "sources": [
+        {
+          "commit": "ba09cb83050867c54f4e05a7050c874171c47cd8",
+          "evidence": "D",
+          "path": "README.md",
+          "section": "Features; Installation; Integration; Lifecycle",
+          "url": "https://raw.githubusercontent.com/yoloshii/ClawMem/ba09cb83050867c54f4e05a7050c874171c47cd8/README.md"
+        },
+        {
+          "commit": "ba09cb83050867c54f4e05a7050c874171c47cd8",
+          "evidence": "L",
+          "path": "LICENSE",
+          "section": "License text; root/component scope",
+          "url": "https://github.com/yoloshii/ClawMem/blob/ba09cb83050867c54f4e05a7050c874171c47cd8/LICENSE"
+        }
+      ],
+      "unverified": [
+        "原子索引为项目文档声明，未故障注入验证；端到端无外发未验证",
+        "本次未执行该系统或复现其性能评测。"
+      ]
+    },
+    {
+      "id": "openclaw",
+      "name": "OpenClaw dreaming",
+      "read_date": "2026-09-06",
+      "scope": "当前官方 dreaming 文档；MIT",
+      "sources": [
+        {
+          "commit": "8f18f14aa09123d85127a28c6f52f2fcac473096",
+          "evidence": "L",
+          "path": "LICENSE",
+          "section": "License text; root/component scope",
+          "url": "https://raw.githubusercontent.com/openclaw/openclaw/8f18f14aa09123d85127a28c6f52f2fcac473096/LICENSE"
+        },
+        {
+          "commit": null,
+          "evidence": "D",
+          "path": null,
+          "section": "What dreaming writes; Phase model; Session transcript ingestion; Consolidation safety; Key defaults",
+          "url": "https://docs.openclaw.ai/concepts/dreaming",
+          "version": "Live official documentation read on 2026-09-06; not assumed identical to repository HEAD"
+        }
+      ],
+      "unverified": [
+        "在线文档与固定提交的逐行对应未核对；删除传播、恢复未实测",
+        "本次未执行该系统或复现其性能评测。"
+      ]
+    },
+    {
+      "id": "pi",
+      "name": "Pi",
+      "read_date": "2026-09-06",
+      "scope": "旧 badlogic/pi-mono 重定向后的终端 harness；MIT",
+      "sources": [
+        {
+          "commit": "9767ba275f3e9a5ee0f5c5342249b629ab1b2282",
+          "evidence": "D",
+          "path": "packages/coding-agent/README.md",
+          "section": "Sessions; Compaction; Extensions",
+          "url": "https://github.com/earendil-works/pi/blob/9767ba275f3e9a5ee0f5c5342249b629ab1b2282/packages/coding-agent/README.md"
+        },
+        {
+          "commit": "9767ba275f3e9a5ee0f5c5342249b629ab1b2282",
+          "evidence": "L",
+          "path": "LICENSE",
+          "section": "License text; root/component scope",
+          "url": "https://github.com/earendil-works/pi/blob/9767ba275f3e9a5ee0f5c5342249b629ab1b2282/LICENSE"
+        }
+      ],
+      "unverified": [
+        "未将扩展能力当成默认分层记忆；扩展安装与会话恢复未实测",
+        "本次未执行该系统或复现其性能评测。"
+      ]
+    },
+    {
+      "id": "openhands",
+      "name": "OpenHands SDK",
+      "read_date": "2026-09-06",
+      "scope": "condenser 官方架构；SDK 根 MIT",
+      "sources": [
+        {
+          "commit": "fe91d7dfc94d299e3751acb2b0c80ccbc582623c",
+          "evidence": "L",
+          "path": "LICENSE",
+          "section": "License text; root/component scope",
+          "url": "https://github.com/OpenHands/software-agent-sdk/blob/fe91d7dfc94d299e3751acb2b0c80ccbc582623c/LICENSE"
+        },
+        {
+          "commit": null,
+          "evidence": "D",
+          "path": null,
+          "section": "Core Responsibilities; LLMSummarizingCondenser; View and Condensation",
+          "url": "https://docs.openhands.dev/sdk/arch/condenser",
+          "version": "Live official documentation read on 2026-09-06; not assumed identical to repository HEAD"
+        }
+      ],
+      "unverified": [
+        "仅评价 condenser，不穷举该产品其他持久记忆功能；宿主执行未测",
+        "本次未执行该系统或复现其性能评测。"
+      ]
+    },
+    {
+      "id": "langgraph",
+      "name": "LangGraph",
+      "read_date": "2026-09-06",
+      "scope": "checkpoint 与跨线程 store；MIT",
+      "sources": [
+        {
+          "commit": "81bf17b23123e4ef8b9d5f49fa09a0122fc2edd1",
+          "evidence": "L",
+          "path": "LICENSE",
+          "section": "License text; root/component scope",
+          "url": "https://github.com/langchain-ai/langgraph/blob/81bf17b23123e4ef8b9d5f49fa09a0122fc2edd1/LICENSE"
+        },
+        {
+          "commit": null,
+          "evidence": "D",
+          "path": null,
+          "section": "Persistence systems; Checkpointers vs stores",
+          "url": "https://docs.langchain.com/oss/python/langgraph/persistence",
+          "version": "Live official documentation read on 2026-09-06; not assumed identical to repository HEAD"
+        },
+        {
+          "commit": null,
+          "evidence": "D",
+          "path": null,
+          "section": "Pruning with delta channels; Copy thread with delta channels",
+          "url": "https://docs.langchain.com/oss/python/langgraph/checkpointers",
+          "version": "Live official documentation read on 2026-09-06; not assumed identical to repository HEAD"
+        }
+      ],
+      "unverified": [
+        "自定义副作用、保存器、备份删除和重放须应用另行验证",
+        "本次未执行该系统或复现其性能评测。"
+      ]
+    },
+    {
+      "id": "deepagents",
+      "name": "Deep Agents",
+      "read_date": "2026-09-06",
+      "scope": "memory 路径、backend 和 namespace；MIT",
+      "sources": [
+        {
+          "commit": "6c89fe2197a2dfe4f3851cda38565bcadba6066b",
+          "evidence": "L",
+          "path": "LICENSE",
+          "section": "License text; root/component scope",
+          "url": "https://github.com/langchain-ai/deepagents/blob/6c89fe2197a2dfe4f3851cda38565bcadba6066b/LICENSE"
+        },
+        {
+          "commit": null,
+          "evidence": "D",
+          "path": null,
+          "section": "Agent-scoped memory; User-scoped memory; Permissions",
+          "url": "https://docs.langchain.com/oss/python/deepagents/memory",
+          "version": "Live official documentation read on 2026-09-06; not assumed identical to repository HEAD"
+        }
+      ],
+      "unverified": [
+        "隔离依赖正确身份与权限配置；未实测",
+        "本次未执行该系统或复现其性能评测。"
+      ]
+    },
+    {
+      "id": "codex",
+      "name": "Codex",
+      "read_date": "2026-09-06",
+      "scope": "MemoryTool feature 元数据源码及官方本地记忆文档；Apache-2.0",
+      "sources": [
+        {
+          "commit": "ac192cd7937b0d73edc6dffe009940ae53782dd4",
+          "evidence": "S",
+          "path": "codex-rs/features/src/lib.rs",
+          "section": "Feature::MemoryTool / FeatureSpec { key: \"memories\" }",
+          "url": "https://github.com/openai/codex/blob/ac192cd7937b0d73edc6dffe009940ae53782dd4/codex-rs/features/src/lib.rs"
+        },
+        {
+          "commit": "ac192cd7937b0d73edc6dffe009940ae53782dd4",
+          "evidence": "L",
+          "path": "LICENSE",
+          "section": "License text; root/component scope",
+          "url": "https://github.com/openai/codex/blob/ac192cd7937b0d73edc6dffe009940ae53782dd4/LICENSE"
+        },
+        {
+          "commit": null,
+          "evidence": "D",
+          "path": null,
+          "section": "Local Codex memories; enablement and generation/use settings",
+          "url": "https://learn.chatgpt.com/docs/customization/memories?surface=app",
+          "version": "Live official documentation read on 2026-09-06; not assumed identical to repository HEAD"
+        }
+      ],
+      "unverified": [
+        "feature 状态不代表所有已发布客户端/账号启用；未运行客户端",
+        "本次未执行该系统或复现其性能评测。"
+      ]
+    },
+    {
+      "id": "agents-sdk",
+      "name": "OpenAI Agents SDK",
+      "read_date": "2026-09-06",
+      "scope": "session 文档、客户端历史与服务端 continuation 区分；MIT",
+      "sources": [
+        {
+          "commit": "1d471a4775bf2f40179f411824da383deb4c3fca",
+          "evidence": "D",
+          "path": "docs/sessions/index.md",
+          "section": "docs/sessions/index.md",
+          "url": "https://github.com/openai/openai-agents-python/blob/1d471a4775bf2f40179f411824da383deb4c3fca/docs/sessions/index.md"
+        },
+        {
+          "commit": "1d471a4775bf2f40179f411824da383deb4c3fca",
+          "evidence": "L",
+          "path": "LICENSE",
+          "section": "License text; root/component scope",
+          "url": "https://github.com/openai/openai-agents-python/blob/1d471a4775bf2f40179f411824da383deb4c3fca/LICENSE"
+        }
+      ],
+      "unverified": [
+        "历史持久化不等于自动事实有效性判断；各 backend 恢复未实测",
+        "本次未执行该系统或复现其性能评测。"
+      ]
+    },
+    {
+      "id": "gemini",
+      "name": "Gemini CLI",
+      "read_date": "2026-09-06",
+      "scope": "当前官方 Markdown memory 文档；Apache-2.0",
+      "sources": [
+        {
+          "commit": "85aca163f6c73ac6ce380b5447359146b8adcae4",
+          "evidence": "L",
+          "path": "LICENSE",
+          "section": "License text; root/component scope",
+          "url": "https://github.com/google-gemini/gemini-cli/blob/85aca163f6c73ac6ce380b5447359146b8adcae4/LICENSE"
+        },
+        {
+          "commit": null,
+          "evidence": "D",
+          "path": null,
+          "section": "Technical reference; Technical behavior",
+          "url": "https://geminicli.com/docs/tools/memory/",
+          "version": "Live official documentation read on 2026-09-06; not assumed identical to repository HEAD"
+        }
+      ],
+      "unverified": [
+        "不据旧 save_memory 工具文档推断当前行为；自动提取覆盖和默认策略未源码复核",
+        "本次未执行该系统或复现其性能评测。"
+      ]
+    },
+    {
+      "id": "deepseek",
+      "name": "DeepSeek Harness",
+      "read_date": "2026-09-06",
+      "scope": "官方 Developer Preview 与插件式 harness；MIT",
+      "sources": [
+        {
+          "commit": "d347e703908d0406b7a7ef80e3a0e594d86b2215",
+          "evidence": "D",
+          "path": "README.md",
+          "section": "Architecture; Documentation; License",
+          "url": "https://raw.githubusercontent.com/deepseek-ai/deepseek-harness/d347e703908d0406b7a7ef80e3a0e594d86b2215/README.md"
+        },
+        {
+          "commit": "d347e703908d0406b7a7ef80e3a0e594d86b2215",
+          "evidence": "L",
+          "path": "LICENSE",
+          "section": "License text; root/component scope",
+          "url": "https://github.com/deepseek-ai/deepseek-harness/blob/d347e703908d0406b7a7ef80e3a0e594d86b2215/LICENSE"
+        },
+        {
+          "commit": null,
+          "evidence": "D",
+          "path": null,
+          "section": "Developer Preview; Cordis / plugin architecture",
+          "url": "https://www.deepseek.com/harness/en/",
+          "version": "Live official documentation read on 2026-09-06; not assumed identical to repository HEAD"
+        }
+      ],
+      "unverified": [
+        "预览产品未安装；各插件功能/许可需分别核验",
+        "本次未执行该系统或复现其性能评测。"
+      ]
+    },
+    {
+      "id": "maf",
+      "name": "Microsoft Agent Framework",
+      "read_date": "2026-09-06",
+      "scope": "Python release 元数据、README 中间件与 checkpoint；MIT",
+      "sources": [
+        {
+          "commit": "2c49f50cf08ebb6c1687146336f039051f159333",
+          "evidence": "D",
+          "path": "README.md",
+          "section": "Key Features; Installation",
+          "url": "https://github.com/microsoft/agent-framework/blob/2c49f50cf08ebb6c1687146336f039051f159333/README.md"
+        },
+        {
+          "commit": "2c49f50cf08ebb6c1687146336f039051f159333",
+          "evidence": "L",
+          "path": "LICENSE",
+          "section": "License text; root/component scope",
+          "url": "https://github.com/microsoft/agent-framework/blob/2c49f50cf08ebb6c1687146336f039051f159333/LICENSE"
+        },
+        {
+          "commit": null,
+          "evidence": "M",
+          "path": null,
+          "section": "Release metadata",
+          "url": "https://github.com/microsoft/agent-framework/releases/tag/python-1.17.0",
+          "version": {
+            "prerelease": false,
+            "published_at": "2026-09-03T09:49:35Z",
+            "tag": "python-1.17.0",
+            "url": "https://github.com/microsoft/agent-framework/releases/tag/python-1.17.0"
+          }
+        }
+      ],
+      "unverified": [
+        "不同语言及子包发布状态独立，不能统一宣称所有功能稳定",
+        "本次未执行该系统或复现其性能评测。"
+      ]
+    },
+    {
+      "id": "memu",
+      "name": "memU",
+      "read_date": "2026-09-06",
+      "scope": "当前 Wiki / sidecar README；Apache-2.0",
+      "sources": [
+        {
+          "commit": "385bdb30cda7f5265368934b8008ce2b73283283",
+          "evidence": "D",
+          "path": "README.md",
+          "section": "Automatic skill extraction; Self-hosted; Host adapters",
+          "url": "https://github.com/NevaMind-AI/memU/blob/385bdb30cda7f5265368934b8008ce2b73283283/README.md"
+        },
+        {
+          "commit": "385bdb30cda7f5265368934b8008ce2b73283283",
+          "evidence": "L",
+          "path": "LICENSE.txt",
+          "section": "License text; root/component scope",
+          "url": "https://github.com/NevaMind-AI/memU/blob/385bdb30cda7f5265368934b8008ce2b73283283/LICENSE.txt"
+        }
+      ],
+      "unverified": [
+        "旧资源/item/category 三层不作为当前实现说明；兼容矩阵仍有项目自报限制",
+        "本次未执行该系统或复现其性能评测。"
+      ]
+    },
+    {
+      "id": "mastra",
+      "name": "Mastra",
+      "read_date": "2026-09-06",
+      "scope": "OM 官方文档与组件许可边界",
+      "sources": [
+        {
+          "commit": "2e476c33bd8311597a2de14fa31a263a1ce7669a",
+          "evidence": "L",
+          "path": "LICENSE.md",
+          "section": "License text; root/component scope",
+          "url": "https://github.com/mastra-ai/mastra/blob/2e476c33bd8311597a2de14fa31a263a1ce7669a/LICENSE.md"
+        },
+        {
+          "commit": null,
+          "evidence": "D",
+          "path": null,
+          "section": "Observations; Reflections; Scope; Async buffering; Attachments",
+          "url": "https://mastra.ai/docs/memory/observational-memory",
+          "version": "Live official documentation read on 2026-09-06; not assumed identical to repository HEAD"
+        }
+      ],
+      "unverified": [
+        "资源 scope 仍标 experimental；EE 许可完整条款未展开，未作兼容性判断",
+        "本次未执行该系统或复现其性能评测。"
+      ]
+    },
+    {
+      "id": "lossless",
+      "name": "lossless-claw",
+      "read_date": "2026-09-06",
+      "scope": "SQLite 原文与摘要 DAG；MIT",
+      "sources": [
+        {
+          "commit": "c6d06e528867004c85ae84897019d94f0cdbea50",
+          "evidence": "D",
+          "path": "README.md",
+          "section": "What it does; Commands And Skill; Programmatic control; License",
+          "url": "https://github.com/martian-engineering/lossless-claw/blob/c6d06e528867004c85ae84897019d94f0cdbea50/README.md"
+        },
+        {
+          "commit": "c6d06e528867004c85ae84897019d94f0cdbea50",
+          "evidence": "L",
+          "path": "LICENSE",
+          "section": "License text; root/component scope",
+          "url": "https://github.com/martian-engineering/lossless-claw/blob/c6d06e528867004c85ae84897019d94f0cdbea50/LICENSE"
+        }
+      ],
+      "unverified": [
+        "原文保留不证明摘要语义无损；新控制端点有宿主能力条件",
+        "本次未执行该系统或复现其性能评测。"
+      ]
+    },
+    {
+      "id": "aws",
+      "name": "AWS AgentCore Memory",
+      "read_date": "2026-09-06",
+      "scope": "托管服务 GA 公告、短期事件与长期删除 API 文档",
+      "sources": [
+        {
+          "commit": null,
+          "evidence": "M",
+          "section": "GA announcement; self-managed memory strategy",
+          "url": "https://aws.amazon.com/about-aws/whats-new/2025/10/amazon-bedrock-agentcore-available/",
+          "version": "2025-10-13"
+        },
+        {
+          "commit": null,
+          "evidence": "D",
+          "section": "Use short-term memory; Topics",
+          "url": "https://docs.aws.amazon.com/bedrock-agentcore/latest/devguide/using-memory-short-term.html"
+        },
+        {
+          "commit": null,
+          "evidence": "D",
+          "section": "Delete memory records",
+          "url": "https://docs.aws.amazon.com/bedrock-agentcore/latest/devguide/long-term-delete-memory-records.html"
+        }
+      ],
+      "unverified": [
+        "地域、账号配额、级联删除、备份清理、实际数据路径未实测；不推定后端开源"
+      ]
+    },
+    {
+      "id": "google-memory",
+      "name": "Google Memory Bank",
+      "read_date": "2026-09-06",
+      "scope": "GA、memory revisions、模型处理地域的产品文档",
+      "sources": [
+        {
+          "commit": null,
+          "evidence": "M",
+          "section": "December 16, 2025 / Vertex AI Agent Engine GA announcement",
+          "url": "https://docs.cloud.google.com/vertex-ai/docs/release-notes",
+          "version": "2025-12-16 entry"
+        },
+        {
+          "commit": null,
+          "evidence": "D",
+          "section": "Memory creation; Memory update; Memory deletion",
+          "url": "https://docs.cloud.google.com/gemini-enterprise-agent-platform/scale/memory-bank/revisions"
+        },
+        {
+          "commit": null,
+          "evidence": "D",
+          "section": "Memory Bank; Enterprise security / model endpoint region",
+          "url": "https://docs.cloud.google.com/gemini-enterprise-agent-platform/scale"
+        }
+      ],
+      "unverified": [
+        "旧 overview 重定向至 scale；新 overview 子页读取失败，未用其内容推论",
+        "地域/账号可用性、配额、删除后备份和实际运行均未测；不推定后端开源"
+      ]
+    },
+    {
+      "id": "claude",
+      "name": "Claude Code",
+      "read_date": "2026-09-06",
+      "scope": "当前产品的 auto memory 启用、存储与读取限制",
+      "sources": [
+        {
+          "commit": null,
+          "evidence": "D",
+          "section": "Auto memory; Enable or disable; Storage location; How it works",
+          "url": "https://code.claude.com/docs/en/memory"
+        }
+      ],
+      "unverified": [
+        "未取得并审查可认定完整产品实现开源的许可",
+        "没有安装/运行产品；没有把当前在线页视为任一固定旧 release 的行为"
+      ]
+    },
+    {
+      "id": "2506.06326",
+      "name": "Memory OS of AI Agent",
+      "read_date": "2026-09-06",
+      "scope": "arXiv 身份、摘要与版本历史",
+      "sources": [
+        {
+          "commit": null,
+          "evidence": "P",
+          "section": "Title; Abstract; Submission history",
+          "url": "https://arxiv.org/abs/2506.06326v1",
+          "version": "v1",
+          "version_submitted": "2025-05-30"
+        }
+      ],
+      "unverified": [
+        "未全文复核、未复现、未检查配套实现许可或最终同行评审状态"
+      ]
+    },
+    {
+      "id": "2510.18866",
+      "name": "LightMem: Lightweight and Efficient Memory-Augmented Generation",
+      "read_date": "2026-09-06",
+      "scope": "arXiv 身份、摘要与版本历史",
+      "sources": [
+        {
+          "commit": null,
+          "evidence": "P",
+          "section": "Title; Abstract; Submission history",
+          "url": "https://arxiv.org/abs/2510.18866v4",
+          "version": "v4",
+          "version_submitted": "2026-02-28"
+        }
+      ],
+      "unverified": [
+        "未全文复核、未复现、未检查配套实现许可或最终同行评审状态"
+      ]
+    },
+    {
+      "id": "2601.03192",
+      "name": "MemRL: Self-Evolving Agents via Runtime Reinforcement Learning on Episodic Memory",
+      "read_date": "2026-09-06",
+      "scope": "arXiv 身份、摘要与版本历史",
+      "sources": [
+        {
+          "commit": null,
+          "evidence": "P",
+          "section": "Title; Abstract; Submission history",
+          "url": "https://arxiv.org/abs/2601.03192v2",
+          "version": "v2",
+          "version_submitted": "2026-02-12"
+        }
+      ],
+      "unverified": [
+        "未全文复核、未复现、未检查配套实现许可或最终同行评审状态"
+      ]
+    },
+    {
+      "id": "2601.01885",
+      "name": "Agentic Memory: Learning Unified Long-Term and Short-Term Memory Management for Large Language Model Agents",
+      "read_date": "2026-09-06",
+      "scope": "arXiv 身份、摘要与版本历史",
+      "sources": [
+        {
+          "commit": null,
+          "evidence": "P",
+          "section": "Title; Abstract; Submission history",
+          "url": "https://arxiv.org/abs/2601.01885v3",
+          "version": "v3",
+          "version_submitted": "2026-07-23"
+        }
+      ],
+      "unverified": [
+        "未全文复核、未复现、未检查配套实现许可或最终同行评审状态"
+      ]
+    },
+    {
+      "id": "2608.04843",
+      "name": "MemoryCPT: An End-to-End Agent Memory Framework for Cost-Performance Trade-off",
+      "read_date": "2026-09-06",
+      "scope": "arXiv 身份、摘要与版本历史",
+      "sources": [
+        {
+          "commit": null,
+          "evidence": "P",
+          "section": "Title; Abstract; Submission history",
+          "url": "https://arxiv.org/abs/2608.04843v1",
+          "version": "v1",
+          "version_submitted": "2026-08-05"
+        }
+      ],
+      "unverified": [
+        "未全文复核、未复现、未检查配套实现许可或最终同行评审状态"
+      ]
+    },
+    {
+      "id": "2608.07169",
+      "name": "Agent Memory Distillation: Empowering Small LLM Agents with Hierarchical Teacher Memory",
+      "read_date": "2026-09-06",
+      "scope": "arXiv 身份、摘要与版本历史",
+      "sources": [
+        {
+          "commit": null,
+          "evidence": "P",
+          "section": "Title; Abstract; Submission history",
+          "url": "https://arxiv.org/abs/2608.07169v1",
+          "version": "v1",
+          "version_submitted": "2026-08-07"
+        }
+      ],
+      "unverified": [
+        "未全文复核、未复现、未检查配套实现许可或最终同行评审状态"
+      ]
+    },
+    {
+      "id": "2410.10813",
+      "name": "LongMemEval: Benchmarking Chat Assistants on Long-Term Interactive Memory",
+      "read_date": "2026-09-06",
+      "scope": "arXiv 身份、摘要与版本历史",
+      "sources": [
+        {
+          "commit": null,
+          "evidence": "P",
+          "section": "Title; Abstract; Submission history",
+          "url": "https://arxiv.org/abs/2410.10813v2",
+          "version": "v2",
+          "version_submitted": "2025-03-04"
+        }
+      ],
+      "unverified": [
+        "未全文复核、未复现、未检查配套实现许可或最终同行评审状态"
+      ]
+    },
+    {
+      "id": "2605.12493",
+      "name": "LongMemEval-V2: Evaluating Long-Term Agent Memory Toward Experienced Colleagues",
+      "read_date": "2026-09-06",
+      "scope": "arXiv 身份、摘要与版本历史",
+      "sources": [
+        {
+          "commit": null,
+          "evidence": "P",
+          "section": "Title; Abstract; Submission history",
+          "url": "https://arxiv.org/abs/2605.12493v1",
+          "version": "v1",
+          "version_submitted": "2026-05-12"
+        }
+      ],
+      "unverified": [
+        "未全文复核、未复现、未检查配套实现许可或最终同行评审状态"
+      ]
+    },
+    {
+      "id": "2602.16313",
+      "name": "MemoryArena: Benchmarking Agent Memory in Interdependent Multi-Session Agentic Tasks",
+      "read_date": "2026-09-06",
+      "scope": "arXiv 身份、摘要与版本历史",
+      "sources": [
+        {
+          "commit": null,
+          "evidence": "P",
+          "section": "Title; Abstract; Submission history",
+          "url": "https://arxiv.org/abs/2602.16313v1",
+          "version": "v1",
+          "version_submitted": "2026-02-18"
+        }
+      ],
+      "unverified": [
+        "未全文复核、未复现、未检查配套实现许可或最终同行评审状态"
+      ]
+    }
+  ]
+}

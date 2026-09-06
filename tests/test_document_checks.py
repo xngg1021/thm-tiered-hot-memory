@@ -8,6 +8,7 @@ ROOT=Path(__file__).resolve().parents[1]
 spec=importlib.util.spec_from_file_location('document_check',ROOT/'scripts/check_docs.py')
 checker=importlib.util.module_from_spec(spec);spec.loader.exec_module(checker)
 PUBLIC_FILES=('README.md','docs/01-研究综述.md','docs/02-架构设计.md','docs/03-validation-contract.md',
+ 'docs/04-related-work.md','docs/related-work-sources.json',
  'reports/2026-09-06-学术工具复审.md','reports/2026-09-06-文档勘误验证.json','scripts/check_docs.py','scripts/thm_numeric_audit.py')
 class DocumentTests(unittest.TestCase):
     def setUp(self):
@@ -26,4 +27,15 @@ class DocumentTests(unittest.TestCase):
         p=self.root/checker.REPORT;p.write_text(p.read_text().replace(checker.START,checker.START+'Synthetic mutation\n'));self.assertFalse(checker.check(self.root)['historical_report_preserved'])
     def test_bad_relative_link_rejected(self):
         p=self.root/'README.md';p.write_text(p.read_text()+'\n[Missing](missing.md)\n');self.assertEqual(checker.check(self.root)['status'],'FAIL')
+    def test_missing_related_work_is_structured_failure(self):
+        (self.root/'docs/04-related-work.md').unlink()
+        out=checker.check(self.root)
+        self.assertEqual(out['status'],'FAIL')
+        self.assertIn('Expected the six scoped Markdown documents',out['errors'])
+    def test_related_work_links_are_checked(self):
+        p=self.root/'docs/04-related-work.md'
+        p.write_text(p.read_text()+'\n[Missing source](missing-source.json)\n')
+        out=checker.check(self.root)
+        self.assertEqual(out['status'],'FAIL')
+        self.assertTrue(any('missing-source.json' in error for error in out['errors']))
 if __name__=='__main__':unittest.main(verbosity=2)

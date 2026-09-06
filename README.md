@@ -22,6 +22,7 @@ The original “18/18 verified” report is preserved verbatim under an explicit
 ## Repository contents (public layer only)
 
 - [Research review](docs/01-研究综述.md) — cognitive foundations, related systems, benchmarks, ten qualified design principles and research limitations.
+- [Related work](docs/04-related-work.md) — source-backed comparison of memory systems, component licenses, version boundaries and open validation questions.
 - [Architecture](docs/02-架构设计.md) — four tiers, documented v1.0 rules, confirmed specification issues and explicitly unimplemented revisions.
 - [Audit report and errata](reports/2026-09-06-学术工具复审.md) — corrected conclusions followed by the unmodified historical report.
 - [Numeric checks](scripts/thm_numeric_audit.py) — ten standard-library tests of the original public formula and rule counterexamples; not a private-engine test.

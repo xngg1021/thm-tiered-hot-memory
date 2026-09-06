@@ -20,10 +20,11 @@ END = '<!-- original-report:end -->'
 def check(root: Path) -> dict:
     errors: list[str] = []
     md_paths = sorted(root.rglob('*.md'))
-    expected = {'README.md', 'docs/01-研究综述.md', 'docs/02-架构设计.md', REPORT, 'docs/03-validation-contract.md'}
+    expected = {'README.md', 'docs/01-研究综述.md', 'docs/02-架构设计.md', REPORT,
+                'docs/03-validation-contract.md', 'docs/04-related-work.md'}
     actual = {p.relative_to(root).as_posix() for p in md_paths}
     if actual != expected:
-        errors.append('Expected the five scoped Markdown documents')
+        errors.append('Expected the six scoped Markdown documents')
     link_count = json_fences = 0
     for path in md_paths:
         raw = path.read_bytes()
