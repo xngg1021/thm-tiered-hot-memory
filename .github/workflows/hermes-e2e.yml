@@ -1,3 +1,4 @@
+b808999a58ecd8c241d3fdb6c247661f31d72c85
 name: THM Hermes integration
 
 on:
@@ -8,6 +9,11 @@ on:
       - "plugins/**"
       - "pyproject.toml"
       - "research/hermes_e2e.py"
+      - "research/runtime_cli_e2e.py"
+      - "README*.md"
+      - "docs/08-testing-and-release.md"
+      - "docs/11-harness-adapters.md"
+      - "CHANGELOG.md"
       - ".github/workflows/hermes-e2e.yml"
 
 permissions:
