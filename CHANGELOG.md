@@ -2,7 +2,9 @@
 
 This changelog is reconstructed from the repository's existing Git history. It does not invent retrospective semantic versions for commits that did not carry an explicit version identity.
 
-## 1.4.0 development — shadow residency control
+## 1.4.0 accepted/stable — `e6e4dda5835e3cb345207457d5491131c6959b2c`
+
+Archive: `archive/v1.4.0-stable`
 
 - Adds explicit `resident_hit`, `resident_miss`, `hard_miss`, `planned_retrieval`, `stale_resident_failure` and bounded `prefetch` telemetry without converting observations into activity events. Raw misses and `avoidable=true` residency misses are reported separately; unknown telemetry fields fail instead of silently changing semantics.
 - Separates all observed tasks from explicit demand tasks, so prefetch-only and planned-retrieval-only runs cannot dilute residency need rates. `min_item_demands` is enforced as a real per-item evidence gate; low-support current T0 is protected/reviewed rather than scored as zero-value.
@@ -13,6 +15,8 @@ This changelog is reconstructed from the repository's existing Git history. It d
 - Adds a bounded **shadow resident-budget feedback** step driven by avoidable miss pressure, context pressure, prefetch pollution and stale-resident risk. Raw unavoidable misses do not grow capacity, and the controller never mutates Hermes/T0 budgets automatically.
 - Adds a non-authoritative local catalog for resident-cost, counterfactual miss-cost and locator measurement. The catalog cannot override canonical tier/status/validity/pin/source state; stale catalog identities and unexpected wrapper fields fail explicitly.
 - Preserves the existing T0–T3 model and the older activity-only `plan` command. A pinned nonresident item is not auto-promoted. 1.4 does not auto-promote/demote tiers and makes no production optimum claim without held-out runtime/task evidence.
+- Feature PR #5 was merged with a normal merge commit after PR-level validation. On the accepted merge SHA, main correctness run `34059895478`, Hermes run `34059895474`, and harness run `34059895461` succeeded. Retrieval run `34059936492` was skipped because no retrieval-path files changed; it is not a new Protocol 2 result.
+- Release evidence: `reports/2026-09-07-v1.4-closeout.md` and `reports/2026-09-07-v1.4-closeout.json`.
 
 ## Unreleased — version-history recovery controls
 
@@ -57,7 +61,7 @@ Archive: `archive/v1.1.1`
 
 Archive: `archive/v1.1.0`
 
-- Hardens the public index-maintenance engine around source identity, profile-bound storage, ambiguous updates, invalid events/dates, repeat feedback, review scheduling, publication and migration behavior.
+- Hardens the public index-maintenance engine around source identity, profile-bound storage, ambiguous updates, invalid dates/events, retry behavior, confirmation scheduling, validity, pins, conflict rejection, write failure, migration and CLI error codes.
 - Adds engine/document regression coverage and cross-platform CI.
 - Historical evidence: `reports/2026-09-06-engine-hardening.json` records `engine_version: 1.1.0`.
 

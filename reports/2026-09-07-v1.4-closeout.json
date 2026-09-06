@@ -1,0 +1,55 @@
+{
+  "schema_version": 1,
+  "release": "1.4.0",
+  "date": "2026-09-07",
+  "repository": "xngg1021/thm-tiered-hot-memory",
+  "feature_pr": 5,
+  "feature_base": "deb86b40b97e0fc96e1905f66ae180836c38b1fa",
+  "feature_head": "a1bd23d6abfa1181327d9ec23887cf3903be3ea0",
+  "accepted_merge_commit": "e6e4dda5835e3cb345207457d5491131c6959b2c",
+  "archive_branch": "archive/v1.4.0-stable",
+  "archive_policy": "immutable milestone pointer",
+  "main_push_workflows": {
+    "correctness": {
+      "run_id": 34059895478,
+      "conclusion": "success",
+      "scope": "cross-platform correctness/unit/numeric/document/version-history/whitespace checks"
+    },
+    "hermes_integration": {
+      "run_id": 34059895474,
+      "conclusion": "success",
+      "scope": "known-good and current-reviewed Hermes provider lifecycle"
+    },
+    "harness_integrations": {
+      "run_id": 34059895461,
+      "conclusion": "success",
+      "scope": "multi-harness integration matrix"
+    },
+    "retrieval_benchmark": {
+      "run_id": 34059936492,
+      "conclusion": "skipped",
+      "reason": "feature merge did not change retrieval-path files; workflow path gate skipped the heavy Protocol 2 benchmark",
+      "evidence_interpretation": "not a new retrieval benchmark result"
+    }
+  },
+  "accepted_capabilities": [
+    "strict shadow miss/prefetch telemetry with raw-versus-avoidable miss separation",
+    "explicit all-task versus demand-task denominators and per-item evidence gates",
+    "non-authoritative strict residency measurement catalog",
+    "locator-only T1 warm-directory projection",
+    "bounded exact-token shadow T0 residency recommendation",
+    "bounded current-seed co-demand prefetch recommendation",
+    "bounded shadow resident-budget feedback",
+    "opt-in Hermes T1 locator snapshot with session-boundary refresh and target verification"
+  ],
+  "preserved_boundaries": [
+    "T0-T3 tier definitions remain distinct and unchanged",
+    "no automatic tier promotion or demotion",
+    "no automatic Hermes/T0 budget mutation",
+    "mention/display/retrieval/prefetch never become hit or confirm",
+    "warm-directory locator is navigation metadata, not source evidence",
+    "adaptive-policy superiority is not claimed without held-out runtime/task A/B evidence",
+    "retrieval Protocol 2 evidence is historical and was not rerun for a non-retrieval code change"
+  ],
+  "private_data_in_release": false
+}
