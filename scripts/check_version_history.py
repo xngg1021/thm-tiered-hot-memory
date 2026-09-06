@@ -44,6 +44,29 @@ def require_commit(sha: str, label: str) -> None:
         raise HistoryError(f"{label}: {sha} is not an ancestor of the checked-out history")
 
 
+def require_archive_ref(branch: str, expected_sha: str, label: str) -> None:
+    """Require a locally fetched archive ref to point at the manifest commit."""
+    candidates = (
+        f"refs/remotes/origin/{branch}",
+        f"refs/heads/{branch}",
+    )
+    observed = None
+    for ref in candidates:
+        result = git("rev-parse", "--verify", f"{ref}^{{commit}}", check=False)
+        if result.returncode == 0:
+            observed = result.stdout.strip()
+            break
+    if observed is None:
+        raise HistoryError(
+            f"{label}: archive ref {branch!r} is not present in the fetched Git refs; "
+            "CI must checkout with full branch history"
+        )
+    if observed != expected_sha:
+        raise HistoryError(
+            f"{label}: archive ref {branch!r} moved: expected {expected_sha}, observed {observed}"
+        )
+
+
 def show_text(sha: str, path: str) -> str:
     return git("show", f"{sha}:{path}").stdout
 
@@ -118,6 +141,7 @@ def main() -> int:
             raise HistoryError(f"{sid}: milestone must be classified exact-git-snapshot")
 
         require_commit(sha, sid)
+        require_archive_ref(branch, sha, sid)
         introduced = snapshot.get("introduced_commit")
         if introduced is not None:
             require_commit(str(introduced), f"{sid}.introduced_commit")
@@ -145,7 +169,7 @@ def main() -> int:
 
     print(
         f"version history OK: {len(snapshots)} milestone snapshots, "
-        f"{len(boundaries)} development boundaries"
+        f"{len(boundaries)} development boundaries, archive refs pinned"
     )
     return 0
 
