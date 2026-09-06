@@ -1,0 +1,5 @@
+__pycache__/
+index.json
+index.json.bak*
+thm.conf
+warm/

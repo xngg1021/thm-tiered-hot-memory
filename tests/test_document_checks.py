@@ -9,7 +9,7 @@ spec=importlib.util.spec_from_file_location('document_check',ROOT/'scripts/check
 checker=importlib.util.module_from_spec(spec);spec.loader.exec_module(checker)
 PUBLIC_FILES=('README.md','docs/01-研究综述.md','docs/02-架构设计.md','docs/03-validation-contract.md',
  'docs/04-related-work.md','docs/related-work-sources.json',
- 'reports/2026-09-06-学术工具复审.md','reports/2026-09-06-文档勘误验证.json','scripts/check_docs.py','scripts/thm_numeric_audit.py')
+ 'reports/2026-09-06-学术工具复审.md','reports/2026-09-06-文档勘误验证.json','scripts/check_docs.py','scripts/thm_numeric_audit.py','scripts/thm.py')
 class DocumentTests(unittest.TestCase):
     def setUp(self):
         self.temp=tempfile.TemporaryDirectory();self.root=Path(self.temp.name)

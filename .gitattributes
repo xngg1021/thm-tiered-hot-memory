@@ -1,0 +1,5 @@
+# Keep LF in the working tree on all platforms: the document checker
+# (scripts/check_docs.py) reads raw bytes and rejects CRLF.
+*.md text eol=lf
+*.py text eol=lf
+*.json text eol=lf

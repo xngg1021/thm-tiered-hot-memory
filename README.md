@@ -27,6 +27,7 @@ The original “18/18 verified” report is preserved verbatim under an explicit
 - [Audit report and errata](reports/2026-09-06-学术工具复审.md) — corrected conclusions followed by the unmodified historical report.
 - [Numeric checks](scripts/thm_numeric_audit.py) — ten standard-library tests of the original public formula and rule counterexamples; not a private-engine test.
 - [Document checks](scripts/check_docs.py) — local links, JSON examples, historical-report preservation and scope labels.
+- [Paging engine](scripts/thm.py) — sanitized public copy of the tier-paging engine (seed, audit, hit, confirm, register, manifest). Memory locations come from `THM_MEM_DIR`, `thm.conf`, or a profile-agnostic default; no private data is embedded.
 - [Validation record](reports/2026-09-06-文档勘误验证.json) — executed checks and their limits.
 
 From this repository, with Python 3.10 or newer:
@@ -34,9 +35,10 @@ From this repository, with Python 3.10 or newer:
 ```bash
 python scripts/thm_numeric_audit.py
 python scripts/check_docs.py
+python scripts/thm.py          # prints engine usage; reads only the memory dir you configure
 ```
 
-Neither command contacts scholarly APIs, reads personal memory, mutates Hermes configuration or runs an LLM benchmark. Native Windows/macOS and a live Hermes session were not exercised in this correction. Private warm-tier notes, memory indexes and engine scripts intentionally remain outside this repository.
+The two check commands do not contact scholarly APIs, read personal memory, mutate Hermes configuration or run an LLM benchmark. Native Windows/macOS and a live Hermes session were not exercised in this correction. Private warm-tier notes and memory indexes intentionally remain outside this repository; the engine script here is a sanitized copy with no private data.
 
 ## Related
 
