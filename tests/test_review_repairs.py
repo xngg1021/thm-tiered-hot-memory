@@ -78,8 +78,12 @@ class RetrievalRepairs(unittest.TestCase):
 
     def test_unrelated_sqlite_not_modified(self):
         path = self.path.parent/'native.sqlite'
-        with sqlite3.connect(path) as db:
+        db = sqlite3.connect(path)
+        try:
             db.execute('CREATE TABLE messages(id INTEGER PRIMARY KEY, content TEXT)')
+            db.commit()
+        finally:
+            db.close()
         before = path.read_bytes()
         with self.assertRaises(ValueError):
             SearchIndex(path)
@@ -144,9 +148,13 @@ class RetrievalRepairs(unittest.TestCase):
         enc = lambda texts: [[1, 0] if 'apple' in t or t == 'query' else [0, 1] for t in texts]
         self.index.embed('s', enc, 'm')
         self.assertEqual(self.index.search('s','query',mode='dense',encoder=enc,model_id='m')['ranked_ids'][0], 'a')
-        with sqlite3.connect(self.path) as db:
+        db = sqlite3.connect(self.path)
+        try:
             db.execute("UPDATE vectors SET vector='[0,1]' WHERE id='a'")
             db.execute("UPDATE vectors SET vector='[1,0]' WHERE id='b'")
+            db.commit()
+        finally:
+            db.close()
         self.assertEqual(self.index.search('s','query',mode='dense',encoder=enc,model_id='m')['ranked_ids'][0], 'b')
 
     def test_result_cache_returns_independent_objects(self):
@@ -265,7 +273,12 @@ class ObservationRepairs(unittest.TestCase):
     def test_output_cannot_be_a_source_database(self):
         with tempfile.TemporaryDirectory() as t:
             path = Path(t)/'state.db'
-            with sqlite3.connect(path) as db: db.execute('CREATE TABLE messages(id INTEGER)')
+            db = sqlite3.connect(path)
+            try:
+                db.execute('CREATE TABLE messages(id INTEGER)')
+                db.commit()
+            finally:
+                db.close()
             before = path.read_bytes()
             rows, _ = scan([self.record('alpha bravo')], [self.anchor()], scope='s', now=self.now)
             with self.assertRaises(ValueError):
@@ -283,7 +296,8 @@ class ObservationRepairs(unittest.TestCase):
 class SourceRepairs(unittest.TestCase):
     def make(self, root):
         p = Path(root)/'state.db'
-        with sqlite3.connect(p) as db:
+        db = sqlite3.connect(p)
+        try:
             db.executescript('''CREATE TABLE sessions(id TEXT, source TEXT, hidden INTEGER, profile_name TEXT);
               CREATE TABLE messages(id INTEGER, session_id TEXT, role TEXT, content TEXT,
                 timestamp REAL, active INTEGER, _compressed_summary INTEGER);
@@ -292,6 +306,9 @@ class SourceRepairs(unittest.TestCase):
               INSERT INTO messages VALUES(1,'a','assistant','background',1,1,0);
               INSERT INTO messages VALUES(2,'a','assistant','background',2,1,0);
               INSERT INTO messages VALUES(3,'b','assistant','wanted',3,1,0);''')
+            db.commit()
+        finally:
+            db.close()
         return p
     def test_background_rows_do_not_consume_output_limit(self):
         with tempfile.TemporaryDirectory() as t:
