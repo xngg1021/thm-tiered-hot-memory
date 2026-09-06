@@ -63,6 +63,8 @@ def check(root: Path) -> dict:
                 errors.append(f'{relative}: trailing whitespace')
             if text.count('```') % 2:
                 errors.append(f'{relative}: unpaired triple-backtick fence')
+            if relative.startswith('README') and re.search(r'\*\*[^*\n]+\*\*[\u3400-\u9fff]', text):
+                errors.append(f'{relative}: strong emphasis closes directly before CJK text')
             for target in re.findall(r'\[[^\]\n]+\]\(([^\s)]+)\)', text):
                 try:
                     parsed = urlsplit(target)

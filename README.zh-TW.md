@@ -8,10 +8,10 @@ THM 是面向 agent harness 的本地優先四層記憶工具。它從 Hermes Ag
 
 ## 四個層級
 
-- **T0——熱層：**由宿主注入的原生永久上下文記憶。
-- **T1——溫層：**按需載入的主題材料。
-- **T2——冷層：**在明確證據預算內檢索的歷史會話和檔案。
-- **T3——外部層：**需要時可重新訪問的來源位置和引用。
+- **T0——熱層：** 由宿主注入的原生永久上下文記憶。
+- **T1——溫層：** 按需載入的主題材料。
+- **T2——冷層：** 在明確證據預算內檢索的歷史會話和檔案。
+- **T3——外部層：** 需要時可重新訪問的來源位置和引用。
 
 THM 將活躍度、有效性、任務相關性與顯式固定分開。提及不等於 hit，檢索不證明有用，寫入也不等於使用事件。
 
@@ -19,7 +19,7 @@ THM 將活躍度、有效性、任務相關性與顯式固定分開。提及不�
 
 加固後的 1.1.1 索引 CLI 維護 profile 繫結的記憶後設資料、精確事件身份、遷移預覽、pin/unpin 語義和故障安全寫入。1.2 檢索包加入按 scope 隔離的 FTS5、可選本地句向量、倒數排名融合、計入預算的上下文裝載、零權重 mention observation、多種衰減策略比較及可復現實驗指令碼。
 
-**THM 1.3 加入 harness-neutral 只讀召回層。**它提供獨立 Hermes `MemoryProvider`、OpenAI Agents SDK `FunctionTool`、LangChain/LangGraph `BaseRetriever` 和標準 MCP v2 stdio 服務。OpenClaw 2026.9.x、Claude Code、Codex CLI 與 Gemini CLI 透過獨立的只讀 MCP 相容橋驗證，因此不會為了舊一代客戶端削弱 MCP v2 主服務契約。參見 [Harness 適配](docs/11-harness-adapters.md)。
+**THM 1.3 加入 harness-neutral 只讀召回層。** 它提供獨立 Hermes `MemoryProvider`、OpenAI Agents SDK `FunctionTool`、LangChain/LangGraph `BaseRetriever` 和標準 MCP v2 stdio 服務。OpenClaw 2026.9.x、Claude Code、Codex CLI 與 Gemini CLI 透過獨立的只讀 MCP 相容橋驗證，因此不會為了舊一代客戶端削弱 MCP v2 主服務契約。參見 [Harness 適配](docs/11-harness-adapters.md)。
 
 檢索或 scan 不會改寫原生來源記憶。Harness 介面卡以只讀方式開啟派生 THM 召回資料庫，除非顯式啟用了宿主專屬 live-session cache 重新整理。派生 SQLite 資料庫會在建立 THM 表之前拒絕無關或原生資料庫目標。
 
