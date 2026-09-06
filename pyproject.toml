@@ -16,5 +16,8 @@ semantic = ["sentence-transformers>=3,<6", "numpy>=1.26,<3"]
 [project.scripts]
 thm-recall = "thm.__main__:main"
 
+[project.entry-points."hermes_agent.memory_providers"]
+thm = "thm.hermes_plugin:THMProvider"
+
 [tool.setuptools.packages.find]
 include = ["thm*", "scripts"]
