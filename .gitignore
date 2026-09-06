@@ -1,5 +1,12 @@
 __pycache__/
+*.pyc
+.venv/
 index.json
 index.json.bak*
+index.previous.json
+index.lock
+legacy-index.backup.json
+.thm/
+.thm-tmp-*
 thm.conf
 warm/

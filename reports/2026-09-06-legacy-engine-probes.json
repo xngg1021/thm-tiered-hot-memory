@@ -1,0 +1,174 @@
+{
+  "date": "2026-09-06",
+  "target_commit": "4e9b5d8ed5a05c9a538f385acc8632e641ae5908",
+  "source_blob": "36e8a5af570c644d55ecee1f7577aaac53c95c0b",
+  "source_bytes": 11677,
+  "python": "3.13.5",
+  "scope": "Actual public-engine functions on synthetic temporary stores; no private data or live Hermes",
+  "diagnostics_confirmed": 13,
+  "probe_errors": 0,
+  "observations": [
+    {
+      "case": "audit_equal_similarity_crashes",
+      "diagnostic": "CONFIRMED",
+      "expected": "Audit sorts equal scores deterministically without comparing dictionaries",
+      "observed": {
+        "type": "TypeError",
+        "message": "'<' not supported between instances of 'dict' and 'dict'"
+      },
+      "crashes_before_sorting_report": true
+    },
+    {
+      "case": "seed_prefix_collision_across_stores",
+      "diagnostic": "CONFIRMED",
+      "source_entries": 2,
+      "registered_entries": 1,
+      "shared_prefix_length": 24,
+      "observed": "seed 完成: 新登记 1 条, 库内共 1 条",
+      "surviving_store": "MEMORY.md"
+    },
+    {
+      "case": "changing_memory_directory_does_not_isolate_index",
+      "diagnostic": "CONFIRMED",
+      "profile_B_source_contains_alpha": false,
+      "shared_index": true,
+      "index_entry_count": 2,
+      "profile_A_entry_event_count_after_B_hit": 2,
+      "observed": "已记录 hit: e001 A→3.00 :: ALPHA_ONLY setting enabled"
+    },
+    {
+      "case": "invalid_and_future_dates_are_fresh",
+      "diagnostic": "CONFIRMED",
+      "observed": {
+        "not-a-date": {
+          "age_days": 0,
+          "score": 2.0
+        },
+        "9999-12-31": {
+          "age_days": 0,
+          "score": 2.0
+        },
+        "2026-09-06": {
+          "age_days": 0,
+          "score": 2.0
+        }
+      },
+      "expected": "Invalid/future timestamps are rejected or quarantined, not assigned maximum recency"
+    },
+    {
+      "case": "identical_hit_retries_inflate_activity",
+      "diagnostic": "CONFIRMED",
+      "identical_hit_calls": 2,
+      "events": [
+        {
+          "t": "2026-09-06",
+          "type": "create"
+        },
+        {
+          "t": "2026-09-06",
+          "type": "hit",
+          "note": "same retried request"
+        },
+        {
+          "t": "2026-09-06",
+          "type": "hit",
+          "note": "same retried request"
+        }
+      ],
+      "activity_after_calls": 5.0,
+      "note": "No request/event ID is available to distinguish a retry from another genuine use."
+    },
+    {
+      "case": "same_day_confirmation_advances_to_90_days",
+      "diagnostic": "CONFIRMED",
+      "same_day_calls": 3,
+      "stages": [
+        {
+          "stage": 1,
+          "next_review": "2026-09-13"
+        },
+        {
+          "stage": 2,
+          "next_review": "2026-10-06"
+        },
+        {
+          "stage": 3,
+          "next_review": "2026-12-05"
+        }
+      ],
+      "evidence_reference_required": false
+    },
+    {
+      "case": "ambiguous_update_silently_uses_first_match",
+      "diagnostic": "CONFIRMED",
+      "matching_candidates": 2,
+      "after_event_counts": [
+        2,
+        1
+      ],
+      "observed": "已确认: e001, 下次重校验 2026-09-13, A→2.50",
+      "expected": "Ambiguous update requests identify an exact record or return ambiguity."
+    },
+    {
+      "case": "two_reader_interleaving_loses_first_update",
+      "diagnostic": "CONFIRMED",
+      "interleaving": [
+        "read-A",
+        "read-B",
+        "write-A",
+        "write-B"
+      ],
+      "final_event_notes": [
+        null,
+        "writer-B"
+      ],
+      "conflict_reported": false,
+      "lost_event": "writer-A"
+    },
+    {
+      "case": "interrupted_save_destroys_previous_valid_index",
+      "diagnostic": "CONFIRMED",
+      "failure_injected": "json.dump wrote one byte then raised OSError",
+      "old_valid_file_preserved": false,
+      "remaining_bytes": "{",
+      "reload": {
+        "type": "JSONDecodeError",
+        "message": "Expecting property name enclosed in double quotes: line 1 column 2 (char 1)"
+      },
+      "scope": "Function-boundary fault injection, not an OS power-loss test"
+    },
+    {
+      "case": "high_priority_exemption_and_misleading_report",
+      "diagnostic": "CONFIRMED",
+      "age_days": 1000,
+      "score": 0.0316069770620507,
+      "demotion_threshold": 0.6,
+      "demotion_suggested": false,
+      "misleading_output": "热层条目激活均在阈值之上"
+    },
+    {
+      "case": "relocation_and_unknown_events_increase_activity",
+      "diagnostic": "CONFIRMED",
+      "promotion_event_score": 1.5,
+      "unknown_event_score": 1.0,
+      "expected": "Relocation is state metadata, unknown events do not silently acquire a positive weight"
+    },
+    {
+      "case": "cli_usage_and_failure_status_contracts",
+      "diagnostic": "CONFIRMED",
+      "missing_hit_argument": {
+        "exit": 1,
+        "exception": "IndexError"
+      },
+      "unknown_command_exit": 0,
+      "missing_record_exit": 0
+    },
+    {
+      "case": "configured_memory_path_does_not_expand_tilde",
+      "diagnostic": "CONFIRMED",
+      "configured": "~/synthetic-not-real-memories",
+      "resolved": "~/synthetic-not-real-memories",
+      "tilde_expanded": false
+    }
+  ]
+}

@@ -1,0 +1,138 @@
+{
+  "date": "2026-09-06",
+  "base_commit": "570570162039f600cf323a856104cf88c8d334b5",
+  "engine_version": "1.1.0",
+  "python": "3.13.5",
+  "platform": "Linux",
+  "commands": [
+    {
+      "argv": [
+        "python",
+        "-m",
+        "unittest",
+        "discover",
+        "-s",
+        "tests",
+        "-v"
+      ],
+      "tests": 66,
+      "passed": 66,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "log": "reports/2026-09-06-engine-tests.txt"
+    },
+    {
+      "argv": [
+        "python",
+        "scripts/thm_numeric_audit.py"
+      ],
+      "tests": 10,
+      "passed": 10,
+      "log": "reports/2026-09-06-numeric-tests.txt"
+    }
+  ],
+  "coverage": {
+    "direct_engine_tests": 50,
+    "synthetic_document_checker_tests": 16,
+    "real_child_processes": true,
+    "real_model": false,
+    "real_user_data": false,
+    "native_windows_mac_local": false,
+    "power_loss_test": false,
+    "full_remote_docs_checked_locally": false
+  },
+  "note": "Materialized repair subset; unchanged remote documents retained by base tree. CI results are separate, not inferred. File list excludes this self-referential record.",
+  "files": {
+    ".github/workflows/qa.yml": {
+      "bytes": 909,
+      "sha256": "2993a07ffd31636da01bdb2a739f6f21f4c784d57594f52d475f66a6bf017449",
+      "git_blob": "c5ff6dd1f034aabc38bdc33b8d4d96792de608b3"
+    },
+    ".gitignore": {
+      "bytes": 141,
+      "sha256": "5a6dc745e28990448f1825baf8d2655645599320b03e12f303d1d9e5b76c617e",
+      "git_blob": "3a96bc49eb450184fced0771356e464c92005a45"
+    },
+    "README.md": {
+      "bytes": 4202,
+      "sha256": "16d477917baa6ec0a9a3a1e8b77fe0ba3fba2a200b3af22eb428095d73a5f7be",
+      "git_blob": "e6a105234a54182a355ce9d6721c744d3686c778"
+    },
+    "docs/05-hermes-upstream.md": {
+      "bytes": 3389,
+      "sha256": "712beb8b3010398a62dde1be1f9496c4f59bf947c62a63615d2419be3ad271a7",
+      "git_blob": "ede9e3846127f9231d7184fc6bf2201f966b98af"
+    },
+    "docs/06-engine-guide.md": {
+      "bytes": 8209,
+      "sha256": "4b8c5a0327ef7508023963eb1ee192e9663d728e5e6b9f8eda7dcc8cc534bcaa",
+      "git_blob": "b6aeeff87236a6d087cf1272d60080504f32b180"
+    },
+    "docs/07-implementation-status.md": {
+      "bytes": 3541,
+      "sha256": "d5ada458640e7e27a49c66fb5d2b4f598ef1bcb750b2297bae031f93b79a6e76",
+      "git_blob": "6c8162896836fc2fc680a86a7495fbb20939cb8e"
+    },
+    "docs/08-testing-and-release.md": {
+      "bytes": 3335,
+      "sha256": "374ff6bd2341cbb21983cc102068e1d715b82d5782d66e15d7249ab9dbc176fd",
+      "git_blob": "105bf3421989a6b1ec82a09344b1e342621a0dfc"
+    },
+    "docs/README.md": {
+      "bytes": 2904,
+      "sha256": "e49193ad59ae34bcc20c05b946b43fe30063c268bbdfde0d80abf5fff7bc7362",
+      "git_blob": "a637d8799afb3268268601e1e64418ca390306c7"
+    },
+    "reports/2026-09-06-engine-hardening.md": {
+      "bytes": 3792,
+      "sha256": "9585a75960b1cc84b418c4c993597d8ac269712ee970a6f649de7df2d14b6a46",
+      "git_blob": "fee7fba8c60e407fcb6829407109a0ab22cb7b45"
+    },
+    "reports/2026-09-06-engine-tests.txt": {
+      "bytes": 7323,
+      "sha256": "52f8d921cd80e4651cd7ac42bbe44c674ac5517b48157eacb4539e85fa881a0d",
+      "git_blob": "46e44822166f90f46e2037c9f5b7c7562be093bb"
+    },
+    "reports/2026-09-06-legacy-engine-probes.json": {
+      "bytes": 5216,
+      "sha256": "b835dab40b5e2e4dde2b538690288ab359841c2093bcf2bfece37b5e4c4b5297",
+      "git_blob": "6499948e97b6f47acf7171e4874232f23754712b"
+    },
+    "reports/2026-09-06-numeric-tests.txt": {
+      "bytes": 2204,
+      "sha256": "9e19d550d261c9c3e95c2353f807d03a86a23f36697c15c60cacbd515ef0ef45",
+      "git_blob": "3775e3eca75673c3a83d153a946a4bed6191dd39"
+    },
+    "scripts/check_docs.py": {
+      "bytes": 6047,
+      "sha256": "bb404a3973bb63b23aba942f4fb5306767ef5cf8aa1cb7124a907edbb77b6c1c",
+      "git_blob": "41a655007c58bfca79526d702228aaa5a87fc615"
+    },
+    "scripts/reproduce_legacy_engine_findings.py": {
+      "bytes": 12666,
+      "sha256": "f3889008656d88cbc4a5e3f63b29f3ecd5eda19139733bd60c53e370c8983a0f",
+      "git_blob": "9adebd04a7687a6f1440788667b6f9941cddac05"
+    },
+    "scripts/thm.py": {
+      "bytes": 28581,
+      "sha256": "0fe08f929c1331652bb4aa71992612ad24d7d6e900a92f71f915fda207f1157a",
+      "git_blob": "a034eab50c8a3166b0cb3b64836a6a94db9e9b6a"
+    },
+    "scripts/thm_numeric_audit.py": {
+      "bytes": 4576,
+      "sha256": "308e9c95656e3780637bde66ca334bf9babb2325359c746bbc2cdd0e7dbade69",
+      "git_blob": "e6c65de06930b5ad9697a0dd83116bd548e01aa3"
+    },
+    "tests/test_document_checks.py": {
+      "bytes": 4846,
+      "sha256": "122c425eb98f28dca2aeb4909eed37593317752d01d52e2b8c678f3b8f97e2ba",
+      "git_blob": "e89a106e669b940338a3393dfac7532ba8dc3477"
+    },
+    "tests/test_engine.py": {
+      "bytes": 17696,
+      "sha256": "f6b489003cfdc245b1be9b9b7577996c2f69f2da3942f2d24710cbd2ed3ddae0",
+      "git_blob": "75ee58635faad952e465fb930adf853918a9f3f6"
+    }
+  }
+}
