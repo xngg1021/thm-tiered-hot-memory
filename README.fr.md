@@ -1,19 +1,55 @@
 # THM — Tiered Hot Memory
 
-[English](README.md) | [简体中文](README.zh-CN.md) | [繁體中文](README.zh-TW.md) | [日本語](README.ja.md) | [한국어](README.ko.md) | [Español](README.es.md) | [Français](README.fr.md) | [Deutsch](README.de.md)
+[English](README.md) | [简体中文](README.zh-CN.md) | [繁體中文](README.zh-TW.md) | [日本語](README.ja.md) | [한국어](README.ko.md) | [Español](README.es.md) | Français | [Deutsch](README.de.md)
 
-Auteur : Junfu Shi (SJF, xngg1021) · Licence : [MIT](LICENSE) · Version stable : **1.3.0**
+Auteur : Junfu Shi (SJF, xngg1021) · Licence : [MIT](LICENSE)
 
-THM est une mémoire locale à quatre niveaux pour les agent harnesses. La version 1.3 ajoute une couche de recall en lecture seule et indépendante du harness : Hermes `MemoryProvider`, OpenAI Agents `FunctionTool`, LangChain/LangGraph `BaseRetriever`, MCP v2 sur stdio et un pont legacy MCP séparé pour OpenClaw 2026.9.x. Claude Code, Codex CLI et Gemini CLI sont vérifiés avec des versions figées de leurs CLI réels et un E2E du cycle de vie de la même commande serveur. THM ne réécrit pas la mémoire source et n'effectue aucun appel de modèle supplémentaire.
+## Quatre niveaux
 
-LoCoMo Protocol 2 couvre 10 conversations et 1 986 questions ; le dénominateur principal en contient 1 532. Avec 600 evidence tokens, la couverture any-gold de literal / sparse / dense / hybrid est de **56,79 % / 69,39 % / 51,11 % / 71,34 %**. Il s'agit d'une mesure de rappel des preuves, pas de l'exactitude des réponses. [Rapport complet](reports/2026-09-06-recall-protocol2.md)
+THM est une mémoire locale à quatre niveaux pour les agent harnesses : T0 contexte permanent natif, T1 dossiers thématiques à la demande, T2 historique recherché sous budget explicite, T3 références externes revisitées au besoin. Activité, validité, pertinence et pin sont distincts : mention, retrieval et write ne prouvent pas un hit utile.
+
+## Fonctionnalités
+
+1.1.1 fournit un index CLI robuste ; 1.2 ajoute FTS5 par scope, embeddings locaux facultatifs, RRF, packing budgété, observations de poids nul, comparaisons de decay et évaluations reproductibles. **1.3 ajoute une couche de recall en lecture seule et indépendante du harness** : Hermes `MemoryProvider`, OpenAI Agents `FunctionTool`, LangChain/LangGraph `BaseRetriever` et MCP v2 stdio. OpenClaw 2026.9.x, Claude Code, Codex CLI et Gemini CLI utilisent un pont MCP séparé en lecture seule, testé avec des versions réelles figées. Les sources natives ne sont jamais réécrites et aucun appel modèle supplémentaire n'est effectué.
+
+## Mesures LoCoMo
+
+Protocol 2 couvre 10 conversations, 1 986 questions et un dénominateur principal de 1 532 questions. À 600 tokens, any-gold vaut **56,79 % literal / 69,39 % sparse / 51,11 % dense / 71,34 % hybrid** ; all-gold vaut **46,61 % / 56,53 % / 40,01 % / 57,64 %**. Ce sont des métriques de preuve, pas d'exactitude des réponses. Le p95 retrieval+packing est **34,55 ms sparse / 57,88 ms hybrid**. À 300/600/1200 tokens, sparse atteint **60,57/69,39/76,17 %** avec **20,39/34,55/61,78 ms**. [Rapport](reports/2026-09-06-recall-protocol2.md) · [JSON](reports/2026-09-06-recall-protocol2-summary.json).
+
+## Intégrations
+
+| Surface | THM 1.3 |
+| --- | --- |
+| Hermes | provider pip, setup/config, prefetch, `sync_turn` optionnel, session hooks, write≠hit |
+| OpenAI Agents | `OpenAIAgentsTHM.tool` en lecture seule |
+| LangChain/LangGraph | `THMLangChainRetriever` |
+| MCP v2 | `thm-mcp`, `thm_recall` et `thm_status` typés |
+| OpenClaw | `thm-mcp-legacy`, probe réel |
+| Claude/Codex/Gemini | CLI réels figés, commande exacte, discovery/call lifecycle, zéro appel modèle |
+
+## Installation
 
 ```bash
 python -m pip install -e .
+python -m thm import-files ./notes --db ./state/recall.sqlite3 --scope demo
 python -m thm search --db ./state/recall.sqlite3 --scope demo "Which database port?" --budget 600
 thm-mcp --db /absolute/path/recall.sqlite3 --scope demo --budget 600
 ```
 
-Le statut 1.3.0 accepted/stable n'est confirmé que par une référence formelle pointant vers le SHA Git exact ayant réussi les matrices complètes correctness, Hermes et harness. THM ne revendique pas encore une exactitude E2E réelle, une courbe de decay universellement optimale, le déplacement ou la suppression automatique entre niveaux, ni un gain de latence perçue.
+Extras : `.[tokenizer,semantic]`, `.[openai]`, `.[langchain]`, `.[mcp]`, `.[harnesses]`. Le pont compatible est `thm-mcp-legacy`.
 
-Documentation : [index](docs/README.md) · [Harness](docs/11-harness-adapters.md) · [historique](docs/12-version-history.md) · [changements](CHANGELOG.md)
+## Cycle Hermes
+
+`sync_turns` est désactivé par défaut. Activé explicitement, il copie seulement les textes user/assistant vers un scope T2 dérivé par session ; lignes system et résumés de compression sont exclus. `on_memory_write` reste un signal de refresh. THM conserve pre-compress API v1 car la cache dérivée n'est pas propriétaire du transcript canonique et ne peut promettre checkpoint-v2 fail-closed.
+
+## Calibration du decay
+
+`decay_from_index.py` exporte uniquement IDs, coûts et dates de hit, sans texte, résumés, clés ni confirmations ; `decay_replay.py` rejoue cette trace en privé. Sans trace réelle, aucune demi-vie optimale personnelle n'est revendiquée.
+
+## Limites de preuve
+
+THM ne revendique pas encore exactitude E2E réelle, decay universellement optimal, déplacement automatique de niveaux, propagation de suppression, gain de prompt-cache ou latence perçue. Coverage, plumbing, usage de la preuve et qualité finale restent quatre couches distinctes. Correctness CI couvre Linux, macOS et Windows ; LoCoMo et les intégrations sont séparés.
+
+[Index](docs/README.md) · [Guide](docs/06-engine-guide.md) · [Recall](docs/09-retrieval-and-measurement.md) · [Harness](docs/11-harness-adapters.md) · [Versions](docs/12-version-history.md) · [Changelog](CHANGELOG.md)
+
+Version identity: **1.3.0 accepted/stable**.

@@ -22,6 +22,11 @@ LOCALIZED_READMES = {
     'README.zh-CN.md', 'README.zh-TW.md', 'README.ja.md', 'README.ko.md',
     'README.es.md', 'README.fr.md', 'README.de.md',
 }
+LOCALE_CODES = {
+    'README.zh-CN.md': 'zh-CN', 'README.zh-TW.md': 'zh-TW',
+    'README.ja.md': 'ja', 'README.ko.md': 'ko', 'README.es.md': 'es',
+    'README.fr.md': 'fr', 'README.de.md': 'de',
+}
 
 
 def check(root: Path) -> dict:
@@ -119,6 +124,17 @@ def check(root: Path) -> dict:
                            'MCP v2', 'accepted/stable'):
                 if marker not in text:
                     errors.append(f'{localized}: missing 1.3 parity marker {marker}')
+            headings = len(re.findall(r'^## ', text, re.M))
+            if headings < 5:
+                errors.append(f'{localized}: incomplete section parity ({headings} sections)')
+            code = LOCALE_CODES[localized]
+            expected_body = '\n'.join(text.splitlines()[4:]).strip()
+            homepage = texts.get('README.md', '')
+            match = re.search(
+                rf'<!-- locale:{re.escape(code)}:start -->\n(.*?)\n'
+                rf'<!-- locale:{re.escape(code)}:end -->', homepage, re.S)
+            if not match or match.group(1).strip() != expected_body:
+                errors.append(f'{localized}: homepage language panel is missing or stale')
     return {'status': 'FAIL' if errors else 'PASS', 'markdown_files': len(markdown),
             'relative_links_checked': links, 'json_fences_parsed': fences,
             'json_files_parsed': json_files, 'python_files_parsed': python_files,

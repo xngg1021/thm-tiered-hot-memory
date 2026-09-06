@@ -1,19 +1,57 @@
 # THM — Tiered Hot Memory
 
-[English](README.md) | [简体中文](README.zh-CN.md) | [繁體中文](README.zh-TW.md) | [日本語](README.ja.md) | [한국어](README.ko.md) | [Español](README.es.md) | [Français](README.fr.md) | [Deutsch](README.de.md)
+[English](README.md) | [简体中文](README.zh-CN.md) | [繁體中文](README.zh-TW.md) | [日本語](README.ja.md) | 한국어 | [Español](README.es.md) | [Français](README.fr.md) | [Deutsch](README.de.md)
 
-작성자: Junfu Shi (SJF, xngg1021) · 라이선스: [MIT](LICENSE) · 안정 버전: **1.3.0**
+작성자: Junfu Shi (SJF, xngg1021) · 라이선스: [MIT](LICENSE)
 
-THM은 agent harness용 로컬 우선 4계층 메모리입니다. 1.3은 Hermes `MemoryProvider`, OpenAI Agents `FunctionTool`, LangChain/LangGraph `BaseRetriever`, MCP v2 stdio와 OpenClaw 2026.9.x용 별도 legacy MCP bridge를 포함한 harness-neutral 읽기 전용 recall 계층을 제공합니다. Claude Code, Codex CLI, Gemini CLI는 고정 버전의 실제 CLI 구성과 동일 server command lifecycle E2E로 검증됩니다. 원본 메모리를 수정하거나 모델을 추가 호출하지 않습니다.
+## 4개 계층
 
-LoCoMo Protocol 2는 10개 대화, 1,986개 질문 전체와 주 분모 1,532개 질문을 사용합니다. 600 evidence token에서 literal / sparse / dense / hybrid의 any-gold coverage는 **56.79% / 69.39% / 51.11% / 71.34%**입니다. 답변 정확도가 아닌 증거 검색 지표입니다. [전체 보고서](reports/2026-09-06-recall-protocol2.md)
+THM은 agent harness용 로컬 우선 4계층 메모리입니다. T0는 호스트가 주입한 영구 컨텍스트, T1은 필요할 때 읽는 주제 자료, T2는 명시적 증거 예산으로 검색하는 기록, T3는 다시 방문할 수 있는 외부 소스입니다. 활동성, 유효성, 작업 관련성, pin을 분리하며 mention·retrieval·write를 유용한 hit로 간주하지 않습니다.
+
+## 구현 범위
+
+1.1.1은 강화된 index CLI를, 1.2는 scope 분리 FTS5, 선택적 로컬 embedding, RRF, 예산 기반 packing, 가중치 0 mention observation, decay 비교와 재현 가능한 평가를 제공합니다. **1.3은 harness-neutral 읽기 전용 recall 계층**으로 Hermes `MemoryProvider`, OpenAI Agents `FunctionTool`, LangChain/LangGraph `BaseRetriever`, MCP v2 stdio를 추가합니다. OpenClaw 2026.9.x, Claude Code, Codex CLI, Gemini CLI는 별도 읽기 전용 MCP compatibility bridge와 고정된 실제 CLI로 검증합니다. 원본 메모리를 수정하거나 모델을 추가 호출하지 않습니다.
+
+## LoCoMo 측정
+
+Protocol 2는 10개 대화와 1,986개 질문 전체, 주 분모 1,532개 질문을 사용합니다. 600 `cl100k_base` evidence token에서 any-gold는 **literal 56.79% / sparse 69.39% / dense 51.11% / hybrid 71.34%**, all-gold는 **46.61% / 56.53% / 40.01% / 57.64%**입니다. 답변 정확도가 아닌 증거 검색 지표입니다. p95 retrieval+packing은 **sparse 34.55 ms / hybrid 57.88 ms**입니다. 300/600/1200 token sparse 결과는 **60.57/69.39/76.17%**, p95는 **20.39/34.55/61.78 ms**입니다. [보고서](reports/2026-09-06-recall-protocol2.md) · [JSON](reports/2026-09-06-recall-protocol2-summary.json).
+
+## 통합
+
+| Surface | THM 1.3 |
+| --- | --- |
+| Hermes | pip provider, setup/config, prefetch, 선택적 `sync_turn`, session hooks, write≠hit |
+| OpenAI Agents | 읽기 전용 `OpenAIAgentsTHM.tool` |
+| LangChain/LangGraph | `THMLangChainRetriever` |
+| MCP v2 | `thm-mcp`, typed `thm_recall` / `thm_status` |
+| OpenClaw | `thm-mcp-legacy`, 실제 runtime probe |
+| Claude/Codex/Gemini | 고정 실제 CLI, 정확한 command, discovery/call lifecycle, 모델 호출 0 |
+
+이전 Hermes E2E는 `NousResearch/hermes-agent@77915e...`에 고정되며 1.3 CI는 검토된 최신 snapshot도 검사합니다. 근거는 항상 같은 commit의 workflow입니다.
+
+## 설치
 
 ```bash
 python -m pip install -e .
+python -m thm import-files ./notes --db ./state/recall.sqlite3 --scope demo
 python -m thm search --db ./state/recall.sqlite3 --scope demo "Which database port?" --budget 600
 thm-mcp --db /absolute/path/recall.sqlite3 --scope demo --budget 600
 ```
 
-1.3.0 accepted/stable은 correctness, Hermes, harness 전체 matrix를 통과한 정확한 Git SHA를 가리키는 공식 version ref로만 확정됩니다. 실제 사용자 E2E 답변 정확도, 보편적 최적 decay, 자동 tier 이동/삭제 전파, 체감 latency 개선은 주장하지 않습니다.
+Extras는 `.[tokenizer,semantic]`, `.[openai]`, `.[langchain]`, `.[mcp]`, `.[harnesses]`이며 compatibility bridge는 `thm-mcp-legacy`입니다.
 
-문서: [목차](docs/README.md) · [Harness](docs/11-harness-adapters.md) · [버전 기록](docs/12-version-history.md) · [변경 기록](CHANGELOG.md)
+## Hermes lifecycle
+
+`sync_turns`는 기본 비활성입니다. 명시적으로 활성화하면 user/assistant 텍스트만 session별 파생 T2 scope에 동기화하고 system row와 compression summary는 제외합니다. `on_memory_write`는 refresh 신호이며 hit가 아닙니다. 파생 cache는 canonical transcript owner가 아니므로 THM은 fail-closed checkpoint-v2 durability를 주장하지 않고 pre-compress API v1을 유지합니다.
+
+## Decay calibration
+
+`decay_from_index.py`는 ID, unit cost, 명시적 hit 날짜만 내보내고 본문, summary, key, confirmation evidence를 제외합니다. `decay_replay.py`로 비공개 replay할 수 있습니다. 실제 hit chronology 없이는 개인 최적 half-life를 주장하지 않습니다.
+
+## 증거 경계
+
+실제 사용자 E2E 답변 정확도, 보편적 최적 decay, 자동 tier 이동, 삭제 전파, prompt-cache 또는 체감 latency 개선은 주장하지 않습니다. Coverage, host plumbing, 모델의 증거 사용, 최종 답변 품질은 독립된 증거 계층입니다. Correctness CI는 Linux, macOS, Windows에서 실행하며 LoCoMo와 integration job은 분리합니다.
+
+[목차](docs/README.md) · [가이드](docs/06-engine-guide.md) · [Recall](docs/09-retrieval-and-measurement.md) · [Harness](docs/11-harness-adapters.md) · [버전 기록](docs/12-version-history.md) · [Changelog](CHANGELOG.md)
+
+Version identity: **1.3.0 accepted/stable**.
