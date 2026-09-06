@@ -12,6 +12,7 @@ on:
       - "research/runtime_cli_e2e.py"
       - "pyproject.toml"
       - ".github/workflows/harness-e2e.yml"
+      - ".github/workflows/hermes-e2e.yml"
 
 permissions:
   contents: read
