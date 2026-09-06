@@ -13,6 +13,7 @@ VALID_STATUS = {"active", "invalid", "deleted", "unresolved_legacy"}
 VALID_COST_CLASS = {"low", "med", "high"}
 PREFETCH_MODES = {"locator", "tiny_excerpt"}
 
+
 class ResidencyError(ValueError):
     """Structured input/measurement failure for shadow residency tools."""
 
@@ -96,18 +97,39 @@ def load_catalog(path: str | Path | None) -> dict[str, dict[str, Any]]:
     return out
 
 
-def apply_catalog(entries: Sequence[Mapping[str, Any]], catalog: Mapping[str, Mapping[str, Any]]) -> list[dict[str, Any]]:
-    """Apply a read-only overlay without mutating canonical index rows."""
-    result: list[dict[str, Any]] = []
+def apply_catalog(
+    entries: Sequence[Mapping[str, Any]],
+    catalog: Mapping[str, Mapping[str, Any]],
+) -> list[dict[str, Any]]:
+    """Apply a read-only overlay; stale/unknown catalog identities fail explicitly."""
+    canonical: list[dict[str, Any]] = []
+    ids: set[str] = set()
     for raw in entries:
         if not isinstance(raw, Mapping):
             raise ResidencyError("entry: expected object")
         entry = dict(raw)
         item_id = _nonempty(entry.get("id"), "entry id")
+        if item_id in ids:
+            raise ResidencyError("duplicate entry id")
+        ids.add(item_id)
+        canonical.append(entry)
+    unknown_ids = sorted(set(catalog) - ids)
+    if unknown_ids:
+        raise ResidencyError(f"catalog references unknown item id {unknown_ids[0]}")
+    result: list[dict[str, Any]] = []
+    allowed = {
+        "resident_units",
+        "miss_penalty_tokens",
+        "locator",
+        "scope",
+        "project",
+        "profile",
+    }
+    for entry in canonical:
+        item_id = entry["id"]
         overlay = catalog.get(item_id, {})
         if not isinstance(overlay, Mapping):
             raise ResidencyError(f"catalog[{item_id}]: expected object")
-        allowed = {"resident_units", "miss_penalty_tokens", "locator", "scope", "project", "profile"}
         unknown = sorted(set(overlay) - allowed)
         if unknown:
             raise ResidencyError(f"catalog[{item_id}]: unsupported field {unknown[0]}")
