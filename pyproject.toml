@@ -20,6 +20,7 @@ harnesses = ["openai-agents>=0.22,<0.23", "langchain-core>=1.6,<1.7", "mcp>=2,<3
 [project.scripts]
 thm-recall = "thm.__main__:main"
 thm-mcp = "thm.mcp_server:main"
+thm-mcp-legacy = "thm.mcp_legacy_server:main"
 
 [project.entry-points."hermes_agent.memory_providers"]
 thm = "thm.hermes_plugin:THMProvider"
