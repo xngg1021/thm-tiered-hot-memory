@@ -6,6 +6,7 @@ Run the public checks from the repository root:
 python -m unittest discover -s tests -v
 python scripts/thm_numeric_audit.py
 python scripts/check_docs.py
+python scripts/check_version_history.py
 ```
 
 The engine tests import scripts/thm.py directly and use temporary synthetic source stores. They cover stable IDs, prefix collisions, directory separation, ambiguous updates, invalid dates/events, retry behavior, confirmation scheduling, validity, pins, conflict rejection, write failure, migration and CLI error codes. Independent child processes test concurrent updates and release of a killed lock holder. No real profile or external model is used.
@@ -19,6 +20,8 @@ The ten numeric tests preserve the old specification and its counterexamples. A 
 The [machine-readable hardening record](../reports/2026-09-06-engine-hardening.json) identifies the starting commit, actual commands, Python version and file hashes. Raw local unittest and numeric logs are published alongside it. It explicitly distinguishes the materialized repair subset from unchanged remote documents. An inability to materialize an entire checkout must not be written as a full local repository-check pass.
 
 The GitHub workflow runs the complete repository checkout on Linux, Windows and macOS. Workflow presence is not a pass; inspect the run for the exact commit. There are no API credentials, model calls or paid research jobs in the workflow. Failed operating-system jobs retain their failures.
+
+The separate Hermes matrix exercises both pinned upstream revisions. The harness matrix exercises the Python adapters, MCP v2, OpenClaw and pinned Claude Code, Codex CLI and Gemini CLI installations. A 1.3.0 commit is accepted/stable only after all jobs for the same exact SHA pass; the immutable `v1.3.0` tag and `archive/v1.3.0-stable` branch are the formal pointers. A package version string or workflow file alone is not acceptance evidence.
 
 ## Publication inventory
 

@@ -9,6 +9,7 @@ on:
       - "thm/mcp_server.py"
       - "thm/mcp_legacy_server.py"
       - "research/harness_e2e.py"
+      - "research/runtime_cli_e2e.py"
       - "pyproject.toml"
       - ".github/workflows/harness-e2e.yml"
 
@@ -91,5 +92,54 @@ jobs:
         if: always()
         with:
           name: thm-openclaw-mcp-e2e
+          path: integration-output/
+          retention-days: 30
+
+  cli-runtime-mcp:
+    name: ${{ matrix.runtime }} MCP runtime
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - runtime: claude-code
+            package: "@anthropic-ai/claude-code@2.1.263"
+            executable: claude
+          - runtime: codex-cli
+            package: "@openai/codex@0.153.4"
+            executable: codex
+          - runtime: gemini-cli
+            package: "@google/gemini-cli@0.58.0"
+            executable: gemini
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+      - name: Install THM, MCP client and pinned runtime
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -e '.[mcp]'
+          npm install -g '${{ matrix.package }}'
+      - name: Run pinned runtime E2E
+        env:
+          THM_RUNTIME: ${{ matrix.runtime }}
+          THM_RUNTIME_EXECUTABLE: ${{ matrix.executable }}
+          THM_RUNTIME_PACKAGE: ${{ matrix.package }}
+        run: |
+          mkdir -p integration-output
+          python research/runtime_cli_e2e.py \
+            --runtime "$THM_RUNTIME" \
+            --executable "$THM_RUNTIME_EXECUTABLE" \
+            --package "$THM_RUNTIME_PACKAGE" \
+            --output "integration-output/${THM_RUNTIME}-e2e.json"
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: thm-${{ matrix.runtime }}-mcp-e2e
           path: integration-output/
           retention-days: 30

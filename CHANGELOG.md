@@ -10,6 +10,12 @@ This changelog is reconstructed from the repository's existing Git history. It d
 - Added `scripts/check_version_history.py` and wired it into cross-platform correctness CI.
 - Preserved all prior commits and reports; no rebase, squash, force-push or historical rewrite is part of this reconstruction.
 
+## 1.3.0 accepted/stable
+
+- Adds pinned real-runtime E2E jobs for Claude Code 2.1.263, Codex CLI 0.153.4 and Gemini CLI 0.58.0.
+- Synchronizes all seven non-English README files with the 1.3 integration and evidence boundaries.
+- Acceptance requires the correctness, Hermes and harness matrices to pass on one exact commit. The immutable `v1.3.0` tag and `archive/v1.3.0-stable` ref formally identify that accepted SHA; see the release/ref itself for the value.
+
 ## 1.3.0 baseline — `1880211f75b016e2234cbef702573022f6f983f1`
 
 Archive: `archive/v1.3.0-baseline`

@@ -40,7 +40,7 @@ The sparse budget sweep reached **60.57% / 69.39% / 76.17%** any-gold coverage a
 | LangChain / LangGraph / Deep Agents | `THMLangChainRetriever(BaseRetriever)` |
 | MCP v2 | `thm-mcp` / `python -m thm.mcp_server` exposes typed `thm_recall` and `thm_status` structured outputs |
 | OpenClaw 2026.9.x | `thm-mcp-legacy` / `python -m thm.mcp_legacy_server`; live OpenClaw MCP probe, same read-only THM recall core |
-| Claude Code / Codex CLI / Gemini CLI | standard local stdio MCP v2 configuration; runtime-specific compatibility is distinguished from pinned E2E evidence |
+| Claude Code / Codex CLI / Gemini CLI | pinned real CLI configuration through the read-only compatibility bridge plus exact-command tool discovery/call lifecycle; zero model calls |
 
 The earlier Hermes E2E against `NousResearch/hermes-agent@77915e344cb0cd8e20661d4a7b393f987a2eef32` remains historical evidence. THM 1.3 CI additionally checks a reviewed current Hermes snapshot and the new multi-harness surfaces; use the exact workflow/commit reports rather than transferring an older result to newer code.
 

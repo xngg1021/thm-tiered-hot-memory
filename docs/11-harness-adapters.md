@@ -11,9 +11,9 @@ THM 1.3 separates the retrieval engine from harness plumbing. `thm.harness.THMHa
 | LangChain / LangGraph / Deep Agents | `THMLangChainRetriever(BaseRetriever)` | pinned `langchain-core` `invoke()` E2E, no model call |
 | MCP v2 | `python -m thm.mcp_server` / `thm-mcp` stdio server | real MCP v2 client lists and calls `thm_recall` / `thm_status`; structured output schema is exercised |
 | OpenClaw 2026.9.x | `python -m thm.mcp_legacy_server` / `thm-mcp-legacy` compatibility bridge | pinned OpenClaw registry health check plus live `mcp probe --json` tool discovery; bridge delegates to the same read-only THM recall core |
-| Claude Code | THM MCP v2 stdio server | supported by Claude Code's documented local-stdio MCP surface; configuration recipe below, not yet a pinned Claude runtime E2E |
-| Codex CLI | THM MCP v2 stdio server | supported by Codex MCP configuration; configuration recipe below, not yet a pinned Codex runtime E2E |
-| Gemini CLI | THM MCP v2 stdio server | supported by Gemini CLI's documented `mcpServers` / `gemini mcp add` surface; configuration recipe below, not yet a pinned Gemini runtime E2E |
+| Claude Code 2.1.263 | read-only MCP compatibility bridge | pinned real CLI persists, reloads and health-checks the exact command; the command completes live tool discovery, recall and status calls |
+| Codex CLI 0.153.4 | read-only MCP compatibility bridge | pinned real CLI persists and reloads the exact command; the command completes live tool discovery, recall and status calls |
+| Gemini CLI 0.58.0 | read-only MCP compatibility bridge | pinned real CLI persists, reloads and health-checks the exact command; the command completes live tool discovery, recall and status calls |
 
 The distinction matters: “MCP-compatible” is not reported as the same evidence level as a harness-specific runtime test. THM also does not force an older client onto the MCP v2 server: the legacy bridge is a separate compatibility surface so the primary `thm-mcp` contract can remain MCP v2.
 
@@ -97,21 +97,21 @@ Claude Code supports local stdio MCP servers. Put options before the server name
 
 ```bash
 claude mcp add --transport stdio thm -- \
-  python -m thm.mcp_server --db /absolute/path/recall.sqlite3 --scope demo
+  python -m thm.mcp_legacy_server --db /absolute/path/recall.sqlite3 --scope demo
 claude mcp get thm
 ```
 
-This is a documented MCP compatibility recipe. THM does not currently claim a pinned Claude Code runtime E2E.
+CI installs the pinned Claude Code version, loads this configuration through the real CLI and probes the exact saved command through a complete no-model MCP lifecycle.
 
 ## Codex CLI
 
 Codex supports MCP server configuration. Configure THM as a local stdio server using the Codex MCP configuration surface available in the installed Codex version, with the server command:
 
 ```text
-python -m thm.mcp_server --db /absolute/path/recall.sqlite3 --scope demo
+python -m thm.mcp_legacy_server --db /absolute/path/recall.sqlite3 --scope demo
 ```
 
-Keep THM tool approval/read-only policy visible to the host. This is MCP compatibility, not a pinned Codex runtime E2E in this repository.
+Keep THM tool approval/read-only policy visible to the host. CI installs the pinned Codex CLI, reloads the saved entry and probes the exact command through a complete no-model MCP lifecycle.
 
 ## Gemini CLI
 
@@ -119,11 +119,11 @@ Gemini CLI supports local stdio MCP servers through `gemini mcp add` or `mcpServ
 
 ```bash
 gemini mcp add --scope user thm python -- \
-  -m thm.mcp_server --db /absolute/path/recall.sqlite3 --scope demo
+  -m thm.mcp_legacy_server --db /absolute/path/recall.sqlite3 --scope demo
 gemini mcp list
 ```
 
-Do not use `--trust` merely to make setup easier; host approval policy is separate from THM's read-only server design. This recipe is MCP compatibility, not a pinned Gemini runtime E2E.
+Do not use `--trust` merely to make setup easier; host approval policy is separate from THM's read-only server design. CI installs the pinned Gemini CLI, reloads the saved entry and probes the exact command through a complete no-model MCP lifecycle.
 
 ## Hermes lifecycle completion
 

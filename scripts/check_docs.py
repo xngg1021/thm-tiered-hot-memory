@@ -18,6 +18,10 @@ REQUIRED = {'README.md', 'docs/01-研究综述.md', 'docs/02-架构设计.md', R
             'docs/03-validation-contract.md', 'docs/04-related-work.md',
             'docs/05-hermes-upstream.md', 'docs/README.md', 'docs/06-engine-guide.md',
             'docs/07-implementation-status.md', 'docs/08-testing-and-release.md'}
+LOCALIZED_READMES = {
+    'README.zh-CN.md', 'README.zh-TW.md', 'README.ja.md', 'README.ko.md',
+    'README.es.md', 'README.fr.md', 'README.de.md',
+}
 
 
 def check(root: Path) -> dict:
@@ -105,6 +109,16 @@ def check(root: Path) -> dict:
             errors.append('Historical report bytes changed')
     if 'docs/related-work-sources.json' not in texts:
         errors.append('Source manifest missing or unreadable')
+    if LOCALIZED_READMES & actual:
+        missing_localized = sorted(LOCALIZED_READMES - actual)
+        if missing_localized:
+            errors.append('Missing localized README files: ' + ', '.join(missing_localized))
+        for localized in sorted(LOCALIZED_READMES & actual):
+            text = texts.get(localized, '')
+            for marker in ('1.3.0', 'Claude Code', 'Codex CLI', 'Gemini CLI',
+                           'MCP v2', 'accepted/stable'):
+                if marker not in text:
+                    errors.append(f'{localized}: missing 1.3 parity marker {marker}')
     return {'status': 'FAIL' if errors else 'PASS', 'markdown_files': len(markdown),
             'relative_links_checked': links, 'json_fences_parsed': fences,
             'json_files_parsed': json_files, 'python_files_parsed': python_files,
