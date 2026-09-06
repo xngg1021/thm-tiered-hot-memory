@@ -9,13 +9,13 @@ THM 1.3 separates the retrieval engine from harness plumbing. `thm.harness.THMHa
 | Hermes Agent | standalone `MemoryProvider` through `hermes_agent.memory_providers` | real pinned Hermes discovery/lifecycle CI; setup, prefetch, background `sync_turn`, session boundary and write≠hit semantics are exercised |
 | OpenAI Agents SDK | `OpenAIAgentsTHM.tool` (`FunctionTool`) | pinned SDK contract E2E, no model call |
 | LangChain / LangGraph / Deep Agents | `THMLangChainRetriever(BaseRetriever)` | pinned `langchain-core` `invoke()` E2E, no model call |
-| MCP v2 | `python -m thm.mcp_server` / `thm-mcp` stdio server | real MCP v2 in-memory client lists and calls `thm_recall` / `thm_status` |
-| OpenClaw | THM MCP stdio server registered in OpenClaw | pinned OpenClaw `mcp doctor --probe` CI validates the live tool surface |
-| Claude Code | THM MCP stdio server | supported by Claude Code's documented local-stdio MCP surface; configuration recipe below, not yet a pinned Claude runtime E2E |
-| Codex CLI | THM MCP stdio server | supported by Codex MCP configuration; configuration recipe below, not yet a pinned Codex runtime E2E |
-| Gemini CLI | THM MCP stdio server | supported by Gemini CLI's documented `mcpServers` / `gemini mcp add` surface; configuration recipe below, not yet a pinned Gemini runtime E2E |
+| MCP v2 | `python -m thm.mcp_server` / `thm-mcp` stdio server | real MCP v2 client lists and calls `thm_recall` / `thm_status`; structured output schema is exercised |
+| OpenClaw 2026.9.x | `python -m thm.mcp_legacy_server` / `thm-mcp-legacy` compatibility bridge | pinned OpenClaw registry health check plus live `mcp probe --json` tool discovery; bridge delegates to the same read-only THM recall core |
+| Claude Code | THM MCP v2 stdio server | supported by Claude Code's documented local-stdio MCP surface; configuration recipe below, not yet a pinned Claude runtime E2E |
+| Codex CLI | THM MCP v2 stdio server | supported by Codex MCP configuration; configuration recipe below, not yet a pinned Codex runtime E2E |
+| Gemini CLI | THM MCP v2 stdio server | supported by Gemini CLI's documented `mcpServers` / `gemini mcp add` surface; configuration recipe below, not yet a pinned Gemini runtime E2E |
 
-The distinction matters: “MCP-compatible” is not reported as the same evidence level as a harness-specific runtime test.
+The distinction matters: “MCP-compatible” is not reported as the same evidence level as a harness-specific runtime test. THM also does not force an older client onto the MCP v2 server: the legacy bridge is a separate compatibility surface so the primary `thm-mcp` contract can remain MCP v2.
 
 ## Install
 
@@ -28,6 +28,8 @@ python -m pip install -e '.[mcp]'
 # or all Python harness integrations
 python -m pip install -e '.[harnesses]'
 ```
+
+The OpenClaw legacy bridge itself uses the THM core plus the Python standard library; it does not require installing a second MCP Python SDK generation.
 
 Create or refresh a THM retrieval index first. The examples below assume:
 
@@ -62,7 +64,7 @@ Returned `Document` objects contain only selected source text. Metadata carries 
 
 ## MCP v2
 
-Start THM as a local stdio MCP server:
+Start THM as a local stdio MCP v2 server:
 
 ```bash
 thm-mcp --db "$DB" --scope "$SCOPE" --budget 600
@@ -75,18 +77,19 @@ The server deliberately exposes two read-only tools:
 - `thm_recall(query)` — budget-packed evidence and source identities;
 - `thm_status()` — configuration/status without memory text.
 
-It exposes no remember/delete/write tool.
+Both tools publish typed structured-output contracts. The server exposes no remember/delete/write tool.
 
 ## OpenClaw
 
-OpenClaw can manage local stdio MCP servers. A minimal definition is:
+The pinned OpenClaw 2026.9.x integration is validated through THM's separate legacy stdio compatibility bridge. The bridge implements the older MCP lifecycle expected by that client generation while delegating actual recall to the same `THMHarnessAdapter` used by the MCP v2 and Python surfaces.
 
 ```bash
-openclaw mcp set thm '{"command":"python","args":["-m","thm.mcp_server","--db","/absolute/path/recall.sqlite3","--scope","demo"]}'
+openclaw mcp set thm '{"command":"python","args":["-m","thm.mcp_legacy_server","--db","/absolute/path/recall.sqlite3","--scope","demo"]}'
 openclaw mcp doctor thm --probe --json
+openclaw mcp probe thm --json
 ```
 
-The repository CI uses this path with a synthetic database and asserts that OpenClaw sees `thm_recall` and `thm_status`.
+`doctor --probe` is used as the registry/startup health check. `probe --json` is the capability proof that lists the live tools; CI asserts that its catalog contains `thm_recall` and `thm_status`. Unit tests independently exercise initialize, `tools/list`, `tools/call`, structured content and unknown-tool failure semantics. The bridge remains read-only and is not a second memory implementation.
 
 ## Claude Code
 
