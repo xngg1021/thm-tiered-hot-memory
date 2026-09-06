@@ -3,8 +3,40 @@ from __future__ import annotations
 
 import argparse
 import atexit
+from typing import TypedDict
 
 from .harness import HarnessConfig, THMHarnessAdapter
+
+
+class MCPSource(TypedDict):
+    """Stable source metadata returned by the MCP recall surface."""
+
+    id: str
+    source: str
+    sha256: str
+
+
+class MCPRecallResult(TypedDict):
+    """Structured MCP result for one budget-limited THM recall."""
+
+    context: str
+    sources: list[MCPSource]
+    budget: int
+    budget_used: int
+    mode: str
+    usefulness: str
+
+
+class MCPStatusResult(TypedDict):
+    """Structured MCP status result without memory text."""
+
+    scope: str
+    budget: int
+    counter: str
+    mode: str
+    neighbors: int
+    semantic: bool
+    source_writes: bool
 
 
 def build_server(config: HarnessConfig | dict):
@@ -14,15 +46,16 @@ def build_server(config: HarnessConfig | dict):
     server = MCPServer("THM")
 
     @server.tool()
-    def thm_recall(query: str) -> dict:
+    def thm_recall(query: str) -> MCPRecallResult:
         """Recall budget-limited evidence from a local THM index."""
         result = adapter.recall(query)
+        sources: list[MCPSource] = [
+            {"id": row["id"], "source": row["source"], "sha256": row["hash"]}
+            for row in result["sources"]
+        ]
         return {
             "context": result["context"],
-            "sources": [
-                {"id": row["id"], "source": row["source"], "sha256": row["hash"]}
-                for row in result["sources"]
-            ],
+            "sources": sources,
             "budget": result["budget"],
             "budget_used": result["budget_used"],
             "mode": result["mode"],
@@ -30,7 +63,7 @@ def build_server(config: HarnessConfig | dict):
         }
 
     @server.tool()
-    def thm_status() -> dict:
+    def thm_status() -> MCPStatusResult:
         """Describe the configured THM recall surface without returning memory text."""
         cfg = adapter.config
         return {
