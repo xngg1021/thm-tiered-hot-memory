@@ -439,7 +439,8 @@ class SearchIndex:
         used = 0
         byte_counter = type(self.counter) is TokenCounter and self.counter.encode is None
         for row in expanded:
-            label = json.dumps({'id': row['id'], 'speaker': row['speaker'], 'date': row['timestamp']}, ensure_ascii=False)
+            label = json.dumps({'id': row['id'], 'speaker': row['speaker'], 'date': row['timestamp']},
+                               ensure_ascii=False, separators=(',', ':'))
             block = f"[source {label}]\n{row['text']}"
             if byte_counter:
                 units = used + len(block.encode('utf-8')) + (2 if blocks else 0)
