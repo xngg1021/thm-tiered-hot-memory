@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "thm-local-memory"
-version = "1.2.0"
+version = "1.3.0"
 description = "Local scoped retrieval, memory observations and residency evaluation for THM"
 requires-python = ">=3.10"
 license = {text = "MIT"}
@@ -12,9 +12,14 @@ license = {text = "MIT"}
 [project.optional-dependencies]
 tokenizer = ["tiktoken>=0.7,<1"]
 semantic = ["sentence-transformers>=3,<6", "numpy>=1.26,<3"]
+openai = ["openai-agents>=0.22,<0.23"]
+langchain = ["langchain-core>=1.6,<1.7"]
+mcp = ["mcp>=2,<3"]
+harnesses = ["openai-agents>=0.22,<0.23", "langchain-core>=1.6,<1.7", "mcp>=2,<3"]
 
 [project.scripts]
 thm-recall = "thm.__main__:main"
+thm-mcp = "thm.mcp_server:main"
 
 [project.entry-points."hermes_agent.memory_providers"]
 thm = "thm.hermes_plugin:THMProvider"
