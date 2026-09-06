@@ -83,7 +83,8 @@ jobs:
           print(json.dumps({"command":"python","args":["-m","thm.mcp_legacy_server","--db","$DB","--scope","openclaw-e2e"]}))
           PY
           HOME="$OPENCLAW_TEST_HOME" openclaw mcp set thm "$(cat integration-output/openclaw-server.json)"
-          HOME="$OPENCLAW_TEST_HOME" openclaw mcp doctor thm --probe --json | tee integration-output/openclaw-probe.json
+          HOME="$OPENCLAW_TEST_HOME" openclaw mcp doctor thm --probe --json | tee integration-output/openclaw-doctor.json
+          HOME="$OPENCLAW_TEST_HOME" openclaw mcp probe thm --json | tee integration-output/openclaw-probe.json
           grep -q 'thm_recall' integration-output/openclaw-probe.json
           grep -q 'thm_status' integration-output/openclaw-probe.json
       - uses: actions/upload-artifact@v4
