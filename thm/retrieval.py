@@ -16,6 +16,7 @@ import re
 import sqlite3
 import time
 from typing import Callable, Iterable
+from .sqlite_guard import connect_derived
 
 STOP = frozenset('a an the is are was were be been being do does did have has had '
                  'what when where which who whom whose how why would could should '
@@ -128,7 +129,7 @@ class SearchIndex:
         if path.is_symlink():
             raise ValueError('symlink index refused')
         path.parent.mkdir(parents=True, exist_ok=True)
-        self.db = sqlite3.connect(path, timeout=5, check_same_thread=False)
+        self.db = connect_derived(path, {'docs', 'scopes', 'vectors', 'literal', 'lexical'}, shared_thread=True)
         self.db.row_factory = sqlite3.Row
         self.db.executescript('''
         CREATE TABLE IF NOT EXISTS docs(

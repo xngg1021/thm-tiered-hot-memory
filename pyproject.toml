@@ -17,4 +17,4 @@ semantic = ["sentence-transformers>=3,<6", "numpy>=1.26,<3"]
 thm-recall = "thm.__main__:main"
 
 [tool.setuptools.packages.find]
-include = ["thm*"]
+include = ["thm*", "scripts"]

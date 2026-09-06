@@ -1,0 +1,218 @@
+{
+  "benchmark_commit": "433b1256bbaca8680f3c41d67a1e23e97b36bd7c",
+  "workflow_run": 34030697732,
+  "artifact_id": 9988651011,
+  "artifact_sha256": "08e90068b1120941c72092d51c089c3740d14c034a8b500f0580b4d380cbc783",
+  "dataset_sha256": "79fa87e90f04081343b8c8debecb80a9a6842b76a7aa537dc9fdf651ea698ff4",
+  "dataset_pin": "3eb6f2c585f5e1699204e3c3bdf7adc5c28cb376",
+  "environment": {
+    "python": "3.11.16",
+    "os": "Linux-6.17.0-1022-azure-x86_64-with-glibc2.39",
+    "sqlite": "3.45.1"
+  },
+  "counter": "cl100k_base",
+  "documents": 5882,
+  "conversations": 10,
+  "raw_questions": 1986,
+  "main_questions": 1540,
+  "main_scorable_questions": 1532,
+  "no_gold": 4,
+  "unresolved_or_malformed": 4,
+  "all_categories_scorable_diagnostic_only": 1978,
+  "generation_calls": 0,
+  "judge_calls": 0,
+  "encoder": "sentence-transformers/all-MiniLM-L6-v2@1110a243fdf4706b3f48f1d95db1a4f5529b4d41",
+  "paired_600_hybrid_vs_sparse": {
+    "both_hit": 983,
+    "neither_hit": 376,
+    "hybrid_only": 90,
+    "sparse_only": 83
+  },
+  "benchmark_file_sha256": {
+    "lexical.json": "233b39484438e23a17003ef8b50360e791597459bbc6f5c5721e91fedc255948",
+    "semantic.json": "b59b6dc3d6166fefa67974753e5ba60ba8d62db34a5611c924d81b859345ad5d",
+    "decay.json": "d22b2926b81488501d4dc44db75c0bd46042b54a3055d26fd49fda726f5d5c40",
+    "dependencies.txt": "5212931c690bddd2c0fd3e9c1a335e24b2cba46f2b2d557d79a790e09467f60b"
+  },
+  "notes": [
+    "Different from the unavailable user experiment; do not compute 21.6% to 70.0% improvement.",
+    "Any-gold question rate, all-gold rate and evidence recall are distinct. No answer accuracy measured.",
+    "Corpus/index build and model loading are excluded from query latency.",
+    "Hybrid runs after dense and can hit the query-embedding cache; the latency samples are not cache-matched.",
+    "Full protocol shares FTS corpus statistics across namespaces; do not generalize the result as tenant-invariant ranking.",
+    "Nonempty results in this corpus do not demonstrate reliable abstention on unrelated queries.",
+    "MiniLM is an English reference encoder, not a Chinese benchmark.",
+    "Synthetic decay is not an empirical user-memory forgetting curve."
+  ],
+  "scores": {
+    "literal@300": {
+      "scorable": 1532,
+      "any_gold_hits": 748,
+      "any_gold_hit_rate": 0.48825065274151436,
+      "all_gold_hit_rate": 0.40339425587467365,
+      "macro_evidence_recall": 0.4387939211209446,
+      "candidate_any_gold_rate": 0.7754569190600522,
+      "mean_budget_used": 284.6136363636364,
+      "latency_ms": {
+        "p50": 14.179457500006265,
+        "p95": 15.4650489999824,
+        "mean": 14.246081889610766
+      },
+      "held_out_any_gold_hit_rate": 0.49192928516525747
+    },
+    "literal@600": {
+      "scorable": 1532,
+      "any_gold_hits": 871,
+      "any_gold_hit_rate": 0.5685378590078329,
+      "all_gold_hit_rate": 0.4706266318537859,
+      "macro_evidence_recall": 0.5148035082376965,
+      "candidate_any_gold_rate": 0.7754569190600522,
+      "mean_budget_used": 583.8350649350649,
+      "latency_ms": {
+        "p50": 23.454825000001733,
+        "p95": 24.667765749988746,
+        "mean": 23.519472651298504
+      },
+      "held_out_any_gold_hit_rate": 0.5718677940046119
+    },
+    "literal@1200": {
+      "scorable": 1532,
+      "any_gold_hits": 982,
+      "any_gold_hit_rate": 0.6409921671018277,
+      "all_gold_hit_rate": 0.5261096605744126,
+      "macro_evidence_recall": 0.5778280814409956,
+      "candidate_any_gold_rate": 0.7754569190600522,
+      "mean_budget_used": 1183.0396103896103,
+      "latency_ms": {
+        "p50": 40.7232005000111,
+        "p95": 42.07903099999868,
+        "mean": 40.76193366103927
+      },
+      "held_out_any_gold_hit_rate": 0.6433512682551883
+    },
+    "sparse@300": {
+      "scorable": 1532,
+      "any_gold_hits": 930,
+      "any_gold_hit_rate": 0.6070496083550914,
+      "all_gold_hit_rate": 0.4915143603133159,
+      "macro_evidence_recall": 0.5437319624819624,
+      "candidate_any_gold_rate": 0.9157963446475196,
+      "mean_budget_used": 284.50714285714287,
+      "latency_ms": {
+        "p50": 17.44613499998593,
+        "p95": 23.85410234998062,
+        "mean": 17.845279190259067
+      },
+      "held_out_any_gold_hit_rate": 0.6079938508839354
+    },
+    "sparse@600": {
+      "scorable": 1532,
+      "any_gold_hits": 1066,
+      "any_gold_hit_rate": 0.695822454308094,
+      "all_gold_hit_rate": 0.5633159268929504,
+      "macro_evidence_recall": 0.6240263995608696,
+      "candidate_any_gold_rate": 0.9157963446475196,
+      "mean_budget_used": 584.7785714285715,
+      "latency_ms": {
+        "p50": 29.06494399999815,
+        "p95": 40.26652690001882,
+        "mean": 29.89132296558427
+      },
+      "held_out_any_gold_hit_rate": 0.6963873943120676
+    },
+    "sparse@1200": {
+      "scorable": 1532,
+      "any_gold_hits": 1172,
+      "any_gold_hit_rate": 0.7650130548302873,
+      "all_gold_hit_rate": 0.6246736292428199,
+      "macro_evidence_recall": 0.6918639536696327,
+      "candidate_any_gold_rate": 0.9157963446475196,
+      "mean_budget_used": 1182.8103896103896,
+      "latency_ms": {
+        "p50": 51.169538999999986,
+        "p95": 71.26264419999018,
+        "mean": 52.679859564935555
+      },
+      "held_out_any_gold_hit_rate": 0.7647963105303612
+    },
+    "dense@600": {
+      "scorable": 1532,
+      "any_gold_hits": 783,
+      "any_gold_hit_rate": 0.5110966057441253,
+      "all_gold_hit_rate": 0.40013054830287204,
+      "macro_evidence_recall": 0.44948524829081216,
+      "candidate_any_gold_rate": 0.8453002610966057,
+      "mean_budget_used": 584.3116883116883,
+      "latency_ms": {
+        "p50": 34.23035000002983,
+        "p95": 35.671199449978985,
+        "mean": 34.99768526883093
+      },
+      "held_out_any_gold_hit_rate": 0.5088393543428132
+    },
+    "hybrid@600": {
+      "scorable": 1532,
+      "any_gold_hits": 1073,
+      "any_gold_hit_rate": 0.7003916449086162,
+      "all_gold_hit_rate": 0.564621409921671,
+      "macro_evidence_recall": 0.6264302179723148,
+      "candidate_any_gold_rate": 0.970626631853786,
+      "mean_budget_used": 585.7363636363636,
+      "latency_ms": {
+        "p50": 46.94506999996406,
+        "p95": 61.63076929997828,
+        "mean": 47.88591464610318
+      },
+      "held_out_any_gold_hit_rate": 0.6994619523443505
+    }
+  },
+  "synthetic_decay": {
+    "selected_on_development": "bounded_power@3d",
+    "selected_heldout_result": 0.5638888888888889,
+    "scores": {
+      "lru": {
+        "development_hit_rate": 0.5527777777777778,
+        "heldout_hit_rate": 0.5013888888888889,
+        "requests": 1440,
+        "plan_p95_ms": 0.850476999971761
+      },
+      "lfu": {
+        "development_hit_rate": 0.5347222222222222,
+        "heldout_hit_rate": 0.5180555555555556,
+        "requests": 1440,
+        "plan_p95_ms": 0.8471909999911986
+      },
+      "legacy": {
+        "development_hit_rate": 0.5805555555555556,
+        "heldout_hit_rate": 0.5541666666666667,
+        "requests": 1440,
+        "plan_p95_ms": 1.1050630000113415
+      },
+      "exponential": {
+        "development_hit_rate": 0.5694444444444444,
+        "heldout_hit_rate": 0.5486111111111112,
+        "requests": 1440,
+        "plan_p95_ms": 1.182556999992812
+      },
+      "mixture": {
+        "development_hit_rate": 0.5652777777777778,
+        "heldout_hit_rate": 0.5333333333333333,
+        "requests": 1440,
+        "plan_p95_ms": 1.3853150000500136
+      },
+      "bounded_power": {
+        "development_hit_rate": 0.5722222222222222,
+        "heldout_hit_rate": 0.5430555555555555,
+        "requests": 1440,
+        "plan_p95_ms": 1.4721869999902992
+      },
+      "bounded_power@3d": {
+        "development_hit_rate": 0.5833333333333334,
+        "heldout_hit_rate": 0.5638888888888889,
+        "requests": 1440,
+        "plan_p95_ms": 1.418124000053922
+      }
+    },
+    "data_source": "synthetic-regime-switch-v1"
+  }
+}

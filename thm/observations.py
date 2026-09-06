@@ -10,6 +10,7 @@ import re
 import sqlite3
 from .retrieval import fingerprint
 from .sources import epoch
+from .sqlite_guard import connect_derived
 
 
 def visible_text(text):
@@ -88,7 +89,7 @@ def scan(records, anchors, *, scope, now, days=7, max_records=50000):
 
 def store_observations(path, observations):
     """Sidecar only. Does not change index.json, validity or residency scores."""
-    db = sqlite3.connect(path)
+    db = connect_derived(path, {'observations'})
     try:
         db.execute('CREATE TABLE IF NOT EXISTS observations(id TEXT PRIMARY KEY,payload TEXT NOT NULL)')
         import json

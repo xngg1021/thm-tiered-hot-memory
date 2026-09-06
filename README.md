@@ -2,41 +2,47 @@
 
 Author: Junfu Shi (SJF, xngg1021). License: [MIT](LICENSE).
 
-THM preserves a four-tier design for Hermes Agent. The public `scripts/thm.py` is now a **1.1 index-maintenance and residency-proposal CLI**, with direct implementation tests. It does not implement automatic memory paging, a MemoryProvider, general semantic search or a model benchmark. Personal memory and deployed instances are not part of this repository.
+THM is a local-first four-tier memory toolkit for Hermes. The hardened `scripts/thm.py` 1.1.1 maintains a profile-bound index and proposes residency changes. The 1.2 package adds scoped lexical/local-semantic retrieval, budget-counted source packing, zero-weight mention observations, explicit decay-policy comparison and an optional Hermes provider adapter. Native memory files are not rewritten by these tools. Personal memories and deployed instances are not distributed.
+
+## Current evidence
+
+The [retrieval experiment](reports/2026-09-06-recall-results.md) and [machine-readable summary](reports/2026-09-06-recall-summary.json) report the completed GitHub Actions run at `433b1256`: 10 LoCoMo conversations, 1,986 questions, with 1,532 fully resolvable non-adversarial questions in the principal retrieval denominator. Under the same 600 `cl100k_base` token slice, question-level any-gold coverage was 56.85% for literal, 69.58% for improved sparse, 51.11% for the chosen dense encoder, and 70.04% for hybrid. These are evidence retrieval metrics, not answer accuracy or a competitor leaderboard. The user's earlier 21.6% experiment used an unavailable script and is not a matched baseline.
+
+The benchmark invokes no generative model or judge. Dense encoding does use an explicitly downloaded local model. Sparse remains the default: this experiment does not establish that dense retrieval or hybrid's small gain is worth its extra cost for every workload.
 
 ## Four tiers
 
-T0 is the small native MEMORY.md / USER.md snapshot; T1 is on-demand thematic material; T2 is historical sessions and archives; T3 contains external source locations. In the pinned Hermes implementation, a write to the memory files does not itself refresh an existing session's frozen system snapshot. T3's name does not guarantee immutable external content. See the [historical architecture](docs/02-架构设计.md) and [current implementation status](docs/07-implementation-status.md).
+T0 is the small native MEMORY.md / USER.md snapshot; T1 is on-demand thematic material; T2 is historical sessions and archives; T3 contains external source locations. A native memory-file write does not itself refresh an existing frozen system snapshot. T3's name does not guarantee immutable external content. See [architecture history](docs/02-架构设计.md).
 
-The activity formula remains a heuristic: `sum(weight * (age_days + 1)**-0.5)`. It is not a truth, relevance or optimality score. The 1.1 script no longer rewards relocation; new high-cost entries are not automatically pinned. Explicit migration preserves legacy protection pending review.
+The original activity formula is a heuristic, not a truth or relevance score. The 1.1.1 engine does not reward relocation and does not automatically pin new high-cost entries. Explicit migration preserves old protection. New alternative curves are available for comparison, not silently installed into a real profile.
 
-## Run and test
+## Run
 
-Python 3.10+; standard library only. No model, network service or installation is needed for the CLI.
+Core commands require Python 3.10+ and the standard library. A reference tokenizer and neural encoder are optional dependencies.
 
 ```bash
 python scripts/thm.py --help
-python scripts/thm.py --mem-dir /path/to/test-profile/memories seed
-python scripts/thm.py --mem-dir /path/to/test-profile/memories audit
+python -m thm --help
+python -m thm import-files ./example-notes --db ./test-state/recall.sqlite3 --scope demo
+python -m thm search --db ./test-state/recall.sqlite3 --scope demo 'Which database port?' --budget 600
+python -m thm curves
 python -m unittest discover -s tests -v
 python scripts/thm_numeric_audit.py
 python scripts/check_docs.py
 ```
 
-Use a test directory containing MEMORY.md and USER.md initially. Global path options precede the command. The script never writes either source file. It writes its own index, lock and previous-index backup under the configured state directory. Default state is `<resolved-memory-directory>/.thm`; it is not the repository root. An existing v1 index requires the [explicit preview/apply migration](docs/06-engine-guide.md).
+The default new context-budget counter is explicitly `utf8_bytes`, not model tokens. Select `--counter cl100k_base` after installing the optional tokenizer for the published reference protocol. Provider users must allocate a suitable evidence slice from the host's real request budget.
 
-`hit` accepts exact entry IDs or unique selectors and deduplicates retries. `confirm` requires an explicit evidence reference and advances review at most once per day. `pin` and `unpin` control residency protection without asserting validity. See the [complete CLI guide](docs/06-engine-guide.md).
+The index CLI writes only its own state under `<resolved-memory-directory>/.thm`. Retrieval and scan write separate derived databases. A foreign database is refused before creating derived tables, so accidentally targeting a native `state.db` does not install a THM schema into it. These are cooperating-process safety checks, not protection against a hostile filesystem owner.
 
-## Project documents and evidence
+Guides: [index commands and migration](docs/06-engine-guide.md), [new retrieval/scan/policy/provider interface](docs/09-retrieval-and-measurement.md), [reproducible benchmark](research/recall/README.md), [all project documents](docs/README.md).
 
-The [complete document index](docs/README.md) links research, architecture, validation contracts, competitor sources, upstream findings, engine use, migration, status, tests and historical audit evidence. All publishable documents in this delivery live in the repository; no full mixed-project conversation is required to operate it.
+## Evidence boundaries
 
-The original academic audit remains preserved verbatim behind its errata. The original ten numeric tests intentionally include counterexamples to the old policy. They do not certify the engine. The new implementation tests exercise the public script directly; the separate private reference implementation's previously reported tests are not reused as evidence for this version.
+The implementation commit's three-platform correctness run discovered 134 tests: 133 passed and one optional-NumPy test was skipped on each platform. The separate benchmark actually loaded and executed the neural encoder. Follow-up source-database guards add three more tests; read their exact-commit CI rather than transferring the earlier count. Original numeric tests preserve old counterexamples and do not certify new behavior.
 
-The [repair record](reports/2026-09-06-engine-hardening.md) and [machine-readable test record](reports/2026-09-06-engine-hardening.json) specify actual local execution and limits. CI, when available, runs the repository checks separately on Linux, Windows and macOS; its result must be read from the exact commit, not inferred from workflow presence.
+Not yet established: real-user end-to-end answer accuracy, native Hermes installation lifecycle, user-specific optimal decay, prompt-cache savings or user-perceived response-time improvement. No automatic tier movement or multi-file memory migration is performed. Source imports are explicit snapshots and must be refreshed. The scan measures mentions, not actual usefulness. A clean benchmark run does not certify those omitted capabilities.
 
-## Remaining boundaries
+The substantial benchmark is opt-in through workflow dispatch or a commit message containing `[benchmark]`; normal three-platform correctness CI remains automatic. No model downloads happen during ordinary index maintenance.
 
-This release proposes T0 changes for the native Hermes memory tool; it never applies them automatically. It has no complete-request tokenizer budget, multi-file tier-move transaction, T1/T2/T3 retrieval adapter, automatic source reconciliation or deployed host integration. Index locks coordinate cooperating local processes, not hostile filesystem users or all network filesystems. Linux tests do not establish power-loss safety or native Windows/macOS execution. Details are recorded in the implementation-status document.
-
-Related project: [hermes-academic-skills](https://github.com/xngg1021/hermes-academic-skills). Its presence is not evidence that THM's theories or effects have been validated.
+Related project: [hermes-academic-skills](https://github.com/xngg1021/hermes-academic-skills). Its presence is not validation of THM.

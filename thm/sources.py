@@ -83,6 +83,7 @@ def read_hermes(path, scope, *, since=None, max_rows=50000, timeout=10.0):
     records = []
     try:
         db.execute('PRAGMA query_only=ON')
+        db.execute('BEGIN')  # schema, profile enumeration and messages share one snapshot
         db.set_progress_handler(lambda: int(time.perf_counter()-start > timeout), 1000)
         columns = {r[1] for r in db.execute('PRAGMA table_info(messages)')}
         required = {'id', 'session_id', 'role', 'content', 'timestamp', 'active', '_compressed_summary'}
