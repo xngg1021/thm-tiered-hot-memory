@@ -7,6 +7,7 @@ Hermes session; it is disabled by default and never fabricates hit events.
 from __future__ import annotations
 
 import hashlib
+import importlib.util
 import json
 import os
 from pathlib import Path
@@ -126,14 +127,38 @@ class THMProvider(MemoryProvider):
         merged.update({k: v for k, v in env_map.items() if v not in (None, "")})
         return merged
 
-    def is_available(self):
+    def _availability_error(self):
         try:
-            return bool((self._merged_config().get("scope") or "").strip())
-        except Exception:
-            return False
+            cfg = self._merged_config()
+            scope = cfg.get("scope")
+            if not isinstance(scope, str) or not scope.strip():
+                return "Configure a THM scope with `hermes memory setup` or THM_RECALL_SCOPE."
+            mode = cfg.get("mode", "sparse")
+            if mode not in ("sparse", "literal", "hybrid", "dense"):
+                return "THM recall mode is invalid."
+            try:
+                budget = int(cfg.get("budget", 600))
+            except (TypeError, ValueError):
+                return "THM evidence budget must be an integer."
+            if not 0 <= budget <= 32768:
+                return "THM evidence budget must be between 0 and 32768."
+            _as_bool(cfg.get("sync_turns"), False)
+            if mode in ("dense", "hybrid"):
+                model = cfg.get("model_path")
+                model_id = cfg.get("model_id")
+                if not model or not Path(str(model)).expanduser().is_dir() or not isinstance(model_id, str) or not model_id.strip():
+                    return "Dense/hybrid THM recall requires an existing model_path and immutable model_id."
+                if importlib.util.find_spec("sentence_transformers") is None or importlib.util.find_spec("torch") is None:
+                    return "Install THM semantic dependencies for dense/hybrid recall."
+            return ""
+        except Exception as exc:
+            return f"THM configuration unavailable: {exc}"
+
+    def is_available(self):
+        return not self._availability_error()
 
     def unavailable_reason(self):
-        return "" if self.is_available() else "Configure a THM scope with `hermes memory setup` or THM_RECALL_SCOPE."
+        return self._availability_error()
 
     def get_config_schema(self):
         return [
@@ -142,8 +167,11 @@ class THMProvider(MemoryProvider):
              "choices": ["sparse", "literal", "hybrid", "dense"]},
             {"key": "budget", "description": "Evidence budget units", "default": 600,
              "type": "integer", "minimum": 0, "maximum": 32768},
+            {"key": "counter", "description": "Budget counter", "default": "utf8_bytes"},
             {"key": "sync_turns", "description": "Maintain a derived per-session T2 snapshot",
              "default": False, "type": "boolean"},
+            {"key": "model_path", "description": "Optional local sentence-transformer directory"},
+            {"key": "model_id", "description": "Immutable identity for the optional local model"},
         ]
 
     def save_config(self, values, hermes_home):
@@ -160,7 +188,17 @@ class THMProvider(MemoryProvider):
         budget = current.get("budget", 600)
         if type(budget) is not int or not 0 <= budget <= 32768:
             raise ValueError("budget must be an integer from 0 to 32768")
+        counter = current.get("counter", "utf8_bytes")
+        if not isinstance(counter, str) or not counter.strip():
+            raise ValueError("counter is required")
         current["sync_turns"] = _as_bool(current.get("sync_turns"), False)
+        if mode in ("dense", "hybrid"):
+            model = current.get("model_path")
+            model_id = current.get("model_id")
+            if not isinstance(model, str) or not Path(model).expanduser().is_dir():
+                raise ValueError("dense/hybrid mode requires an existing model_path")
+            if not isinstance(model_id, str) or not model_id.strip():
+                raise ValueError("dense/hybrid mode requires immutable model_id")
         _atomic_json(_profile_config_path(hermes_home), current)
 
     def initialize(self, session_id, **kwargs):
@@ -228,6 +266,7 @@ class THMProvider(MemoryProvider):
                 if self._index is None:
                     self._index = SearchIndex(self.path, self.counter, readonly=True)
                 pieces, selected, used = [], [], 0
+                live = None
                 if self._sync_turns and self.session_id:
                     live_cap = min(self.budget // 3, 256)
                     live = self._search_scope(self._live_scope(self.session_id), query, live_cap)
@@ -235,20 +274,28 @@ class THMProvider(MemoryProvider):
                         pieces.append(live["context"])
                         selected.extend(live["selected"])
                         used += live["budget_used"]
-                base = self._search_scope(self.scope, query, max(0, self.budget - used))
+                separator_units = self.counter("\n\n") if pieces else 0
+                base = self._search_scope(self.scope, query, max(0, self.budget - used - separator_units))
                 if base and base["context"]:
                     pieces.append(base["context"])
                     selected.extend(base["selected"])
-                    used += base["budget_used"]
-                self.last = {"selected": selected, "budget_used": used, "context": "\n\n".join(pieces)}
-                return self.last["context"]
+                context = "\n\n".join(pieces)
+                final_used = self.counter(context)
+                if final_used > self.budget:
+                    if len(pieces) > 1:
+                        pieces = pieces[:1]
+                        selected = selected[:len(live["selected"])] if live else []
+                        context = pieces[0]
+                        final_used = self.counter(context)
+                    if final_used > self.budget:
+                        raise ValueError("combined THM provider context exceeds configured budget")
+                self.last = {"selected": selected, "budget_used": final_used, "context": context}
+                return context
             except (ValueError, OSError, RuntimeError, sqlite3.Error) as exc:
                 self.error = str(exc)
                 return ""
 
     def queue_prefetch(self, query, *, session_id=""):
-        # THM retrieval is local/current-query-only. Warming on the previous turn's
-        # text does not predict the next query, so this hook intentionally performs no work.
         return None
 
     def _sync_messages(self, messages, session_id):
@@ -295,7 +342,6 @@ class THMProvider(MemoryProvider):
                 self._sync_messages(messages, self.session_id)
 
     def on_pre_compress(self, messages):
-        # Best-effort v1 hook only. THM does not advertise checkpoint API v2.
         with self._lock:
             if self._sync_turns:
                 self._sync_messages(messages, self.session_id)
@@ -331,7 +377,6 @@ class THMProvider(MemoryProvider):
             })
 
     def on_memory_write(self, action, target, content, metadata=None):
-        # A native memory write is not a hit and is not silently mirrored as truth.
         with self._lock:
             self.last = None
             self._source_refresh_required = True
