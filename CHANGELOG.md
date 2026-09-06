@@ -2,6 +2,16 @@
 
 This changelog is reconstructed from the repository's existing Git history. It does not invent retrospective semantic versions for commits that did not carry an explicit version identity.
 
+## 1.4.0 development — shadow residency control
+
+- Adds explicit `resident_hit`, `resident_miss`, `hard_miss`, `planned_retrieval`, `stale_resident_failure` and bounded `prefetch` telemetry without converting observations into activity events.
+- Adds a deterministic **T1 locator-only warm directory**; summaries and source content are not promoted to evidence by the directory projection.
+- Adds a **shadow value-aware T0 recommendation** using measured/caller-supplied miss penalty versus repeated resident carry cost. Incomplete telemetry suppresses actionable `admit`/`evict` output.
+- Adds bounded **co-demand speculative prefetch**. Only explicit demand task co-occurrence trains recommendations; prior prefetch outcomes cannot self-reinforce future prefetch/residency scores.
+- Adds a bounded **shadow resident-budget feedback** step driven by miss pressure, context pressure, prefetch pollution and stale-resident risk. It never mutates Hermes/T0 budgets automatically.
+- Adds a non-authoritative local catalog for resident-cost, miss-cost and locator measurement. The catalog cannot override canonical tier/status/validity/pin/source state.
+- Preserves the existing T0–T3 model and the older activity-only `plan` command. 1.4 does not auto-promote/demote tiers and makes no production optimum claim without runtime/task evidence.
+
 ## Unreleased — version-history recovery controls
 
 - Added immutable-by-policy archive branches for historical research, engine and semantic-version milestones.
