@@ -28,6 +28,7 @@ The original “18/18 verified” report is preserved verbatim under an explicit
 - [Numeric checks](scripts/thm_numeric_audit.py) — ten standard-library tests of the original public formula and rule counterexamples; not a private-engine test.
 - [Document checks](scripts/check_docs.py) — local links, JSON examples, historical-report preservation and scope labels.
 - [Paging engine](scripts/thm.py) — sanitized public copy of the tier-paging engine (seed, audit, hit, confirm, register, manifest). Memory locations come from `THM_MEM_DIR`, `thm.conf`, or a profile-agnostic default; no private data is embedded.
+- [Upstream research](docs/05-hermes-upstream.md) — Hermes official memory stack, similar-issue landscape and merge-path assessment (snapshot 2026-09-06).
 - [Validation record](reports/2026-09-06-文档勘误验证.json) — executed checks and their limits.
 
 From this repository, with Python 3.10 or newer:

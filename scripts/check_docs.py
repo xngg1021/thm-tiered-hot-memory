@@ -21,10 +21,11 @@ def check(root: Path) -> dict:
     errors: list[str] = []
     md_paths = sorted(root.rglob('*.md'))
     expected = {'README.md', 'docs/01-研究综述.md', 'docs/02-架构设计.md', REPORT,
-                'docs/03-validation-contract.md', 'docs/04-related-work.md'}
+                'docs/03-validation-contract.md', 'docs/04-related-work.md',
+                'docs/05-hermes-upstream.md'}
     actual = {p.relative_to(root).as_posix() for p in md_paths}
     if actual != expected:
-        errors.append('Expected the six scoped Markdown documents')
+        errors.append('Expected the seven scoped Markdown documents')
     link_count = json_fences = 0
     for path in md_paths:
         raw = path.read_bytes()
@@ -75,7 +76,7 @@ def check(root: Path) -> dict:
         architecture = ''
         errors.append('Architecture unavailable or invalid UTF-8')
     for required in ('候选修订（未实施）', '原 v1.0 记录', '冻结', 'activity_score',
-                     '第 22 天', '第 28 天', '单写入者', '公开仓库不含 thm.py'):
+                     '第 22 天', '第 28 天', '单写入者', '公开仓库 thm.py 为脱敏副本'):
         if required not in architecture:
             errors.append(f'Missing scope/erratum label: {required}')
     compiled = 0

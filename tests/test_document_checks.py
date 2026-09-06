@@ -8,7 +8,7 @@ ROOT=Path(__file__).resolve().parents[1]
 spec=importlib.util.spec_from_file_location('document_check',ROOT/'scripts/check_docs.py')
 checker=importlib.util.module_from_spec(spec);spec.loader.exec_module(checker)
 PUBLIC_FILES=('README.md','docs/01-研究综述.md','docs/02-架构设计.md','docs/03-validation-contract.md',
- 'docs/04-related-work.md','docs/related-work-sources.json',
+ 'docs/04-related-work.md','docs/05-hermes-upstream.md','docs/related-work-sources.json',
  'reports/2026-09-06-学术工具复审.md','reports/2026-09-06-文档勘误验证.json','scripts/check_docs.py','scripts/thm_numeric_audit.py','scripts/thm.py')
 class DocumentTests(unittest.TestCase):
     def setUp(self):
@@ -31,7 +31,7 @@ class DocumentTests(unittest.TestCase):
         (self.root/'docs/04-related-work.md').unlink()
         out=checker.check(self.root)
         self.assertEqual(out['status'],'FAIL')
-        self.assertIn('Expected the six scoped Markdown documents',out['errors'])
+        self.assertIn('Expected the seven scoped Markdown documents',out['errors'])
     def test_related_work_links_are_checked(self):
         p=self.root/'docs/04-related-work.md'
         p.write_text(p.read_text()+'\n[Missing source](missing-source.json)\n')
