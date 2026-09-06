@@ -1,8 +1,8 @@
 """Label-free candidate reranking and exact budget packing experiments.
 
 This module deliberately consumes only the query, retrieved source rows and the
-base candidate order.  QA answers, benchmark evidence IDs and generated
-summaries are not inputs.  It is kept separate from :mod:`thm.retrieval` until
+base candidate order. QA answers, benchmark evidence IDs and generated
+summaries are not inputs. It stays separate from :mod:`thm.retrieval` until
 held-out evaluation demonstrates that a reranker improves the existing default.
 """
 from __future__ import annotations
@@ -66,7 +66,7 @@ def _normalise_for_phrase(text: str) -> str:
 
 
 def lexical_features(query: str, row: Mapping[str, object]) -> dict[str, float]:
-    """Return query/source features without benchmark or answer information."""
+    """Return body/meta match mass without benchmark or answer information."""
     if not isinstance(query, str) or not query.strip():
         raise ValueError("nonempty query required")
     text = row.get("text")
@@ -81,28 +81,26 @@ def lexical_features(query: str, row: Mapping[str, object]) -> dict[str, float]:
     body = set(terms(text))
     meta = set(terms(f"{speaker} {timestamp}"))
     total = sum(_specificity(token) for token in focus) or 1.0
-    matched = 0.0
-    body_matches = 0
+    body_mass = 0.0
+    meta_mass = 0.0
     any_matches = 0
+    body_matches = 0
     for token in focus:
         weight = _specificity(token)
         if token in body:
-            matched += weight
+            body_mass += weight
             body_matches += 1
             any_matches += 1
         elif token in meta:
-            matched += weight * 0.25
+            meta_mass += weight
             any_matches += 1
-    coverage = matched / total
-    all_focus = 1.0 if focus and any_matches == len(focus) else 0.0
-    body_fraction = body_matches / len(focus) if focus else 0.0
     query_phrase = _normalise_for_phrase(query)
-    exact = 1.0 if len(query_phrase) >= 8 and query_phrase in _normalise_for_phrase(text) else 0.0
     return {
-        "coverage": coverage,
-        "all_focus": all_focus,
-        "body_fraction": body_fraction,
-        "exact": exact,
+        "body_coverage": body_mass / total,
+        "meta_coverage": meta_mass / total,
+        "all_focus": 1.0 if focus and any_matches == len(focus) else 0.0,
+        "body_fraction": body_matches / len(focus) if focus else 0.0,
+        "exact": 1.0 if len(query_phrase) >= 8 and query_phrase in _normalise_for_phrase(text) else 0.0,
     }
 
 
@@ -113,7 +111,7 @@ def rerank_rows(
 ) -> list[dict]:
     """Rerank base-ordered rows using rank prior plus direct lexical coverage.
 
-    The original candidate order remains the prior and final tie-break.  No
+    The original candidate order remains the prior and final tie-break. No
     candidate can appear unless the upstream retriever already returned it.
     """
     config.validate()
@@ -124,16 +122,20 @@ def rerank_rows(
         if not isinstance(row_id, str) or not row_id:
             raise ValueError("candidate row requires string id")
         features = lexical_features(query, row)
+        coverage = min(
+            1.0,
+            features["body_coverage"] + config.metadata_match_factor * features["meta_coverage"],
+        )
         rank_prior = rank ** (-config.rank_exponent)
         score = (
             rank_prior
-            + config.coverage_weight * features["coverage"]
+            + config.coverage_weight * coverage
             + config.all_focus_bonus * features["all_focus"]
             + config.exact_bonus * features["exact"]
         )
         row["_thm_base_rank"] = rank
         row["_thm_rerank_score"] = score
-        row["_thm_rerank_features"] = features
+        row["_thm_rerank_features"] = dict(features, coverage=coverage)
         ranked.append((-score, rank, row_id, row))
     ranked.sort(key=lambda item: (item[0], item[1], item[2]))
     return [item[3] for item in ranked]
@@ -151,7 +153,8 @@ def source_block(row: Mapping[str, object], *, compact: bool) -> str:
         raise ValueError("speaker/timestamp must be strings")
     meta = {"id": row_id, "speaker": speaker, "date": timestamp}
     if compact:
-        # Preserve the same named fields while removing JSON whitespace only.
+        # Same named fields as the baseline format; only insignificant JSON
+        # whitespace is removed, so no provenance field is sacrificed for budget.
         label = json.dumps(meta, ensure_ascii=False, separators=(",", ":"))
     else:
         label = json.dumps(meta, ensure_ascii=False)
