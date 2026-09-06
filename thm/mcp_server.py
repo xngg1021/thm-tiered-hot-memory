@@ -3,7 +3,8 @@ from __future__ import annotations
 
 import argparse
 import atexit
-from typing import TypedDict
+
+from typing_extensions import TypedDict
 
 from .harness import HarnessConfig, THMHarnessAdapter
 
