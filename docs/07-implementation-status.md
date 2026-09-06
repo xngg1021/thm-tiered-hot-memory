@@ -12,6 +12,7 @@ Date: 2026-09-07. Package line: **1.4.0 development**. Historical design remains
 | Decay/activity policies | Multiple kernels and activity-only plan implemented | Parameters remain tunable heuristics; no user-specific optimum without private explicit-hit chronology |
 | Miss/prefetch telemetry | **1.4 shadow implementation** | Raw miss and residency-avoidable miss are separate; planned retrieval is not a miss; prefetch never trains its own demand signal |
 | T1 warm directory | **1.4 shadow implementation** | Strict locator-only projection; topic comes from safe locator stem, never legacy key/summary/source text |
+| Hermes T1 prompt snapshot | **1.4 opt-in runtime implementation** | Disabled at budget 0; refreshes on session boundary only; selected locators must resolve to files inside current profile `memories/` |
 | Value-aware T0 recommendation | **1.4 shadow implementation** | Uses avoidable miss penalty vs repeated carry cost; exact 0/1 packing for that finite token objective; incomplete telemetry suppresses actionable deltas |
 | Speculative prefetch | **1.4 shadow implementation** | Current canonical seed + explicit-demand co-occurrence only; bounded locator/tiny-excerpt candidates |
 | Adaptive resident budget | **1.4 shadow implementation** | One bounded suggestion step driven by avoidable miss, context pressure, prefetch pollution and stale risk; no automatic mutation |
@@ -22,11 +23,11 @@ Date: 2026-09-07. Package line: **1.4.0 development**. Historical design remains
 
 ## 1.4 control-plane invariants
 
-The new public API is documented in [14-residency-control-plane.md](14-residency-control-plane.md). Its central invariant is:
+The shadow control API is documented in [14-residency-control-plane.md](14-residency-control-plane.md); the opt-in Hermes surface is documented separately in [15-hermes-warm-directory.md](15-hermes-warm-directory.md). The central invariant is:
 
 > **measurement and recommendation are permitted; hidden automatic tier mutation is not.**
 
-Additional invariants now enforced in code and tests:
+Additional invariants enforced in code and tests:
 
 - only explicit `avoidable=true` misses contribute resident-capacity benefit; raw unavoidable misses remain diagnostics;
 - a pinned nonresident item is not automatically promoted;
@@ -35,8 +36,10 @@ Additional invariants now enforced in code and tests:
 - prefetch seeds must resolve to current canonical items;
 - successful prefetches do not become future demand training examples;
 - stale/unknown catalog identities fail explicitly;
-- warm directory output is derived from safe locators and cannot leak legacy source-prefix keys;
-- CLI regression tests byte-compare canonical index and native memory files before/after every 1.4 shadow command.
+- warm directory text is derived from safe locators and cannot leak legacy source-prefix keys;
+- the Hermes opt-in directory verifies every selected target exists, remains inside the current profile memory root after symlink resolution, and is a file;
+- native memory writes do not refresh the frozen directory block inside the current session; a later session boundary rebuilds it;
+- CLI/provider regression tests byte-compare canonical index and native memory files before/after 1.4 read-only operations.
 
 The optional residency catalog is a non-authoritative local overlay. It may add resident-cost estimates, counterfactual miss-cost estimates, safe locators and scope labels; it cannot override canonical tier, status, validity, pin state, events or source identity.
 
@@ -50,7 +53,7 @@ Use the weakest accurate label:
 4. **runtime A/B** — actual host/provider execution under controlled alternatives;
 5. **task outcome** — same tasks with quality/success plus cost/latency/reacquisition.
 
-Only levels 4–5 support a production claim that an adaptive residency policy is better for the tested workload. Protocol 2 retrieval results and Hermes lifecycle E2E remain valuable but answer different questions.
+Only levels 4–5 support a production claim that an adaptive residency policy is better for the tested workload. Protocol 2 retrieval results and Hermes lifecycle E2E remain valuable but answer different questions. The Hermes T1 directory provider tests establish integration/read-only/frozen-snapshot behavior; they do not establish task-quality benefit.
 
 ## Historical boundaries
 
