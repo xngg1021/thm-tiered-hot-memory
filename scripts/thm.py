@@ -22,7 +22,7 @@ import tempfile
 import time
 import uuid
 
-VERSION = "1.1.0"
+VERSION = "1.1.1"
 BASE = Path(__file__).resolve().parents[1]
 STORES = ("MEMORY.md", "USER.md")
 W = {"hit": 2.0, "confirm": 1.5, "create": 1.0,
@@ -110,7 +110,10 @@ def normal_path(value, relative_to=None):
 
 def config_paths(mem_dir=None, state_dir=None, conf=None):
     """Resolve configuration only after a command has passed argument parsing."""
-    conf = Path(conf) if conf else BASE / "thm.conf"
+    explicit_conf = conf is not None
+    conf = normal_path(conf) if explicit_conf else BASE / "thm.conf"
+    if explicit_conf and not conf.is_file():
+        raise ThmError("CONFIG_UNAVAILABLE: explicitly selected configuration is missing")
     options = {}
     if conf.exists():
         for line in read_bytes(conf).decode("utf-8").splitlines():
@@ -122,8 +125,16 @@ def config_paths(mem_dir=None, state_dir=None, conf=None):
             if not sep or key not in ("mem_dir", "state_dir") or not value or key in options:
                 raise ThmError("INVALID_CONFIG_LINE")
             options[key] = normal_path(value, conf.resolve().parent)
-    home = normal_path(os.environ.get("HERMES_HOME", Path.home() / ".hermes"))
-    mem = normal_path(mem_dir or os.environ.get("THM_MEM_DIR") or options.get("mem_dir") or home / "memories")
+    selected_mem = mem_dir or os.environ.get("THM_MEM_DIR") or options.get("mem_dir")
+    if selected_mem is None:
+        home = os.environ.get("HERMES_HOME")
+        if not home:
+            try:
+                home = Path.home() / ".hermes"
+            except RuntimeError as exc:
+                raise ThmError("HOME_UNAVAILABLE: configure --mem-dir or HERMES_HOME") from exc
+        selected_mem = normal_path(home) / "memories"
+    mem = normal_path(selected_mem)
     state = normal_path(state_dir or os.environ.get("THM_STATE_DIR") or options.get("state_dir") or mem / ".thm")
     return mem, state
 
@@ -161,12 +172,19 @@ def activation(entry, now=None):
     now = now or today()
     score = 0.0
     seen = set()
-    for event in entry.get("events", []):
+    events = entry.get("events", [])
+    if not isinstance(events, list):
+        raise ThmError("INVALID_EVENTS")
+    for event in events:
+        if not isinstance(event, dict):
+            raise ThmError("INVALID_EVENTS")
         kind = event.get("type")
-        if kind not in W:
+        if not isinstance(kind, str) or kind not in W:
             raise ThmError("UNKNOWN_EVENT_TYPE")
         age = days_since(event.get("t"), now)
         event_id = event.get("event_id")
+        if event_id is not None and (not isinstance(event_id, str) or not event_id.strip()):
+            raise ThmError("INVALID_EVENT_ID")
         if event_id:
             if event_id in seen:
                 raise ThmError("DUPLICATE_EVENT_ID")
@@ -385,16 +403,19 @@ class Engine:
         return self.update(mutate)
 
     def find(self, data, needle):
-        if not needle or not needle.strip():
+        if not isinstance(needle, str) or not needle.strip():
             raise ThmError("EMPTY_SELECTOR")
         exact = [e for e in data["entries"] if e["id"] == needle]
         if exact:
             return exact[0]
-        hits = [e for e in data["entries"] if needle in e["key"] or needle in e["summary"]]
-        if not hits:
-            for store, items in self.stores().items():
-                fingerprints = {source_hash(store, text) for text, _ in items if needle in text}
-                hits.extend(e for e in data["entries"] if e["store"] == store and e.get("source_hash") in fingerprints)
+        hits_by_id = {e["id"]: e for e in data["entries"] if needle in e["key"] or needle in e["summary"]}
+        # A short-summary match cannot hide another entry's full-text match.
+        for store, items in self.stores().items():
+            fingerprints = {source_hash(store, text) for text, _ in items if needle in text}
+            for entry in data["entries"]:
+                if entry["store"] == store and entry.get("source_hash") in fingerprints:
+                    hits_by_id[entry["id"]] = entry
+        hits = [hits_by_id[key] for key in sorted(hits_by_id)]
         if len(hits) != 1:
             raise ThmError("ENTRY_NOT_FOUND" if not hits else "AMBIGUOUS_ENTRY: " + ",".join(e["id"] for e in hits))
         return hits[0]
@@ -410,12 +431,26 @@ class Engine:
             raise ThmError("INVALID_FEEDBACK_TYPE")
         if kind == "confirm" and (not isinstance(evidence, str) or not evidence.strip()):
             raise ThmError("CONFIRMATION_EVIDENCE_REQUIRED")
-        if event_id is not None and (not event_id.strip() or len(event_id) > 200):
+        if event_id is not None and (not isinstance(event_id, str) or not event_id.strip() or len(event_id) > 200):
             raise ThmError("INVALID_EVENT_ID")
+        if not isinstance(note, str) or (evidence is not None and not isinstance(evidence, str)):
+            raise ThmError("INVALID_FEEDBACK_TEXT")
         if len(note) > 4000 or (evidence and len(evidence) > 2000):
             raise ThmError("FEEDBACK_TOO_LONG")
         def mutate(data):
             entry = self.find(data, needle)
+            event = {"type": kind, "t": self.clock().isoformat(), "note": note}
+            if kind == "confirm":
+                event["evidence"] = evidence.strip()
+            event["event_id"] = event_id or "auto:" + digest(encoded({"entry": entry["id"], **event}))
+            old = next((e for e in entry["events"] if e["event_id"] == event["event_id"]), None)
+            if old is not None:
+                # The date is assigned on first commit, not part of an explicit
+                # caller retry's identity. Acknowledge without reactivation/write.
+                if (old.get("type"), old.get("note", ""), old.get("evidence")) != (
+                        event["type"], event["note"], event.get("evidence")):
+                    raise ThmError("EVENT_ID_REUSED_WITH_DIFFERENT_CONTENT")
+                return {"status": "DUPLICATE", "id": entry["id"]}
             if not self.eligible(entry):
                 raise ThmError("ENTRY_NOT_CURRENTLY_ELIGIBLE")
             if entry["tier"] != "T0" or entry["store"] not in STORES:
@@ -423,15 +458,6 @@ class Engine:
             actual = {source_hash(entry["store"], text) for text, _ in parse_store(self.mem_dir / entry["store"])}
             if entry["source_hash"] not in actual:
                 raise ThmError("SOURCE_CHANGED_OR_REMOVED: reconcile before feedback")
-            event = {"type": kind, "t": self.clock().isoformat(), "note": note}
-            if kind == "confirm":
-                event["evidence"] = evidence.strip()
-            event["event_id"] = event_id or "auto:" + digest(encoded({"entry": entry["id"], **event}))
-            old = next((e for e in entry["events"] if e["event_id"] == event["event_id"]), None)
-            if old is not None:
-                if old != event:
-                    raise ThmError("EVENT_ID_REUSED_WITH_DIFFERENT_CONTENT")
-                return {"status": "DUPLICATE", "id": entry["id"]}
             if kind == "confirm" and any(e["type"] == "confirm" and e["t"] == event["t"] and not e.get("legacy_unverified") for e in entry["events"]):
                 return {"status": "ALREADY_CONFIRMED_TODAY", "id": entry["id"]}
             entry["events"].append(event)
@@ -497,6 +523,8 @@ class Engine:
     def manifest(self):
         self.load()  # Also enforce the memory-directory binding for read-only calls.
         warm = self.state_dir / "warm"
+        if warm.is_symlink():
+            raise ThmError("SYMLINK_WARM_DIRECTORY_NOT_SUPPORTED")
         if not warm.exists():
             return {"status": "MISSING_DIRECTORY", "files": []}
         files = []
@@ -522,6 +550,10 @@ class Engine:
             if not isinstance(entry, dict):
                 raise ThmError("INVALID_LEGACY_ENTRY")
             store, key = entry.get("store"), entry.get("key")
+            if not isinstance(store, str):
+                raise ThmError("INVALID_LEGACY_STORE")
+            if not isinstance(entry.get("events"), list) or any(not isinstance(e, dict) for e in entry["events"]):
+                raise ThmError("INVALID_LEGACY_EVENTS")
             if not isinstance(key, str) or not key:
                 raise ThmError("INVALID_LEGACY_KEY")
             matches = []

@@ -1,6 +1,6 @@
 # THM 项目文档总目录
 
-当前使用从[主文件指南](06-engine-guide.md)和[实现状态](07-implementation-status.md)开始。历史研究、设计和审计分别保留，不把原设计的验收目标算成已部署功能。
+当前使用从[主文件指南](06-engine-guide.md)和[实现状态](07-implementation-status.md)开始。历史研究、设计和审计分别保留，不把原设计的验收目标算成已部署功能。当前 1.1.1 的跨日重试、配置与跨平台修正见[直接修复补充](../reports/2026-09-06-chat-followup.md)。
 
 | 文档 | 内容与口径 |
 | --- | --- |
@@ -18,11 +18,15 @@
 | [原学术复审与勘误](../reports/2026-09-06-学术工具复审.md) | 原报告全文及前置勘误，原始段落哈希持续检查 |
 | [原文档勘误执行记录](../reports/2026-09-06-文档勘误验证.json) | 仅对应当时的文档与公式检查 |
 | [旧公开脚本问题复现](../reports/2026-09-06-legacy-engine-probes.json) | 13 个诊断；CONFIRMED 代表发现问题 |
-| [本轮修复报告](../reports/2026-09-06-engine-hardening.md) | 实际修复、测试与剩余限制 |
-| [本轮机器可读结果](../reports/2026-09-06-engine-hardening.json) | 实际命令、版本、源码哈希和非验证项 |
-| [本轮原始单元测试日志](../reports/2026-09-06-engine-tests.txt) | 实际本地测试输出 |
-| [本轮原始公式测试日志](../reports/2026-09-06-numeric-tests.txt) | 旧规范的十项回归输出 |
+| [1.1 修复报告](../reports/2026-09-06-engine-hardening.md) | 前驱修复、测试与剩余限制 |
+| [1.1 机器可读结果](../reports/2026-09-06-engine-hardening.json) | 前驱实际命令、版本、源码哈希和非验证项 |
+| [1.1 原始单元测试日志](../reports/2026-09-06-engine-tests.txt) | 前驱实际本地测试输出 |
+| [1.1 原始公式测试日志](../reports/2026-09-06-numeric-tests.txt) | 旧规范的十项回归输出 |
+| [1.1.1 直接修复报告](../reports/2026-09-06-chat-followup.md) | 追加修复、兼容性变化和前驱 CI 失败记录 |
+| [1.1.1 机器可读结果](../reports/2026-09-06-chat-followup.json) | 当前源码指纹、87 项测试与历史公式回归 |
+| [1.1.1 原始单元测试日志](../reports/2026-09-06-chat-engine-tests.txt) | 当前 Linux 原始输出，不冒充跨平台运行 |
+| [1.1.1 原始公式测试日志](../reports/2026-09-06-chat-numeric-tests.txt) | 当前执行的十项历史公式检查 |
 
-可运行材料：[主脚本](../scripts/thm.py)、[直接实现测试](../tests/test_engine.py)、[文档检查器](../scripts/check_docs.py)、[检查器测试](../tests/test_document_checks.py)、[原公式回归](../scripts/thm_numeric_audit.py)、[旧缺陷复现器](../scripts/reproduce_legacy_engine_findings.py)。旧复现器必须输入其固定的旧引擎 blob，不能套用在修复后的源码上。
+可运行材料：[主脚本](../scripts/thm.py)、[直接实现测试](../tests/test_engine.py)、[新增回归](../tests/test_chat_regressions.py)、[文档检查器](../scripts/check_docs.py)、[检查器测试](../tests/test_document_checks.py)、[原公式回归](../scripts/thm_numeric_audit.py)、[旧缺陷复现器](../scripts/reproduce_legacy_engine_findings.py)。旧复现器必须输入其固定的旧引擎 blob，不能套用在修复后的源码上。
 
 此目录涵盖仓库中的项目文档和本轮可公开交付。其他项目资料、个人记忆和未取得的私有交付 ZIP 不被包装为已上传内容，也不在这里复制。

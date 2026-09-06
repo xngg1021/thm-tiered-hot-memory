@@ -15,7 +15,7 @@ spec.loader.exec_module(checker)
 class DocumentTests(unittest.TestCase):
     def setUp(self):
         self.temp = tempfile.TemporaryDirectory()
-        self.root = Path(self.temp.name)
+        self.root = Path(self.temp.name).resolve()
         for name in checker.REQUIRED:
             self.write(name, '# Synthetic document\n')
         history = b'Synthetic preserved historical text.\n'
@@ -83,11 +83,15 @@ class DocumentTests(unittest.TestCase):
 
     def test_read_error_structured(self):
         original=Path.read_bytes
+        failures=[]
         def fail_one(p):
-            if p == self.root/'README.md': raise PermissionError('synthetic')
+            if p.resolve() == (self.root/'README.md').resolve():
+                failures.append(p)
+                raise PermissionError('synthetic')
             return original(p)
         with patch.object(Path, 'read_bytes', fail_one):
             self.assertEqual(checker.check(self.root)['status'],'FAIL')
+        self.assertEqual(len(failures), 1, 'the injected read failure must actually execute')
 
     def test_new_document_allowed_and_checked(self):
         self.write('docs/extra.md','# Extra\n[Read](../README.md)\n')

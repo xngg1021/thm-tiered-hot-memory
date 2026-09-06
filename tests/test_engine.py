@@ -22,7 +22,7 @@ NOW = dt.date(2026, 9, 6)
 class EngineTests(unittest.TestCase):
     def setUp(self):
         self.tmp = tempfile.TemporaryDirectory()
-        self.root = Path(self.tmp.name)
+        self.root = Path(self.tmp.name).resolve()
         self.mem = self.root / 'profile' / 'memories'
         self.mem.mkdir(parents=True)
         for store in thm.STORES:
@@ -324,8 +324,9 @@ class EngineTests(unittest.TestCase):
         with self.assertRaises(thm.ThmError): thm.config_paths(conf=conf)
 
     def test_hermes_home_honored(self):
-        with patch.dict(os.environ, {'HERMES_HOME': str(self.root/'home')}, clear=True):
-            mem, state = thm.config_paths(conf=self.root/'absent')
+        with patch.object(thm, 'BASE', self.root), patch.dict(os.environ, {'HERMES_HOME': str(self.root/'home')}, clear=True):
+            # Missing default configuration is optional; an explicit path is strict.
+            mem, state = thm.config_paths()
         self.assertEqual(mem, self.root/'home/memories')
         self.assertEqual(state, mem/'.thm')
 

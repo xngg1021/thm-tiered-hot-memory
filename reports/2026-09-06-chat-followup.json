@@ -1,0 +1,25 @@
+{
+  "schema_version": 1,
+  "predecessor_commit": "cb2db7412035661b425dd2e5ec7f4650509da79d",
+  "engine_version": "1.1.1",
+  "executed_at_utc": "2026-09-06T10:17:18.043309+00:00",
+  "environment": {"os": "Linux", "python": "3.13.5"},
+  "runs": [
+    {"command": "python -m unittest discover -s tests -v", "tests": 87, "passed": 87, "failures": 0, "errors": 0, "skipped": 0, "seconds": 5.873, "scope": "50 existing engine tests + 16 existing checker tests + 21 new regressions; test path portability and missing-config expectation repaired"},
+    {"command": "python scripts/thm_numeric_audit.py", "tests": 10, "passed": 10, "scope": "unchanged historical formula tests"}
+  ],
+  "baseline_new_probes": {"engine_blob": "a034eab50c8a3166b0cb3b64836a6a94db9e9b6a", "tests": 19, "failures": 7, "errors": 11, "passed": 1, "scope": "before patch; additional two lazy-home regressions added after inspecting CI"},
+  "source_files": {
+    "scripts/thm.py": {"bytes": 30450, "git_blob": "38b809604fd4c47ccbe2e5b2cecac6349053921e", "sha256": "e5db4cc04b8b8e3c9072c20382331c9637256e273fa3849e750a80c215ae5776"},
+    "tests/test_engine.py": {"bytes": 17806, "git_blob": "bc517369c25d887adb6050de8cc25e7525a1861f", "sha256": "b7d9aaa70e6cdc8726da48ab9c29880efd446ae3fe848451c6124c78f29c296f"},
+    "tests/test_document_checks.py": {"bytes": 5043, "git_blob": "ddd43c1d51ce7512cef77fdfa656315eb40f067d", "sha256": "3c2925e37cdefd8b1b84bb1e9f44151f0156ecf893285c01aa74b26e1540fae9"},
+    "tests/test_chat_regressions.py": {"bytes": 8851, "git_blob": "08ad8781a37c890daed78df0581df3b21f1748d2", "sha256": "c98f6ea6fadb8451f7f69e05943de41b8a59eea345de4b39adb8743af9e8a5aa"}
+  },
+  "local_log_sha256": {
+    "reports/2026-09-06-chat-engine-tests.txt": "f4a60772ad59b69d7a08259e22ef054acd55a9bd9b07bd09e8b92a1e37c0e55b",
+    "reports/2026-09-06-chat-numeric-tests.txt": "9e19d550d261c9c3e95c2353f807d03a86a23f36697c15c60cacbd515ef0ef45"
+  },
+  "predecessor_ci": {"run_id": 34025988369, "linux": "success", "windows": "failure", "macos": "failure", "failure_logs_inspected": true},
+  "not_claimed": ["live Hermes integration", "model effectiveness", "real-data migration", "electrical power-loss validation", "native Windows/macOS validation in this Linux session"],
+  "publication": "Final commit and its CI require separate remote readback."
+}
