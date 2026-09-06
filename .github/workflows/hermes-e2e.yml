@@ -17,8 +17,16 @@ jobs:
   provider-lifecycle:
     runs-on: ubuntu-latest
     timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - label: known-good
+            hermes_sha: 77915e344cb0cd8e20661d4a7b393f987a2eef32
+          - label: current-reviewed
+            hermes_sha: c5594ec4b34097cafbe24deb6dfd9ac4b21d411d
     env:
-      HERMES_SHA: 77915e344cb0cd8e20661d4a7b393f987a2eef32
+      HERMES_SHA: ${{ matrix.hermes_sha }}
     steps:
       - name: Check out THM
         uses: actions/checkout@v4
@@ -26,7 +34,7 @@ jobs:
         uses: actions/checkout@v4
         with:
           repository: NousResearch/hermes-agent
-          ref: 77915e344cb0cd8e20661d4a7b393f987a2eef32
+          ref: ${{ matrix.hermes_sha }}
           path: .hermes-upstream
           fetch-depth: 1
       - name: Set up Python
@@ -44,11 +52,11 @@ jobs:
           python research/hermes_e2e.py \
             --hermes-root .hermes-upstream \
             --expected-sha "$HERMES_SHA" \
-            --output integration-output/hermes-e2e.json
+            --output integration-output/hermes-e2e-${{ matrix.label }}.json
       - name: Upload integration evidence
         uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: thm-hermes-e2e
+          name: thm-hermes-e2e-${{ matrix.label }}
           path: integration-output/
           retention-days: 30
