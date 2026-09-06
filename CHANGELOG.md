@@ -2,6 +2,18 @@
 
 This changelog is reconstructed from the repository's existing Git history. It does not invent retrospective semantic versions for commits that did not carry an explicit version identity.
 
+## 1.4.0 development — shadow residency control
+
+- Adds explicit `resident_hit`, `resident_miss`, `hard_miss`, `planned_retrieval`, `stale_resident_failure` and bounded `prefetch` telemetry without converting observations into activity events. Raw misses and `avoidable=true` residency misses are reported separately; unknown telemetry fields fail instead of silently changing semantics.
+- Separates all observed tasks from explicit demand tasks, so prefetch-only and planned-retrieval-only runs cannot dilute residency need rates. `min_item_demands` is enforced as a real per-item evidence gate; low-support current T0 is protected/reviewed rather than scored as zero-value.
+- Adds a deterministic **T1 locator-only warm directory**. Display topics come from safe locator stems rather than legacy source-prefix keys; summaries and source content are not promoted to evidence by the projection.
+- Adds an **opt-in Hermes T1 locator snapshot** with `warm_directory_budget=0` by default. The snapshot refreshes at session boundaries, not mid-session memory writes; selected targets must exist, resolve inside the current profile `memories/` root, and be files.
+- Adds a **shadow value-aware T0 recommendation** using measured/caller-supplied avoidable-miss penalty versus repeated resident carry cost. Incomplete telemetry suppresses actionable `admit`/`evict` output. Positive measured candidates use deterministic exact 0/1 packing for the stated finite token objective, with explicit 100,000-budget-unit and 1,024-entry public bounds.
+- Adds bounded **co-demand speculative prefetch**. Only current canonical seed items and explicit demand task co-occurrence train recommendations; prior prefetch outcomes cannot self-reinforce future prefetch/residency scores.
+- Adds a bounded **shadow resident-budget feedback** step driven by avoidable miss pressure, context pressure, prefetch pollution and stale-resident risk. Raw unavoidable misses do not grow capacity, and the controller never mutates Hermes/T0 budgets automatically.
+- Adds a non-authoritative local catalog for resident-cost, counterfactual miss-cost and locator measurement. The catalog cannot override canonical tier/status/validity/pin/source state; stale catalog identities and unexpected wrapper fields fail explicitly.
+- Preserves the existing T0–T3 model and the older activity-only `plan` command. A pinned nonresident item is not auto-promoted. 1.4 does not auto-promote/demote tiers and makes no production optimum claim without held-out runtime/task evidence.
+
 ## Unreleased — version-history recovery controls
 
 - Added immutable-by-policy archive branches for historical research, engine and semantic-version milestones.

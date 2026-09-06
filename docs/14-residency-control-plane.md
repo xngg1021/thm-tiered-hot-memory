@@ -1,0 +1,234 @@
+# THM 1.4 shadow residency control plane
+
+> Added 2026-09-07. Implementation: `thm/residency.py` and split modules. The existing **T0–T3 tiers remain unchanged**. This is a THM-specific residency experiment; it does not rename the tiers or import another repository's layer model.
+
+## Scope
+
+1.4 closes the gap between “an item has an activity/decay score” and “there is evidence that keeping it resident is worthwhile.” It adds four read-only capabilities:
+
+1. explicit miss/prefetch telemetry;
+2. a compact T1 locator directory;
+3. a token-denominated shadow T0 residency recommendation;
+4. bounded shadow prefetch and resident-budget suggestions.
+
+All commands are advisory. They do **not** modify `MEMORY.md`, `USER.md`, tier assignments, validity, pin state, activity events, warm files, Hermes configuration or provider budgets. The older `plan` command remains the activity/decay baseline; `residency-plan` is a separate experiment.
+
+## 1. Telemetry vocabulary
+
+| Event | Meaning | Demand | Miss |
+| --- | --- | ---: | ---: |
+| `resident_hit` | needed item was already resident | yes | no |
+| `resident_miss` | needed item was not resident but recoverable | yes | yes |
+| `hard_miss` | needed state required broader search/reconstruction | yes | yes |
+| `planned_retrieval` | on-demand retrieval was intentional policy | no | no |
+| `stale_resident_failure` | resident state was present but wrong/stale | no | no; correctness risk |
+| `prefetch` | speculative locator/tiny-excerpt fetch | never trains demand | no |
+
+Miss events carry an explicit `avoidable` boolean. It answers a narrower counterfactual question: **would keeping/fetching this item under the tested policy plausibly have avoided this miss?** Raw miss rate remains diagnostic, but only `avoidable=true` misses enter the resident-capacity benefit signal. The conservative default is `false`.
+
+Events may also carry extra tokens, tool calls, latency and observed provider cost. THM never invents missing values. `prefetch` requires `used=true/false`; optional `avoided_miss` and avoided-cost fields remain caller-supplied labels rather than inferred causal truth. Unknown telemetry fields fail explicitly so a typo such as `avoidble` cannot silently turn a positive observation into the conservative default.
+
+Example JSONL:
+
+```jsonl
+{"event_id":"run-1:a","task_id":"run-1","kind":"resident_miss","item_id":"db-port","avoidable":true,"extra_tokens":420,"extra_tool_calls":1,"extra_latency_ms":35}
+{"event_id":"run-2:p","task_id":"run-2","kind":"prefetch","item_id":"db-port","used":true,"mode":"locator","extra_tokens":18,"confidence":0.8}
+```
+
+```bash
+python -m thm residency-telemetry ./private/residency-events.jsonl
+```
+
+The report exposes both raw and avoidable miss rates/penalties and labels itself `explicit-shadow-telemetry-not-causal-usage-proof`.
+
+### Demand-task denominator and anti-feedback rule
+
+Telemetry exposes both:
+
+- `tasks`: every task ID seen in the supplied trace;
+- `demand_tasks`: only tasks containing `resident_hit`, `resident_miss` or `hard_miss`.
+
+Per-item `need_task_rate` and residency opportunity rates use **`demand_tasks`**, so prefetch-only or planned-retrieval-only tasks cannot dilute an item's observed need probability.
+
+Per-item telemetry also maintains broad `task_ids` and strict `demand_task_ids`. Residency and co-demand prefetch use the strict set. A successful earlier prefetch therefore cannot manufacture future demand evidence for itself.
+
+## 2. Optional measurement catalog
+
+The canonical THM index continues to own identity, tier, status, validity, pinning and source linkage. A separate local catalog may add only measurement/projection fields:
+
+```json
+{
+  "items": {
+    "entry-id": {
+      "resident_units": 74,
+      "miss_penalty_tokens": 900,
+      "locator": "warm/database.md",
+      "scope": "profile-main"
+    }
+  }
+}
+```
+
+Allowed overlay fields are `resident_units`, `miss_penalty_tokens`, `locator`, `scope`, `project` and `profile`. `miss_penalty_tokens` means the caller's explicit counterfactual token penalty for a residency-avoidable miss of that item; it is not a generic “importance” score.
+
+The overlay cannot change canonical tier/status/validity/pin/events/source identity. Unsupported fields fail. A catalog item id that no longer exists in the canonical index also fails instead of being silently ignored. Wrapper metadata outside the documented `items` key fails as well, preventing stale or misspelled catalog structure from being accepted partially. Keep private catalogs outside the public repository when locators or scope names disclose private state.
+
+## 3. T1 warm directory
+
+```bash
+python -m thm warm-directory \
+  --mem-dir /path/to/memories \
+  --date 2026-09-07 \
+  --budget 300 \
+  --counter cl100k_base \
+  --catalog /private/thm-residency-catalog.json
+```
+
+The projection uses current T1 rows only. Each selected line contains:
+
+```text
+locator-stem | scope | current-item-count | latest-date | revision-prefix | locator
+```
+
+The display topic is derived from the **safe locator filename**, never from the legacy `key`, `summary` or source body. This matters because historical index keys may themselves be source-text prefixes. A locator says where a T1 subject lives; it is not evidence for the subject.
+
+Absolute paths, parent traversal, `~` and unsafe locator forms are rejected. Native `MEMORY.md`/`USER.md` are not guessed as T1 locators. Directory packing is deterministic and budgeted; pin/cost/count signals only decide which locator line fits and do not prove semantic importance.
+
+Hermes' optional runtime projection is documented separately in [15-hermes-warm-directory.md](15-hermes-warm-directory.md). Enabling that projection does not enable automatic residency control.
+
+## 4. Shadow value-aware T0 recommendation
+
+```bash
+python -m thm residency-plan \
+  --mem-dir /path/to/memories \
+  --date 2026-09-07 \
+  --budget 1200 \
+  --telemetry /private/residency-events.jsonl \
+  --catalog /private/thm-residency-catalog.json \
+  --counter cl100k_base \
+  --horizon-tasks 20 \
+  --min-tasks 20 \
+  --min-item-demands 2
+```
+
+For measurable items the token-side comparison is:
+
+```text
+expected_saved_tokens(H)
+  = expected_avoidable_misses_over_H * avoidable_miss_penalty_tokens
+
+resident_carry_tokens(H)
+  = resident_units * H
+
+net_token_value(H)
+  = expected_saved_tokens(H) - resident_carry_tokens(H)
+```
+
+For a nonresident candidate, occurrence pressure is estimated from **observed avoidable misses**, not every raw miss. For current T0, an explicit catalog miss penalty can provide the otherwise-unobserved counterfactual cost of removing the item; without sufficient evidence the current resident remains uncertain/protected rather than being assigned zero value.
+
+This remains a **token objective**. It does not pretend latency, correctness, dollars and task value are one scalar. Activity is only a deterministic tie-break between token-objective ties.
+
+### Sample gates
+
+Two gates are separate:
+
+- `--min-tasks` is evaluated against explicit **demand tasks**, not every task in the telemetry file;
+- `--min-item-demands` is an actual per-item evidence gate.
+
+If an item has some observed demand but fewer observations than `--min-item-demands`, its demand/miss evidence is suppressed for placement. A low-support current T0 is protected/reviewed rather than treated as proven zero-value. Reports expose `all_tasks_observed`, `demand_tasks_observed`, `low_support_item_ids` and the applied threshold.
+
+### Exact budget packing and resource bounds
+
+Positive measurable candidates are selected with a deterministic exact **0/1 knapsack** over the stated token objective and supplied budget. This fixes a failure mode where value-density greedy packing can select a lower-total-value set. Tie order is total token value, activity, cost class, lower used capacity and stable item id.
+
+The exact planner is deliberately bounded: the public facade refuses budgets above **100,000 units** or more than **1,024 supplied entries**. It fails explicitly instead of silently switching algorithms or consuming unbounded dynamic-programming state.
+
+“Exact” therefore means exact for the explicit finite token objective and accepted input bounds. It is not a claim of a globally optimal memory policy.
+
+### Conservative unknown handling
+
+- current T0 without measurable resident cost returns `UNCOSTED_CURRENT_RESIDENT` and suppresses placement changes;
+- current T0 with incomplete counterfactual miss evidence stays protected/uncertain;
+- if demand-task coverage is below `--min-tasks`, real `admit`/`evict` arrays stay empty and only `provisional_*` fields are emitted;
+- invalid or out-of-validity rows are excluded before ranking;
+- `stale_resident_failure` blocks the item by default and sends it to review even if frequently used;
+- `pinned` protects an **already resident T0** item from ordinary capacity eviction; it does not auto-promote a pinned T1/T2/T3 item;
+- pinning never turns stale content into valid content.
+
+`--complete-coverage` is only valid when the trace really covers the evaluation opportunity set. T2/T3 candidates require explicit `--candidate-tier` plus a resident-cost estimate; THM does not infer promotion cost from summary length.
+
+## 5. Bounded speculative prefetch
+
+`prefetch-plan` is a deterministic first-order co-demand heuristic, not a learned branch predictor.
+
+```bash
+python -m thm prefetch-plan \
+  --mem-dir /path/to/memories \
+  --date 2026-09-07 \
+  --telemetry /private/residency-events.jsonl \
+  --catalog /private/thm-residency-catalog.json \
+  --active current-item-id \
+  --max-candidates 3 \
+  --min-support 2 \
+  --min-confidence 0.5 \
+  --mode locator
+```
+
+For seed A and candidate B:
+
+```text
+support(A,B) = explicit-demand tasks containing both A and B
+confidence(A→B) = support(A,B) / explicit-demand tasks containing A
+```
+
+Only explicit demand trains the relation. Earlier `prefetch` events are excluded even if later used. Every active seed must resolve to a **current canonical THM item** before its telemetry can drive a recommendation; unknown, invalid or out-of-validity seeds are reported and ignored.
+
+Candidates must also be current, come from explicitly allowed non-T0 tiers, and expose safe locators. The only modes are `locator` and `tiny_excerpt`; there is no whole-file speculative injection.
+
+Runtime evaluation should record prefetch accuracy, avoidable-miss coverage, injected-token waste and net observed cost. Correlation is not a causal utility claim.
+
+## 6. Shadow resident-budget feedback
+
+```bash
+python -m thm residency-budget ./private/residency-events.jsonl \
+  --current-budget 600 \
+  --context-pressure 0.84 \
+  --min-budget 300 \
+  --max-budget 1200 \
+  --step 100
+```
+
+The controller uses **avoidable miss rate** above target as grow pressure. Raw miss rate remains visible for diagnosis but cannot grow resident capacity by itself. Context pressure drives shrink; prefetch pollution and stale-resident failures add risk/shrink pressure. Hysteresis prevents small noise from oscillating the budget. Insufficient explicit demand holds the current value. The result always reports `changes_applied:false`.
+
+This is a bounded feedback experiment, not TCP AIMD and not a learned policy.
+
+## 7. Explicit non-capabilities
+
+1.4 does not auto-promote/demote T0–T3, convert `mention_observed`/display/retrieval/prefetch into `hit`, infer truth from frequency, rewrite stale facts, treat locator lines as evidence, infer full telemetry from partial traces, call a model/provider, install cron, or claim a global optimum for decay/residency/prefetch thresholds.
+
+These boundaries preserve the distinction between **observation**, **activity**, **validity**, **residency**, and **task outcome**.
+
+## 8. Acceptance gate before automatic control
+
+Automatic tier or budget mutation remains out of scope until an exact revision has held-out runtime evidence showing all of the following:
+
+1. lower avoidable miss/reacquisition cost at the same or better task quality;
+2. no increase in stale-state mistakes or scope/profile leakage;
+3. positive prefetch net value after unused injection is charged;
+4. stable decisions under incomplete/empty telemetry and restart;
+5. comparison against a simple fixed-budget + existing activity/decay baseline;
+6. retrieval coverage reported separately from generated-answer/task success.
+
+Until then THM exposes recommendations and receipts instead of hidden policy changes.
+
+## Implementation map
+
+- facade and sample/resource guardrails: `thm/residency.py`
+- validation/catalog: `thm/_residency_common.py`
+- telemetry: `thm/residency_telemetry.py`
+- T1 locator projection: `thm/residency_directory.py`
+- shadow residency/prefetch/budget control: `thm/residency_control.py`
+- compatibility research CLI: `research/residency/miss_telemetry.py`
+- tests: `tests/test_residency_control.py`, `tests/test_residency_guardrails.py`, `tests/test_residency_cli.py`, `tests/test_miss_telemetry.py`
+
+The earlier hardware-analogy audit and its evidence boundaries remain in [the preceding design note](13-hardware-inspired-adaptive-residency.md).
