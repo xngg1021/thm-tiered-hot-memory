@@ -1,112 +1,108 @@
-# THM version history and recovery map
+# Version history and exact recovery map
 
-Reconstructed on 2026-09-07 from the remote Git history of `xngg1021/thm-tiered-hot-memory`.
+This document maps the repository's explicit historical milestones to exact Git commits and immutable-by-policy archive branches. Git commit identity is authoritative. Version strings are recorded only when the repository itself contains explicit evidence for that version.
 
-## Authority and recovery rule
+Machine-readable source: [`versions/history.json`](../versions/history.json).
 
-Git commits are the authoritative historical record. Archive branches are convenience pointers to milestone commits and must not be moved after publication. They do not replace the commit graph.
+## Current stable milestone
 
-A historical state is classified as **exactly recoverable** only when the corresponding commit object is reachable from the repository. A version number is recorded only when repository evidence explicitly names it; pre-version research and engine snapshots are preserved under descriptive IDs rather than invented semantic versions.
+THM **1.4.0** is accepted as an implementation/integration stable milestone at:
 
-At reconstruction time the remote had one branch (`main`) and no version tags. The following archive branches were created without rewriting `main`:
+```text
+e6e4dda5835e3cb345207457d5491131c6959b2c
+```
 
-| Snapshot | Commit | Archive branch | Evidence / meaning |
+Recovery pointer:
+
+```text
+archive/v1.4.0-stable
+```
+
+Feature PR #5 merged the 1.4 line from feature head `a1bd23d6abfa1181327d9ec23887cf3903be3ea0` without squashing or rebasing the 11 semantic feature commits. The accepted merge SHA then passed main-branch correctness (`34059895478`), Hermes integration (`34059895474`) and multi-harness integration (`34059895461`). Retrieval benchmark run `34059936492` was **skipped by the retrieval-path gate** because 1.4 did not change retrieval-path files; that skip is not a new Protocol 2 result.
+
+Formal evidence: [1.4 closeout](../reports/2026-09-07-v1.4-closeout.md) · [machine-readable closeout](../reports/2026-09-07-v1.4-closeout.json).
+
+“Stable” here means the public 1.4 implementation, read-only/advisory control boundaries, Hermes opt-in T1 locator projection and integrations reached an exact, tested recovery milestone. It does **not** mean automatic tier/budget mutation is enabled or that the shadow adaptive policy has beaten a fixed baseline on held-out real tasks.
+
+## Historical recovery table
+
+| Milestone | Exact commit | Archive branch | Meaning |
 | --- | --- | --- | --- |
-| Initial public research snapshot | `3fc7d6c438e167c384f20697cc1c0642d3de9e8a` | `archive/20260906-docs-initial` | Initial research review, architecture and academic-audit commit |
-| Corrected research snapshot | `25a51d7c68e36d3a53c94da568ff847f066f0fed` | `archive/20260906-docs-corrected` | Theory/policy/audit corrections before the public engine line |
-| Legacy public engine | `4e9b5d8ed5a05c9a538f385acc8632e641ae5908` | `archive/20260906-engine-legacy` | First sanitized paging engine; retained historical v1 defects |
-| **1.1.0** | `cb2db7412035661b425dd2e5ec7f4650509da79d` | `archive/v1.1.0` | `reports/2026-09-06-engine-hardening.json` records engine version 1.1.0 |
-| **1.1.1** | `2196e1de36d9dae1798a147762b3019ebf81073e` | `archive/v1.1.1` | `reports/2026-09-06-chat-followup.json` records engine version 1.1.1 |
-| **1.2.0** | `432c93b17735cbdf20b240c66a6cba3739e70ab9` | `archive/v1.2.0` | Last pre-1.3 snapshot; `pyproject.toml` still declares 1.2.0 |
-| **1.3.0 baseline** | `1880211f75b016e2234cbef702573022f6f983f1` | `archive/v1.3.0-baseline` | `pyproject.toml` declares 1.3.0; exact CI results remain the authority for integration closure |
-| Version-recovery closeout | `8e1f7f70b39386667ac00f47bb4f61ccc3f86b28` | `archive/20260907-version-recovery-merged` | PR #1 merged forward-only; history checks plus MCP v2/OpenClaw compatibility repairs are present and merged-main correctness, multi-harness and Hermes integration workflows succeeded |
+| Initial public research | `3fc7d6c438e167c384f20697cc1c0642d3de9e8a` | `archive/20260906-docs-initial` | Documentation-only research/design/audit snapshot |
+| Corrected research | `25a51d7c68e36d3a53c94da568ff847f066f0fed` | `archive/20260906-docs-corrected` | Corrected theory, policy claims and audit provenance |
+| Legacy public engine | `4e9b5d8ed5a05c9a538f385acc8632e641ae5908` | `archive/20260906-engine-legacy` | First sanitized paging engine; retained known v1 defects |
+| 1.1.0 | `cb2db7412035661b425dd2e5ec7f4650509da79d` | `archive/v1.1.0` | Hardened public index-maintenance engine |
+| 1.1.1 | `2196e1de36d9dae1798a147762b3019ebf81073e` | `archive/v1.1.1` | Retry/selector/cross-platform follow-up |
+| 1.2.0 | `432c93b17735cbdf20b240c66a6cba3739e70ab9` | `archive/v1.2.0` | Final pre-1.3 retrieval/measurement snapshot |
+| 1.3.0 baseline | `1880211f75b016e2234cbef702573022f6f983f1` | `archive/v1.3.0-baseline` | Multi-harness package baseline; not itself a stable-integration claim |
+| Version-recovery closeout | `8e1f7f70b39386667ac00f47bb4f61ccc3f86b28` | `archive/20260907-version-recovery-merged` | Version-history and MCP/OpenClaw recovery merged by PR #1 |
+| **1.4.0 stable** | **`e6e4dda5835e3cb345207457d5491131c6959b2c`** | **`archive/v1.4.0-stable`** | Shadow residency/control + opt-in session-frozen Hermes T1 locator directory; main correctness/Hermes/harness acceptance passed |
 
-The machine-readable source for this table is [`versions/history.json`](../versions/history.json).
+Archive branches are milestone pointers. Once published, they are not to be moved to a different commit. Later documentation closeout commits do not redefine the code/content snapshot represented by the archive pointer.
 
-## Version-line boundaries
+## Development boundaries
 
-### Pre-version research line
+### 1.2
 
-`3fc7d6c` is the original documentation-only public snapshot. `25a51d7` is the corrected documentation snapshot. These commits are preserved as historical states, but assigning retrospective `0.x` version numbers would create history that did not exist in the repository, so this reconstruction does not do that.
+`433b1256bbaca8680f3c41d67a1e23e97b36bd7c` is the first repository commit that declares package version 1.2.0 and adds the scoped retrieval/measurement line.
 
-### Public engine before 1.1
+### 1.3
 
-`4e9b5d8` introduced the sanitized public paging engine. Later status documentation explicitly identifies it as the earlier public engine that retained known v1 defects. It is therefore preserved as a named legacy snapshot rather than being relabeled as an invented `1.0.0` release.
+Harness-neutral adapter work begins at `80fc84deeb481bea5d06e11553590c9702e43bcb` while package metadata still declares 1.2.0. The package version is bumped to 1.3.0 at `51d33fddc24c23b81ed6bb88841be9d2dd0e1ce1`.
 
-### 1.1.0
+`1880211f75b016e2234cbef702573022f6f983f1` is retained as the explicit 1.3.0 baseline. The version string alone did not certify every harness integration; exact workflow evidence governed acceptance.
 
-`cb2db741` is the 1.1.0 hardened public index-maintenance state. Its machine-readable hardening report records `engine_version: 1.1.0`, test counts, environment and source hashes.
+### 1.4
 
-### 1.1.1
+`05129a14b61afa96161df4381a86985604e9ac94` begins the 1.4 shadow-residency implementation line from `main@deb86b40b97e0fc96e1905f66ae180836c38b1fa`.
 
-`2196e1de` is the 1.1.1 closeout on the 1.1 line. Its report records the exact predecessor (`cb2db741`), `engine_version: 1.1.1`, test results and explicit non-claims.
+The line adds miss/prefetch telemetry, T1 locator projection, value-aware shadow T0 recommendation, bounded co-demand prefetch, bounded shadow budget feedback and an opt-in Hermes T1 locator snapshot. The existing **T0–T3 tier model remains intact**.
 
-### 1.2.0
+Feature head `a1bd23d6abfa1181327d9ec23887cf3903be3ea0` was merged by PR #5 into accepted merge commit `e6e4dda5835e3cb345207457d5491131c6959b2c`. That merge commit is the stable 1.4 recovery point; later closeout documentation does not move it.
 
-The 1.2 line begins at `433b1256`, where the repository package first declares 1.2.0 and adds scoped recall, observation and decay measurement. Work continues through recall hardening, Protocol 2 evidence and Hermes integration. `432c93b` is frozen as the 1.2.0 archive because it is the last commit before 1.3 harness-development work begins, and its `pyproject.toml` still declares 1.2.0.
+## What exact recovery restores
 
-This distinction matters: the later `80fc84d` harness-neutral adapter begins 1.3-oriented development while package metadata still says 1.2.0. The history map preserves that development boundary instead of pretending every commit carrying the old metadata belongs to the stable 1.2 feature set.
+Checking out one of the commits or archive branches above restores repository bytes reachable from that Git object: source, tests, public docs, public reports and package metadata as committed at that point.
 
-### 1.3.0
-
-1.3-oriented harness work begins at `80fc84d`. The package version is explicitly bumped to 1.3.0 at `51d33fd`. `1880211` is frozen as the first reconstructed 1.3.0 baseline because it is the `main` head at the start of this recovery operation.
-
-The version string does **not** certify that every harness E2E is green. Release and integration status must be read from the exact workflow run for the exact commit. The archive name therefore uses `v1.3.0-baseline`, not `v1.3.0-stable`.
-
-### Version-recovery closeout
-
-PR #1 was merged with a merge commit at `8e1f7f70b39386667ac00f47bb4f61ccc3f86b28`; its 17 forward-only recovery commits remain individually reachable. The merge added the machine-checked history map, changelog and recovery docs, repaired MCP v2 structured output, and added a separate read-only compatibility bridge for the pinned OpenClaw 2026.9.x client generation. The merged-main correctness, multi-harness and Hermes integration workflows all completed successfully. This closeout is a recovery milestone, not a new semantic version, so no artificial `1.3.1` label is assigned.
-
-## Restoring any preserved state
-
-Every commit remains directly addressable even when it is not an archive milestone:
+Example:
 
 ```bash
-git log --reverse --first-parent main
-git show <commit>
-git switch --detach <commit>
+git switch --detach archive/v1.4.0-stable
 ```
 
-For milestone states:
+or:
 
 ```bash
-git switch archive/v1.1.0
-git switch archive/v1.1.1
-git switch archive/v1.2.0
-git switch archive/v1.3.0-baseline
-git switch archive/20260907-version-recovery-merged
+git switch --detach e6e4dda5835e3cb345207457d5491131c6959b2c
 ```
 
-For side-by-side comparison without moving the current checkout:
+For an editable recovery branch:
 
 ```bash
-git worktree add ../thm-v1.2 archive/v1.2.0
-git worktree add ../thm-v1.3 archive/v1.3.0-baseline
+git switch -c recovery/my-v1.4 archive/v1.4.0-stable
 ```
 
-No historical commit needs to be replayed or rewritten to recover its tree. Rewriting `main`, force-moving archive branches, or squashing the historical chain would reduce recoverability and is outside this policy.
+## What the repository cannot reconstruct
 
-## What cannot be reconstructed exactly from this repository
+Git recovery does not fabricate bytes that were never committed. In particular, this repository alone cannot exactly reconstruct:
 
-The following are outside the recoverable Git history unless their original bytes are supplied from another source:
+- local-only historical states that never entered Git;
+- any separately delivered private reference implementation/ZIP whose bytes are not in this repository;
+- remote Git objects that had already become unreachable and unavailable before the history reconstruction;
+- installed Hermes configuration;
+- private user `MEMORY.md`, `USER.md`, `.thm/index.json`, recall databases, residency catalogs or telemetry traces;
+- local cron/task state;
+- external provider/model/service state.
 
-- local-only versions that were never committed;
-- the separately delivered private reference implementation / ZIP whose bytes are not present in this repository;
-- unreachable Git objects that had already been removed from the remote before this reconstruction;
-- installed Hermes configuration, user memory/index contents, local cron state, provider state and external model state.
+Those require their original artifacts or independent backups.
 
-If any of those artifacts are later supplied, they should be imported as **new historical evidence** with their original timestamp/source/hash. They should not be inserted into the old commit graph with fabricated dates.
+## Recovery and evidence are separate
 
-## Forward version-control discipline
+A recoverable commit is not automatically a quality claim. Historical benchmark, integration or task results apply only to the exact revisions and protocols that produced them. In particular:
 
-For every future semantic version:
+- Protocol 2 retrieval evidence remains attached to its recorded retrieval revisions;
+- 1.4's skipped heavy retrieval workflow does not refresh those benchmark numbers;
+- 1.4's main-branch correctness/Hermes/harness successes establish implementation/integration acceptance, not held-out adaptive-policy superiority;
+- automatic T0–T3 or budget mutation remains gated on separate runtime/task A/B evidence.
 
-1. keep implementation commits forward-only on a work branch;
-2. record the exact predecessor and intended version boundary;
-3. bump package/plugin metadata only when the version line is intentional;
-4. record exact HEAD, parent(s), evidence paths and CI status in a machine-readable closeout;
-5. freeze the accepted commit with an immutable version ref (tag when available; archive branch remains an acceptable recovery pointer);
-6. never infer a green release from a version string alone;
-7. retain failed historical CI and superseded reports instead of rewriting them into success.
-
-`versions/history.json` and `scripts/check_version_history.py` are intended to make these invariants machine-checkable.
+This separation is intentional: version history answers **what bytes can be recovered**, while reports and workflows answer **what was actually tested**.

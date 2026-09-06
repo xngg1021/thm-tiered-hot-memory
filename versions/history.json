@@ -96,6 +96,27 @@
       "version": null,
       "state": "forward-only version-history recovery merged by PR #1; archive refs, machine-checked history, MCP v2 structured-output repair and OpenClaw legacy bridge are present; merged-main correctness, multi-harness and Hermes integration workflows all succeeded",
       "recoverability": "exact-git-snapshot"
+    },
+    {
+      "id": "v1.4.0-stable",
+      "kind": "version-freeze",
+      "introduced_commit": "05129a14b61afa96161df4381a86985604e9ac94",
+      "feature_head": "a1bd23d6abfa1181327d9ec23887cf3903be3ea0",
+      "commit": "e6e4dda5835e3cb345207457d5491131c6959b2c",
+      "archive_branch": "archive/v1.4.0-stable",
+      "date": "2026-09-07",
+      "version": "1.4.0",
+      "version_evidence": "reports/2026-09-07-v1.4-closeout.json",
+      "state": "accepted implementation/integration stable THM 1.4: shadow residency telemetry/control plus opt-in session-frozen Hermes T1 locator directory; automatic tier/budget mutation remains disabled pending held-out runtime/task evidence",
+      "acceptance": {
+        "feature_pr": 5,
+        "correctness_run": 34059895478,
+        "hermes_run": 34059895474,
+        "harness_run": 34059895461,
+        "retrieval_run": 34059936492,
+        "retrieval_conclusion": "skipped-no-retrieval-path-change"
+      },
+      "recoverability": "exact-git-snapshot"
     }
   ],
   "development_boundaries": [
@@ -118,12 +139,22 @@
       "name": "version-history recovery merged",
       "commit": "8e1f7f70b39386667ac00f47bb4f61ccc3f86b28",
       "note": "PR #1 preserves all recovery commits with a merge commit and closes the previously failing multi-harness MCP integration"
+    },
+    {
+      "name": "v1.4 shadow residency development begins",
+      "commit": "05129a14b61afa96161df4381a86985604e9ac94",
+      "note": "adds the first 1.4 shadow residency telemetry/control implementation while preserving T0-T3"
+    },
+    {
+      "name": "v1.4 accepted stable implementation",
+      "commit": "e6e4dda5835e3cb345207457d5491131c6959b2c",
+      "note": "PR #5 merge; main correctness, Hermes and harness workflows succeeded; retrieval benchmark correctly skipped because retrieval-path code was unchanged"
     }
   ],
   "not_exactly_recoverable_from_this_repository": [
     "local-only states that were never committed",
     "the separately delivered private reference implementation/ZIP whose bytes are not in this repository",
     "unreachable rewritten Git objects if they were removed before this reconstruction and are no longer reachable from the remote repository",
-    "installed Hermes configuration, private user memory/index data, local cron state and external model/provider state"
+    "installed Hermes configuration, private user memory/index data, private residency catalogs/telemetry, local cron state and external model/provider state"
   ]
 }

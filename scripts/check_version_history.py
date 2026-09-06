@@ -71,6 +71,70 @@ def show_text(sha: str, path: str) -> str:
     return git("show", f"{sha}:{path}").stdout
 
 
+def show_text_optional(sha: str, path: str) -> str | None:
+    proc = git("show", f"{sha}:{path}", check=False)
+    return None if proc.returncode != 0 else proc.stdout
+
+
+def parse_version_payload(raw: str, evidence: str, label: str) -> str | None:
+    if evidence.endswith("pyproject.toml"):
+        match = VERSION_RE.search(raw)
+        if not match:
+            raise HistoryError(f"{label}: no project version found in {evidence}")
+        return match.group(1)
+    if evidence.endswith(".json"):
+        payload = json.loads(raw)
+        observed = payload.get("engine_version") or payload.get("version") or payload.get("release")
+        if observed is None:
+            raise HistoryError(
+                f"{label}: no engine_version/version/release in {evidence}"
+            )
+        return observed
+    raise HistoryError(f"{label}: unsupported version evidence: {evidence}")
+
+
+def verify_closeout_report(
+    snapshot: dict[str, object], evidence: str, version: str, sha: str
+) -> None:
+    """Validate a post-merge closeout that intentionally cannot exist in the frozen code tree.
+
+    Workflow run IDs are only known after the accepted code SHA is pushed. Such a
+    report may therefore live in a forward-only descendant. The frozen commit must
+    still self-identify its package version independently via pyproject.toml.
+    """
+    path = ROOT / evidence
+    if not path.is_file():
+        raise HistoryError(f"{snapshot['id']}: closeout evidence missing from current tree: {evidence}")
+    raw = path.read_text(encoding="utf-8")
+    observed = parse_version_payload(raw, evidence, str(snapshot["id"]))
+    if observed != version:
+        raise HistoryError(
+            f"{snapshot['id']}: manifest says {version}, closeout evidence says {observed}"
+        )
+    payload = json.loads(raw)
+    if payload.get("accepted_merge_commit") != sha:
+        raise HistoryError(
+            f"{snapshot['id']}: closeout accepted_merge_commit does not match frozen commit"
+        )
+    if payload.get("archive_branch") != snapshot.get("archive_branch"):
+        raise HistoryError(
+            f"{snapshot['id']}: closeout archive_branch does not match manifest"
+        )
+
+    package_raw = show_text_optional(sha, "pyproject.toml")
+    if package_raw is None:
+        raise HistoryError(
+            f"{snapshot['id']}: post-merge closeout requires pyproject.toml in frozen commit"
+        )
+    package_version = parse_version_payload(
+        package_raw, "pyproject.toml", f"{snapshot['id']} frozen package"
+    )
+    if package_version != version:
+        raise HistoryError(
+            f"{snapshot['id']}: frozen package says {package_version}, manifest says {version}"
+        )
+
+
 def verify_version_evidence(snapshot: dict[str, object]) -> None:
     version = snapshot.get("version")
     evidence = snapshot.get("version_evidence")
@@ -84,23 +148,35 @@ def verify_version_evidence(snapshot: dict[str, object]) -> None:
         raise HistoryError(f"{snapshot['id']}: versioned snapshot lacks version_evidence")
 
     sha = str(snapshot["commit"])
-    raw = show_text(sha, evidence)
-    if evidence.endswith("pyproject.toml"):
-        match = VERSION_RE.search(raw)
-        if not match:
-            raise HistoryError(f"{snapshot['id']}: no project version found in {evidence}@{sha}")
-        observed = match.group(1)
-    elif evidence.endswith(".json"):
-        payload = json.loads(raw)
-        observed = payload.get("engine_version") or payload.get("version")
-        if observed is None:
-            raise HistoryError(f"{snapshot['id']}: no engine_version/version in {evidence}@{sha}")
-    else:
-        raise HistoryError(f"{snapshot['id']}: unsupported version evidence: {evidence}")
+    raw = show_text_optional(sha, evidence)
+    if raw is None:
+        # A release closeout containing workflow IDs may only be written after the
+        # accepted merge exists. We accept that shape only with stronger binding:
+        # current-tree report -> exact accepted SHA/archive + frozen pyproject version.
+        verify_closeout_report(snapshot, evidence, version, sha)
+        return
 
+    observed = parse_version_payload(raw, evidence, str(snapshot["id"]))
     if observed != version:
         raise HistoryError(
             f"{snapshot['id']}: manifest says {version}, evidence says {observed} at {sha}"
+        )
+
+
+def verify_acceptance(snapshot: dict[str, object]) -> None:
+    acceptance = snapshot.get("acceptance")
+    if acceptance is None:
+        return
+    if not isinstance(acceptance, dict):
+        raise HistoryError(f"{snapshot['id']}: acceptance must be an object")
+    required_ints = ("feature_pr", "correctness_run", "hermes_run", "harness_run", "retrieval_run")
+    for field in required_ints:
+        value = acceptance.get(field)
+        if isinstance(value, bool) or not isinstance(value, int) or value <= 0:
+            raise HistoryError(f"{snapshot['id']}: acceptance.{field} must be a positive integer")
+    if acceptance.get("retrieval_conclusion") != "skipped-no-retrieval-path-change":
+        raise HistoryError(
+            f"{snapshot['id']}: unsupported retrieval acceptance conclusion"
         )
 
 
@@ -147,7 +223,13 @@ def main() -> int:
             require_commit(str(introduced), f"{sid}.introduced_commit")
             if git("merge-base", "--is-ancestor", str(introduced), sha, check=False).returncode != 0:
                 raise HistoryError(f"{sid}: introduced_commit is not an ancestor of freeze commit")
+        feature_head = snapshot.get("feature_head")
+        if feature_head is not None:
+            require_commit(str(feature_head), f"{sid}.feature_head")
+            if git("merge-base", "--is-ancestor", str(feature_head), sha, check=False).returncode != 0:
+                raise HistoryError(f"{sid}: feature_head is not an ancestor of freeze commit")
         verify_version_evidence(snapshot)
+        verify_acceptance(snapshot)
         ordered_commits.append((sid, sha))
 
     for (prev_id, prev), (next_id, nxt) in zip(ordered_commits, ordered_commits[1:]):
@@ -177,6 +259,6 @@ def main() -> int:
 if __name__ == "__main__":
     try:
         raise SystemExit(main())
-    except (HistoryError, json.JSONDecodeError) as exc:
+    except (HistoryError, json.JSONDecodeError, UnicodeError, OSError) as exc:
         print(f"VERSION_HISTORY_ERROR: {exc}", file=sys.stderr)
         raise SystemExit(1)
