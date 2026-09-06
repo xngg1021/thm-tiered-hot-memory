@@ -1,0 +1,40 @@
+{
+  "date": "2026-09-06",
+  "base_commit": "3fc7d6c438e167c384f20697cc1c0642d3de9e8a",
+  "scope": "Public documentation correction and original-spec arithmetic only",
+  "environment": {
+    "python": "3.13.5",
+    "system": "Linux"
+  },
+  "numeric_unit_tests_passed": 10,
+  "commands": [
+    {
+      "command": "python scripts/thm_numeric_audit.py",
+      "returncode": 0,
+      "stdout": "{\n  \"scope\": \"Public specification arithmetic and rule transcription only\",\n  \"repo_commit\": \"3fc7d6c438e167c384f20697cc1c0642d3de9e8a\",\n  \"citation_growth_baddeley_openalex_percent\": 38.623835772666794,\n  \"create_only\": {\n    \"0\": 1.0,\n    \"1\": 0.7071067811865475,\n    \"2\": 0.5773502691896258,\n    \"21\": 0.21320071635561041,\n    \"22\": 0.20851441405707477,\n    \"28\": 0.18569533817705186,\n    \"90\": 0.10482848367219183\n  },\n  \"create_day0_hit_day1_evaluated_day1\": 2.7071067811865475,\n  \"three_hits_old_within_inclusive_90_day_window\": 0.7373035376957394,\n  \"three_hits_recent_within_same_window\": 4.673742584424539,\n  \"smoothing_rank_reversal\": {\n    \"raw_A_age1\": 1.0,\n    \"raw_B_two_age5\": 0.8944271909999159,\n    \"smooth_A_age1\": 0.7071067811865475,\n    \"smooth_B_two_age5\": 0.8164965809277261\n  },\n  \"first_daily_demotion_day_create_only\": 22,\n  \"first_weekly_demotion_day_checks_at_multiples_of_7\": 28,\n  \"exponential_day90_if_rate_0_05_per_day\": 0.011108996538242306,\n  \"high_class_demotes_under_published_rule\": false\n}\n",
+      "stderr": "test_age_strict_inequality (__main__.SpecificationChecks.test_age_strict_inequality) ... ok\ntest_create_and_next_day_hit (__main__.SpecificationChecks.test_create_and_next_day_hit) ... ok\ntest_create_only (__main__.SpecificationChecks.test_create_only) ... ok\ntest_exponential_comparison_requires_rate (__main__.SpecificationChecks.test_exponential_comparison_requires_rate) ... ok\ntest_high_class_eviction_immunity (__main__.SpecificationChecks.test_high_class_eviction_immunity) ... ok\ntest_invalid_event_rejected (__main__.SpecificationChecks.test_invalid_event_rejected) ... ok\ntest_log_monotonic_for_same_positive_score (__main__.SpecificationChecks.test_log_monotonic_for_same_positive_score) ... ok\ntest_plus_one_can_reverse_ranking (__main__.SpecificationChecks.test_plus_one_can_reverse_ranking) ... ok\ntest_published_citation_growth_not_one_percent (__main__.SpecificationChecks.test_published_citation_growth_not_one_percent) ... ok\ntest_three_hits_do_not_define_unique_activation (__main__.SpecificationChecks.test_three_hits_do_not_define_unique_activation) ... ok\n\n----------------------------------------------------------------------\nRan 10 tests in 0.000s\n\nOK\n"
+    },
+    {
+      "command": "python scripts/check_docs.py",
+      "returncode": 0,
+      "stdout": "{\n  \"status\": \"PASS\",\n  \"markdown_files\": 4,\n  \"relative_links_checked\": 17,\n  \"json_fences_parsed\": 1,\n  \"python_files_parsed\": 2,\n  \"historical_report_preserved\": true,\n  \"historical_git_blob_sha\": \"a5cb344275050c16d12f5c3b42db9e0203c60cdd\",\n  \"errors\": [],\n  \"scope\": \"Mechanical documentation checks only; no engine or benchmark validation\"\n}\n",
+      "stderr": ""
+    }
+  ],
+  "not_run": [
+    "private thm.py",
+    "personal index/memory/cron",
+    "live Hermes session",
+    "Windows/macOS",
+    "LLM benchmark",
+    "18-paper API/retraction recheck"
+  ],
+  "file_sha256": {
+    "README.md": "1807b0f67925ba3b9ce7eab5ccb7aecef943d48344adc7f4aeeb337ff824e8ee",
+    "docs/01-研究综述.md": "8cca73d55cd583626b1ca2e254f8dff361269c44654dd282ab354fd40e06fd91",
+    "docs/02-架构设计.md": "08c19a3da4f8e61d929f956f0b1759918c2e37dddac90400df1b8f2623a82695",
+    "reports/2026-09-06-学术工具复审.md": "f92ecbfacd3e15e04642d290951f546584b223db03c2bcfcb3c8e57d8de26ac1",
+    "scripts/check_docs.py": "654bc6044652d147d8ec1cac35b650f2b945d9cb16f9b7b08736d6c6357d1050",
+    "scripts/thm_numeric_audit.py": "308e9c95656e3780637bde66ca334bf9babb2325359c746bbc2cdd0e7dbade69"
+  }
+}

@@ -1,26 +1,42 @@
 # THM — Tiered Hot Memory
 
-A 4-tier memory architecture for AI agents, grounded in cognitive science (ACT-R base-level activation, complementary learning systems, spacing effect) and current agent-memory engineering. This repository hosts the public documentation layer; the running system lives on the author's machine.
+A four-tier memory design for Hermes Agent. Cognitive science and agent-memory research provide design inspiration and comparison points; they do not establish that THM's thresholds or policies are optimal. This repository contains the public documentation and reproducible specification checks. The running system and personal memory data remain on the author's machine and were not tested in this documentation correction.
 
-Author: Junfu Shi (SJF, xngg1021). License: MIT.
+Author: Junfu Shi (SJF, xngg1021). License declaration retained from the original repository: MIT.
 
 ## What is THM
 
-- T0 hot tier — injected into the system prompt every turn (working memory / L1)
-- T1 warm tier — thematic files, agent reads on demand (semantic LTM / L2)
-- T2 cold tier — session history, keyword retrieval (episodic memory / main storage)
-- T3 frozen tier — pointers to the outside world: configs, papers, docs (no internalization)
+- T0 hot tier — MEMORY.md and USER.md are loaded into a frozen system-prompt snapshot at session start in the pinned Hermes implementation. Requests reuse that snapshot; a disk write does not refresh it mid-session.
+- T1 warm tier — thematic files retrieved on demand.
+- T2 cold tier — session history and archives retrieved through the available search tools.
+- T3 external tier — locators for configurations, papers and other sources, read when needed. “Frozen” is a tier name, not a guarantee that the external content is immutable.
 
-Core mechanics: power-law decayed activation score A = Σ w·(t+1)^(−0.5) with event weights (hit ×2.0, confirm ×1.5, create ×1.0), promote/demote thresholds, offline consolidation, extended-interval re-verification. The design goal function mirrors Anthropic's context engineering ("smallest set of high-signal tokens").
+The documented v1.0 policy uses a weighted power-law activity score, `A = sum(w * (age_days + 1)^(-0.5))`, with hit/confirm/create weights 2.0/1.5/1.0. It is an ACT-R-inspired heuristic, not a truth score. Removing a logarithm preserves ordering of the same positive sum; adding smoothing or changing weights can change ordering.
+
+## Documentation correction — 2026-09-06
+
+The four-tier layout is retained. The review now distinguishes published findings, engineering analogies, specification deductions and untested proposals. The architecture preserves the v1.0 rules as historical design statements and separately labels proposed changes to high-cost eviction exemptions, capacity admission, event semantics and consistency handling. No private engine, index, cron job or deployed policy was changed.
+
+The original “18/18 verified” report is preserved verbatim under an explicit historical-status heading, with corrections before it. Bibliographic identity, citation support, numeric consistency and end-to-end effectiveness require different evidence. The public repository does not contain the original API responses or a controlled THM-vs-Hermes benchmark.
 
 ## Repository contents (public layer only)
 
-- `docs/01-研究综述.md` — research review: 10 design axioms distilled from cognitive science and agent-memory engineering literature, with a bibliography cross-checked across OpenAlex/Crossref (18/18 verified), an engineering-systems comparison table, benchmark landscape, and a "controversies and boundaries" section
-- `docs/02-架构设计.md` — architecture design: 4-tier layout, cache-line metadata, activation score, promote/demote policy
-- `reports/2026-09-06-学术工具复审.md` — academic audit report: full literature re-verification, counter-evidence findings, math recheck
+- [Research review](docs/01-研究综述.md) — cognitive foundations, related systems, benchmarks, ten qualified design principles and research limitations.
+- [Architecture](docs/02-架构设计.md) — four tiers, documented v1.0 rules, confirmed specification issues and explicitly unimplemented revisions.
+- [Audit report and errata](reports/2026-09-06-学术工具复审.md) — corrected conclusions followed by the unmodified historical report.
+- [Numeric checks](scripts/thm_numeric_audit.py) — ten standard-library tests of the original public formula and rule counterexamples; not a private-engine test.
+- [Document checks](scripts/check_docs.py) — local links, JSON examples, historical-report preservation and scope labels.
+- [Validation record](reports/2026-09-06-文档勘误验证.json) — executed checks and their limits.
 
-Private data (warm-tier notes, memory index, engine scripts) intentionally stays out of this repository.
+From this repository, with Python 3.10 or newer:
+
+```bash
+python scripts/thm_numeric_audit.py
+python scripts/check_docs.py
+```
+
+Neither command contacts scholarly APIs, reads personal memory, mutates Hermes configuration or runs an LLM benchmark. Native Windows/macOS and a live Hermes session were not exercised in this correction. Private warm-tier notes, memory indexes and engine scripts intentionally remain outside this repository.
 
 ## Related
 
-- Skills repository: [hermes-academic-skills](https://github.com/xngg1021/hermes-academic-skills) (the verification/literature/writing/computation skills used to produce the audit)
+- [hermes-academic-skills](https://github.com/xngg1021/hermes-academic-skills) — academic tools referenced by the historical audit. Their presence or version numbers are not proof that this repository's conclusions have been validated.
