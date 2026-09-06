@@ -19,6 +19,7 @@ At reconstruction time the remote had one branch (`main`) and no version tags. T
 | **1.1.1** | `2196e1de36d9dae1798a147762b3019ebf81073e` | `archive/v1.1.1` | `reports/2026-09-06-chat-followup.json` records engine version 1.1.1 |
 | **1.2.0** | `432c93b17735cbdf20b240c66a6cba3739e70ab9` | `archive/v1.2.0` | Last pre-1.3 snapshot; `pyproject.toml` still declares 1.2.0 |
 | **1.3.0 baseline** | `1880211f75b016e2234cbef702573022f6f983f1` | `archive/v1.3.0-baseline` | `pyproject.toml` declares 1.3.0; exact CI results remain the authority for integration closure |
+| Version-recovery closeout | `8e1f7f70b39386667ac00f47bb4f61ccc3f86b28` | `archive/20260907-version-recovery-merged` | PR #1 merged forward-only; history checks plus MCP v2/OpenClaw compatibility repairs are present and merged-main correctness, multi-harness and Hermes integration workflows succeeded |
 
 The machine-readable source for this table is [`versions/history.json`](../versions/history.json).
 
@@ -52,6 +53,10 @@ This distinction matters: the later `80fc84d` harness-neutral adapter begins 1.3
 
 The version string does **not** certify that every harness E2E is green. Release and integration status must be read from the exact workflow run for the exact commit. The archive name therefore uses `v1.3.0-baseline`, not `v1.3.0-stable`.
 
+### Version-recovery closeout
+
+PR #1 was merged with a merge commit at `8e1f7f70b39386667ac00f47bb4f61ccc3f86b28`; its 17 forward-only recovery commits remain individually reachable. The merge added the machine-checked history map, changelog and recovery docs, repaired MCP v2 structured output, and added a separate read-only compatibility bridge for the pinned OpenClaw 2026.9.x client generation. The merged-main correctness, multi-harness and Hermes integration workflows all completed successfully. This closeout is a recovery milestone, not a new semantic version, so no artificial `1.3.1` label is assigned.
+
 ## Restoring any preserved state
 
 Every commit remains directly addressable even when it is not an archive milestone:
@@ -69,6 +74,7 @@ git switch archive/v1.1.0
 git switch archive/v1.1.1
 git switch archive/v1.2.0
 git switch archive/v1.3.0-baseline
+git switch archive/20260907-version-recovery-merged
 ```
 
 For side-by-side comparison without moving the current checkout:
