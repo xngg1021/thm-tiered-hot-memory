@@ -86,6 +86,16 @@
       "version_evidence": "pyproject.toml",
       "state": "declared 1.3 package baseline with multi-harness adapters; release/integration closure must be judged from exact CI results rather than the version string alone",
       "recoverability": "exact-git-snapshot"
+    },
+    {
+      "id": "version-recovery-merged",
+      "kind": "recovery-closeout",
+      "commit": "8e1f7f70b39386667ac00f47bb4f61ccc3f86b28",
+      "archive_branch": "archive/20260907-version-recovery-merged",
+      "date": "2026-09-07",
+      "version": null,
+      "state": "forward-only version-history recovery merged by PR #1; archive refs, machine-checked history, MCP v2 structured-output repair and OpenClaw legacy bridge are present; merged-main correctness, multi-harness and Hermes integration workflows all succeeded",
+      "recoverability": "exact-git-snapshot"
     }
   ],
   "development_boundaries": [
@@ -103,6 +113,11 @@
       "name": "v1.3 package declaration",
       "commit": "51d33fddc24c23b81ed6bb88841be9d2dd0e1ce1",
       "note": "pyproject.toml is bumped to 1.3.0"
+    },
+    {
+      "name": "version-history recovery merged",
+      "commit": "8e1f7f70b39386667ac00f47bb4f61ccc3f86b28",
+      "note": "PR #1 preserves all recovery commits with a merge commit and closes the previously failing multi-harness MCP integration"
     }
   ],
   "not_exactly_recoverable_from_this_repository": [
