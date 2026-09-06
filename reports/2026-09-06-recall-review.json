@@ -1,0 +1,89 @@
+{
+  "status": "PATCH_TESTED_NOT_PUSHED",
+  "base_commit": "e7c6b9d1c93811d5bb0b735e223658a4d205d360",
+  "date": "2026-09-06",
+  "python": "3.13.5",
+  "platform": "Linux",
+  "local_test_command": "python -m unittest discover -s tests -v",
+  "local_scope": "Materialized exact remote retrieval/evaluation tests plus new repair suite; original core CLI suite is not present in this partial checkout",
+  "tests": {
+    "total": 95,
+    "passed": 95,
+    "existing_remote_extension_tests": 48,
+    "new_repair_tests": 47
+  },
+  "initial_regressions_on_base": {
+    "tests": 28,
+    "failures": 24,
+    "errors": 3,
+    "passed": 1,
+    "source_commit": "433b1256bbaca8680f3c41d67a1e23e97b36bd7c"
+  },
+  "historical_core_suite": {
+    "local_rerun": false,
+    "unchanged_by_patch": true,
+    "base_remote_ci_run": 34030697736,
+    "base_remote_ci_status": "success"
+  },
+  "previous_alternative_zip": {
+    "tests_rerun": 87,
+    "passed": 87,
+    "merged_into_new_remote_package": false,
+    "reason": "Superseded by the new remote thm package; do not install two engines"
+  },
+  "full_locomo_patched_protocol_2_run": false,
+  "live_hermes_run": false,
+  "real_user_memory_modified": false,
+  "paid_or_generation_model_calls": 0,
+  "remote_write": {
+    "done": false,
+    "reason": "Active connector exposes reads only; container Git has no GitHub DNS connectivity/authenticated push channel"
+  },
+  "base_file_git_blobs": {
+    "thm/retrieval.py": "4812889a7d544c776a5f6d48a473a154743379e0",
+    "thm/sources.py": "f82eff511d14f93501d478bf3c32088e4a1d4a1d",
+    "thm/observations.py": "391ffa77b87883a3848df50959841d2098919c53",
+    "thm/policy.py": "c4b94e0662a1949e584ffb896dfb5e405f1c433f",
+    "thm/hermes_plugin.py": "1ffe9c4eddb21d0cf4987cc4e2faad0fc2868fec",
+    "thm/answer_eval.py": "d4bacf00ae0d5124e72d25d872017ddf7febb65c",
+    "research/recall/benchmark.py": "e154583631cc58a2cffad2b4694b7641d0dea73a",
+    "tests/test_recall_extension.py": "a455d1c56e9394dbe003f6c4ab1d1183a2404e21",
+    "tests/test_eval_protocol.py": "67f09e0152e035c8624de9a3d47ff457201b3a38",
+    "docs/README.md": "9177e1dc3d51b4f46391dfb79bec2723dd09efbd",
+    "README.md": "f1f6f264c2c6f5a8c7c9dc50af15a2bcc28f6390",
+    "thm/sqlite_guard.py": "0d29ce64e5e4290c8000dca6cf67d925a8b1e88c",
+    "tests/test_derived_database_guard.py": "52a21f6f20e43d1faeb205871b76aa75dba794bc"
+  },
+  "patched_source_sha256": {
+    "research/recall/benchmark.py": "2b8066650313aecaf4f15894fe8f9725384416d213698d85e2e740c3cf7fb0a3",
+    "research/recall/performance_probe.py": "fbcd04ec7e150dd27885eae84d00f6226e051852e4edcf51d6f3801155e05d1f",
+    "tests/test_derived_database_guard.py": "8d5b62e8fe44c0883687cae4c6771151bc371600f6b1def60a79d3f6480e56a8",
+    "tests/test_eval_protocol.py": "d3a3f3c28028f10bfb0d4ae41baa4c04232ed49d66d54b6b9f52f2782bffbe3f",
+    "tests/test_recall_extension.py": "0605f3b08435b1aba5ac3bd14395ab843db0ba18dfa289bddaea202341f2154a",
+    "tests/test_review_repairs.py": "62c1a5bbd1841a16ae1cf49c440ca5b56f540656b240eff0a183802c9a1a1189",
+    "thm/answer_eval.py": "8726bef41d362eaafb40ee584e98d6fbdbb8f82de1919dc6497370b8c1cbef6a",
+    "thm/hermes_plugin.py": "3c1e593de868924043d3b71f67ea10a6b1d6625512cbaffa12372f58c406e545",
+    "thm/observations.py": "207fbb28331f8657b0d0acc4aa7b0ae244662b66ebab02092bf17ec5fcb8eac6",
+    "thm/policy.py": "7608ae82359d76326563044dfe6c81cffe22d012fdc2ee0e5a0fff0e0de8a00e",
+    "thm/retrieval.py": "5255513867f8b37648a905401d26e9c451ed924467fc8f4f2d26ac654bdec630",
+    "thm/sources.py": "bd27b5c14c4bc55e9d369e1ca59b30e73911a332a5f80d0195abaa57054bfe1e",
+    "thm/sqlite_guard.py": "803eba1a9453387bc3331cd056ed7cd80f53cc272fb758463749df00aed16225"
+  },
+  "performance_file": "2026-09-06-recall-performance.json",
+  "remote_benchmark_file": "2026-09-06-remote-benchmark-summary.json",
+  "historical_formula_tests": {
+    "tests": 10,
+    "passed": 10,
+    "same_legacy_formula_only": true
+  },
+  "concurrent_change_preserved": {
+    "commit": "e7c6b9d1c93811d5bb0b735e223658a4d205d360",
+    "changes": [
+      "shared native-database guard reused",
+      "existing extra database-guard regressions included",
+      "native read snapshot retained",
+      "current README and published original results preserved",
+      "new packaging and workflow choices unchanged"
+    ]
+  }
+}

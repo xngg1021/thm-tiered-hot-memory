@@ -15,6 +15,7 @@
 | [1.1 实现状态](07-implementation-status.md) | 已实现、已测、未集成、未部署逐项区分 |
 | [测试与发布](08-testing-and-release.md) | 测试口径、完整文档检查及后续有限任务 |
 | [1.2 召回与测量](09-retrieval-and-measurement.md) | 稀疏/语义召回、scan、曲线、provider和明确限制 |
+| [1.2 召回扩展复核与性能补修](10-recall-integration-review.md) | 修复范围、真实历史 CI 结果、协议勘误、补丁验证与限制 |
 | [LoCoMo 与曲线实验协议](../research/recall/README.md) | 数据来源、分母、tokenizer、时序和原报告适用范围 |
 | [原上游研究历史稿](05-hermes-upstream-original-20260906.md) | 原字节保存；其中过强结论已由修订页限定 |
 | [原学术复审与勘误](../reports/2026-09-06-学术工具复审.md) | 原报告全文及前置勘误，原始段落哈希持续检查 |

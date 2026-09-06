@@ -8,6 +8,7 @@ from dataclasses import dataclass, asdict
 from datetime import date
 import math
 import random
+import re
 
 WEIGHTS = {'hit': 2.0, 'confirm': 1.5, 'create': 1.0,
            'display': 0.0, 'retrieve': 0.0, 'promote': 0.0,
@@ -25,9 +26,11 @@ class Policy:
     def __post_init__(self):
         if self.kernel not in ('legacy', 'power', 'exponential', 'mixture', 'bounded_power', 'lru', 'lfu'):
             raise ValueError('unknown decay policy')
-        if any(not math.isfinite(x) or x <= 0 for x in (self.half_life, self.exponent, self.daily_cap)):
+        if any(type(x) not in (int, float) or not math.isfinite(x) or x <= 0
+               for x in (self.half_life, self.exponent, self.daily_cap)):
             raise ValueError('curve parameters must be finite and positive')
-        if self.half_life > 36500 or not .1 <= self.exponent <= 4 or not 1 <= self.window_days <= 36500:
+        if (self.half_life > 36500 or not .1 <= self.exponent <= 4
+                or type(self.window_days) is not int or not 1 <= self.window_days <= 36500):
             raise ValueError('curve parameters outside supported range')
 
 
@@ -46,13 +49,23 @@ def kernel(age, policy):
     return (1+age/tau) ** (-policy.exponent)
 
 
+def _day(value):
+    if not isinstance(value, str) or not re.fullmatch(r'\d{4}-\d{2}-\d{2}', value):
+        raise ValueError('dates must use YYYY-MM-DD')
+    return date.fromisoformat(value)
+
+
 def activity(entry, now: date, policy: Policy):
+    if not isinstance(entry, dict) or not isinstance(entry.get('events', []), list):
+        raise ValueError('events must be a list')
     daily, seen = {}, set()
     for event in entry.get('events', []):
+        if not isinstance(event, dict):
+            raise ValueError('invalid event object')
         kind = event.get('type')
-        if kind not in WEIGHTS:
+        if not isinstance(kind, str) or kind not in WEIGHTS:
             raise ValueError('unknown event type')
-        stamp = date.fromisoformat(event['t'])
+        stamp = _day(event.get('t'))
         age = (now-stamp).days
         if age < 0:
             raise ValueError('future event')
@@ -60,8 +73,9 @@ def activity(entry, now: date, policy: Policy):
         if not isinstance(key, str) or not key or key in seen:
             raise ValueError('missing/duplicate event ID')
         seen.add(key)
-        if kind == 'confirm' and not event.get('evidence'):
-            if event.get('legacy_unverified'):
+        evidence = event.get('evidence')
+        if kind == 'confirm' and (not isinstance(evidence, str) or not evidence.strip()):
+            if event.get('legacy_unverified') is True:
                 continue
             raise ValueError('confirmation requires evidence')
         if WEIGHTS[kind]:
@@ -79,12 +93,26 @@ def plan(entries, now: date, budget: int, policy: Policy, cost: callable):
     """Deterministic greedy value/cost packing, not a claimed knapsack optimum."""
     if type(budget) is not int or budget < 0:
         raise ValueError('invalid residency budget')
-    eligible, excluded = [], []
+    eligible, excluded, seen = [], [], set()
     for entry in entries:
+        if not isinstance(entry, dict) or not isinstance(entry.get('id'), str) or not entry['id'].strip():
+            raise ValueError('valid entry ID required')
         key = entry['id']
+        if key in seen:
+            raise ValueError('duplicate entry ID')
+        seen.add(key)
+        if type(entry.get('pinned', False)) is not bool:
+            raise ValueError('pinned must be boolean')
+        if entry.get('cost_class', 'med') not in ('low', 'med', 'high'):
+            raise ValueError('invalid cost class')
+        if entry.get('status') not in ('active', 'invalid', 'deleted', 'unresolved_legacy'):
+            raise ValueError('invalid entry status')
+        if (entry.get('valid_from') and entry.get('valid_until')
+                and _day(entry['valid_from']) >= _day(entry['valid_until'])):
+            raise ValueError('invalid validity interval')
         if (entry.get('status') != 'active'
-            or (entry.get('valid_from') and now < date.fromisoformat(entry['valid_from']))
-            or (entry.get('valid_until') and now >= date.fromisoformat(entry['valid_until']))):
+            or (entry.get('valid_from') and now < _day(entry['valid_from']))
+            or (entry.get('valid_until') and now >= _day(entry['valid_until']))):
             excluded.append(key)
             continue
         units = cost(entry)
@@ -116,7 +144,7 @@ def replay(events, entries, policy, budget, cost):
     hits, total = 0, 0
     previous = None
     for ordinal, event in enumerate(events):
-        stamp = date.fromisoformat(event['t'])
+        stamp = _day(event.get('t'))
         if previous and stamp < previous:
             raise ValueError('replay must be chronological')
         previous = stamp

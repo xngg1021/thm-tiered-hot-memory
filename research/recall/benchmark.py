@@ -25,7 +25,8 @@ from thm.retrieval import SearchIndex, SentenceEncoder, TokenCounter
 from thm.sources import locomo_documents
 
 DATASET_COMMIT = '3eb6f2c585f5e1699204e3c3bdf7adc5c28cb376'
-CATEGORY = {1: 'single_hop', 2: 'temporal', 3: 'open_domain', 4: 'multi_hop', 5: 'adversarial'}
+DATASET_SHA256 = '79fa87e90f04081343b8c8debecb80a9a6842b76a7aa537dc9fdf651ea698ff4'
+CATEGORY = {1: 'multi_hop', 2: 'temporal', 3: 'open_domain', 4: 'single_hop', 5: 'adversarial'}
 
 
 def evidence_ids(value):
@@ -68,11 +69,23 @@ def aggregate(rows):
             'mean_budget_used': statistics.mean(r['budget_used'] for r in rows) if rows else None,
             'latency_ms': {'p50': percentile([r['total_ms'] for r in rows], .5),
                            'p95': percentile([r['total_ms'] for r in rows], .95),
+                           'p99': percentile([r['total_ms'] for r in rows], .99),
                            'mean': statistics.mean(r['total_ms'] for r in rows) if rows else None},
+            'mrr': statistics.mean(r['reciprocal_rank'] for r in scored) if scored and all('reciprocal_rank' in r for r in scored) else None,
+            'ndcg': statistics.mean(r['ndcg'] for r in scored) if scored and all('ndcg' in r for r in scored) else None,
             'query_embedding_ms_mean': statistics.mean(r['query_embedding_ms'] for r in rows) if rows else None}
 
 
 def run(dataset, counter, modes, budgets, *, model_path=None, model_id=None, neighbors=0):
+    if not isinstance(dataset, list) or not dataset:
+        raise ValueError('nonempty conversation list required')
+    sample_ids = [str(s['sample_id']) for s in dataset]
+    if len(sample_ids) != len(set(sample_ids)):
+        raise ValueError('duplicate conversation IDs')
+    if not modes or any(m not in ('literal','sparse','dense','hybrid') for m in modes) or len(set(modes)) != len(modes):
+        raise ValueError('unique supported modes required')
+    if not budgets or any(type(b) is not int or not 0 <= b <= 32768 for b in budgets) or len(set(budgets)) != len(budgets):
+        raise ValueError('unique valid budgets required')
     encoder = SentenceEncoder(model_path, model_id) if model_path else None
     if any(m in ('dense','hybrid') for m in modes) and not encoder:
         raise ValueError('local model required for requested dense run')
@@ -82,7 +95,11 @@ def run(dataset, counter, modes, budgets, *, model_path=None, model_id=None, nei
     with tempfile.TemporaryDirectory() as temp:
         index = SearchIndex(Path(temp)/'recall.sqlite', counter)
         try:
-            for sample in dataset:
+            for sample_number, sample in enumerate(dataset):
+                # FTS5 IDF statistics are table-wide. Separate databases keep
+                # unrelated conversations and dataset iteration order out of ranking.
+                index.close()
+                index = SearchIndex(Path(temp)/f'conversation-{sample_number}.sqlite', counter)
                 scope = str(sample['sample_id'])
                 documents = list(locomo_documents(sample))
                 start = time.perf_counter()
@@ -96,11 +113,18 @@ def run(dataset, counter, modes, budgets, *, model_path=None, model_id=None, nei
                 for mode in modes:
                     for budget in budgets:
                         for position, qa in enumerate(sample['qa']):
+                            if type(qa.get('category')) is not int or qa['category'] not in CATEGORY:
+                                raise ValueError('unsupported question category')
                             gold, malformed = evidence_ids(qa.get('evidence', []))
                             # Only the question is passed. No gold/answer/category information enters search.
                             out = index.search(scope, qa['question'], mode=mode, budget=budget,
                                                neighbor_turns=neighbors, encoder=encoder, model_id=model_id)
-                            selected = {x['id'] for x in out['selected'] if x['complete']}
+                            selected_order = [x['id'] for x in out['selected'] if x['complete']]
+                            selected = set(selected_order)
+                            positions = [i for i, value in enumerate(selected_order, 1) if value in gold]
+                            candidate_positions = [i for i, value in enumerate(out['ranked_ids'], 1) if value in gold]
+                            ideal = sum(1/math.log2(i+1) for i in range(1, min(len(gold), len(selected_order))+1))
+                            ndcg = sum(1/math.log2(i+1) for i in positions)/ideal if ideal else 0.0
                             all_rows.append({'scope': scope, 'question_index': position,
                                 'split': 'development' if scope in dev_ids else 'held_out',
                                 'mode': mode, 'budget': budget, 'category': int(qa['category']),
@@ -108,6 +132,10 @@ def run(dataset, counter, modes, budgets, *, model_path=None, model_id=None, nei
                                 'fully_resolved': not malformed and gold <= known,
                                 'hits': len(gold & selected), 'candidate_hits': len(gold & set(out['ranked_ids'])),
                                 'selected_count': len(selected), 'selected_ids': sorted(selected),
+                                'selected_ranked_ids': selected_order,
+                                'reciprocal_rank': 1/positions[0] if positions else 0.0,
+                                'candidate_reciprocal_rank': 1/candidate_positions[0] if candidate_positions else 0.0,
+                                'ndcg': ndcg, 'result_cache_hit': out.get('result_cache_hit', False),
                                 'budget_used': out['budget_used'],
                                 'total_ms': out['timing_ms']['total'],
                                 'query_embedding_ms': out['timing_ms']['query_embedding'],
@@ -126,8 +154,8 @@ def run(dataset, counter, modes, budgets, *, model_path=None, model_id=None, nei
                 'development': aggregate([r for r in rows if r['split']=='development' and r['category']!=5]),
                 'held_out': aggregate([r for r in rows if r['split']=='held_out' and r['category']!=5]),
                 'by_category': {CATEGORY[c]: aggregate([r for r in rows if r['category']==c]) for c in CATEGORY}}
-    return {'protocol': 1, 'counter': counter.name, 'modes': modes, 'budgets': budgets,
-            'neighbor_turns': neighbors, 'summaries': summaries, 'builds': builds,
+    return {'protocol': 2, 'counter': counter.name, 'modes': modes, 'budgets': budgets,
+            'neighbor_turns': neighbors, 'idf_scope': 'one_database_per_conversation', 'summaries': summaries, 'builds': builds,
             'corpus_fingerprints': generations, 'rows': all_rows,
             'generation_calls': 0, 'judge_calls': 0,
             'model_id': model_id, 'development_conversations': sorted(dev_ids),
@@ -155,7 +183,8 @@ def main():
     result = run(dataset, TokenCounter(args.counter), args.modes, args.budgets,
                  model_path=args.model_path, model_id=args.model_id, neighbors=args.neighbors)
     result['dataset_sha256'] = hashlib.sha256(raw).hexdigest()
-    result['dataset_upstream_commit'] = DATASET_COMMIT
+    result['dataset_upstream_commit'] = DATASET_COMMIT if result['dataset_sha256'] == DATASET_SHA256 else None
+    result['dataset_matches_pinned_reference'] = result['dataset_sha256'] == DATASET_SHA256
     result['environment'] = {'python': sys.version.split()[0], 'os': platform.platform(),
                              'sqlite': sqlite3.sqlite_version}
     result['source_sha256'] = {p.name: hashlib.sha256(p.read_bytes()).hexdigest()

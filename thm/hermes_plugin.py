@@ -46,12 +46,14 @@ class THMProvider(MemoryProvider):
             self.counter = TokenCounter(self.config.get('counter', 'utf8_bytes'))
             self.budget = int(self.config.get('budget', 600))
             self.mode = self.config.get('mode', 'sparse')
+            self.encoder = None
+            self.error = None
             model = self.config.get('model_path')
             if model:
                 self.encoder = SentenceEncoder(model, self.config['model_id'])
             self.last = None
             if self._index: self._index.close()
-            self._index = SearchIndex(self.path, self.counter) if self.path.is_file() else None
+            self._index = SearchIndex(self.path, self.counter, readonly=True) if self.path.is_file() else None
 
     def system_prompt_block(self):
         return ''
@@ -62,11 +64,11 @@ class THMProvider(MemoryProvider):
             if session_id and session_id != self.session_id:
                 self.error = 'session mismatch; call on_session_switch first'
                 return ''
-            if not query.strip() or self.path is None or not self.path.is_file():
+            if not isinstance(query, str) or not query.strip() or self.path is None or not self.path.is_file():
                 return ''
             try:
                 if self._index is None:
-                    self._index = SearchIndex(self.path, self.counter)
+                    self._index = SearchIndex(self.path, self.counter, readonly=True)
                 index = self._index
                 out = index.search(self.scope, query, budget=self.budget, mode=self.mode,
                                    encoder=self.encoder, model_id=self.config.get('model_id'))
@@ -77,13 +79,15 @@ class THMProvider(MemoryProvider):
                 return ''
 
     def recall_status(self):
-        if not self.last or not self.last['selected']: return None
-        return RecallStatus(provider_label='THM', count=len(self.last['selected']))
+        with self._lock:
+            if not self.last or not self.last['selected']: return None
+            return RecallStatus(provider_label='THM', count=len(self.last['selected']))
 
     def on_session_switch(self, new_session_id, **kwargs):
         with self._lock:
             self.session_id = new_session_id
             self.last = None
+            self.error = None
 
     def get_tool_schemas(self):
         return [{'name':'thm_recall_status', 'description':'Return last recall metadata without source text.',
@@ -98,7 +102,8 @@ class THMProvider(MemoryProvider):
 
     def on_memory_write(self, action, target, content, metadata=None):
         # A write is NOT a hit. Imported snapshots must be explicitly refreshed.
-        self.last = None
+        with self._lock:
+            self.last = None
 
     def shutdown(self):
         with self._lock:

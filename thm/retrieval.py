@@ -9,6 +9,8 @@ from __future__ import annotations
 from collections import OrderedDict
 from dataclasses import dataclass, asdict
 import hashlib
+import copy
+import threading
 import json
 import math
 from pathlib import Path
@@ -106,7 +108,8 @@ class SentenceEncoder:
 
 
 def normalize_vectors(vectors, expected: int):
-    if len(vectors) != expected:
+    if (not isinstance(vectors, (list, tuple)) or type(expected) is not int
+            or expected < 0 or len(vectors) != expected):
         raise ValueError('embedding result count mismatch')
     result, dim = [], None
     for vector in vectors:
@@ -116,22 +119,42 @@ def normalize_vectors(vectors, expected: int):
             dim = len(vector)
         if len(vector) != dim or any(type(v) not in (int, float) or not math.isfinite(v) for v in vector):
             raise ValueError('embedding dimensions or finite values invalid')
-        norm = math.sqrt(sum(v * v for v in vector))
-        if norm <= 0:
+        scale = max(abs(v) for v in vector)
+        if scale == 0:
             raise ValueError('zero embedding')
-        result.append([v / norm for v in vector])
+        scaled = [v / scale for v in vector]
+        norm = math.sqrt(sum(v * v for v in scaled))
+        result.append([v / norm for v in scaled])
     return result
 
 
 class SearchIndex:
-    def __init__(self, path, counter: Callable[[str], int] | None = None):
-        path = Path(path)
+    def __init__(self, path, counter: Callable[[str], int] | None = None, *, readonly=False):
+        self.readonly = readonly
+        self._lock = threading.RLock()
+        path = Path(path).expanduser()
         if path.is_symlink():
             raise ValueError('symlink index refused')
-        path.parent.mkdir(parents=True, exist_ok=True)
-        self.db = connect_derived(path, {'docs', 'scopes', 'vectors', 'literal', 'lexical'}, shared_thread=True)
+        if readonly:
+            if not path.is_file():
+                raise ValueError('read-only search index does not exist')
+            self.db = sqlite3.connect(path.resolve().as_uri()+'?mode=ro', uri=True,
+                                      timeout=5, check_same_thread=False)
+            self.db.execute('PRAGMA query_only=ON')
+        else:
+            path.parent.mkdir(parents=True, exist_ok=True)
+            self.db = connect_derived(path, {'docs', 'scopes', 'vectors', 'literal', 'lexical'}, shared_thread=True)
         self.db.row_factory = sqlite3.Row
-        self.db.executescript('''
+        try:
+            tables = {r[0] for r in self.db.execute("SELECT name FROM sqlite_master WHERE type='table'")}
+            expected = {'docs', 'literal', 'lexical', 'scopes', 'vectors'}
+            if tables and (not expected <= tables or any(
+                    t not in expected and not t.startswith(('literal_', 'lexical_', 'sqlite_')) for t in tables)):
+                raise ValueError('not a THM retrieval database; native or unrelated databases are refused')
+            if readonly and not tables:
+                raise ValueError('empty read-only retrieval database')
+            if not readonly:
+                self.db.executescript('''
         CREATE TABLE IF NOT EXISTS docs(
           rowid INTEGER PRIMARY KEY, id TEXT NOT NULL, scope TEXT NOT NULL,
           session TEXT NOT NULL, ord INTEGER NOT NULL, text TEXT NOT NULL,
@@ -143,87 +166,164 @@ class SearchIndex:
         CREATE TABLE IF NOT EXISTS scopes(scope TEXT PRIMARY KEY,generation TEXT NOT NULL);
         CREATE TABLE IF NOT EXISTS vectors(scope TEXT,id TEXT,hash TEXT,model TEXT,vector TEXT,
           PRIMARY KEY(scope,id,model));
-        ''')
+                ''')
+            required_columns = {
+                'docs': {'rowid','id','scope','session','ord','text','speaker','timestamp','source','tier','hash'},
+                'scopes': {'scope','generation'}, 'vectors': {'scope','id','hash','model','vector'}}
+            for table, required in required_columns.items():
+                if not required <= {r[1] for r in self.db.execute(f'PRAGMA table_info({table})')}:
+                    raise ValueError('unsupported retrieval database schema')
+        except Exception:
+            self.db.close()
+            raise
         self.counter = counter or TokenCounter()
         self._cache, self._dense = OrderedDict(), {}
+        self._results = OrderedDict()
+        self._data_version = self.db.execute('PRAGMA data_version').fetchone()[0]
+
+    def _writable(self):
+        if self.readonly:
+            raise ValueError('read-only search index')
+
+    def _clear_caches(self):
+        self._cache.clear()
+        self._dense.clear()
+        self._results.clear()
+
+    def _refresh_caches(self):
+        version = self.db.execute('PRAGMA data_version').fetchone()[0]
+        if version != self._data_version:
+            self._clear_caches()
+            self._data_version = version
+
+    def _count(self, text):
+        count = self.counter(text)
+        if type(count) is not int or count < 0 or (text and count == 0):
+            raise ValueError('counter must return a positive integer for nonempty context')
+        return count
 
     def close(self):
-        self.db.close()
+        with self._lock:
+            self._clear_caches()
+            self.db.close()
 
     def replace_scope(self, scope: str, documents: Iterable[Document]) -> dict:
+        self._writable()
+        with self._lock:
+            self.db.execute('BEGIN IMMEDIATE')
+            try:
+                result = self._replace_scope(scope, documents)
+                self.db.commit()
+                return result
+            except Exception:
+                self.db.rollback()
+                raise
+
+    def _replace_scope(self, scope: str, documents: Iterable[Document]) -> dict:
         """Replace one explicit derived scope transactionally; no input files changed."""
         docs = list(documents)
-        if not scope.strip():
+        if not isinstance(scope, str) or not scope.strip():
             raise ValueError('scope is mandatory')
-        ids = set()
+        ids, positions = set(), set()
         for d in docs:
             d.validate()
             if d.scope != scope or d.id in ids:
                 raise ValueError('scope mismatch or duplicate document ID')
+            if (d.session, d.order) in positions:
+                raise ValueError('duplicate document position within a session')
+            positions.add((d.session, d.order))
             ids.add(d.id)
         docs.sort(key=lambda d: (d.session, d.order, d.id))
         generation = fingerprint([asdict(d) for d in docs])
         previous = self.db.execute('SELECT generation FROM scopes WHERE scope=?', (scope,)).fetchone()
         if previous and previous[0] == generation:
             return {'changed': False, 'documents': len(docs), 'generation': generation}
-        with self.db:
-            old = [r[0] for r in self.db.execute('SELECT rowid FROM docs WHERE scope=?', (scope,))]
-            for rid in old:
-                self.db.execute('DELETE FROM literal WHERE rowid=?', (rid,))
-                self.db.execute('DELETE FROM lexical WHERE rowid=?', (rid,))
-            self.db.execute('DELETE FROM docs WHERE scope=?', (scope,))
-            self.db.execute('DELETE FROM vectors WHERE scope=?', (scope,))
-            for pos, d in enumerate(docs):
-                # Unsupervised adjacent-turn context; no labels or generated summaries.
-                context = ' '.join(x.text for x in docs[max(0, pos - 1):pos + 2]
-                                   if x.session == d.session and x.id != d.id)
-                meta = f'{d.speaker} {d.timestamp}'
-                rid = self.db.execute('''INSERT INTO docs
-                    (id,scope,session,ord,text,speaker,timestamp,source,tier,hash)
-                    VALUES(?,?,?,?,?,?,?,?,?,?)''',
-                    (d.id, d.scope, d.session, d.order, d.text, d.speaker, d.timestamp,
-                     d.source, d.tier, fingerprint(asdict(d)))).lastrowid
-                self.db.execute('INSERT INTO literal(rowid,body,meta) VALUES(?,?,?)', (rid, d.text, meta))
-                self.db.execute('INSERT INTO lexical(rowid,body,context,meta) VALUES(?,?,?,?)',
-                                (rid, index_text(d.text), index_text(context), index_text(meta)))
-            self.db.execute('INSERT OR REPLACE INTO scopes VALUES(?,?)', (scope, generation))
-        self._cache.clear()
-        self._dense.clear()
+        old = [r[0] for r in self.db.execute('SELECT rowid FROM docs WHERE scope=?', (scope,))]
+        for rid in old:
+            self.db.execute('DELETE FROM literal WHERE rowid=?', (rid,))
+            self.db.execute('DELETE FROM lexical WHERE rowid=?', (rid,))
+        self.db.execute('DELETE FROM docs WHERE scope=?', (scope,))
+        self.db.execute('DELETE FROM vectors WHERE scope=?', (scope,))
+        for pos, d in enumerate(docs):
+            # Unsupervised adjacent-turn context; no labels or generated summaries.
+            context = ' '.join(x.text for x in docs[max(0, pos - 1):pos + 2]
+                               if x.session == d.session and x.id != d.id)
+            meta = f'{d.speaker} {d.timestamp}'
+            rid = self.db.execute('''INSERT INTO docs
+                (id,scope,session,ord,text,speaker,timestamp,source,tier,hash)
+                VALUES(?,?,?,?,?,?,?,?,?,?)''',
+                (d.id, d.scope, d.session, d.order, d.text, d.speaker, d.timestamp,
+                 d.source, d.tier, fingerprint(asdict(d)))).lastrowid
+            self.db.execute('INSERT INTO literal(rowid,body,meta) VALUES(?,?,?)', (rid, d.text, meta))
+            self.db.execute('INSERT INTO lexical(rowid,body,context,meta) VALUES(?,?,?,?)',
+                            (rid, index_text(d.text), index_text(context), index_text(meta)))
+        self.db.execute('INSERT OR REPLACE INTO scopes VALUES(?,?)', (scope, generation))
+        self._clear_caches()
         return {'changed': True, 'documents': len(docs), 'generation': generation}
 
     def sync_kind(self, scope, documents, prefix):
-        """Refresh one explicit source kind without discarding the other tiers."""
+        """Refresh one explicit source kind in one serialized write transaction."""
+        self._writable()
         docs = list(documents)
         if prefix not in ('file:', 'hermes-message:') or any(not d.source.startswith(prefix) for d in docs):
             raise ValueError('source kind mismatch')
-        self.db.execute('BEGIN IMMEDIATE')
-        try:
-            old = [Document(r['id'], r['scope'], r['session'], r['ord'], r['text'], r['speaker'],
-                            r['timestamp'], r['source'], r['tier']) for r in self.rows(scope)
-                   if not r['source'].startswith(prefix)]
-            return self.replace_scope(scope, old + docs)
-        finally:
-            # replace_scope commits changed data; unchanged/error paths release the lock.
-            self.db.rollback()
+        with self._lock:
+            self.db.execute('BEGIN IMMEDIATE')
+            try:
+                old = [Document(r['id'], r['scope'], r['session'], r['ord'], r['text'], r['speaker'],
+                                r['timestamp'], r['source'], r['tier']) for r in self.rows(scope)
+                       if not r['source'].startswith(prefix)]
+                result = self._replace_scope(scope, old + docs)
+                self.db.commit()
+                return result
+            except Exception:
+                self.db.rollback()
+                raise
 
     def rows(self, scope):
         return [dict(r) for r in self.db.execute('SELECT * FROM docs WHERE scope=? ORDER BY rowid', (scope,))]
 
     def embed(self, scope, encoder, model_id):
-        if not model_id.strip():
+        """Encode outside the write transaction, then verify its source generation."""
+        self._writable()
+        if not isinstance(model_id, str) or not model_id.strip():
             raise ValueError('immutable model identity required')
-        rows = self.rows(scope)
-        existing = {r['id']: r['hash'] for r in self.db.execute(
-            'SELECT id,hash FROM vectors WHERE scope=? AND model=?', (scope, model_id))}
-        missing = [r for r in rows if existing.get(r['id']) != r['hash']]
-        start = time.perf_counter()
-        if missing:
-            vectors = normalize_vectors(encoder([f"{r['speaker']}: {r['text']}" for r in missing]), len(missing))
-            with self.db:
+        if getattr(encoder, 'model_id', model_id) != model_id:
+            raise ValueError('encoder identity mismatch')
+        with self._lock:
+            self.db.execute('BEGIN')
+            try:
+                generation = self.db.execute('SELECT generation FROM scopes WHERE scope=?', (scope,)).fetchone()
+                if generation is None:
+                    raise ValueError('scope not indexed')
+                rows = self.rows(scope)
+                existing = {r['id']: r['hash'] for r in self.db.execute(
+                    'SELECT id,hash FROM vectors WHERE scope=? AND model=?', (scope, model_id))}
+            finally:
+                self.db.rollback()
+            missing = [r for r in rows if existing.get(r['id']) != r['hash']]
+            start = time.perf_counter()
+            vectors = []
+            for offset in range(0, len(missing), 64):
+                batch = missing[offset:offset+64]
+                vectors.extend(normalize_vectors(encoder([f"{r['speaker']}: {r['text']}" for r in batch]), len(batch)))
+            if vectors:
+                vectors = normalize_vectors(vectors, len(missing))
+            self.db.execute('BEGIN IMMEDIATE')
+            try:
+                current = self.db.execute('SELECT generation FROM scopes WHERE scope=?', (scope,)).fetchone()
+                if current is None or current[0] != generation[0]:
+                    raise ValueError('source generation changed during embedding; retry on current sources')
                 self.db.executemany('INSERT OR REPLACE INTO vectors VALUES(?,?,?,?,?)',
-                    [(scope, r['id'], r['hash'], model_id, json.dumps(v)) for r, v in zip(missing, vectors)])
-        self._dense.clear()
-        return {'embedded': len(missing), 'seconds': time.perf_counter() - start, 'model': model_id}
+                    [(scope, r['id'], r['hash'], model_id, json.dumps(v, allow_nan=False))
+                     for r, v in zip(missing, vectors)])
+                self.db.commit()
+            except Exception:
+                self.db.rollback()
+                raise
+            self._clear_caches()
+            return {'embedded': len(missing), 'seconds': time.perf_counter() - start,
+                    'model': model_id, 'generation': generation[0]}
 
     def _dense_search(self, scope, query, encoder, model_id, limit):
         import numpy as np  # Optional dense execution only.
@@ -270,13 +370,23 @@ class SearchIndex:
             raise ValueError('nonempty scope and query required')
         if type(budget) is not int or not 0 <= budget <= 32768:
             raise ValueError('budget must be an integer from 0 to 32768')
-        if mode not in ('literal', 'sparse', 'hybrid', 'dense') or not 1 <= candidate_limit <= 1000 or neighbor_turns not in (0, 1, 2):
+        if (mode not in ('literal', 'sparse', 'hybrid', 'dense') or type(candidate_limit) is not int
+                or not 1 <= candidate_limit <= 1000 or type(neighbor_turns) is not int
+                or neighbor_turns not in (0, 1, 2)):
             raise ValueError('invalid retrieval settings')
         if len(query) > 16000:
             raise ValueError('query too long')
         generation = self.db.execute('SELECT generation FROM scopes WHERE scope=?', (scope,)).fetchone()
         if generation is None:
             raise ValueError('scope not indexed')
+        if budget == 0:
+            return {'scope': scope, 'generation': generation[0], 'mode': mode, 'context': '',
+                    'selected': [], 'ranked_ids': [], 'candidate_count': 0,
+                    'budget': 0, 'budget_used': 0, 'counter': getattr(self.counter, 'name', 'caller_supplied'),
+                    'timing_ms': {'sparse': 0.0, 'query_embedding': 0.0, 'retrieval_total': 0.0,
+                                  'pack': 0.0, 'total': (time.perf_counter()-start)*1000},
+                    'query_embedding_cache_hit': False, 'semantic_encoder_used': False,
+                    'answer_generated': False, 'empty_reason': 'zero_budget', 'result_cache_hit': False}
         tokens = terms(query)[:64]
         speakers = set()
         for row in self.db.execute('SELECT DISTINCT speaker FROM docs WHERE scope=?', (scope,)):
@@ -294,6 +404,8 @@ class SearchIndex:
         if mode in ('hybrid', 'dense'):
             if encoder is None or not model_id:
                 raise ValueError('dense mode requires an explicit local encoder and model identity')
+            if getattr(encoder, 'model_id', model_id) != model_id:
+                raise ValueError('encoder identity mismatch')
             dense, embedding_ms, query_cached = self._dense_search(scope, query, encoder, model_id, candidate_limit)
             channels.append(dense)
         scores = {}
@@ -301,9 +413,13 @@ class SearchIndex:
             for rank, rid in enumerate(dict.fromkeys(channel), 1):
                 scores[rid] = scores.get(rid, 0.0) + 1.0 / (60.0 + rank)
         ordered = sorted(scores, key=lambda rid: (-scores[rid], rid))
-        ranked = []
-        for rid in ordered:
-            ranked.append(dict(self.db.execute('SELECT * FROM docs WHERE rowid=? AND scope=?', (rid, scope)).fetchone()))
+        by_rowid = {}
+        for offset in range(0, len(ordered), 500):
+            batch = ordered[offset:offset+500]
+            marks = ','.join('?' for _ in batch)
+            for row in self.db.execute(f'SELECT * FROM docs WHERE scope=? AND rowid IN ({marks})', (scope, *batch)):
+                by_rowid[row['rowid']] = dict(row)
+        ranked = [by_rowid[rid] for rid in ordered]
         ranked_ids = [r['id'] for r in ranked]
         retrieval_ms = (time.perf_counter() - start) * 1000
         # Optional adjacent context is actual text, not automatic credit for unseen IDs.
@@ -320,20 +436,29 @@ class SearchIndex:
                     seen.add(item['rowid'])
                     expanded.append(item)
         blocks, selected = [], []
+        used = 0
+        byte_counter = type(self.counter) is TokenCounter and self.counter.encode is None
         for row in expanded:
             label = json.dumps({'id': row['id'], 'speaker': row['speaker'], 'date': row['timestamp']}, ensure_ascii=False)
             block = f"[source {label}]\n{row['text']}"
-            trial = '\n\n'.join(blocks + [block])
-            if self.counter(trial) <= budget:
+            if byte_counter:
+                units = used + len(block.encode('utf-8')) + (2 if blocks else 0)
+            else:
+                units = self._count('\n\n'.join(blocks + [block]))
+            if units <= budget:
+                used = units
                 blocks.append(block)
                 selected.append({'id': row['id'], 'hash': row['hash'], 'source': row['source'],
                                  'complete': True, 'text': row['text']})
             # Oversized turns are skipped rather than terminating the packing pass.
         context = '\n\n'.join(blocks)
+        final_units = self._count(context)
+        if final_units > budget:
+            raise ValueError('counter changed while packing; final context exceeds budget')
         total_ms = (time.perf_counter()-start)*1000
         return {'scope': scope, 'generation': generation[0], 'mode': mode, 'context': context,
                 'selected': selected, 'ranked_ids': ranked_ids, 'candidate_count': len(ranked),
-                'budget': budget, 'budget_used': self.counter(context),
+                'budget': budget, 'budget_used': final_units,
                 'counter': getattr(self.counter, 'name', 'caller_supplied'),
                 'timing_ms': {'sparse': sparse_ms, 'query_embedding': embedding_ms,
                               'retrieval_total': retrieval_ms, 'pack': total_ms-retrieval_ms,
@@ -343,9 +468,32 @@ class SearchIndex:
                 'answer_generated': False}
 
     def search(self, scope, query, **kwargs):
-        """One consistent read snapshot. Callers sharing an instance must serialize calls."""
-        self.db.execute('BEGIN')
-        try:
-            return self._search(scope, query, **kwargs)
-        finally:
-            self.db.rollback()
+        """One read snapshot; cache only deterministic native counters and explicit inputs."""
+        started = time.perf_counter()
+        with self._lock:
+            self.db.execute('BEGIN')
+            try:
+                self._refresh_caches()
+                key = None
+                if type(self.counter) is TokenCounter and isinstance(scope, str) and isinstance(query, str):
+                    # Type tags prevent True and 1 from sharing a validation-bypassing key.
+                    settings = tuple(sorted((k, type(v).__name__, repr(v)) for k, v in kwargs.items() if k != 'encoder'))
+                    key = (scope, query, settings, id(kwargs.get('encoder')), id(self.counter), self.counter.name, id(self.counter.encode))
+                if key is not None and key in self._results:
+                    out = copy.deepcopy(self._results[key])
+                    self._results.move_to_end(key)
+                    elapsed = (time.perf_counter()-started)*1000
+                    out['result_cache_hit'] = True
+                    out['query_embedding_cache_hit'] = bool(out['semantic_encoder_used'])
+                    out['timing_ms'] = {'sparse': 0.0, 'query_embedding': 0.0,
+                                        'retrieval_total': elapsed, 'pack': 0.0, 'total': elapsed}
+                    return out
+                out = self._search(scope, query, **kwargs)
+                out['result_cache_hit'] = False
+                if key is not None:
+                    self._results[key] = copy.deepcopy(out)
+                    if len(self._results) > 64:
+                        self._results.popitem(last=False)
+                return out
+            finally:
+                self.db.rollback()

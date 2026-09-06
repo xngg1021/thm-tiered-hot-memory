@@ -2,6 +2,7 @@
 from __future__ import annotations
 from datetime import datetime, timezone
 import json
+import math
 from pathlib import Path
 import re
 import sqlite3
@@ -58,7 +59,12 @@ def file_documents(root, scope, tier='T1'):
 
 def epoch(value):
     if isinstance(value, (int, float)) and not isinstance(value, bool):
-        return datetime.fromtimestamp(value, timezone.utc)
+        if not math.isfinite(value):
+            raise ValueError('timestamps must be finite')
+        try:
+            return datetime.fromtimestamp(value, timezone.utc)
+        except (OverflowError, OSError) as exc:
+            raise ValueError('timestamp outside supported range') from exc
     if isinstance(value, str):
         date = datetime.fromisoformat(value.replace('Z', '+00:00'))
         if date.tzinfo is None:
@@ -73,6 +79,10 @@ def read_hermes(path, scope, *, since=None, max_rows=50000, timeout=10.0):
     Unknown schemas fail. Partial reads explicitly disclose the cap. Native WAL
     read-only behavior applies; immutable=1 is intentionally NOT used on a live DB.
     """
+    if (not isinstance(scope, str) or not scope.strip() or type(max_rows) is not int
+            or not 1 <= max_rows <= 1_000_000 or type(timeout) not in (int, float)
+            or not math.isfinite(timeout) or timeout <= 0):
+        raise ValueError('invalid scope or read bounds')
     path = Path(path).expanduser()
     if path.is_symlink() or not path.is_file():
         raise ValueError('existing non-symlink state DB required')
@@ -103,7 +113,8 @@ def read_hermes(path, scope, *, since=None, max_rows=50000, timeout=10.0):
         sql = '''SELECT m.id,m.session_id,m.role,m.content,m.timestamp,s.source
                  FROM messages m JOIN sessions s ON s.id=m.session_id
                  WHERE m.role IN ('user','assistant') AND m.active=1
-                   AND m._compressed_summary=0 AND s.hidden=0''' + predicate + '''
+                   AND m._compressed_summary=0 AND s.hidden=0
+                   AND LOWER(s.source) NOT IN ('cron','flush','subagent','background','test','review')''' + predicate + '''
                  ORDER BY m.timestamp,m.id LIMIT ?'''
         rows = db.execute(sql, (*params, max_rows + 1)).fetchall()
         partial = len(rows) > max_rows
@@ -120,6 +131,7 @@ def read_hermes(path, scope, *, since=None, max_rows=50000, timeout=10.0):
                          'accepted_rows': len(records), 'read_only': True,
                          'schema': sorted(required), 'elapsed_ms': (time.perf_counter()-start)*1000}
     finally:
+        db.rollback()
         db.close()
 
 

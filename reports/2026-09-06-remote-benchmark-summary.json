@@ -1,0 +1,103 @@
+{
+  "kind": "existing_remote_CI_protocol_1_not_this_patch",
+  "commit": "433b1256bbaca8680f3c41d67a1e23e97b36bd7c",
+  "workflow_run": 34030697732,
+  "artifact_id": 9988651011,
+  "artifact_sha256": "08e90068b1120941c72092d51c089c3740d14c034a8b500f0580b4d380cbc783",
+  "dataset_upstream_commit": "3eb6f2c585f5e1699204e3c3bdf7adc5c28cb376",
+  "dataset_sha256": "79fa87e90f04081343b8c8debecb80a9a6842b76a7aa537dc9fdf651ea698ff4",
+  "counter": "cl100k_base",
+  "conversations": 10,
+  "questions_all_categories": 1986,
+  "generation_calls": 0,
+  "judge_calls": 0,
+  "summaries": {
+    "literal@300": {
+      "main_categories_1_to_4": {
+        "questions": 1540,
+        "scorable": 1532,
+        "no_gold_questions": 4,
+        "partially_or_unresolved_questions": 4,
+        "any_gold_hits": 748,
+        "any_gold_hit_rate": 0.48825065274151436,
+        "all_gold_hit_rate": 0.40339425587467365,
+        "macro_evidence_recall": 0.4387939211209446,
+        "micro_evidence_recall": 0.3346137430644473,
+        "candidate_any_gold_rate": 0.7754569190600522,
+        "empty_context_rate": 0,
+        "mean_budget_used": 284.6136363636364,
+        "latency_ms": {"p50": 14.179457500006265, "p95": 15.4650489999824, "mean": 14.246081889610766},
+        "query_embedding_ms_mean": 0.0
+      },
+      "held_out": {
+        "questions": 1307, "scorable": 1301, "no_gold_questions": 2, "partially_or_unresolved_questions": 4,
+        "any_gold_hits": 640, "any_gold_hit_rate": 0.49192928516525747, "all_gold_hit_rate": 0.4019984627209839,
+        "macro_evidence_recall": 0.43936634933944696, "micro_evidence_recall": 0.33136676499508355,
+        "candidate_any_gold_rate": 0.7778631821675634, "empty_context_rate": 0,
+        "mean_budget_used": 284.65263963274674,
+        "latency_ms": {"p50": 14.281334999992623, "p95": 15.519780399995398, "mean": 14.33156953404785},
+        "query_embedding_ms_mean": 0.0
+      }
+    },
+    "literal@600": {
+      "main_categories_1_to_4": {
+        "questions": 1540, "scorable": 1532, "no_gold_questions": 4, "partially_or_unresolved_questions": 4,
+        "any_gold_hits": 871, "any_gold_hit_rate": 0.5685378590078329, "all_gold_hit_rate": 0.4706266318537859,
+        "macro_evidence_recall": 0.5148035082376965, "micro_evidence_recall": 0.4041826717883056,
+        "candidate_any_gold_rate": 0.7754569190600522, "empty_context_rate": 0, "mean_budget_used": 583.8350649350649,
+        "latency_ms": {"p50": 23.454825000001733, "p95": 24.667765749988746, "mean": 23.519472651298504},
+        "query_embedding_ms_mean": 0.0
+      },
+      "held_out": {
+        "questions": 1307, "scorable": 1301, "no_gold_questions": 2, "partially_or_unresolved_questions": 4,
+        "any_gold_hits": 744, "any_gold_hit_rate": 0.5718677940046119, "all_gold_hit_rate": 0.46733282090699463,
+        "macro_evidence_recall": 0.5144983151064446, "micro_evidence_recall": 0.4006882989183874,
+        "candidate_any_gold_rate": 0.7778631821675634, "empty_context_rate": 0, "mean_budget_used": 583.9173680183627,
+        "latency_ms": {"p50": 23.507464999994454, "p95": 24.697074899989957, "mean": 23.589203010711294},
+        "query_embedding_ms_mean": 0.0
+      }
+    },
+    "literal@1200": {
+      "main_categories_1_to_4": {
+        "questions": 1540, "scorable": 1532, "no_gold_questions": 4, "partially_or_unresolved_questions": 4,
+        "any_gold_hits": 982, "any_gold_hit_rate": 0.6409921671018277, "all_gold_hit_rate": 0.5261096605744126,
+        "macro_evidence_recall": 0.5778280814409956, "micro_evidence_recall": 0.46777635510029875,
+        "candidate_any_gold_rate": 0.7754569190600522, "empty_context_rate": 0, "mean_budget_used": 1183.0396103896103,
+        "latency_ms": {"p50": 40.7232005000111, "p95": 42.07903099999868, "mean": 40.76193366103927}, "query_embedding_ms_mean": 0.0
+      },
+      "held_out": {"questions": 1307, "scorable": 1301, "no_gold_questions": 2, "partially_or_unresolved_questions": 4,
+        "any_gold_hits": 837, "any_gold_hit_rate": 0.6433512682551883, "all_gold_hit_rate": 0.5226748654880861,
+        "macro_evidence_recall": 0.5767993498085616, "micro_evidence_recall": 0.46361848574237957,
+        "candidate_any_gold_rate": 0.7778631821675634, "empty_context_rate": 0, "mean_budget_used": 1183.1652639632746,
+        "latency_ms": {"p50": 40.730732000042735, "p95": 42.16120409999462, "mean": 40.79507129609825}, "query_embedding_ms_mean": 0.0}
+    },
+    "sparse@300": {
+      "main_categories_1_to_4": {"questions":1540,"scorable":1532,"no_gold_questions":4,"partially_or_unresolved_questions":4,"any_gold_hits":930,"any_gold_hit_rate":0.6070496083550914,"all_gold_hit_rate":0.4915143603133159,"macro_evidence_recall":0.5437319624819624,"micro_evidence_recall":0.42893725992317544,"candidate_any_gold_rate":0.9157963446475196,"empty_context_rate":0,"mean_budget_used":284.50714285714287,"latency_ms":{"p50":17.44613499998593,"p95":23.85410234998062,"mean":17.845279190259067},"query_embedding_ms_mean":0.0},
+      "held_out": {"questions":1307,"scorable":1301,"no_gold_questions":2,"partially_or_unresolved_questions":4,"any_gold_hits":791,"any_gold_hit_rate":0.6079938508839354,"all_gold_hit_rate":0.49039200614911604,"macro_evidence_recall":0.5433364334017677,"micro_evidence_recall":0.42330383480825956,"candidate_any_gold_rate":0.9108378170637971,"empty_context_rate":0,"mean_budget_used":284.4261667941852,"latency_ms":{"p50":17.867744999989554,"p95":24.04434209998954,"mean":18.29334801453636},"query_embedding_ms_mean":0.0}
+    },
+    "sparse@600": {
+      "main_categories_1_to_4": {"questions":1540,"scorable":1532,"no_gold_questions":4,"partially_or_unresolved_questions":4,"any_gold_hits":1066,"any_gold_hit_rate":0.695822454308094,"all_gold_hit_rate":0.5633159268929504,"macro_evidence_recall":0.6240263995608696,"micro_evidence_recall":0.5164319248826291,"candidate_any_gold_rate":0.9157963446475196,"empty_context_rate":0,"mean_budget_used":584.7785714285715,"latency_ms":{"p50":29.06494399999815,"p95":40.26652690001882,"mean":29.89132296558427},"query_embedding_ms_mean":0.0},
+      "held_out": {"questions":1307,"scorable":1301,"no_gold_questions":2,"partially_or_unresolved_questions":4,"any_gold_hits":906,"any_gold_hit_rate":0.6963873943120676,"all_gold_hit_rate":0.5588009223674096,"macro_evidence_recall":0.6214899647403936,"micro_evidence_recall":0.5108161258603736,"candidate_any_gold_rate":0.9108378170637971,"empty_context_rate":0,"mean_budget_used":584.8821729150727,"latency_ms":{"p50":29.647127999993472,"p95":40.54811709998489,"mean":30.57329492884462},"query_embedding_ms_mean":0.0}
+    },
+    "sparse@1200": {
+      "main_categories_1_to_4": {"questions":1540,"scorable":1532,"no_gold_questions":4,"partially_or_unresolved_questions":4,"any_gold_hits":1172,"any_gold_hit_rate":0.7650130548302873,"all_gold_hit_rate":0.6246736292428199,"macro_evidence_recall":0.6918639536696327,"micro_evidence_recall":0.5949637217242851,"candidate_any_gold_rate":0.9157963446475196,"empty_context_rate":0,"mean_budget_used":1182.8103896103896,"latency_ms":{"p50":51.169538999999986,"p95":71.26264419999018,"mean":52.679859564935555},"query_embedding_ms_mean":0.0},
+      "held_out": {"questions":1307,"scorable":1301,"no_gold_questions":2,"partially_or_unresolved_questions":4,"any_gold_hits":995,"any_gold_hit_rate":0.7647963105303612,"all_gold_hit_rate":0.6210607225211375,"macro_evidence_recall":0.6894969846440256,"micro_evidence_recall":0.5899705014749262,"candidate_any_gold_rate":0.9108378170637971,"empty_context_rate":0,"mean_budget_used":1183.2976281560827,"latency_ms":{"p50":52.208950000022014,"p95":72.07549200002177,"mean":53.840829621270586},"query_embedding_ms_mean":0.0}
+    },
+    "dense@600": {
+      "main_categories_1_to_4": {"questions":1540,"scorable":1532,"no_gold_questions":4,"partially_or_unresolved_questions":4,"any_gold_hits":783,"any_gold_hit_rate":0.5110966057441253,"all_gold_hit_rate":0.40013054830287204,"macro_evidence_recall":0.44948524829081216,"micro_evidence_recall":0.37900128040973113,"candidate_any_gold_rate":0.8453002610966057,"empty_context_rate":0,"mean_budget_used":584.3116883116883,"latency_ms":{"p50":34.23035000002983,"p95":35.671199449978985,"mean":34.99768526883093},"query_embedding_ms_mean":10.80081263181675},
+      "held_out": {"questions":1307,"scorable":1301,"no_gold_questions":2,"partially_or_unresolved_questions":4,"any_gold_hits":662,"any_gold_hit_rate":0.5088393543428132,"all_gold_hit_rate":0.39815526518063027,"macro_evidence_recall":0.44721603923765635,"micro_evidence_recall":0.37413962635201575,"candidate_any_gold_rate":0.8401229823212913,"empty_context_rate":0,"mean_budget_used":584.4353481254782,"latency_ms":{"p50":34.23753200002011,"p95":35.65123849998031,"mean":34.9807194988521},"query_embedding_ms_mean":10.828370570005966}
+    },
+    "hybrid@600": {
+      "main_categories_1_to_4": {"questions":1540,"scorable":1532,"no_gold_questions":4,"partially_or_unresolved_questions":4,"any_gold_hits":1073,"any_gold_hit_rate":0.7003916449086162,"all_gold_hit_rate":0.564621409921671,"macro_evidence_recall":0.6264302179723148,"micro_evidence_recall":0.5262483994878361,"candidate_any_gold_rate":0.970626631853786,"empty_context_rate":0,"mean_budget_used":585.7363636363636,"latency_ms":{"p50":46.94506999996406,"p95":61.63076929997828,"mean":47.88591464610318},"query_embedding_ms_mean":1.4696390474045171},
+      "held_out": {"questions":1307,"scorable":1301,"no_gold_questions":2,"partially_or_unresolved_questions":4,"any_gold_hits":910,"any_gold_hit_rate":0.6994619523443505,"all_gold_hit_rate":0.5618754803996926,"macro_evidence_recall":0.6239747070972992,"micro_evidence_recall":0.5196656833824975,"candidate_any_gold_rate":0.9692544196771714,"empty_context_rate":0,"mean_budget_used":585.7130833970925,"latency_ms":{"p50":48.12425299996903,"p95":62.26895629997671,"mean":49.04573481943304},"query_embedding_ms_mean":1.7284697658779808}
+    }
+  },
+  "limits": [
+    "Original protocol 1 results, not patched protocol 2",
+    "Original labels 1 and 4 were swapped; aggregates 1-4 remain numerically unchanged",
+    "Original lexical IDF shared prior-conversation statistics; protocol 2 isolates each conversation",
+    "Question/evidence retrieval metrics are not end-to-end answer accuracy",
+    "Different protocol/denominator from user-reported 21.6%; no direct improvement claim"
+  ],
+  "model_id": "sentence-transformers/all-MiniLM-L6-v2@1110a243fdf4706b3f48f1d95db1a4f5529b4d41"
+}

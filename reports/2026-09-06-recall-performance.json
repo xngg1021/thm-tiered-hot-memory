@@ -1,0 +1,34 @@
+{
+  "kind": "synthetic_same_output_lookup_microbenchmark",
+  "documents": 500,
+  "different_queries": 80,
+  "repeated_queries": 200,
+  "counter": "utf8_bytes",
+  "budget": 600,
+  "base": {
+    "uncached_p50_ms": 2.392807999967772,
+    "uncached_p95_ms": 3.5067239998625155,
+    "repeated_p50_ms": 2.279376499927821,
+    "repeated_p95_ms": 2.495114000112153
+  },
+  "patched": {
+    "uncached_p50_ms": 2.1986224999182014,
+    "uncached_p95_ms": 2.754085999868039,
+    "repeated_p50_ms": 0.03491199993277405,
+    "repeated_p95_ms": 0.04882199982603197
+  },
+  "all_80_contexts_and_rankings_identical": true,
+  "python": "3.13.5",
+  "platform": "Linux",
+  "source_sha256": {
+    "base": "3bee769913e097343bd6e3512831f2edc1df08481535401438dacf3c95af4539",
+    "work": "5255513867f8b37648a905401d26e9c451ed924467fc8f4f2d26ac654bdec630"
+  },
+  "limits": [
+    "Not full LoCoMo",
+    "Not user-perceived latency",
+    "No semantic model calls",
+    "One local process environment; no universal speedup claim",
+    "Repeated-query cache benefit is reported separately from uncached work"
+  ]
+}

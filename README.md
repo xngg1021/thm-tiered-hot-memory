@@ -10,6 +10,8 @@ The [retrieval experiment](reports/2026-09-06-recall-results.md) and [machine-re
 
 The benchmark invokes no generative model or judge. Dense encoding does use an explicitly downloaded local model. Sparse remains the default: this experiment does not establish that dense retrieval or hybrid's small gain is worth its extra cost for every workload.
 
+The [integration review](docs/10-recall-integration-review.md) documents follow-up fixes, local regressions and evaluation-protocol corrections. The category names for 1/4 were reversed in the original runner, and protocol 2 isolates per-conversation IDF statistics. Historical results above remain protocol 1; a new full protocol 2 run is pending.
+
 ## Four tiers
 
 T0 is the small native MEMORY.md / USER.md snapshot; T1 is on-demand thematic material; T2 is historical sessions and archives; T3 contains external source locations. A native memory-file write does not itself refresh an existing frozen system snapshot. T3's name does not guarantee immutable external content. See [architecture history](docs/02-架构设计.md).

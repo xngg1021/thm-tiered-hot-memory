@@ -1,0 +1,36 @@
+THM recall review pre-fix regression summary
+Baseline: e7c6b9d1c93811d5bb0b735e223658a4d205d360 / earlier recall implementation under review
+Synthetic review regression suite: 28 tests
+Result: FAILED (failures=24, errors=3, passes=1)
+
+Confirmed failure classes before repair:
+- readonly SearchIndex mode absent; readonly creation/update tests error
+- zero-budget dense search still tries to use embeddings
+- invalid/boolean candidate and neighbor parameters accepted
+- unrelated SQLite targets not refused at SearchIndex boundary
+- duplicate session/order positions accepted
+- embedding source generation changes not detected before publication
+- extreme finite vectors underflow/overflow normalization
+- external vector writes do not invalidate dense cache
+- invalid counters can bypass expected budget validation
+- candidate document materialization performs per-row SELECTs
+- packing repeatedly recounts rejected same-length candidates
+- scan anchor validation incomplete on empty input
+- case-insensitive duplicate anchors can count as independent evidence
+- later anchor occurrences in a message are missed
+- unclosed code fences can leak into prose scanning
+- canonical timestamp representations are not deduplicated
+- background/review source matching is case sensitive
+- decay/policy boolean and malformed metadata validation incomplete
+- LoCoMo category names 1 and 4 reversed
+- duplicate benchmark conversation IDs accepted
+- source-reader LIMIT can be consumed by excluded background rows
+- invalid read limits accepted
+
+Representative pre-fix errors included:
+TypeError: SearchIndex.__init__() got an unexpected keyword argument 'readonly'
+ValueError: embedding index missing/stale; run embed for this model and scope
+AssertionError: expected category 1 multi_hop but observed single_hop
+AssertionError: expected external dense-cache invalidation but stale ranking remained
+
+The full local traceback output was retained during development but is not required as runtime input. The repaired implementation is certified by reports/2026-09-06-recall-review-tests.txt, where the targeted suite passes 95/95. This file is historical failure evidence only; it must not be interpreted as current test status.
