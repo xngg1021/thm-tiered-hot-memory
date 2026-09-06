@@ -139,6 +139,7 @@ class RetrievalRepairs(unittest.TestCase):
         self.assertEqual(out['budget_used'], 2 * len(out['context'].encode('utf-8')))
         self.assertLessEqual(out['budget_used'], 180)
 
+    @unittest.skipUnless(importlib.util.find_spec('numpy'), 'optional numpy unavailable')
     def test_foreign_writes_invalidate_dense_cache(self):
         enc = lambda texts: [[1, 0] if 'apple' in t or t == 'query' else [0, 1] for t in texts]
         self.index.embed('s', enc, 'm')
@@ -200,6 +201,7 @@ class RetrievalRepairs(unittest.TestCase):
             self.assertEqual(out['budget_used'], len(out['context'].encode('utf-8')))
             self.assertLessEqual(out['budget_used'], size)
 
+    @unittest.skipUnless(importlib.util.find_spec('numpy'), 'optional numpy unavailable')
     def test_empty_dense_scope_does_not_claim_model_success(self):
         self.index.replace_scope('s', [])
         with self.assertRaises(ValueError):
