@@ -26,7 +26,7 @@ All commands are advisory. They do **not** modify `MEMORY.md`, `USER.md`, tier a
 
 Miss events carry an explicit `avoidable` boolean. It answers a narrower counterfactual question: **would keeping/fetching this item under the tested policy plausibly have avoided this miss?** Raw miss rate remains diagnostic, but only `avoidable=true` misses enter the resident-capacity benefit signal. The conservative default is `false`.
 
-Events may also carry extra tokens, tool calls, latency and observed provider cost. THM never invents missing values. `prefetch` requires `used=true/false`; optional `avoided_miss` and avoided-cost fields remain caller-supplied labels rather than inferred causal truth.
+Events may also carry extra tokens, tool calls, latency and observed provider cost. THM never invents missing values. `prefetch` requires `used=true/false`; optional `avoided_miss` and avoided-cost fields remain caller-supplied labels rather than inferred causal truth. Unknown telemetry fields fail explicitly so a typo such as `avoidble` cannot silently turn a positive observation into the conservative default.
 
 Example JSONL:
 
@@ -41,9 +41,16 @@ python -m thm residency-telemetry ./private/residency-events.jsonl
 
 The report exposes both raw and avoidable miss rates/penalties and labels itself `explicit-shadow-telemetry-not-causal-usage-proof`.
 
-### Anti-feedback rule
+### Demand-task denominator and anti-feedback rule
 
-Per-item telemetry maintains both broad `task_ids` and strict `demand_task_ids`. Only `resident_hit`, `resident_miss` and `hard_miss` enter `demand_task_ids`. Residency and co-demand prefetch use the strict set, so a successful earlier prefetch cannot manufacture future demand evidence for itself.
+Telemetry exposes both:
+
+- `tasks`: every task ID seen in the supplied trace;
+- `demand_tasks`: only tasks containing `resident_hit`, `resident_miss` or `hard_miss`.
+
+Per-item `need_task_rate` and residency opportunity rates use **`demand_tasks`**, so prefetch-only or planned-retrieval-only tasks cannot dilute an item's observed need probability.
+
+Per-item telemetry also maintains broad `task_ids` and strict `demand_task_ids`. Residency and co-demand prefetch use the strict set. A successful earlier prefetch therefore cannot manufacture future demand evidence for itself.
 
 ## 2. Optional measurement catalog
 
@@ -64,7 +71,7 @@ The canonical THM index continues to own identity, tier, status, validity, pinni
 
 Allowed overlay fields are `resident_units`, `miss_penalty_tokens`, `locator`, `scope`, `project` and `profile`. `miss_penalty_tokens` means the caller's explicit counterfactual token penalty for a residency-avoidable miss of that item; it is not a generic “importance” score.
 
-The overlay cannot change canonical tier/status/validity/pin/events/source identity. Unsupported fields fail. A catalog item id that no longer exists in the canonical index also fails instead of being silently ignored. Keep private catalogs outside the public repository when locators or scope names disclose private state.
+The overlay cannot change canonical tier/status/validity/pin/events/source identity. Unsupported fields fail. A catalog item id that no longer exists in the canonical index also fails instead of being silently ignored. Wrapper metadata outside the documented `items` key fails as well, preventing stale or misspelled catalog structure from being accepted partially. Keep private catalogs outside the public repository when locators or scope names disclose private state.
 
 ## 3. T1 warm directory
 
@@ -87,6 +94,8 @@ The display topic is derived from the **safe locator filename**, never from the 
 
 Absolute paths, parent traversal, `~` and unsafe locator forms are rejected. Native `MEMORY.md`/`USER.md` are not guessed as T1 locators. Directory packing is deterministic and budgeted; pin/cost/count signals only decide which locator line fits and do not prove semantic importance.
 
+Hermes' optional runtime projection is documented separately in [15-hermes-warm-directory.md](15-hermes-warm-directory.md). Enabling that projection does not enable automatic residency control.
+
 ## 4. Shadow value-aware T0 recommendation
 
 ```bash
@@ -98,7 +107,8 @@ python -m thm residency-plan \
   --catalog /private/thm-residency-catalog.json \
   --counter cl100k_base \
   --horizon-tasks 20 \
-  --min-tasks 20
+  --min-tasks 20 \
+  --min-item-demands 2
 ```
 
 For measurable items the token-side comparison is:
@@ -114,21 +124,32 @@ net_token_value(H)
   = expected_saved_tokens(H) - resident_carry_tokens(H)
 ```
 
-For a nonresident candidate, occurrence pressure is estimated from **observed avoidable misses**, not every raw miss. For current T0, an explicit catalog miss penalty can provide the otherwise-unobserved counterfactual cost of removing the item; without such evidence the current resident remains uncertain/protected rather than being assigned zero value.
+For a nonresident candidate, occurrence pressure is estimated from **observed avoidable misses**, not every raw miss. For current T0, an explicit catalog miss penalty can provide the otherwise-unobserved counterfactual cost of removing the item; without sufficient evidence the current resident remains uncertain/protected rather than being assigned zero value.
 
 This remains a **token objective**. It does not pretend latency, correctness, dollars and task value are one scalar. Activity is only a deterministic tie-break between token-objective ties.
 
-### Exact budget packing
+### Sample gates
+
+Two gates are separate:
+
+- `--min-tasks` is evaluated against explicit **demand tasks**, not every task in the telemetry file;
+- `--min-item-demands` is an actual per-item evidence gate.
+
+If an item has some observed demand but fewer observations than `--min-item-demands`, its demand/miss evidence is suppressed for placement. A low-support current T0 is protected/reviewed rather than treated as proven zero-value. Reports expose `all_tasks_observed`, `demand_tasks_observed`, `low_support_item_ids` and the applied threshold.
+
+### Exact budget packing and resource bounds
 
 Positive measurable candidates are selected with a deterministic exact **0/1 knapsack** over the stated token objective and supplied budget. This fixes a failure mode where value-density greedy packing can select a lower-total-value set. Tie order is total token value, activity, cost class, lower used capacity and stable item id.
 
-This is “exact” only for the explicit finite token objective supplied to this run. It is not a claim of a globally optimal memory policy.
+The exact planner is deliberately bounded: the public facade refuses budgets above **100,000 units** or more than **1,024 supplied entries**. It fails explicitly instead of silently switching algorithms or consuming unbounded dynamic-programming state.
+
+“Exact” therefore means exact for the explicit finite token objective and accepted input bounds. It is not a claim of a globally optimal memory policy.
 
 ### Conservative unknown handling
 
 - current T0 without measurable resident cost returns `UNCOSTED_CURRENT_RESIDENT` and suppresses placement changes;
 - current T0 with incomplete counterfactual miss evidence stays protected/uncertain;
-- if task coverage is below `--min-tasks`, real `admit`/`evict` arrays stay empty and only `provisional_*` fields are emitted;
+- if demand-task coverage is below `--min-tasks`, real `admit`/`evict` arrays stay empty and only `provisional_*` fields are emitted;
 - invalid or out-of-validity rows are excluded before ranking;
 - `stale_resident_failure` blocks the item by default and sends it to review even if frequently used;
 - `pinned` protects an **already resident T0** item from ordinary capacity eviction; it does not auto-promote a pinned T1/T2/T3 item;
@@ -177,7 +198,7 @@ python -m thm residency-budget ./private/residency-events.jsonl \
   --step 100
 ```
 
-The controller uses **avoidable miss rate** above target as grow pressure. Raw miss rate remains visible for diagnosis but cannot grow resident capacity by itself. Context pressure drives shrink; prefetch pollution and stale-resident failures add risk/shrink pressure. Hysteresis prevents small noise from oscillating the budget. Insufficient demand holds the current value. The result always reports `changes_applied:false`.
+The controller uses **avoidable miss rate** above target as grow pressure. Raw miss rate remains visible for diagnosis but cannot grow resident capacity by itself. Context pressure drives shrink; prefetch pollution and stale-resident failures add risk/shrink pressure. Hysteresis prevents small noise from oscillating the budget. Insufficient explicit demand holds the current value. The result always reports `changes_applied:false`.
 
 This is a bounded feedback experiment, not TCP AIMD and not a learned policy.
 
@@ -202,12 +223,12 @@ Until then THM exposes recommendations and receipts instead of hidden policy cha
 
 ## Implementation map
 
-- facade: `thm/residency.py`
+- facade and sample/resource guardrails: `thm/residency.py`
 - validation/catalog: `thm/_residency_common.py`
 - telemetry: `thm/residency_telemetry.py`
 - T1 locator projection: `thm/residency_directory.py`
 - shadow residency/prefetch/budget control: `thm/residency_control.py`
 - compatibility research CLI: `research/residency/miss_telemetry.py`
-- tests: `tests/test_residency_control.py`, `tests/test_residency_cli.py`, `tests/test_miss_telemetry.py`
+- tests: `tests/test_residency_control.py`, `tests/test_residency_guardrails.py`, `tests/test_residency_cli.py`, `tests/test_miss_telemetry.py`
 
 The earlier hardware-analogy audit and its evidence boundaries remain in [the preceding design note](13-hardware-inspired-adaptive-residency.md).

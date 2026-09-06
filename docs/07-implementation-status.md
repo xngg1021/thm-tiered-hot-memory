@@ -10,10 +10,10 @@ Date: 2026-09-07. Package line: **1.4.0 development**. Historical design remains
 | Harness integration | Hermes provider plus harness-neutral/adapters implemented | Exact runtime/workflow evidence remains revision-specific |
 | Observation scan | Implemented as zero-weight `mention_observed` | Does not create hits, confirmations, validity extensions or causal-use claims |
 | Decay/activity policies | Multiple kernels and activity-only plan implemented | Parameters remain tunable heuristics; no user-specific optimum without private explicit-hit chronology |
-| Miss/prefetch telemetry | **1.4 shadow implementation** | Raw miss and residency-avoidable miss are separate; planned retrieval is not a miss; prefetch never trains its own demand signal |
+| Miss/prefetch telemetry | **1.4 shadow implementation** | Raw miss and residency-avoidable miss are separate; planned retrieval is not a miss; prefetch never trains its own demand signal; unknown fields fail |
 | T1 warm directory | **1.4 shadow implementation** | Strict locator-only projection; topic comes from safe locator stem, never legacy key/summary/source text |
 | Hermes T1 prompt snapshot | **1.4 opt-in runtime implementation** | Disabled at budget 0; refreshes on session boundary only; selected locators must resolve to files inside current profile `memories/` |
-| Value-aware T0 recommendation | **1.4 shadow implementation** | Uses avoidable miss penalty vs repeated carry cost; exact 0/1 packing for that finite token objective; incomplete telemetry suppresses actionable deltas |
+| Value-aware T0 recommendation | **1.4 shadow implementation** | Uses avoidable miss penalty vs repeated carry cost; exact 0/1 packing for bounded finite token objective; demand/per-item sample gates suppress weak deltas |
 | Speculative prefetch | **1.4 shadow implementation** | Current canonical seed + explicit-demand co-occurrence only; bounded locator/tiny-excerpt candidates |
 | Adaptive resident budget | **1.4 shadow implementation** | One bounded suggestion step driven by avoidable miss, context pressure, prefetch pollution and stale risk; no automatic mutation |
 | Automatic promote/demote | Not implemented | Existing public tools emit proposals/recommendations only |
@@ -30,12 +30,14 @@ The shadow control API is documented in [14-residency-control-plane.md](14-resid
 Additional invariants enforced in code and tests:
 
 - only explicit `avoidable=true` misses contribute resident-capacity benefit; raw unavoidable misses remain diagnostics;
+- global all-task count and explicit-demand-task count are separate, so prefetch-only/planned-retrieval-only tasks cannot dilute residency need rates;
+- `min_item_demands` is enforced as a real item-level evidence gate; low-support current T0 stays protected/reviewed rather than becoming false zero-value;
+- telemetry and catalog structure fail on unknown fields/identities instead of accepting likely typos or stale metadata;
 - a pinned nonresident item is not automatically promoted;
 - current T0 with unknown counterfactual miss cost is protected/reviewed under incomplete evidence rather than silently scored as zero;
-- budget selection is exact for the finite supplied token objective rather than value-density greedy;
+- budget selection is exact for the finite supplied token objective rather than value-density greedy, with explicit public limits of 100,000 budget units and 1,024 entries;
 - prefetch seeds must resolve to current canonical items;
 - successful prefetches do not become future demand training examples;
-- stale/unknown catalog identities fail explicitly;
 - warm directory text is derived from safe locators and cannot leak legacy source-prefix keys;
 - the Hermes opt-in directory verifies every selected target exists, remains inside the current profile memory root after symlink resolution, and is a file;
 - native memory writes do not refresh the frozen directory block inside the current session; a later session boundary rebuilds it;
