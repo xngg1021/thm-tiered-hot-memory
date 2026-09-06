@@ -82,6 +82,6 @@ Synthetic decay sweeps remain diagnostic only. For a real-user calibration, `res
 
 THM does **not** currently claim real-user end-to-end answer accuracy, a universally optimal decay curve, automatic tier movement, automatic deletion propagation, or a prompt-cache / perceived-latency improvement. `scan` records weak `mention_observed` evidence with zero activity weight. The harness integrations deliberately make no second model call: retrieval coverage, host plumbing, model use of evidence and final answer quality remain separate evidence layers.
 
-Normal correctness CI runs on Linux, macOS and Windows. Heavy LoCoMo/model downloads and harness integration jobs are separate. Documentation: [project index](docs/README.md) · [engine guide](docs/06-engine-guide.md) · [retrieval / scan / decay](docs/09-retrieval-and-measurement.md) · [Harness adapters](docs/11-harness-adapters.md) · [benchmark protocol](research/recall/README.md).
+Normal correctness CI runs on Linux, macOS and Windows. Heavy LoCoMo/model downloads and harness integration jobs are separate. Documentation: [project index](docs/README.md) · [engine guide](docs/06-engine-guide.md) · [retrieval / scan / decay](docs/09-retrieval-and-measurement.md) · [Harness adapters](docs/11-harness-adapters.md) · [version history / recovery map](docs/12-version-history.md) · [changelog](CHANGELOG.md) · [benchmark protocol](research/recall/README.md).
 
 Related project: [hermes-academic-skills](https://github.com/xngg1021/hermes-academic-skills).
