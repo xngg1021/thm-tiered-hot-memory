@@ -19,7 +19,7 @@ THM separates activity, validity, task relevance and explicit pinning. A mention
 
 The hardened 1.1.1 index CLI maintains profile-bound memory metadata, exact event identities, migration previews, pin/unpin semantics and failure-safe writes. The 1.2 retrieval package adds scoped FTS5 retrieval, optional local sentence embeddings, reciprocal-rank fusion, budget-counted context packing, zero-weight mention observations, multiple decay-policy comparisons and reproducible evaluation scripts.
 
-**THM 1.3 adds a harness-neutral read-only recall layer.** It provides a standalone Hermes `MemoryProvider`, an OpenAI Agents SDK `FunctionTool`, a LangChain/LangGraph `BaseRetriever`, and a standard MCP v2 stdio server. The MCP surface is directly usable by MCP-capable harnesses; the repository separately tests OpenClaw's outbound MCP registry. See [Harness adapters](docs/11-harness-adapters.md).
+**THM 1.3 adds a harness-neutral read-only recall layer.** It provides a standalone Hermes `MemoryProvider`, an OpenAI Agents SDK `FunctionTool`, a LangChain/LangGraph `BaseRetriever`, and a standard MCP v2 stdio server. Current OpenClaw 2026.9.x is tested through a separate read-only legacy MCP compatibility bridge, so THM does not weaken the MCP v2 server contract merely to support an older client generation. See [Harness adapters](docs/11-harness-adapters.md).
 
 Native source memory is not rewritten by retrieval or scan. Harness adapters open derived THM recall databases read-only unless an explicitly enabled host-specific live-session cache is being refreshed. Derived SQLite databases reject unrelated/native database targets before THM tables are created.
 
@@ -38,9 +38,9 @@ The sparse budget sweep reached **60.57% / 69.39% / 76.17%** any-gold coverage a
 | Hermes Agent | pip-discovered standalone `MemoryProvider`; setup schema/config, current-query prefetch, optional derived `sync_turn`, session boundary hooks and write≠hit semantics |
 | OpenAI Agents SDK | `OpenAIAgentsTHM.tool` — one read-only `FunctionTool` |
 | LangChain / LangGraph / Deep Agents | `THMLangChainRetriever(BaseRetriever)` |
-| MCP v2 | `thm-mcp` / `python -m thm.mcp_server` exposes only `thm_recall` and `thm_status` |
-| OpenClaw | local THM MCP server through OpenClaw's managed MCP registry |
-| Claude Code / Codex CLI / Gemini CLI | standard local stdio MCP configuration; runtime-specific compatibility is distinguished from pinned E2E evidence |
+| MCP v2 | `thm-mcp` / `python -m thm.mcp_server` exposes typed `thm_recall` and `thm_status` structured outputs |
+| OpenClaw 2026.9.x | `thm-mcp-legacy` / `python -m thm.mcp_legacy_server`; live OpenClaw MCP probe, same read-only THM recall core |
+| Claude Code / Codex CLI / Gemini CLI | standard local stdio MCP v2 configuration; runtime-specific compatibility is distinguished from pinned E2E evidence |
 
 The earlier Hermes E2E against `NousResearch/hermes-agent@77915e344cb0cd8e20661d4a7b393f987a2eef32` remains historical evidence. THM 1.3 CI additionally checks a reviewed current Hermes snapshot and the new multi-harness surfaces; use the exact workflow/commit reports rather than transferring an older result to newer code.
 
@@ -64,10 +64,14 @@ python -m pip install -e '.[mcp]'
 python -m pip install -e '.[harnesses]'
 ```
 
-MCP example:
+MCP examples:
 
 ```bash
+# Primary MCP v2 server
 thm-mcp --db /absolute/path/recall.sqlite3 --scope demo --budget 600
+
+# Compatibility bridge for the pinned OpenClaw 2026.9.x client generation
+thm-mcp-legacy --db /absolute/path/recall.sqlite3 --scope demo --budget 600
 ```
 
 ## Hermes lifecycle behavior
