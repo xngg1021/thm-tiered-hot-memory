@@ -7,6 +7,7 @@ on:
       - "thm/harness.py"
       - "thm/adapters/**"
       - "thm/mcp_server.py"
+      - "thm/mcp_legacy_server.py"
       - "research/harness_e2e.py"
       - "pyproject.toml"
       - ".github/workflows/harness-e2e.yml"
@@ -50,10 +51,10 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: "24"
-      - name: Install THM MCP server and pinned OpenClaw
+      - name: Install THM and pinned OpenClaw
         run: |
           python -m pip install --upgrade pip
-          python -m pip install -e . mcp==2.0.0
+          python -m pip install -e .
           npm install -g openclaw@2026.9.2
       - name: Build synthetic THM index
         run: |
@@ -71,7 +72,7 @@ jobs:
           finally:
               idx.close()
           PY
-      - name: Configure and probe THM as an OpenClaw MCP server
+      - name: Configure and probe THM as an OpenClaw MCP 1.x server
         env:
           OPENCLAW_TEST_HOME: ${{ runner.temp }}/openclaw-home
         run: |
@@ -79,10 +80,11 @@ jobs:
           DB="$(pwd)/integration-output/openclaw-recall.sqlite3"
           python - <<PY > integration-output/openclaw-server.json
           import json
-          print(json.dumps({"command":"python","args":["-m","thm.mcp_server","--db","$DB","--scope","openclaw-e2e"]}))
+          print(json.dumps({"command":"python","args":["-m","thm.mcp_legacy_server","--db","$DB","--scope","openclaw-e2e"]}))
           PY
           HOME="$OPENCLAW_TEST_HOME" openclaw mcp set thm "$(cat integration-output/openclaw-server.json)"
-          HOME="$OPENCLAW_TEST_HOME" openclaw mcp doctor thm --probe --json | tee integration-output/openclaw-probe.json
+          HOME="$OPENCLAW_TEST_HOME" openclaw mcp doctor thm --probe --json | tee integration-output/openclaw-doctor.json
+          HOME="$OPENCLAW_TEST_HOME" openclaw mcp probe thm --json | tee integration-output/openclaw-probe.json
           grep -q 'thm_recall' integration-output/openclaw-probe.json
           grep -q 'thm_status' integration-output/openclaw-probe.json
       - uses: actions/upload-artifact@v4
