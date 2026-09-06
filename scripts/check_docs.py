@@ -20,10 +20,10 @@ END = '<!-- original-report:end -->'
 def check(root: Path) -> dict:
     errors: list[str] = []
     md_paths = sorted(root.rglob('*.md'))
-    expected = {'README.md', 'docs/01-研究综述.md', 'docs/02-架构设计.md', REPORT}
+    expected = {'README.md', 'docs/01-研究综述.md', 'docs/02-架构设计.md', REPORT, 'docs/03-validation-contract.md'}
     actual = {p.relative_to(root).as_posix() for p in md_paths}
     if actual != expected:
-        errors.append('Expected the four scoped Markdown documents')
+        errors.append('Expected the five scoped Markdown documents')
     link_count = json_fences = 0
     for path in md_paths:
         raw = path.read_bytes()
@@ -54,7 +54,11 @@ def check(root: Path) -> dict:
                 errors.append(f'{path.name}: JSON fence: {exc}')
     if json_fences != 1:
         errors.append('Expected one retained architecture JSON example')
-    report = (root / REPORT).read_text(encoding='utf-8')
+    try:
+        report = (root / REPORT).read_text(encoding='utf-8')
+    except (OSError, UnicodeError):
+        report = ''
+        errors.append('Historical report unavailable or invalid UTF-8')
     if report.count(START) != 1 or report.count(END) != 1:
         errors.append('Missing or duplicated historical-report delimiters')
         preserved = False
@@ -64,9 +68,13 @@ def check(root: Path) -> dict:
         preserved = digest == ORIGINAL_BLOB
         if not preserved:
             errors.append('Historical report bytes changed')
-    architecture = (root / 'docs/02-架构设计.md').read_text(encoding='utf-8')
+    try:
+        architecture = (root / 'docs/02-架构设计.md').read_text(encoding='utf-8')
+    except (OSError, UnicodeError):
+        architecture = ''
+        errors.append('Architecture unavailable or invalid UTF-8')
     for required in ('候选修订（未实施）', '原 v1.0 记录', '冻结', 'activity_score',
-                     '第 22 天', '第 28 天', '单写入者', '不接入 HF'):
+                     '第 22 天', '第 28 天', '单写入者', '公开仓库不含 thm.py'):
         if required not in architecture:
             errors.append(f'Missing scope/erratum label: {required}')
     compiled = 0

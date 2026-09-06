@@ -40,3 +40,9 @@ Neither command contacts scholarly APIs, reads personal memory, mutates Hermes c
 ## Related
 
 - [hermes-academic-skills](https://github.com/xngg1021/hermes-academic-skills) — academic tools referenced by the historical audit. Their presence or version numbers are not proof that this repository's conclusions have been validated.
+
+## Validation contract candidate
+
+The [validation contract](docs/03-validation-contract.md) defines measurable acceptance criteria for a future implementation without changing the historical v1.0 formula or its regression tests. It distinguishes stored records, retrieved records, constructed context and a request actually observed at the host boundary. This public candidate contains documentation and mechanical document-check improvements; it does not include a runtime memory engine or claim deployment.
+
+Additional document-check regression tests run with `python -m unittest discover -s tests -v`. Missing or undecodable required documents now produce a structured FAIL result. The historical report's byte identity and the original numeric regression remain required.
