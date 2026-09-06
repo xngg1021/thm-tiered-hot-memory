@@ -1,0 +1,20 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "thm-local-memory"
+version = "1.2.0"
+description = "Local scoped retrieval, memory observations and residency evaluation for THM"
+requires-python = ">=3.10"
+license = {text = "MIT"}
+
+[project.optional-dependencies]
+tokenizer = ["tiktoken>=0.7,<1"]
+semantic = ["sentence-transformers>=3,<6", "numpy>=1.26,<3"]
+
+[project.scripts]
+thm-recall = "thm.__main__:main"
+
+[tool.setuptools.packages.find]
+include = ["thm*"]
