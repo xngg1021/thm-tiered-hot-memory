@@ -1,0 +1,22 @@
+{
+  "status": "PASS",
+  "date": "2026-09-06",
+  "thm_commit": "2d55f944ec066bdb26444db633d2a686fd22ec2d",
+  "hermes_commit": "77915e344cb0cd8e20661d4a7b393f987a2eef32",
+  "workflow_run": 34042345020,
+  "artifact_id": 9992058540,
+  "artifact_name": "thm-hermes-e2e",
+  "artifact_sha256": "8abe37bd87a8b11986cd308cfda418cc0ce966696bbd6f3cdfa0ad44631df154",
+  "provider_discovered_by": "hermes_agent.memory_providers",
+  "memory_provider_abc": true,
+  "memory_manager_admission": true,
+  "prefetch_evidence_seen": true,
+  "memory_context_fenced": true,
+  "session_switch_checked": true,
+  "write_callback_is_not_hit": true,
+  "recall_db_unchanged_by_write_callback": true,
+  "model_calls": 0,
+  "test_network_calls_after_install": 0,
+  "uses_real_user_data": false,
+  "scope": "synthetic temporary provider discovery/lifecycle E2E; not answer-generation E2E"
+}
