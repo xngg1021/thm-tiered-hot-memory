@@ -20,8 +20,9 @@ class TemporalIndex(SearchIndex):
 
 
 class EntityIndex(SearchIndex):
-    def _rank_candidates(self, scope, query, ranked):
-        return entity_reorder(ranked, query)
+    def search(self, scope, query, **kwargs):
+        kwargs['entity_projection'] = True
+        return super().search(scope, query, **kwargs)
 
 
 class SegmentIndex(SearchIndex):

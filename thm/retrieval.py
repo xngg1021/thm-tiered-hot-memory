@@ -391,7 +391,7 @@ class SearchIndex:
         return context, selected, final_units
 
     def _search(self, scope: str, query: str, *, budget=600, mode='sparse', candidate_limit=100,
-               neighbor_turns=0, encoder=None, model_id=None) -> dict:
+               neighbor_turns=0, encoder=None, model_id=None, entity_projection=False) -> dict:
         start = time.perf_counter()
         if not scope or not isinstance(query, str) or not query.strip():
             raise ValueError('nonempty scope and query required')
@@ -401,6 +401,8 @@ class SearchIndex:
                 or not 1 <= candidate_limit <= 1000 or type(neighbor_turns) is not int
                 or neighbor_turns not in (0, 1, 2)):
             raise ValueError('invalid retrieval settings')
+        if type(entity_projection) is not bool or (entity_projection and mode not in ('sparse', 'hybrid')):
+            raise ValueError('entity projection requires sparse/hybrid mode and an explicit boolean')
         if len(query) > 16000:
             raise ValueError('query too long')
         generation = self.db.execute('SELECT generation FROM scopes WHERE scope=?', (scope,)).fetchone()
@@ -448,6 +450,9 @@ class SearchIndex:
                 by_rowid[row['rowid']] = dict(row)
         ranked = [by_rowid[rid] for rid in ordered]
         ranked = self._rank_candidates(scope, query, ranked)
+        if entity_projection:
+            from .entities import reorder
+            ranked = reorder(ranked, query)
         ranked_ids = [r['id'] for r in ranked]
         retrieval_ms = (time.perf_counter() - start) * 1000
         # Optional adjacent context is actual text, not automatic credit for unseen IDs.
