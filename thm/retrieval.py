@@ -92,18 +92,26 @@ class TokenCounter:
 
 class SentenceEncoder:
     """User-selected on-disk sentence-transformer; no remote code or downloads."""
-    def __init__(self, path: str, model_id: str, threads: int = 2):
+    def __init__(self, path: str, model_id: str, threads: int = 2, device: str = 'cpu',
+                 batch_size: int = 64):
         if not Path(path).is_dir() or not model_id.strip():
             raise ValueError('an existing model directory and immutable model_id are required')
+        if device not in ('cpu', 'cuda'):
+            raise ValueError("device must be 'cpu' or 'cuda'")
         import torch
         from sentence_transformers import SentenceTransformer
+        if device == 'cuda' and not torch.cuda.is_available():
+            raise ValueError('device=cuda requested but torch has no CUDA support')
         torch.set_num_threads(max(1, threads))
-        self.model = SentenceTransformer(path, device='cpu', local_files_only=True,
+        self.model = SentenceTransformer(path, device=device, local_files_only=True,
                                          trust_remote_code=False)
         self.model_id = model_id
+        self.device = device
+        self.batch_size = int(batch_size)
 
     def __call__(self, texts):
-        return self.model.encode(list(texts), batch_size=64, normalize_embeddings=True,
+        return self.model.encode(list(texts), batch_size=self.batch_size,
+                                 normalize_embeddings=True,
                                  show_progress_bar=False).tolist()
 
 

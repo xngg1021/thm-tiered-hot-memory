@@ -1,0 +1,736 @@
+{
+  "kind": "thm-x-context-economics-bridge",
+  "evidence_labels": {
+    "retrieval_metrics": "runtime-measured",
+    "cost_figures": "model-proxy",
+    "pricing": "provider-doc-as-relayed (conflicting snapshots; scenarios only)"
+  },
+  "benchmark": {
+    "file": "2026-09-08-local-full-matrix.json",
+    "protocol": 2,
+    "counter": "cl100k_base",
+    "modes": [
+      "literal",
+      "sparse",
+      "dense",
+      "hybrid"
+    ],
+    "budgets": [
+      300,
+      600,
+      1200
+    ],
+    "generation_calls": 0,
+    "judge_calls": 0
+  },
+  "l5_per_config": {
+    "literal@300": {
+      "questions": 1540,
+      "budget": 300,
+      "mean_budget_used_tokens": 284.21,
+      "total_recall_tokens": 437678,
+      "gold_hits": 770,
+      "any_gold_questions": 732,
+      "pricing_scenarios": {
+        "rho=0.0": {
+          "effective_input_rate_per_1M": 0.66,
+          "per_query_input_cost_usd": 0.000188,
+          "total_input_cost_usd": 0.288867,
+          "cost_per_gold_hit_usd": 0.000375,
+          "cost_per_any_gold_question_usd": 0.000395
+        },
+        "rho=0.5": {
+          "effective_input_rate_per_1M": 0.341,
+          "per_query_input_cost_usd": 9.7e-05,
+          "total_input_cost_usd": 0.149248,
+          "cost_per_gold_hit_usd": 0.000194,
+          "cost_per_any_gold_question_usd": 0.000204
+        },
+        "rho=0.9": {
+          "effective_input_rate_per_1M": 0.0858,
+          "per_query_input_cost_usd": 2.4e-05,
+          "total_input_cost_usd": 0.037553,
+          "cost_per_gold_hit_usd": 4.9e-05,
+          "cost_per_any_gold_question_usd": 5.1e-05
+        }
+      },
+      "counterfactual_full_history": {
+        "per_query_tokens": 18108,
+        "tokens_ratio_vs_recall": 63.7,
+        "costs": {
+          "rho=0.0": {
+            "per_query_input_cost_usd": 0.011951,
+            "total_cost_usd_1986_queries": 18.404971
+          },
+          "rho=0.5": {
+            "per_query_input_cost_usd": 0.006175,
+            "total_cost_usd_1986_queries": 9.509235
+          },
+          "rho=0.9": {
+            "per_query_input_cost_usd": 0.001554,
+            "total_cost_usd_1986_queries": 2.392646
+          }
+        }
+      }
+    },
+    "literal@600": {
+      "questions": 1540,
+      "budget": 600,
+      "mean_budget_used_tokens": 583.71,
+      "total_recall_tokens": 898915,
+      "gold_hits": 935,
+      "any_gold_questions": 870,
+      "pricing_scenarios": {
+        "rho=0.0": {
+          "effective_input_rate_per_1M": 0.66,
+          "per_query_input_cost_usd": 0.000385,
+          "total_input_cost_usd": 0.593284,
+          "cost_per_gold_hit_usd": 0.000635,
+          "cost_per_any_gold_question_usd": 0.000682
+        },
+        "rho=0.5": {
+          "effective_input_rate_per_1M": 0.341,
+          "per_query_input_cost_usd": 0.000199,
+          "total_input_cost_usd": 0.30653,
+          "cost_per_gold_hit_usd": 0.000328,
+          "cost_per_any_gold_question_usd": 0.000352
+        },
+        "rho=0.9": {
+          "effective_input_rate_per_1M": 0.0858,
+          "per_query_input_cost_usd": 5e-05,
+          "total_input_cost_usd": 0.077127,
+          "cost_per_gold_hit_usd": 8.2e-05,
+          "cost_per_any_gold_question_usd": 8.9e-05
+        }
+      },
+      "counterfactual_full_history": {
+        "per_query_tokens": 18108,
+        "tokens_ratio_vs_recall": 31.0,
+        "costs": {
+          "rho=0.0": {
+            "per_query_input_cost_usd": 0.011951,
+            "total_cost_usd_1986_queries": 18.404971
+          },
+          "rho=0.5": {
+            "per_query_input_cost_usd": 0.006175,
+            "total_cost_usd_1986_queries": 9.509235
+          },
+          "rho=0.9": {
+            "per_query_input_cost_usd": 0.001554,
+            "total_cost_usd_1986_queries": 2.392646
+          }
+        }
+      }
+    },
+    "literal@1200": {
+      "questions": 1540,
+      "budget": 1200,
+      "mean_budget_used_tokens": 1183.35,
+      "total_recall_tokens": 1822366,
+      "gold_hits": 1100,
+      "any_gold_questions": 986,
+      "pricing_scenarios": {
+        "rho=0.0": {
+          "effective_input_rate_per_1M": 0.66,
+          "per_query_input_cost_usd": 0.000781,
+          "total_input_cost_usd": 1.202762,
+          "cost_per_gold_hit_usd": 0.001093,
+          "cost_per_any_gold_question_usd": 0.00122
+        },
+        "rho=0.5": {
+          "effective_input_rate_per_1M": 0.341,
+          "per_query_input_cost_usd": 0.000404,
+          "total_input_cost_usd": 0.621427,
+          "cost_per_gold_hit_usd": 0.000565,
+          "cost_per_any_gold_question_usd": 0.00063
+        },
+        "rho=0.9": {
+          "effective_input_rate_per_1M": 0.0858,
+          "per_query_input_cost_usd": 0.000102,
+          "total_input_cost_usd": 0.156359,
+          "cost_per_gold_hit_usd": 0.000142,
+          "cost_per_any_gold_question_usd": 0.000159
+        }
+      },
+      "counterfactual_full_history": {
+        "per_query_tokens": 18108,
+        "tokens_ratio_vs_recall": 15.3,
+        "costs": {
+          "rho=0.0": {
+            "per_query_input_cost_usd": 0.011951,
+            "total_cost_usd_1986_queries": 18.404971
+          },
+          "rho=0.5": {
+            "per_query_input_cost_usd": 0.006175,
+            "total_cost_usd_1986_queries": 9.509235
+          },
+          "rho=0.9": {
+            "per_query_input_cost_usd": 0.001554,
+            "total_cost_usd_1986_queries": 2.392646
+          }
+        }
+      }
+    },
+    "sparse@300": {
+      "questions": 1540,
+      "budget": 300,
+      "mean_budget_used_tokens": 284.13,
+      "total_recall_tokens": 437556,
+      "gold_hits": 1003,
+      "any_gold_questions": 928,
+      "pricing_scenarios": {
+        "rho=0.0": {
+          "effective_input_rate_per_1M": 0.66,
+          "per_query_input_cost_usd": 0.000188,
+          "total_input_cost_usd": 0.288787,
+          "cost_per_gold_hit_usd": 0.000288,
+          "cost_per_any_gold_question_usd": 0.000311
+        },
+        "rho=0.5": {
+          "effective_input_rate_per_1M": 0.341,
+          "per_query_input_cost_usd": 9.7e-05,
+          "total_input_cost_usd": 0.149207,
+          "cost_per_gold_hit_usd": 0.000149,
+          "cost_per_any_gold_question_usd": 0.000161
+        },
+        "rho=0.9": {
+          "effective_input_rate_per_1M": 0.0858,
+          "per_query_input_cost_usd": 2.4e-05,
+          "total_input_cost_usd": 0.037542,
+          "cost_per_gold_hit_usd": 3.7e-05,
+          "cost_per_any_gold_question_usd": 4e-05
+        }
+      },
+      "counterfactual_full_history": {
+        "per_query_tokens": 18108,
+        "tokens_ratio_vs_recall": 63.7,
+        "costs": {
+          "rho=0.0": {
+            "per_query_input_cost_usd": 0.011951,
+            "total_cost_usd_1986_queries": 18.404971
+          },
+          "rho=0.5": {
+            "per_query_input_cost_usd": 0.006175,
+            "total_cost_usd_1986_queries": 9.509235
+          },
+          "rho=0.9": {
+            "per_query_input_cost_usd": 0.001554,
+            "total_cost_usd_1986_queries": 2.392646
+          }
+        }
+      }
+    },
+    "sparse@600": {
+      "questions": 1540,
+      "budget": 600,
+      "mean_budget_used_tokens": 583.93,
+      "total_recall_tokens": 899248,
+      "gold_hits": 1210,
+      "any_gold_questions": 1063,
+      "pricing_scenarios": {
+        "rho=0.0": {
+          "effective_input_rate_per_1M": 0.66,
+          "per_query_input_cost_usd": 0.000385,
+          "total_input_cost_usd": 0.593504,
+          "cost_per_gold_hit_usd": 0.00049,
+          "cost_per_any_gold_question_usd": 0.000558
+        },
+        "rho=0.5": {
+          "effective_input_rate_per_1M": 0.341,
+          "per_query_input_cost_usd": 0.000199,
+          "total_input_cost_usd": 0.306644,
+          "cost_per_gold_hit_usd": 0.000253,
+          "cost_per_any_gold_question_usd": 0.000288
+        },
+        "rho=0.9": {
+          "effective_input_rate_per_1M": 0.0858,
+          "per_query_input_cost_usd": 5e-05,
+          "total_input_cost_usd": 0.077155,
+          "cost_per_gold_hit_usd": 6.4e-05,
+          "cost_per_any_gold_question_usd": 7.3e-05
+        }
+      },
+      "counterfactual_full_history": {
+        "per_query_tokens": 18108,
+        "tokens_ratio_vs_recall": 31.0,
+        "costs": {
+          "rho=0.0": {
+            "per_query_input_cost_usd": 0.011951,
+            "total_cost_usd_1986_queries": 18.404971
+          },
+          "rho=0.5": {
+            "per_query_input_cost_usd": 0.006175,
+            "total_cost_usd_1986_queries": 9.509235
+          },
+          "rho=0.9": {
+            "per_query_input_cost_usd": 0.001554,
+            "total_cost_usd_1986_queries": 2.392646
+          }
+        }
+      }
+    },
+    "sparse@1200": {
+      "questions": 1540,
+      "budget": 1200,
+      "mean_budget_used_tokens": 1182.48,
+      "total_recall_tokens": 1821014,
+      "gold_hits": 1398,
+      "any_gold_questions": 1167,
+      "pricing_scenarios": {
+        "rho=0.0": {
+          "effective_input_rate_per_1M": 0.66,
+          "per_query_input_cost_usd": 0.00078,
+          "total_input_cost_usd": 1.201869,
+          "cost_per_gold_hit_usd": 0.00086,
+          "cost_per_any_gold_question_usd": 0.00103
+        },
+        "rho=0.5": {
+          "effective_input_rate_per_1M": 0.341,
+          "per_query_input_cost_usd": 0.000403,
+          "total_input_cost_usd": 0.620966,
+          "cost_per_gold_hit_usd": 0.000444,
+          "cost_per_any_gold_question_usd": 0.000532
+        },
+        "rho=0.9": {
+          "effective_input_rate_per_1M": 0.0858,
+          "per_query_input_cost_usd": 0.000101,
+          "total_input_cost_usd": 0.156243,
+          "cost_per_gold_hit_usd": 0.000112,
+          "cost_per_any_gold_question_usd": 0.000134
+        }
+      },
+      "counterfactual_full_history": {
+        "per_query_tokens": 18108,
+        "tokens_ratio_vs_recall": 15.3,
+        "costs": {
+          "rho=0.0": {
+            "per_query_input_cost_usd": 0.011951,
+            "total_cost_usd_1986_queries": 18.404971
+          },
+          "rho=0.5": {
+            "per_query_input_cost_usd": 0.006175,
+            "total_cost_usd_1986_queries": 9.509235
+          },
+          "rho=0.9": {
+            "per_query_input_cost_usd": 0.001554,
+            "total_cost_usd_1986_queries": 2.392646
+          }
+        }
+      }
+    },
+    "dense@300": {
+      "questions": 1540,
+      "budget": 300,
+      "mean_budget_used_tokens": 284.72,
+      "total_recall_tokens": 438470,
+      "gold_hits": 656,
+      "any_gold_questions": 610,
+      "pricing_scenarios": {
+        "rho=0.0": {
+          "effective_input_rate_per_1M": 0.66,
+          "per_query_input_cost_usd": 0.000188,
+          "total_input_cost_usd": 0.28939,
+          "cost_per_gold_hit_usd": 0.000441,
+          "cost_per_any_gold_question_usd": 0.000474
+        },
+        "rho=0.5": {
+          "effective_input_rate_per_1M": 0.341,
+          "per_query_input_cost_usd": 9.7e-05,
+          "total_input_cost_usd": 0.149518,
+          "cost_per_gold_hit_usd": 0.000228,
+          "cost_per_any_gold_question_usd": 0.000245
+        },
+        "rho=0.9": {
+          "effective_input_rate_per_1M": 0.0858,
+          "per_query_input_cost_usd": 2.4e-05,
+          "total_input_cost_usd": 0.037621,
+          "cost_per_gold_hit_usd": 5.7e-05,
+          "cost_per_any_gold_question_usd": 6.2e-05
+        }
+      },
+      "counterfactual_full_history": {
+        "per_query_tokens": 18108,
+        "tokens_ratio_vs_recall": 63.6,
+        "costs": {
+          "rho=0.0": {
+            "per_query_input_cost_usd": 0.011951,
+            "total_cost_usd_1986_queries": 18.404971
+          },
+          "rho=0.5": {
+            "per_query_input_cost_usd": 0.006175,
+            "total_cost_usd_1986_queries": 9.509235
+          },
+          "rho=0.9": {
+            "per_query_input_cost_usd": 0.001554,
+            "total_cost_usd_1986_queries": 2.392646
+          }
+        }
+      }
+    },
+    "dense@600": {
+      "questions": 1540,
+      "budget": 600,
+      "mean_budget_used_tokens": 584.31,
+      "total_recall_tokens": 899840,
+      "gold_hits": 891,
+      "any_gold_questions": 783,
+      "pricing_scenarios": {
+        "rho=0.0": {
+          "effective_input_rate_per_1M": 0.66,
+          "per_query_input_cost_usd": 0.000386,
+          "total_input_cost_usd": 0.593894,
+          "cost_per_gold_hit_usd": 0.000667,
+          "cost_per_any_gold_question_usd": 0.000758
+        },
+        "rho=0.5": {
+          "effective_input_rate_per_1M": 0.341,
+          "per_query_input_cost_usd": 0.000199,
+          "total_input_cost_usd": 0.306845,
+          "cost_per_gold_hit_usd": 0.000344,
+          "cost_per_any_gold_question_usd": 0.000392
+        },
+        "rho=0.9": {
+          "effective_input_rate_per_1M": 0.0858,
+          "per_query_input_cost_usd": 5e-05,
+          "total_input_cost_usd": 0.077206,
+          "cost_per_gold_hit_usd": 8.7e-05,
+          "cost_per_any_gold_question_usd": 9.9e-05
+        }
+      },
+      "counterfactual_full_history": {
+        "per_query_tokens": 18108,
+        "tokens_ratio_vs_recall": 31.0,
+        "costs": {
+          "rho=0.0": {
+            "per_query_input_cost_usd": 0.011951,
+            "total_cost_usd_1986_queries": 18.404971
+          },
+          "rho=0.5": {
+            "per_query_input_cost_usd": 0.006175,
+            "total_cost_usd_1986_queries": 9.509235
+          },
+          "rho=0.9": {
+            "per_query_input_cost_usd": 0.001554,
+            "total_cost_usd_1986_queries": 2.392646
+          }
+        }
+      }
+    },
+    "dense@1200": {
+      "questions": 1540,
+      "budget": 1200,
+      "mean_budget_used_tokens": 1184.67,
+      "total_recall_tokens": 1824389,
+      "gold_hits": 1100,
+      "any_gold_questions": 938,
+      "pricing_scenarios": {
+        "rho=0.0": {
+          "effective_input_rate_per_1M": 0.66,
+          "per_query_input_cost_usd": 0.000782,
+          "total_input_cost_usd": 1.204097,
+          "cost_per_gold_hit_usd": 0.001095,
+          "cost_per_any_gold_question_usd": 0.001284
+        },
+        "rho=0.5": {
+          "effective_input_rate_per_1M": 0.341,
+          "per_query_input_cost_usd": 0.000404,
+          "total_input_cost_usd": 0.622117,
+          "cost_per_gold_hit_usd": 0.000566,
+          "cost_per_any_gold_question_usd": 0.000663
+        },
+        "rho=0.9": {
+          "effective_input_rate_per_1M": 0.0858,
+          "per_query_input_cost_usd": 0.000102,
+          "total_input_cost_usd": 0.156533,
+          "cost_per_gold_hit_usd": 0.000142,
+          "cost_per_any_gold_question_usd": 0.000167
+        }
+      },
+      "counterfactual_full_history": {
+        "per_query_tokens": 18108,
+        "tokens_ratio_vs_recall": 15.3,
+        "costs": {
+          "rho=0.0": {
+            "per_query_input_cost_usd": 0.011951,
+            "total_cost_usd_1986_queries": 18.404971
+          },
+          "rho=0.5": {
+            "per_query_input_cost_usd": 0.006175,
+            "total_cost_usd_1986_queries": 9.509235
+          },
+          "rho=0.9": {
+            "per_query_input_cost_usd": 0.001554,
+            "total_cost_usd_1986_queries": 2.392646
+          }
+        }
+      }
+    },
+    "hybrid@300": {
+      "questions": 1540,
+      "budget": 300,
+      "mean_budget_used_tokens": 285.45,
+      "total_recall_tokens": 439596,
+      "gold_hits": 999,
+      "any_gold_questions": 903,
+      "pricing_scenarios": {
+        "rho=0.0": {
+          "effective_input_rate_per_1M": 0.66,
+          "per_query_input_cost_usd": 0.000188,
+          "total_input_cost_usd": 0.290133,
+          "cost_per_gold_hit_usd": 0.00029,
+          "cost_per_any_gold_question_usd": 0.000321
+        },
+        "rho=0.5": {
+          "effective_input_rate_per_1M": 0.341,
+          "per_query_input_cost_usd": 9.7e-05,
+          "total_input_cost_usd": 0.149902,
+          "cost_per_gold_hit_usd": 0.00015,
+          "cost_per_any_gold_question_usd": 0.000166
+        },
+        "rho=0.9": {
+          "effective_input_rate_per_1M": 0.0858,
+          "per_query_input_cost_usd": 2.4e-05,
+          "total_input_cost_usd": 0.037717,
+          "cost_per_gold_hit_usd": 3.8e-05,
+          "cost_per_any_gold_question_usd": 4.2e-05
+        }
+      },
+      "counterfactual_full_history": {
+        "per_query_tokens": 18108,
+        "tokens_ratio_vs_recall": 63.4,
+        "costs": {
+          "rho=0.0": {
+            "per_query_input_cost_usd": 0.011951,
+            "total_cost_usd_1986_queries": 18.404971
+          },
+          "rho=0.5": {
+            "per_query_input_cost_usd": 0.006175,
+            "total_cost_usd_1986_queries": 9.509235
+          },
+          "rho=0.9": {
+            "per_query_input_cost_usd": 0.001554,
+            "total_cost_usd_1986_queries": 2.392646
+          }
+        }
+      }
+    },
+    "hybrid@600": {
+      "questions": 1540,
+      "budget": 600,
+      "mean_budget_used_tokens": 585.77,
+      "total_recall_tokens": 902093,
+      "gold_hits": 1267,
+      "any_gold_questions": 1093,
+      "pricing_scenarios": {
+        "rho=0.0": {
+          "effective_input_rate_per_1M": 0.66,
+          "per_query_input_cost_usd": 0.000387,
+          "total_input_cost_usd": 0.595381,
+          "cost_per_gold_hit_usd": 0.00047,
+          "cost_per_any_gold_question_usd": 0.000545
+        },
+        "rho=0.5": {
+          "effective_input_rate_per_1M": 0.341,
+          "per_query_input_cost_usd": 0.0002,
+          "total_input_cost_usd": 0.307614,
+          "cost_per_gold_hit_usd": 0.000243,
+          "cost_per_any_gold_question_usd": 0.000281
+        },
+        "rho=0.9": {
+          "effective_input_rate_per_1M": 0.0858,
+          "per_query_input_cost_usd": 5e-05,
+          "total_input_cost_usd": 0.0774,
+          "cost_per_gold_hit_usd": 6.1e-05,
+          "cost_per_any_gold_question_usd": 7.1e-05
+        }
+      },
+      "counterfactual_full_history": {
+        "per_query_tokens": 18108,
+        "tokens_ratio_vs_recall": 30.9,
+        "costs": {
+          "rho=0.0": {
+            "per_query_input_cost_usd": 0.011951,
+            "total_cost_usd_1986_queries": 18.404971
+          },
+          "rho=0.5": {
+            "per_query_input_cost_usd": 0.006175,
+            "total_cost_usd_1986_queries": 9.509235
+          },
+          "rho=0.9": {
+            "per_query_input_cost_usd": 0.001554,
+            "total_cost_usd_1986_queries": 2.392646
+          }
+        }
+      }
+    },
+    "hybrid@1200": {
+      "questions": 1540,
+      "budget": 1200,
+      "mean_budget_used_tokens": 1185.8,
+      "total_recall_tokens": 1826130,
+      "gold_hits": 1504,
+      "any_gold_questions": 1239,
+      "pricing_scenarios": {
+        "rho=0.0": {
+          "effective_input_rate_per_1M": 0.66,
+          "per_query_input_cost_usd": 0.000783,
+          "total_input_cost_usd": 1.205246,
+          "cost_per_gold_hit_usd": 0.000801,
+          "cost_per_any_gold_question_usd": 0.000973
+        },
+        "rho=0.5": {
+          "effective_input_rate_per_1M": 0.341,
+          "per_query_input_cost_usd": 0.000404,
+          "total_input_cost_usd": 0.62271,
+          "cost_per_gold_hit_usd": 0.000414,
+          "cost_per_any_gold_question_usd": 0.000503
+        },
+        "rho=0.9": {
+          "effective_input_rate_per_1M": 0.0858,
+          "per_query_input_cost_usd": 0.000102,
+          "total_input_cost_usd": 0.156682,
+          "cost_per_gold_hit_usd": 0.000104,
+          "cost_per_any_gold_question_usd": 0.000126
+        }
+      },
+      "counterfactual_full_history": {
+        "per_query_tokens": 18108,
+        "tokens_ratio_vs_recall": 15.3,
+        "costs": {
+          "rho=0.0": {
+            "per_query_input_cost_usd": 0.011951,
+            "total_cost_usd_1986_queries": 18.404971
+          },
+          "rho=0.5": {
+            "per_query_input_cost_usd": 0.006175,
+            "total_cost_usd_1986_queries": 9.509235
+          },
+          "rho=0.9": {
+            "per_query_input_cost_usd": 0.001554,
+            "total_cost_usd_1986_queries": 2.392646
+          }
+        }
+      }
+    }
+  },
+  "l6_marginal": {
+    "literal": {
+      "300->600": {
+        "delta_any_gold_rate": 0.0898,
+        "delta_recall_tokens": 461237,
+        "delta_input_cost_usd_offpeak_rho0": 0.304416,
+        "marginal_cost_per_point_of_recall_usd": 3.388287
+      },
+      "600->1200": {
+        "delta_any_gold_rate": 0.0755,
+        "delta_recall_tokens": 923451,
+        "delta_input_cost_usd_offpeak_rho0": 0.609478,
+        "marginal_cost_per_point_of_recall_usd": 8.070325
+      }
+    },
+    "sparse": {
+      "300->600": {
+        "delta_any_gold_rate": 0.0879,
+        "delta_recall_tokens": 461692,
+        "delta_input_cost_usd_offpeak_rho0": 0.304717,
+        "marginal_cost_per_point_of_recall_usd": 3.466999
+      },
+      "600->1200": {
+        "delta_any_gold_rate": 0.0677,
+        "delta_recall_tokens": 921766,
+        "delta_input_cost_usd_offpeak_rho0": 0.608366,
+        "marginal_cost_per_point_of_recall_usd": 8.985091
+      }
+    },
+    "dense": {
+      "300->600": {
+        "delta_any_gold_rate": 0.1126,
+        "delta_recall_tokens": 461370,
+        "delta_input_cost_usd_offpeak_rho0": 0.304504,
+        "marginal_cost_per_point_of_recall_usd": 2.703575
+      },
+      "600->1200": {
+        "delta_any_gold_rate": 0.1009,
+        "delta_recall_tokens": 924549,
+        "delta_input_cost_usd_offpeak_rho0": 0.610202,
+        "marginal_cost_per_point_of_recall_usd": 6.046908
+      }
+    },
+    "hybrid": {
+      "300->600": {
+        "delta_any_gold_rate": 0.1237,
+        "delta_recall_tokens": 462497,
+        "delta_input_cost_usd_offpeak_rho0": 0.305248,
+        "marginal_cost_per_point_of_recall_usd": 2.467689
+      },
+      "600->1200": {
+        "delta_any_gold_rate": 0.0951,
+        "delta_recall_tokens": 924037,
+        "delta_input_cost_usd_offpeak_rho0": 0.609864,
+        "marginal_cost_per_point_of_recall_usd": 6.416108
+      }
+    }
+  },
+  "l5_totals": {
+    "deepseek-v4-pro_offpeak_2026-08-16": {
+      "questions": 18480,
+      "total_recall_tokens": 12647295,
+      "per_scenario": {
+        "rho=0.0": {
+          "total_input_cost_usd": 8.347215
+        },
+        "rho=0.5": {
+          "total_input_cost_usd": 4.312728
+        },
+        "rho=0.9": {
+          "total_input_cost_usd": 1.085138
+        }
+      }
+    },
+    "deepseek-v4-pro_peak_2026-08-16": {
+      "questions": 18480,
+      "total_recall_tokens": 12647295,
+      "per_scenario": {
+        "rho=0.0": {
+          "total_input_cost_usd": 16.694429
+        },
+        "rho=0.5": {
+          "total_input_cost_usd": 8.625455
+        },
+        "rho=0.9": {
+          "total_input_cost_usd": 2.170276
+        }
+      }
+    },
+    "deepseek-v4-pro_promo_2026-05-22": {
+      "questions": 18480,
+      "total_recall_tokens": 12647295,
+      "per_scenario": {
+        "rho=0.0": {
+          "total_input_cost_usd": 5.501573
+        },
+        "rho=0.5": {
+          "total_input_cost_usd": 2.77371
+        },
+        "rho=0.9": {
+          "total_input_cost_usd": 0.591419
+        }
+      }
+    },
+    "kimi-k3_study_snapshot": {
+      "questions": 18480,
+      "total_recall_tokens": 12647295,
+      "per_scenario": {
+        "rho=0.0": {
+          "total_input_cost_usd": 37.941885
+        },
+        "rho=0.5": {
+          "total_input_cost_usd": 20.868037
+        },
+        "rho=0.9": {
+          "total_input_cost_usd": 7.208958
+        }
+      }
+    }
+  }
+}

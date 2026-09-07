@@ -76,7 +76,8 @@ def aggregate(rows):
             'query_embedding_ms_mean': statistics.mean(r['query_embedding_ms'] for r in rows) if rows else None}
 
 
-def run(dataset, counter, modes, budgets, *, model_path=None, model_id=None, neighbors=0):
+def run(dataset, counter, modes, budgets, *, model_path=None, model_id=None, neighbors=0,
+        device='cpu', batch_size=64):
     if not isinstance(dataset, list) or not dataset:
         raise ValueError('nonempty conversation list required')
     sample_ids = [str(s['sample_id']) for s in dataset]
@@ -86,7 +87,8 @@ def run(dataset, counter, modes, budgets, *, model_path=None, model_id=None, nei
         raise ValueError('unique supported modes required')
     if not budgets or any(type(b) is not int or not 0 <= b <= 32768 for b in budgets) or len(set(budgets)) != len(budgets):
         raise ValueError('unique valid budgets required')
-    encoder = SentenceEncoder(model_path, model_id) if model_path else None
+    encoder = SentenceEncoder(model_path, model_id, device=device,
+                              batch_size=batch_size) if model_path else None
     if any(m in ('dense','hybrid') for m in modes) and not encoder:
         raise ValueError('local model required for requested dense run')
     all_rows, builds, generations = [], [], {}
@@ -177,11 +179,14 @@ def main():
     parser.add_argument('--model-path')
     parser.add_argument('--model-id')
     parser.add_argument('--neighbors', type=int, default=0)
+    parser.add_argument('--device', default='cpu')
+    parser.add_argument('--batch-size', type=int, default=64)
     args = parser.parse_args()
     raw = Path(args.dataset).read_bytes()
     dataset = json.loads(raw)
     result = run(dataset, TokenCounter(args.counter), args.modes, args.budgets,
-                 model_path=args.model_path, model_id=args.model_id, neighbors=args.neighbors)
+                 model_path=args.model_path, model_id=args.model_id, neighbors=args.neighbors,
+                 device=args.device, batch_size=args.batch_size)
     result['dataset_sha256'] = hashlib.sha256(raw).hexdigest()
     result['dataset_upstream_commit'] = DATASET_COMMIT if result['dataset_sha256'] == DATASET_SHA256 else None
     result['dataset_matches_pinned_reference'] = result['dataset_sha256'] == DATASET_SHA256
