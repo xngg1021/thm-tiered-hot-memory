@@ -1,0 +1,36 @@
+name: THM 1.4 full documentation one-shot
+on:
+  push:
+    branches:
+      - chat/thm-v1.4-full-doc-sync-20260907
+permissions:
+  contents: write
+jobs:
+  sync:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+      - name: Generate current 1.4 documentation
+        run: python scripts/update_v14_full_docs.py
+      - name: Validate generated tree
+        run: |
+          python -m unittest discover -s tests -v
+          python scripts/thm_numeric_audit.py
+          python scripts/check_docs.py
+          python scripts/check_version_history.py
+          git diff --check
+          git status --short
+      - name: Commit generated current-state documentation
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add README.md README.*.md CHANGELOG.md docs scripts/check_docs.py plugins/thm/plugin.yaml thm/mcp_legacy_server.py
+          git commit -m 'docs: synchronize all THM 1.4 current-facing surfaces'
+          git push origin HEAD:chat/thm-v1.4-full-doc-sync-20260907
