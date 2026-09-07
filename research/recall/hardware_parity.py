@@ -2,8 +2,9 @@
 """Compare CPU/GPU THM retrieval artifacts for deterministic semantic parity.
 
 Timing, environment strings and embedding throughput are intentionally excluded.
-The comparator checks dataset/protocol identity plus per-query retrieval outcomes.
-It exits nonzero on any semantic mismatch and writes a machine-readable receipt.
+A positive receipt requires per-query selected document identities. Legacy
+artifacts that only contain aggregate hit/count metrics are reported as
+insufficient rather than silently passing semantic parity.
 """
 from __future__ import annotations
 
@@ -23,7 +24,7 @@ SEMANTIC_FIELDS = (
     "evidence_count", "resolved_count", "fully_resolved",
     "gold_sessions", "resolved_gold",
     "hits", "candidate_hits",
-    "selected_count", "selected_ids", "selected_ranked_ids",
+    "selected_count", "selected_ids", "selected_sources", "selected_ranked_ids",
     "reciprocal_rank", "candidate_reciprocal_rank", "ndcg",
     "budget_used", "malformed_evidence",
 )
@@ -51,6 +52,10 @@ def same(a, b, tol: float) -> bool:
     return a == b
 
 
+def _missing_selection_identity(rows: list[dict]) -> int:
+    return sum(not isinstance(row.get("selected_ids"), list) for row in rows)
+
+
 def compare(cpu: dict, gpu: dict, *, float_tol: float = 0.0, max_mismatches: int = 50) -> dict:
     mismatches = []
     max_abs_diff = 0.0
@@ -74,6 +79,20 @@ def compare(cpu: dict, gpu: dict, *, float_tol: float = 0.0, max_mismatches: int
             "kind": "row_count",
             "cpu": len(cpu_rows),
             "gpu": len(gpu_rows),
+        })
+
+    missing_cpu = _missing_selection_identity(cpu_rows)
+    missing_gpu = _missing_selection_identity(gpu_rows)
+    identity_complete = missing_cpu == 0 and missing_gpu == 0
+    if not identity_complete:
+        mismatches.append({
+            "kind": "selection_identity_unavailable",
+            "cpu_rows_missing_selected_ids": missing_cpu,
+            "gpu_rows_missing_selected_ids": missing_gpu,
+            "message": (
+                "positive semantic parity requires per-query selected_ids; "
+                "legacy aggregate-only artifacts are insufficient"
+            ),
         })
 
     cpu_map = {row_key(row, i): row for i, row in enumerate(cpu_rows)}
@@ -116,6 +135,7 @@ def compare(cpu: dict, gpu: dict, *, float_tol: float = 0.0, max_mismatches: int
 
     return {
         "kind": "thm-hardware-semantic-parity",
+        "identity_complete": identity_complete,
         "equivalent": not mismatches,
         "rows_cpu": len(cpu_rows),
         "rows_gpu": len(gpu_rows),
@@ -129,9 +149,9 @@ def compare(cpu: dict, gpu: dict, *, float_tol: float = 0.0, max_mismatches: int
             "environment strings", "wall-clock throughput",
         ],
         "interpretation": (
-            "equivalent=true means CPU and GPU produced the same checked retrieval "
-            "semantics for this artifact pair. It does not mean equal latency or "
-            "bit-identical embedding vectors."
+            "equivalent=true requires complete selected document identities and "
+            "matching checked retrieval semantics. It does not mean equal latency "
+            "or bit-identical embedding vectors."
         ),
     }
 
@@ -156,7 +176,10 @@ def main():
     out = Path(args.output)
     out.parent.mkdir(parents=True, exist_ok=True)
     out.write_text(json.dumps(receipt, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
-    print(f"wrote {out}: equivalent={receipt['equivalent']}")
+    print(
+        f"wrote {out}: equivalent={receipt['equivalent']} "
+        f"identity_complete={receipt['identity_complete']}"
+    )
     raise SystemExit(0 if receipt["equivalent"] else 1)
 
 
