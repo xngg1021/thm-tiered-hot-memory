@@ -63,7 +63,7 @@ def _missing_selection_identity(rows: list[dict]) -> int:
 QUALITY_FIELDS = frozenset((
     "questions", "scorable", "no_gold_questions", "partially_or_unresolved_questions",
     "any_gold_hits", "any_gold_hit_rate", "all_gold_hit_rate", "macro_evidence_recall",
-    "micro_evidence_recall", "candidate_any_gold_rate", "mrr", "ndcg", "empty_context_rate",
+    "micro_evidence_recall", "candidate_any_gold_rate", "mrr", "ndcg", "empty_context_rate", "mean_budget_used",
 ))
 
 
@@ -129,7 +129,7 @@ def summary_coverage_errors(data):
                 errors.append(f"{config}/{cohort}: row denominator mismatch")
             for field in required:
                 value = leaf[field]
-                denominator = count if field == "empty_context_rate" or data.get("protocol") == 1 else leaf.get("scorable", 0)
+                denominator = count if field in ("empty_context_rate", "mean_budget_used") or data.get("protocol") == 1 else leaf.get("scorable", 0)
                 count_field = field in {"questions", "scorable", "no_gold_questions", "partially_or_unresolved_questions", "any_gold_hits"}
                 if value is None and (count_field or denominator != 0):
                     errors.append(f"{config}/{cohort}/{field}: missing numeric metric")

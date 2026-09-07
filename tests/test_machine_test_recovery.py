@@ -267,6 +267,19 @@ class V2R1RegressionTests(unittest.TestCase):
             self.assertFalse(receipt["aggregate_semantic_metrics_equivalent"])
             self.assertTrue(receipt["aggregate_summary_coverage_errors"]["cpu"])
 
+    def test_mean_budget_used_is_required_and_compared(self):
+        cpu = HardwareParityTests().artifact("a")
+        cpu["summaries"] = full_locomo_summaries(cpu)
+        gpu = json.loads(json.dumps(cpu))
+        gpu["summaries"]["hybrid@600"]["main_categories_1_to_4"]["mean_budget_used"] += 2.5
+        result = PARITY.compare(cpu,gpu)
+        self.assertFalse(result["aggregate_semantic_metrics_equivalent"])
+        self.assertFalse(result["strict_semantic_equivalent"])
+        self.assertEqual(result["max_semantic_numeric_abs_diff"],2.5)
+        for value in (cpu,gpu):
+            value["summaries"]["hybrid@600"]["main_categories_1_to_4"].pop("mean_budget_used")
+        self.assertFalse(PARITY.compare(cpu,gpu)["aggregate_semantic_metrics_available"])
+
     def test_bound_read_uses_one_byte_buffer(self):
         from unittest.mock import patch
         from research.evidence_io import read_json_bound

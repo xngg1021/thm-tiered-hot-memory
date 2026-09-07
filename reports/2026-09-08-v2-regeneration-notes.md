@@ -47,3 +47,7 @@ LME CPU v2：pending-real-local-runtime。当前 Work 没有用户 Z6 G4 控制�
 ## 八、PR #12 首轮 review forward-fixes
 
 首轮 exact-head Codex review 返回 4 个 P2，均已 forward-fix：独立 CLI 和 README 覆盖风险、summary 完整性、aggregate 最大数值差异、解析/哈希重读竞态。新的 `2026-09-08-locomo-cpu-gpu-parity-v2r2.json` 保留同样 25 entries / 22 rows 和 aggregate=true / strict=false，额外通过完整 schema coverage，输入哈希来自解析的同一 byte buffer。先前 v2r1 receipt 保留，不覆盖。economics/report 在新读取实现下以临时新文件重算，字节与已提交 v2r1 完全相同。
+
+## 九、aggregate budget-use successor
+
+第二轮 review 发现 mean_budget_used 未纳入 aggregate whitelist，已加入 required coverage 与数值比较，并补缺失/差异测试。新 canonical parity 为 `2026-09-08-locomo-cpu-gpu-parity-v2r3.json`，比较 1680 个非 timing 语义指标，coverage errors 为空；25 entries / 22 rows、aggregate=true / strict=false、最大数值差异 0.0 全部保持。旧 v2r1/v2r2 均保留。
