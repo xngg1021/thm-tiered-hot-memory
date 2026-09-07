@@ -128,6 +128,12 @@ class ReportClaimTests(unittest.TestCase):
     def test_full_history_claim_requires_every_config_arm(self):
         self.assertFalse(REPORT_MD.has_full_history_counterfactual({"per_config":{"hybrid@600":{"pricing_scenarios":{}}}}))
         self.assertTrue(REPORT_MD.has_full_history_counterfactual({"per_config":{"hybrid@600":{"full_history_same_query_counterfactual":{}}}}))
+    def test_lme_input_is_opt_in(self):
+        self.assertIsNone(REPORT_MD.load_optional_lme(None))
+        with tempfile.TemporaryDirectory() as temp:
+            path=Path(temp)/"lme.json"; path.write_text('{"benchmark":"lme"}',encoding="utf-8")
+            self.assertEqual(REPORT_MD.load_optional_lme(str(path))["benchmark"],"lme")
+        with self.assertRaises(FileNotFoundError): REPORT_MD.load_optional_lme("definitely-missing-lme.json")
     def test_knee_claim_is_derived_from_actual_adjacent_grid(self):
         supported={"l6_budget_grid_sensitivity":{"hybrid":{"300->600":{"delta_any_gold_percentage_points":10.0,"marginal_cost_usd_per_1pp_any_gold_gain":1.0},"600->1200":{"delta_any_gold_percentage_points":5.0,"marginal_cost_usd_per_1pp_any_gold_gain":2.5}}}}
         self.assertIn("knee candidate",REPORT_MD.knee_observation(supported))
