@@ -29,6 +29,21 @@ LANGUAGE_LINKS = {
 }
 
 
+def _strong_closes_before_cjk(text: str) -> bool:
+    """Detect only real closing ** delimiters followed immediately by CJK.
+
+    A single regex can falsely span from one closing delimiter to the next
+    opening delimiter on the same line. Splitting alternating strong-emphasis
+    segments keeps this mechanical typography check localization-safe.
+    """
+    for line in text.splitlines():
+        parts = line.split('**')
+        for outside_after_close in parts[2::2]:
+            if outside_after_close and '\u3400' <= outside_after_close[0] <= '\u9fff':
+                return True
+    return False
+
+
 def check(root: Path) -> dict:
     root = Path(root).resolve()
     errors, texts = [], {}
@@ -63,7 +78,7 @@ def check(root: Path) -> dict:
                 errors.append(f'{relative}: trailing whitespace')
             if text.count('```') % 2:
                 errors.append(f'{relative}: unpaired triple-backtick fence')
-            if relative.startswith('README') and re.search(r'\*\*[^*\n]+\*\*[\u3400-\u9fff]', text):
+            if relative.startswith('README') and _strong_closes_before_cjk(text):
                 errors.append(f'{relative}: strong emphasis closes directly before CJK text')
             for target in re.findall(r'\[[^\]\n]+\]\(([^\s)]+)\)', text):
                 try:
@@ -130,8 +145,11 @@ def check(root: Path) -> dict:
         if '<!-- in-page-locales:start -->' in homepage or '<!-- locale:' in homepage:
             errors.append('README.md: embedded localized copies are not allowed; use standalone README files')
 
+        # Shared markers are identities/protocol names and measured values that
+        # intentionally remain language-neutral. Do not require English prose
+        # vocabulary such as "cost" in translated homepages.
         common_markers = (
-            '1.4.0', 'T0', 'T1', 'T2', 'T3', '72.52%', '69.39%', 'cost',
+            '1.4.0', 'T0', 'T1', 'T2', 'T3', '72.52%', '69.39%',
             'Claude Code', 'Codex CLI', 'Gemini CLI', 'MCP v2', 'CHANGELOG.md',
             'docs/12-version-history.md', 'docs/16-zero-llm-retrieval-frontier.md',
         )
