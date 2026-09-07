@@ -54,4 +54,12 @@ Extras는 `.[tokenizer,semantic]`, `.[openai]`, `.[langchain]`, `.[mcp]`, `.[har
 
 [목차](docs/README.md) · [가이드](docs/06-engine-guide.md) · [Recall](docs/09-retrieval-and-measurement.md) · [Harness](docs/11-harness-adapters.md) · [버전 기록](docs/12-version-history.md) · [Changelog](CHANGELOG.md)
 
-Version identity: **1.3.0 accepted/stable**.
+## THM 1.4 현재 안정 상태
+
+THM 1.4는 **accepted/stable implementation milestone**로 완료되어 고정되었습니다. 안정 코드/콘텐츠 마일스톤은 `e6e4dda5835e3cb345207457d5491131c6959b2c`, 복구 포인터는 `archive/v1.4.0-stable`입니다. T0–T3 4계층 모델은 그대로 유지됩니다.
+
+1.4는 기존 1.3 harness-neutral recall 위에 명시적 resident/hard miss 및 planned retrieval telemetry, 엄격한 locator-only T1 warm directory, avoidable-miss penalty와 resident carry cost 기반 shadow T0 recommendation, 경계가 있는 정확한 0/1 packing, 실제 demand co-occurrence만 학습하는 bounded prefetch, 예산을 자동 변경하지 않는 resident-budget feedback을 추가합니다. Hermes에는 기본 비활성화된 session-frozen T1 locator snapshot도 있습니다.
+
+이 기능들은 1.4 correctness, Hermes, multi-harness 승인 검증을 통과했습니다. 1.4는 retrieval path를 변경하지 않았으므로 새로운 LoCoMo/Protocol 2 수치를 주장하지 않습니다. 자동 T0–T3 이동과 자동 예산 변경은 held-out runtime/task A/B가 품질·비용·지연·reacquisition 개선을 입증할 때까지 비활성화 상태입니다. 자세한 내용은 [1.4 control plane](docs/14-residency-control-plane.md), [Hermes T1 directory](docs/15-hermes-warm-directory.md), [1.4 closeout](reports/2026-09-07-v1.4-closeout.md)을 참조하십시오.
+
+Version identity: **1.4.0 accepted/stable implementation milestone**.

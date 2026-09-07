@@ -54,4 +54,12 @@ Extras は `.[tokenizer,semantic]`、`.[openai]`、`.[langchain]`、`.[mcp]`、`
 
 [目次](docs/README.md) · [ガイド](docs/06-engine-guide.md) · [Recall](docs/09-retrieval-and-measurement.md) · [Harness](docs/11-harness-adapters.md) · [履歴](docs/12-version-history.md) · [Changelog](CHANGELOG.md)
 
-Version identity: **1.3.0 accepted/stable**.
+## THM 1.4 の現在の安定状態
+
+THM 1.4 は **accepted/stable implementation milestone** として完了・凍結されています。安定コード/コンテンツのマイルストーンは `e6e4dda5835e3cb345207457d5491131c6959b2c`、復旧ポインタは `archive/v1.4.0-stable` です。T0–T3 の4層モデルは変更していません。
+
+1.4 は既存の 1.3 harness-neutral recall に加えて、resident/hard miss と planned retrieval の明示 telemetry、厳密な locator-only T1 warm directory、avoidable-miss penalty と resident carry cost に基づく shadow T0 recommendation、境界付きの正確な 0/1 packing、実 demand の co-occurrence だけで学習する bounded prefetch、予算を自動変更しない resident-budget feedback を追加します。Hermes には既定で無効な session-frozen T1 locator snapshot もあります。
+
+これらは 1.4 correctness、Hermes、multi-harness の受け入れ検証を通過しています。1.4 は retrieval path を変更していないため、新しい LoCoMo/Protocol 2 数値は主張しません。自動 T0–T3 移動と自動予算変更は、held-out runtime/task A/B が品質・コスト・遅延・reacquisition の改善を示すまで無効のままです。詳細は [1.4 control plane](docs/14-residency-control-plane.md)、[Hermes T1 directory](docs/15-hermes-warm-directory.md)、[1.4 closeout](reports/2026-09-07-v1.4-closeout.md) を参照してください。
+
+Version identity: **1.4.0 accepted/stable implementation milestone**.

@@ -77,4 +77,12 @@ Correctness CI corre en Linux, macOS y Windows; LoCoMo/modelos y las integracion
 
 Proyecto relacionado: [hermes-academic-skills](https://github.com/xngg1021/hermes-academic-skills).
 
-Version identity: **1.3.0 accepted/stable**.
+## Estado estable actual de THM 1.4
+
+THM 1.4 está terminado y congelado como **accepted/stable implementation milestone**. El hito estable de código/contenido es `e6e4dda5835e3cb345207457d5491131c6959b2c` y el puntero de recuperación es `archive/v1.4.0-stable`. El modelo de cuatro niveles T0–T3 no cambia.
+
+Sobre la capa de recall harness-neutral de 1.3, 1.4 añade telemetry explícita de resident/hard miss y planned retrieval, un directorio T1 estrictamente locator-only, recomendación shadow de T0 basada en avoidable-miss penalty frente a resident carry cost, packing 0/1 exacto y acotado, prefetch acotado entrenado sólo por co-occurrence de demanda real y feedback de resident budget que nunca modifica el presupuesto automáticamente. Hermes también dispone de un T1 locator snapshot session-frozen y desactivado por defecto.
+
+Estas superficies superaron la aceptación correctness, Hermes y multi-harness de 1.4. Como 1.4 no cambió el retrieval path, no se atribuyen nuevos números LoCoMo/Protocol 2. El movimiento automático T0–T3 y el cambio automático de presupuesto siguen desactivados hasta que A/B held-out de runtime/tareas demuestre mejoras conjuntas de calidad, coste, latencia y reacquisition. Véanse [1.4 control plane](docs/14-residency-control-plane.md), [Hermes T1 directory](docs/15-hermes-warm-directory.md) y [1.4 closeout](reports/2026-09-07-v1.4-closeout.md).
+
+Version identity: **1.4.0 accepted/stable implementation milestone**.

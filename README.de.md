@@ -52,4 +52,12 @@ THM behauptet derzeit keine reale E2E-Antwortgenauigkeit, universell optimale De
 
 [Index](docs/README.md) · [Guide](docs/06-engine-guide.md) · [Recall](docs/09-retrieval-and-measurement.md) · [Harness](docs/11-harness-adapters.md) · [Versionen](docs/12-version-history.md) · [Changelog](CHANGELOG.md)
 
-Version identity: **1.3.0 accepted/stable**.
+## Aktueller stabiler Stand von THM 1.4
+
+THM 1.4 ist als **accepted/stable implementation milestone** abgeschlossen und eingefroren. Der stabile Code-/Content-Meilenstein ist `e6e4dda5835e3cb345207457d5491131c6959b2c`, der Recovery-Pointer `archive/v1.4.0-stable`. Das Vier-Stufen-Modell T0–T3 bleibt unverändert.
+
+Auf der harness-neutralen Recall-Schicht von 1.3 ergänzt 1.4 explizite resident/hard-miss- und planned-retrieval-Telemetrie, ein strikt locator-only T1-Warmverzeichnis, eine Shadow-T0-Empfehlung aus avoidable-miss penalty gegenüber resident carry cost, exaktes begrenztes 0/1-Packing, begrenztes Prefetching, das nur aus echter Demand-Co-Occurrence lernt, sowie resident-budget feedback ohne automatische Budgetänderung. Hermes erhält zusätzlich einen standardmäßig deaktivierten session-frozen T1 locator snapshot.
+
+Diese Oberflächen haben die 1.4-Akzeptanz für correctness, Hermes und multi-harness bestanden. Da 1.4 den retrieval path nicht geändert hat, werden keine neuen LoCoMo/Protocol-2-Zahlen beansprucht. Automatische T0–T3-Bewegung und automatische Budgetänderung bleiben deaktiviert, bis held-out Runtime-/Task-A/B gemeinsam Verbesserungen bei Qualität, Kosten, Latenz und Reacquisition nachweist. Siehe [1.4 control plane](docs/14-residency-control-plane.md), [Hermes T1 directory](docs/15-hermes-warm-directory.md) und [1.4 closeout](reports/2026-09-07-v1.4-closeout.md).
+
+Version identity: **1.4.0 accepted/stable implementation milestone**.

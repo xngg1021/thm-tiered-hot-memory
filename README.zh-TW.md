@@ -90,4 +90,12 @@ THM 當前不宣稱真實使用者端到端回答正確率、普適最優衰減�
 
 相關專案：[hermes-academic-skills](https://github.com/xngg1021/hermes-academic-skills)。
 
-Version identity: **1.3.0 accepted/stable**.
+## THM 1.4 目前穩定狀態
+
+THM 1.4 已完成並凍結為 **accepted/stable implementation milestone**。穩定程式碼/內容里程碑為 `e6e4dda5835e3cb345207457d5491131c6959b2c`，恢復指標為 `archive/v1.4.0-stable`。T0–T3 四層模型保持不變。
+
+1.4 在既有 1.3 harness-neutral 召回層之上新增：顯式 resident/hard miss 與 planned retrieval telemetry、嚴格 locator-only 的 T1 溫層目錄、基於 avoidable-miss penalty 與 resident carry cost 的 shadow T0 recommendation、精確有界 0/1 packing、只由真實 demand co-occurrence 訓練的 bounded prefetch，以及只提供建議而不自動改預算的 resident-budget feedback。Hermes 另提供預設關閉的 session-frozen T1 locator snapshot。
+
+這些能力已通過 1.4 correctness、Hermes 與 multi-harness 驗收；1.4 沒有修改 retrieval path，因此沒有宣稱產生新的 LoCoMo/Protocol 2 數字。自動 T0–T3 換層和自動預算修改仍保持關閉，直到真實留出任務 A/B 能同時證明品質、成本、延遲和 reacquisition 改善。詳見 [1.4 control plane](docs/14-residency-control-plane.md)、[Hermes T1 directory](docs/15-hermes-warm-directory.md) 與 [1.4 closeout](reports/2026-09-07-v1.4-closeout.md)。
+
+Version identity: **1.4.0 accepted/stable implementation milestone**.

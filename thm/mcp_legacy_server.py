@@ -27,7 +27,7 @@ def _server_version() -> str:
     try:
         return package_version("thm-local-memory")
     except PackageNotFoundError:
-        return "1.3.0"
+        return "1.4.0"
 
 
 def _json_schema_string(description: str | None = None) -> dict[str, Any]:

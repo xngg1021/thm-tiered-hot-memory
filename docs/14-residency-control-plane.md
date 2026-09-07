@@ -1,5 +1,9 @@
 # THM 1.4 shadow residency control plane
 
+<!-- current-v1.4-status:start -->
+> **Release status — accepted/stable implementation.** The code described here is frozen at `e6e4dda5835e3cb345207457d5491131c6959b2c` with recovery pointer `archive/v1.4.0-stable`. “Shadow” describes the advisory/non-mutating policy boundary, not unfinished implementation. Automatic tier movement and automatic resident-budget mutation remain deliberately disabled until held-out runtime/task evidence justifies them.
+<!-- current-v1.4-status:end -->
+
 > Added 2026-09-07. Implementation: `thm/residency.py` and split modules. The existing **T0–T3 tiers remain unchanged**. This is a THM-specific residency experiment; it does not rename the tiers or import another repository's layer model.
 
 ## Scope

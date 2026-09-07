@@ -1,5 +1,9 @@
 # THM 项目文档总目录
 
+<!-- current-v1.4-status:start -->
+> **Current release status — THM 1.4.0 accepted/stable implementation milestone.** Stable code/content milestone: `e6e4dda5835e3cb345207457d5491131c6959b2c`; immutable recovery pointer: `archive/v1.4.0-stable`. This document retains its original research/design/1.2/1.3 scope as historical foundation rather than rewriting old evidence as a new result. Current implementation state is tracked in [07-implementation-status.md](07-implementation-status.md), the 1.4 shadow control plane in [14-residency-control-plane.md](14-residency-control-plane.md), the opt-in Hermes T1 surface in [15-hermes-warm-directory.md](15-hermes-warm-directory.md), and the exact acceptance record in [the 1.4 closeout](../reports/2026-09-07-v1.4-closeout.md).
+<!-- current-v1.4-status:end -->
+
 默认项目主页为英文 [README](../README.md)，并提供多语言版本。当前实现与验证入口以本页、实现状态和对应版本文档为准；历史研究、设计和报告保留原始证据边界，不把旧目标自动算成当前能力。
 
 当前稳定实现里程碑：**THM 1.4.0 @ `e6e4dda5835e3cb345207457d5491131c6959b2c`**，恢复指针 `archive/v1.4.0-stable`。这里的“稳定”限定为实现/集成里程碑；shadow adaptive policy 仍需单独的真实任务 A/B 才能宣称效果优势。

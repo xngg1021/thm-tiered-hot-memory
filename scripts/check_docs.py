@@ -122,10 +122,10 @@ def check(root: Path) -> dict:
             errors.append('Missing localized README files: ' + ', '.join(missing_localized))
         for localized in sorted(LOCALIZED_READMES & actual):
             text = texts.get(localized, '')
-            for marker in ('1.3.0', 'Claude Code', 'Codex CLI', 'Gemini CLI',
-                           'MCP v2', 'accepted/stable'):
+            for marker in ('1.4.0', 'archive/v1.4.0-stable', 'Claude Code',
+                           'Codex CLI', 'Gemini CLI', 'MCP v2', 'accepted/stable'):
                 if marker not in text:
-                    errors.append(f'{localized}: missing 1.3 parity marker {marker}')
+                    errors.append(f'{localized}: missing localized release parity marker {marker}')
             headings = len(re.findall(r'^## ', text, re.M))
             if headings < 5:
                 errors.append(f'{localized}: incomplete section parity ({headings} sections)')
@@ -137,6 +137,13 @@ def check(root: Path) -> dict:
                 rf'<!-- locale:{re.escape(code)}:end -->', homepage, re.S)
             if not match or match.group(1).strip() != expected_body:
                 errors.append(f'{localized}: homepage language panel is missing or stale')
+        homepage = texts.get('README.md', '')
+        for marker in ('1.4.0 accepted/stable implementation milestone',
+                       'archive/v1.4.0-stable',
+                       'docs/14-residency-control-plane.md',
+                       'docs/15-hermes-warm-directory.md'):
+            if marker not in homepage:
+                errors.append(f'README.md: missing current 1.4 homepage marker {marker}')
     return {'status': 'FAIL' if errors else 'PASS', 'markdown_files': len(markdown),
             'relative_links_checked': links, 'json_fences_parsed': fences,
             'json_files_parsed': json_files, 'python_files_parsed': python_files,
