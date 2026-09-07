@@ -79,5 +79,13 @@ class EntityProjectionTests(unittest.TestCase):
                 {'rowid': 2, 'speaker': 'Ann Marie', 'text': 'text'}]
         self.assertEqual(reorder(rows, 'Ann Marie visited')[0]['rowid'], 2)
 
+    def test_extraction_never_admits_truncated_identifiers(self):
+        rows = [{'rowid': 1, 'speaker': '', 'text': 'v1.5.0 BUG-42 https://a.test'},
+                {'rowid': 2, 'speaker': '', 'text': 'v1.5.0.1'}]
+        self.assertEqual(reorder(rows,'v1.5.0.1')[0]['rowid'],2)
+        for query in ['v1.5.0-rc1', 'v1.5.0+build1', 'BUG-42-extra',
+                      'src/BUG-42', 'xhttps://a.test']:
+            self.assertIs(reorder(rows,query),rows,query)
+
 
 if __name__ == '__main__': unittest.main()

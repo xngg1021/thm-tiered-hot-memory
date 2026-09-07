@@ -13,11 +13,13 @@ MAX_SPEAKERS = 64
 MAX_SPEAKER_CHARS = 128
 MAX_BODY_CHARS = 8192
 MAX_CANDIDATES = 3000  # three existing channels, each capped at 1000
-IDENTIFIER = re.compile(r'https?://[^\s<>]+|\b[0-9a-f]{7,40}\b|\b[A-Z]+-\d+\b|\bv?\d+\.\d+(?:\.\d+)?\b|`([^`]+)`')
+IDENTIFIER = re.compile(r'https?://[^\s<>]+|\b[0-9a-f]{7,40}\b|\b[A-Z]+-\d+\b|\bv?\d+(?:\.\d+)+\b|`([^`]+)`')
 # Punctuation that continues a name/path/URL is not a whole-identifier boundary.
 # Terminal sentence punctuation is allowed; '.old' and '?revision' continue it.
 LEFT = r'(?<![\w./\\:@#%&=~+?\-])'
 RIGHT = r'(?!(?:[\w/\\:@#%&=~+\-]|[.?][\w/]))'
+TOKEN_START = re.compile(LEFT)
+TOKEN_END = re.compile(RIGHT)
 
 
 def exact_pattern(values):
@@ -35,6 +37,10 @@ def reorder(rows, query, weight=0.25):
     identifiers = set()
     for match in IDENTIFIER.finditer(query):
         value = match[0].strip('`')
+        quoted = match[0].startswith('`')
+        start, end = match.start() + int(quoted), match.end() - int(quoted)
+        if TOKEN_START.match(query, start) is None or TOKEN_END.match(query, end) is None:
+            continue
         if value.lower() in GENERIC:
             continue
         if len(value) > MAX_IDENTIFIER_CHARS:
