@@ -1,6 +1,8 @@
 from __future__ import annotations
 
+import hashlib
 import importlib.util
+import json
 from pathlib import Path
 import tempfile
 import unittest
@@ -19,6 +21,7 @@ def load_module(name: str, relative: str):
 
 BRIDGE = load_module("thm_ce_bridge_test", "research/economics/thm_ce_bridge.py")
 PARITY = load_module("hardware_parity_test", "research/recall/hardware_parity.py")
+RUN_SUITE = load_module("run_suite_test", "research/economics/run_suite.py")
 
 
 class FakePricing:
@@ -73,6 +76,19 @@ class EconomicsBridgeTests(unittest.TestCase):
             pricing = pricing_cls("x", 1.0, 0.1, 2.0)
             self.assertEqual(pricing.effective_input_rate(0.5), 0.55)
             self.assertEqual(len(provenance["model_sha256"]), 64)
+
+    def test_counterfactual_dataset_must_match_benchmark_hash(self):
+        with tempfile.TemporaryDirectory() as temp:
+            path = Path(temp) / "locomo.json"
+            raw = json.dumps([{"sample_id": "s"}]).encode("utf-8")
+            path.write_bytes(raw)
+            expected = hashlib.sha256(raw).hexdigest()
+            data, digest = BRIDGE.load_dataset_verified(path, expected)
+            self.assertEqual(data, [{"sample_id": "s"}])
+            self.assertEqual(digest, expected)
+            path.write_text('[{"sample_id":"s","changed":true}]', encoding="utf-8")
+            with self.assertRaisesRegex(ValueError, "does not match"):
+                BRIDGE.load_dataset_verified(path, expected)
 
     def test_same_query_counterfactual_uses_row_weighted_scopes(self):
         rows = [
@@ -137,6 +153,29 @@ class EconomicsBridgeTests(unittest.TestCase):
         self.assertEqual(report["suite_totals"]["attempted_questions_per_config"], 2)
 
 
+class SuiteReceiptTests(unittest.TestCase):
+    def test_default_tags_cannot_target_historical_untagged_artifacts(self):
+        self.assertEqual(RUN_SUITE.normalize_tag(None, "cpu"), "-cpu-v2")
+        self.assertEqual(RUN_SUITE.normalize_tag(None, "cuda"), "-gpu-v2")
+        with self.assertRaises(ValueError):
+            RUN_SUITE.normalize_tag("", "cpu")
+
+    def test_redaction_removes_personal_roots(self):
+        text = RUN_SUITE.redact_text(
+            r"C:\Users\alice\repo\context-economics\model.py",
+            [(r"C:\Users\alice\repo\context-economics", "<CE_ROOT>")],
+        )
+        self.assertEqual(text, r"<CE_ROOT>\model.py")
+        self.assertNotIn("alice", text)
+
+    def test_existing_artifact_is_never_overwritten(self):
+        with tempfile.TemporaryDirectory() as temp:
+            path = Path(temp) / "artifact.json"
+            path.write_text("{}", encoding="utf-8")
+            with self.assertRaises(FileExistsError):
+                RUN_SUITE.require_new(path)
+
+
 class HardwareParityTests(unittest.TestCase):
     def artifact(self, selected):
         return {
@@ -164,6 +203,7 @@ class HardwareParityTests(unittest.TestCase):
         gpu["rows"][0]["total_ms"] = 5.0
         gpu["rows"][0]["query_embedding_ms"] = 0.1
         result = PARITY.compare(cpu, gpu)
+        self.assertTrue(result["identity_complete"])
         self.assertTrue(result["equivalent"])
         self.assertEqual(result["max_semantic_numeric_abs_diff"], 0.0)
 
@@ -171,6 +211,19 @@ class HardwareParityTests(unittest.TestCase):
         result = PARITY.compare(self.artifact("D1:1"), self.artifact("D1:2"))
         self.assertFalse(result["equivalent"])
         self.assertTrue(any(x["kind"] == "row_field" for x in result["mismatches"]))
+
+    def test_legacy_aggregate_only_rows_are_insufficient_for_positive_parity(self):
+        cpu = self.artifact("D1:1")
+        gpu = self.artifact("D1:1")
+        cpu["rows"][0].pop("selected_ids")
+        gpu["rows"][0].pop("selected_ids")
+        result = PARITY.compare(cpu, gpu)
+        self.assertFalse(result["identity_complete"])
+        self.assertFalse(result["equivalent"])
+        self.assertTrue(any(
+            x["kind"] == "selection_identity_unavailable"
+            for x in result["mismatches"]
+        ))
 
 
 if __name__ == "__main__":
