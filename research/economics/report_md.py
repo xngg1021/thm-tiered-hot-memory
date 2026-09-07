@@ -38,6 +38,15 @@ def lme_table(data: dict) -> str:
     return "\n".join(lines)
 
 
+def load_optional_lme(path_value: str | None) -> dict | None:
+    if not path_value:
+        return None
+    path = Path(path_value)
+    if not path.is_file():
+        raise FileNotFoundError(f"LME artifact not found: {path}")
+    return json.loads(path.read_text(encoding="utf-8"))
+
+
 def money(value) -> str:
     return "-" if value is None else f"${value:.6f}"
 
@@ -146,7 +155,7 @@ def knee_observation(econ: dict) -> str:
 def main():
     ap = argparse.ArgumentParser(description=__doc__)
     ap.add_argument("--locomo", default="reports/2026-09-08-local-full-matrix.json")
-    ap.add_argument("--lme", default="reports/2026-09-08-lme-retrieval.json")
+    ap.add_argument("--lme", default=None, help="optional LongMemEval-S artifact; omitted means no LME section")
     ap.add_argument("--econ", default="reports/2026-09-08-economics-bridge-v2.json")
     ap.add_argument("--output", default="reports/2026-09-08-suite-report-v2.md")
     args = ap.parse_args()
@@ -156,8 +165,7 @@ def main():
     if econ.get("kind") != "thm-x-context-economics-bridge-v2":
         raise ValueError("report_md.py requires corrected bridge-v2 economics artifact")
     validate_locomo_bridge_pair(locomo, econ, sha256_file(locomo_path))
-    lme_path = Path(args.lme)
-    lme = json.loads(lme_path.read_text(encoding="utf-8")) if lme_path.is_file() else None
+    lme = load_optional_lme(args.lme)
     first = locomo["summaries"][f"{locomo['modes'][0]}@{locomo['budgets'][0]}"]["main_categories_1_to_4"]
     primary = econ["primary_proxy_scenario"]
     full_history_present = has_full_history_counterfactual(econ)
