@@ -1,69 +1,172 @@
 # THM — Tiered Hot Memory
 
-[English](README.md) | [简体中文](README.zh-CN.md) | [繁體中文](README.zh-TW.md) | [日本語](README.ja.md) | [한국어](README.ko.md) | [Español](README.es.md) | [Français](README.fr.md) | Deutsch
+**Local-first, deterministische, gestufte Memory-Infrastruktur für AI Agents.** THM trennt die Frage, was dauerhaft hot resident bleiben sollte, von dem, was bei Bedarf wiederbeschafft werden kann, und bewertet diese Entscheidungen anhand beobachtbarer Kosten und Evidenz statt standardmäßig ein weiteres LLM zum Umschreiben von Memory einzusetzen.
+
+[English](README.md) | [简体中文](README.zh-CN.md) | [繁體中文](README.zh-TW.md) | [日本語](README.ja.md) | [한국어](README.ko.md) | Deutsch | [Français](README.fr.md) | [Español](README.es.md)
 
 Autor: Junfu Shi (SJF, xngg1021) · Lizenz: [MIT](LICENSE)
 
-## Vier Ebenen
+## Warum THM existiert
 
-THM ist ein lokales Vier-Ebenen-Gedächtnis für Agent-Harnesses: T0 nativer permanenter Kontext, T1 thematisches Material auf Abruf, T2 budgetierte Suche in Historie und Archiven, T3 erneut abrufbare externe Quellen. Aktivität, Gültigkeit, Aufgabenrelevanz und Pinning bleiben getrennt; Erwähnung, Retrieval und Write beweisen keinen nützlichen Hit.
+Lang laufende Agents sammeln mehr Zustand an, als sinnvoll in jedem Prompt resident sein kann. Alles permanent mitzuschleppen erzeugt wiederkehrende Carry-Kosten; alles zu verwerfen erzeugt wiederkehrende Search-, Retrieval- und Reacquisition-Kosten. THM behandelt das als **Residency-, Retrieval- und Budget-Allokationsproblem**.
 
-## Implementierter Umfang
+Die zentrale Frage lautet:
 
-1.1.1 liefert eine robuste Index-CLI; 1.2 ergänzt scope-getrenntes FTS5, optionale lokale Embeddings, RRF, budgetiertes Packing, gewichtungsfreie Mention-Observations, Decay-Vergleiche und reproduzierbare Evaluation. **1.3 ergänzt eine harness-neutrale Read-only-Recall-Schicht**: Hermes `MemoryProvider`, OpenAI Agents `FunctionTool`, LangChain/LangGraph `BaseRetriever` und MCP-v2-stdio. OpenClaw 2026.9.x, Claude Code, Codex CLI und Gemini CLI verwenden eine getrennte, schreibgeschützte MCP-Kompatibilitätsbrücke und werden mit fixierten echten CLI-Versionen geprüft. Native Quellen werden nicht umgeschrieben; zusätzliche Modellaufrufe gibt es nicht.
+> **Wie weit kann Agent Memory kommen, ohne einen weiteren LLM-Aufruf zu benötigen?**
 
-## LoCoMo-Messwerte
+Darum bevorzugt THM deterministische Signale, lokale Indizes, explizite Provenance, begrenzte Evidence-Budgets und reproduzierbare Control Rules. Generative Extraction, Summaries oder Memory-Rewriting sind keine Voraussetzung für den Core Dataplane.
 
-Protocol 2 umfasst 10 Gespräche, 1.986 Fragen und 1.532 vollständig aufgelöste nicht-adversariale Fragen im Hauptnenner. Bei 600 Tokens beträgt any-gold **56,79 % literal / 69,39 % sparse / 51,11 % dense / 71,34 % hybrid**, all-gold **46,61 % / 56,53 % / 40,01 % / 57,64 %**. Dies misst Evidenz-Retrieval, nicht Antwortgenauigkeit. p95 Retrieval+Packing: **34,55 ms sparse / 57,88 ms hybrid**. Sparse erreicht bei 300/600/1200 Tokens **60,57/69,39/76,17 %** bei **20,39/34,55/61,78 ms**. [Bericht](reports/2026-09-06-recall-protocol2.md) · [JSON](reports/2026-09-06-recall-protocol2-summary.json).
+## Design philosophy
 
-## Integrationen
+### 1. Die Quelle bleibt autoritativ
 
-| Oberfläche | THM 1.3 |
+Native Memory-Dateien, Session-Transkripte und externe Quellen sind die Authority. SQLite/FTS, lokale Embeddings, Locators und andere THM-Strukturen sind **abgeleitete Indizes oder Projektionen**. Retrieval darf die Quelle, die es erinnern soll, nicht stillschweigend umschreiben.
+
+### 2. Residency ist nicht gleich Relevance oder Activity
+
+THM trennt:
+
+- **tier** — wo ein Item resident ist und wie es erreicht wird;
+- **activity** — ob der Agent es tatsächlich benutzt hat;
+- **validity** — ob es noch aktuell und vertrauenswürdig ist;
+- **pinning** — eine explizite Operator-Vorgabe;
+- **retrieval evidence** — ob ein Retrieval-Pfad das Item in einer Aufgabe sichtbar gemacht hat.
+
+Mention ist kein hit. Retrieval beweist keine Nützlichkeit. Prefetch ist keine Demand. Ein Write ist kein Activity Event.
+
+### 3. Cold Memory soll billig bleiben
+
+Der Hot Prompt ist knapp. THM nutzt Locators und bounded retrieval, damit kältere Inhalte außerhalb des resident context bleiben können, bis eine Aufgabe sie wirklich benötigt. Ein kurzer Locator kann es wert sein, resident zu bleiben, obwohl der Full Source es nicht ist.
+
+### 4. Fixed Budgets gehören zur Correctness
+
+Es reicht nicht, wenn ein Gold-Item irgendwo in einem großen Candidate Pool vorkommt. THM misst, ob relevante Evidenz tatsächlich in ein festes Token-Budget gepackt wird. Oversized Sources, Duplikate und Packing Waste sind reale Verluste.
+
+### 5. Keine selbstverstärkenden Retrieval-Loops
+
+Ein Item darf nicht allein deshalb wichtiger werden, weil das System es selbst prefetched oder retrieved hat. Control-Plane-Signale lernen nur aus expliziter Demand-Evidenz und bewahren die Anti-Self-Training-Grenze.
+
+### 6. Automation folgt Evidenz
+
+THM kann Shadow-Empfehlungen für Residency, Prefetch und Budget erzeugen. Automatic promote/demote und automatic budget write-back bleiben jedoch deaktiviert, bis held-out task evidence einen Netto-Gewinn bei Qualität, Kosten, Latenz und Reacquisition zeigt.
+
+### 7. Ein Memory Core, mehrere Harness Surfaces
+
+Retrieval-Semantik liegt im THM Core. Hermes hat die tiefste Lifecycle-Integration; OpenAI Agents und LangChain nutzen native SDK-Adapter; MCP stellt eine standardisierte Protokollfläche für mehrere CLI-/Harness-Integrationen bereit.
+
+## T0–T3 Memory Tiers
+
+| Tier | Rolle | Typischer Einsatz |
+| --- | --- | --- |
+| **T0 — Hot** | Vom Host bereits getragene resident memory | Kleine High-Value-Kontexte, die ihre Residency wiederholt rechtfertigen |
+| **T1 — Warm** | Locator-orientierte Inhalte, die bei Bedarf expandiert werden | Topic/File/Source Locators und bounded warm references |
+| **T2 — Cold** | Durchsuchbare lokale History und Archive | Scoped FTS/Dense Retrieval unter festem Evidence-Budget |
+| **T3 — External** | Wiederbeschaffbare Source Locations | Dateien, URLs und externe Systeme |
+
+T0–T3 sind **THM Memory Tiers**. Sie sind nicht die L0–L6 Layers des separaten Context-Economics-Projekts.
+
+## Was implementiert ist
+
+THM bietet derzeit:
+
+- profile-/scope-isolierte lokale Indizes mit fail-closed Source-/Database-Checks;
+- SQLite FTS5 Sparse Retrieval, optionale lokale Sentence Embeddings und deterministische Rank Fusion;
+- token-budgeted evidence packing mit Source Traceability;
+- explizite Activity-/Validity-/Pin-Semantik und reproduzierbare Decay Diagnostics;
+- einen harness-neutralen read-only recall core;
+- Hermes `MemoryProvider`, OpenAI Agents `FunctionTool`, LangChain/LangGraph `BaseRetriever`, MCP v2 sowie eine pinned compatibility bridge für ausgewählte CLI Hosts;
+- resident/hard-miss und planned-retrieval telemetry;
+- ein locator-only T1 warm directory plus opt-in session-frozen Hermes locator snapshot;
+- Shadow-T0-Recommendations aus Miss Cost und Resident Carry Cost mit bounded exact 0/1 packing;
+- bounded anti-self-training prefetch und shadow resident-budget feedback;
+- eine opt-in zero-generative-LLM entity projection, die nur bestehende sparse/hybrid candidates re-rankt und das kanonische T0–T3-Modell nicht verändert.
+
+Die stabile Package-Linie bleibt **1.4.0**. Die zero-LLM entity projection ist als opt-in research successor in main gemerged, aber **nicht als 1.5 stable bezeichnet**. Historische Versionen, PRs, Reviews und Implementierungs-Chronologie gehören in [CHANGELOG.md](CHANGELOG.md) und die [Version History](docs/12-version-history.md), nicht auf die Homepage.
+
+## Gemessene Retrieval-Evidenz
+
+THM trennt Retrieval-Evidenz von Answer-Generation-Claims.
+
+Der kanonische LoCoMo Protocol 2 verwendet 1.532 vollständig aufgelöste non-adversarial questions und einen festen Slice von 600 `cl100k_base` Evidence Tokens.
+
+| Retrieval mode | Any-gold packed evidence | All-gold packed evidence | p95 retrieval + packing |
+| --- | ---: | ---: | ---: |
+| Literal | 56.79% | 46.61% | — |
+| Sparse | **69.39%** | **56.53%** | **34.55 ms** |
+| Local dense | 51.11% | 40.01% | — |
+| Hybrid | **71.34%** | **57.64%** | **57.88 ms** |
+
+Die aktuelle opt-in deterministic entity projection erhöht full-set sparse any-gold von **69.39% auf 72.52%** und den eingefrorenen 1.301-Fragen-Holdout von **69.56% auf 72.33%**, ohne die Candidate Coverage zu verändern. Der Gewinn entsteht also dadurch, **bereits vorhandene Kandidaten besser in den 600-Token-Slice zu bringen**, nicht durch einen weiteren Modellaufruf zur Erweiterung des Candidate Pools.
+
+Diese Werte messen packed retrieval evidence, nicht finale Antwortgenauigkeit, User Satisfaction oder universelle Überlegenheit. Siehe [Protocol 2](reports/2026-09-06-recall-protocol2.md) und [zero-LLM frontier](docs/16-zero-llm-retrieval-frontier.md).
+
+## Harness Integration
+
+| Surface | Integrationstiefe |
 | --- | --- |
-| Hermes | pip-Provider, Setup/Config, Prefetch, optionales `sync_turn`, Session Hooks, write≠hit |
-| OpenAI Agents | schreibgeschütztes `OpenAIAgentsTHM.tool` |
-| LangChain/LangGraph | `THMLangChainRetriever` |
-| MCP v2 | `thm-mcp`, typisierte `thm_recall`/`thm_status` |
-| OpenClaw | `thm-mcp-legacy`, echter Probe |
-| Claude/Codex/Gemini | echte fixierte CLIs, exakter Befehl, Discovery/Call-Lifecycle, null Modellaufrufe |
+| **Hermes Agent** | Native `MemoryProvider`; setup/config, prefetch, optional live-turn sync, session boundary hooks, memory-write refresh semantics |
+| **OpenAI Agents SDK** | Native read-only `FunctionTool` |
+| **LangChain / LangGraph / Deep Agents** | Native `BaseRetriever` surface |
+| **MCP v2** | Typed read-only `thm_recall` und `thm_status` über stdio |
+| **OpenClaw** | Pinned compatibility probe über die legacy MCP bridge |
+| **Claude Code / Codex CLI / Gemini CLI** | Pinned real-CLI discovery/call lifecycle über denselben read-only recall core |
 
-## Installation
+Multi-Harness-Support macht THM nicht zu einer universellen Memory Database. Die Lifecycle-Tiefe unterscheidet sich je Host; Hermes bleibt die tiefste native Integration.
+
+## Quick start
 
 ```bash
 python -m pip install -e .
+python -m thm --help
 python -m thm import-files ./notes --db ./state/recall.sqlite3 --scope demo
 python -m thm search --db ./state/recall.sqlite3 --scope demo "Which database port?" --budget 600
-thm-mcp --db /absolute/path/recall.sqlite3 --scope demo --budget 600
 ```
 
-Extras: `.[tokenizer,semantic]`, `.[openai]`, `.[langchain]`, `.[mcp]`, `.[harnesses]`. Die Kompatibilitätsbrücke heißt `thm-mcp-legacy`.
+Optionale Dependencies:
 
-## Hermes-Lifecycle
+```bash
+python -m pip install -e '.[tokenizer,semantic]'
+python -m pip install -e '.[openai]'
+python -m pip install -e '.[langchain]'
+python -m pip install -e '.[mcp]'
+python -m pip install -e '.[harnesses]'
+```
 
-`sync_turns` ist standardmäßig aus. Explizit aktiviert übernimmt es nur User/Assistant-Text in einen abgeleiteten T2-Session-Scope; Systemzeilen und Kompressionszusammenfassungen bleiben draußen. `on_memory_write` ist nur Refresh. THM bleibt bei pre-compress API v1, da der Cache nicht Eigentümer des kanonischen Transkripts ist und keine fail-closed Checkpoint-v2-Dauerhaftigkeit versprechen kann.
+MCP:
 
-## Decay-Kalibrierung
+```bash
+thm-mcp --db /absolute/path/recall.sqlite3 --scope demo --budget 600
+thm-mcp-legacy --db /absolute/path/recall.sqlite3 --scope demo --budget 600
+```
 
-`decay_from_index.py` exportiert nur IDs, Kosten und Hit-Daten, ohne Texte, Zusammenfassungen, Keys oder Bestätigungen; `decay_replay.py` spielt privat nach. Ohne reale Chronologie wird keine persönliche optimale Halbwertszeit behauptet.
+## Wichtige Invarianten
 
-## Evidenzgrenzen
+- read-only retrieval mutiert native memory nicht;
+- retrieval/display/scan erzeugen keine erfundene usage activity;
+- `planned_retrieval` ist kein miss;
+- prefetch erzeugt keine demand-, hit-, renewal- oder promotion-evidence;
+- nur explizite `avoidable=true` misses dürfen Residency Benefit erzeugen;
+- T1 `pinned` bedeutet keine automatic promotion;
+- locator projections bleiben locator-only und müssen innerhalb des vorgesehenen Scope auflösen;
+- ordinary mid-session memory writes rebuilden keinen eingefrorenen Hermes prompt snapshot;
+- automatic tier movement und budget write-back bleiben ohne held-out task evidence deaktiviert.
 
-THM behauptet derzeit keine reale E2E-Antwortgenauigkeit, universell optimale Decay-Kurve, automatische Ebenenbewegung/Löschweitergabe oder Verbesserung von Prompt-Cache und wahrgenommener Latenz. Coverage, Plumbing, Modellnutzung und Endqualität sind getrennte Evidenzschichten. Correctness CI läuft unter Linux, macOS und Windows; LoCoMo und Integrationstests sind separat.
+## Evidence boundary
 
-[Index](docs/README.md) · [Guide](docs/06-engine-guide.md) · [Recall](docs/09-retrieval-and-measurement.md) · [Harness](docs/11-harness-adapters.md) · [Versionen](docs/12-version-history.md) · [Changelog](CHANGELOG.md)
+THM unterstützt starke deterministic/local retrieval- und shadow-control Experimente, behauptet aber keine universelle Answer-Quality-Steigerung, keine universell optimale Decay Curve, keine production-ready automatische T0–T3-Bewegung, keine sichere automatische Delete Propagation, keine automatisch aus Retrieval-Metriken abgeleiteten Prompt-Cache-/User-Latency-Gewinne und keine garantierte Model-Nutzung eines retrievten Evidence Items.
 
-## Aktueller stabiler Stand von THM 1.4
+Unit/invariant evidence, retrieval benchmark, harness lifecycle und real task outcome sind getrennte Evidence Classes.
 
-THM 1.4 ist als **accepted/stable implementation milestone** abgeschlossen und eingefroren. Der stabile Code-/Content-Meilenstein ist `e6e4dda5835e3cb345207457d5491131c6959b2c`, der Recovery-Pointer `archive/v1.4.0-stable`. Das Vier-Stufen-Modell T0–T3 bleibt unverändert.
+## Dokumentation
 
-Auf der harness-neutralen Recall-Schicht von 1.3 ergänzt 1.4 explizite resident/hard-miss- und planned-retrieval-Telemetrie, ein strikt locator-only T1-Warmverzeichnis, eine Shadow-T0-Empfehlung aus avoidable-miss penalty gegenüber resident carry cost, exaktes begrenztes 0/1-Packing, begrenztes Prefetching, das nur aus echter Demand-Co-Occurrence lernt, sowie resident-budget feedback ohne automatische Budgetänderung. Hermes erhält zusätzlich einen standardmäßig deaktivierten session-frozen T1 locator snapshot.
+- [Documentation index](docs/README.md)
+- [Engine guide](docs/06-engine-guide.md)
+- [Retrieval and measurement](docs/09-retrieval-and-measurement.md)
+- [Harness adapters](docs/11-harness-adapters.md)
+- [Version history and recovery](docs/12-version-history.md)
+- [1.4 residency control plane](docs/14-residency-control-plane.md)
+- [Hermes warm directory](docs/15-hermes-warm-directory.md)
+- [Zero-LLM retrieval frontier](docs/16-zero-llm-retrieval-frontier.md)
+- [Changelog](CHANGELOG.md)
 
-Diese Oberflächen haben die 1.4-Akzeptanz für correctness, Hermes und multi-harness bestanden. Da 1.4 den retrieval path nicht geändert hat, werden keine neuen LoCoMo/Protocol-2-Zahlen beansprucht. Automatische T0–T3-Bewegung und automatische Budgetänderung bleiben deaktiviert, bis held-out Runtime-/Task-A/B gemeinsam Verbesserungen bei Qualität, Kosten, Latenz und Reacquisition nachweist. Siehe [1.4 control plane](docs/14-residency-control-plane.md), [Hermes T1 directory](docs/15-hermes-warm-directory.md) und [1.4 closeout](reports/2026-09-07-v1.4-closeout.md).
-
-Version identity: **1.4.0 accepted/stable implementation milestone**.
-
-## Retrieval-Erweiterung ohne generative LLM-Aufrufe (unveröffentlicht)
-
-Die explizite Python-Option `entity_projection=True` ordnet vorhandene Kandidaten anhand exakter Sprechernamen und Quellbezeichner neu. Bei 600 tokens steigt Protocol 2 global von 69.39% auf 72.52% any-gold; die 1301 zurückgehaltenen Fragen steigen von 69.56% auf 72.33%. Die Kandidatenabdeckung bleibt gleich. Es gibt keine generativen Aufrufe und kein Embedding-Modell; T0–T3 und native Erinnerungen bleiben unverändert. Zeit-, Segment-, Assoziations- und Größenranking-Experimente gelangen nicht in den Produktionspfad. Version 1.5 ist noch nicht als stabil registriert.
-
-[Protocol 2 / evidence](docs/16-zero-llm-retrieval-frontier.md)
+THM bleibt Research Software. 1.4.0 ist der accepted/stable implementation milestone; der folgende retrieval frontier bleibt ausdrücklich unreleased. Eine Versionsnummer ersetzt niemals eine Evidence Class.
