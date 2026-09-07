@@ -39,6 +39,21 @@ def reorder(rows, query, weight=0.25):
         value = match[0].strip('`')
         quoted = match[0].startswith('`')
         start, end = match.start() + int(quoted), match.end() - int(quoted)
+        if not quoted and value.startswith(('https://', 'http://')):
+            # Prose punctuation is outside unquoted URLs. Preserve balanced
+            # path parentheses; count once so long wrapper tails stay linear.
+            excess = {close: value.count(close) - value.count(opening)
+                      for opening, close in [('(', ')'), ('[', ']'), ('{', '}')]}
+            while end > start:
+                char = query[end - 1]
+                if char in '.,;!?:\"\'':
+                    end -= 1
+                elif excess.get(char, 0) > 0:
+                    excess[char] -= 1
+                    end -= 1
+                else:
+                    break
+            value = query[start:end]
         if TOKEN_START.match(query, start) is None or TOKEN_END.match(query, end) is None:
             continue
         if value.lower() in GENERIC:

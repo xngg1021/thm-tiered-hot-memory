@@ -87,5 +87,18 @@ class EntityProjectionTests(unittest.TestCase):
                       'src/BUG-42', 'xhttps://a.test']:
             self.assertIs(reorder(rows,query),rows,query)
 
+    def test_url_prose_wrappers_and_balanced_path_parentheses(self):
+        rows = [{'rowid': 1, 'speaker': '', 'text': 'unrelated'},
+                {'rowid': 2, 'speaker': '', 'text': 'https://a.test'}]
+        for query in ['See https://a.test.', '(https://a.test)',
+                      '[https://a.test]', '"https://a.test"',
+                      'See (https://a.test).', 'See https://a.test!']:
+            self.assertEqual(reorder(rows,query)[0]['rowid'],2,query)
+        path_rows = [rows[0], dict(rows[1],text='https://a.test/page_(one)')]
+        self.assertEqual(reorder(path_rows,'See (https://a.test/page_(one)).')[0]['rowid'],2)
+        self.assertIs(reorder(rows,'https://a.test/path.'),rows)
+        self.assertIs(reorder(rows,'https://a.test?revision=2.'),rows)
+        self.assertIs(reorder(rows,'`https://a.test.`'),rows)
+
 
 if __name__ == '__main__': unittest.main()
