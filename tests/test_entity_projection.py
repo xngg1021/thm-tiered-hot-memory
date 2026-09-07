@@ -41,5 +41,38 @@ class EntityProjectionTests(unittest.TestCase):
         self.assertEqual(reorder(rows, '`资料/Version.md`')[0]['rowid'], 2)
         self.assertIs(reorder(rows, '`资料/version.md`'), rows)
 
+    def test_compound_identifier_boundaries(self):
+        from thm.entities import present
+        for value, text in [('Ann','Ann-Marie'), ('Ann','X/Ann'),
+                            ('src/model.py','src/model.py.old'),
+                            ('v1.5.0','v1.5.0.1'),
+                            ('https://a.test','https://a.test/path'),
+                            ('src/model.py','src/model.py?revision=2')]:
+            self.assertFalse(present(value,text), (value,text))
+        self.assertTrue(present('Ann', "Ann's notes"))
+        self.assertTrue(present('Ann', 'Ann.'))
+        self.assertTrue(present('src/model.py', 'see src/model.py.'))
+
+    def test_identifier_flood_fails_soft_without_compilation(self):
+        from unittest.mock import patch
+        import thm.entities as module
+        query = ' '.join(f'`id{i}`' for i in range(1200))
+        self.assertLess(len(query),16000)
+        rows = [{'rowid': i, 'speaker': '', 'text': 'unrelated'} for i in range(1000)]
+        with patch.object(module.re, 'compile', wraps=module.re.compile) as compile_pattern:
+            self.assertIs(reorder(rows,query), rows)
+            self.assertEqual(compile_pattern.call_count,0)
+        self.assertIs(reorder(rows, '`'+'x'*257+'`'), rows)
+
+    def test_patterns_compile_once_and_oversized_body_fails_soft(self):
+        from unittest.mock import patch
+        import thm.entities as module
+        rows = [{'rowid': i, 'speaker': 'Ann', 'text': 'unrelated'} for i in range(1000)]
+        with patch.object(module.re, 'compile', wraps=module.re.compile) as compile_pattern:
+            reorder(rows,' '.join(f'`id{i}`' for i in range(16)))
+            self.assertLessEqual(compile_pattern.call_count,2)
+        long_rows = [{'rowid': 1, 'speaker': '', 'text': 'x'*9000+' BUG-42'}]
+        self.assertIs(reorder(long_rows,'BUG-42'),long_rows)
+
 
 if __name__ == '__main__': unittest.main()

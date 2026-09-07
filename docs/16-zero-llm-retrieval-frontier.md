@@ -110,3 +110,16 @@ See [baseline and census](../reports/2026-09-07-zero-llm-frontier-baseline.md),
 [pre-holdout freeze](../reports/2026-09-07-zero-llm-frontier-freeze.json),
 [full summary](../reports/2026-09-07-zero-llm-frontier-full-summary.json), and
 [resource census](../reports/2026-09-07-zero-llm-frontier-resources.json).
+
+## Review hardening and current evidence
+
+Projection admission is bounded to 16 unique identifiers of at most 256
+characters, 64 speaker names of at most 128 characters, and 3000 candidates.
+At most two patterns are compiled per query. Identifier matching skips source
+bodies over 8192 characters; over-complex identifier queries use the unchanged
+base order. Compound-name/path continuations are not accepted as exact matches.
+These are safety bounds, not holdout-tuned weights.
+
+Current production evidence is the [reviewed manifest](../reports/2026-09-07-zero-llm-frontier-reviewed-production-summary.json).
+The earlier production manifest and trace are retained as pre-review provenance,
+not claimed as exact-current-source results. See [reviewed results](../reports/2026-09-07-zero-llm-frontier-reviewed-results.md).

@@ -1,5 +1,7 @@
 # Zero-LLM retrieval frontier: measured successor to THM 1.4
 
+> Current-source evidence is superseded by [the reviewed result report](2026-09-07-zero-llm-frontier-reviewed-results.md). This report retains its original pre-review measurements.
+
 Status: positive retrieval holdout, opt-in implementation; release review and merge verification pending. No 1.5 stable pointer is declared.
 
 ## Identity and protocol
