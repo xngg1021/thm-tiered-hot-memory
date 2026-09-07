@@ -22,6 +22,7 @@ def load_module(name: str, relative: str):
 BRIDGE = load_module("thm_ce_bridge_test", "research/economics/thm_ce_bridge.py")
 PARITY = load_module("hardware_parity_test", "research/recall/hardware_parity.py")
 RUN_SUITE = load_module("run_suite_test", "research/economics/run_suite.py")
+REPORT_MD = load_module("report_md_test", "research/economics/report_md.py")
 
 
 class FakePricing:
@@ -174,6 +175,106 @@ class SuiteReceiptTests(unittest.TestCase):
             path.write_text("{}", encoding="utf-8")
             with self.assertRaises(FileExistsError):
                 RUN_SUITE.require_new(path)
+
+    def test_suite_tag_is_atomically_consumed_before_execution(self):
+        with tempfile.TemporaryDirectory() as temp:
+            path = Path(temp) / "suite-cpu-v2.json"
+            RUN_SUITE.reserve_suite_receipt(
+                path, "-cpu-v2", ["locomo-cpu-v2.json", "suite-cpu-v2.json"]
+            )
+            payload = json.loads(path.read_text(encoding="utf-8"))
+            self.assertEqual(payload["status"], "reserved")
+            self.assertEqual(payload["artifact_tag"], "-cpu-v2")
+            with self.assertRaisesRegex(FileExistsError, "already reserved or completed"):
+                RUN_SUITE.reserve_suite_receipt(
+                    path, "-cpu-v2", ["locomo-cpu-v2.json", "suite-cpu-v2.json"]
+                )
+
+
+class ReportClaimTests(unittest.TestCase):
+    @staticmethod
+    def locomo(*, pinned=True, budgets=(300, 600, 1200), rate600=0.7134):
+        summaries = {}
+        for budget in budgets:
+            rate = rate600 if budget == 600 else (0.8087 if budget == 1200 else 0.5894)
+            summaries[f"hybrid@{budget}"] = {
+                "main_categories_1_to_4": {
+                    "questions": 1540,
+                    "scorable": 1532,
+                    "any_gold_hit_rate": rate,
+                }
+            }
+        return {
+            "protocol": 2,
+            "counter": "cl100k_base",
+            "dataset_matches_pinned_reference": pinned,
+            "modes": ["hybrid"],
+            "budgets": list(budgets),
+            "summaries": summaries,
+        }
+
+    def test_reference_reproduction_claim_requires_pinned_matching_artifact(self):
+        claim = REPORT_MD.locomo_observation(self.locomo())
+        self.assertIn("与当前仓库固定 Protocol 2 reference 71.34% 一致", claim)
+
+        unpinned = REPORT_MD.locomo_observation(self.locomo(pinned=False))
+        self.assertNotIn("与当前仓库固定 Protocol 2 reference", unpinned)
+        self.assertIn("不满足固定 reference reproduction", unpinned)
+
+        changed = REPORT_MD.locomo_observation(self.locomo(rate600=0.70))
+        self.assertNotIn("与当前仓库固定 Protocol 2 reference", changed)
+
+    def test_missing_hybrid_600_does_not_emit_hard_coded_reproduction_claim(self):
+        claim = REPORT_MD.locomo_observation(self.locomo(budgets=(300, 900)))
+        self.assertNotIn("71.34%", claim)
+        self.assertIn("未包含 hybrid@600 / hybrid@1200", claim)
+
+    def test_knee_claim_is_derived_from_actual_adjacent_grid(self):
+        supported = {
+            "l6_budget_grid_sensitivity": {
+                "hybrid": {
+                    "300->600": {
+                        "delta_any_gold_percentage_points": 10.0,
+                        "marginal_cost_usd_per_1pp_any_gold_gain": 1.0,
+                    },
+                    "600->1200": {
+                        "delta_any_gold_percentage_points": 5.0,
+                        "marginal_cost_usd_per_1pp_any_gold_gain": 2.5,
+                    },
+                }
+            }
+        }
+        claim = REPORT_MD.knee_observation(supported)
+        self.assertIn("knee candidate", claim)
+        self.assertIn("2.50x", claim)
+
+        unsupported = {
+            "l6_budget_grid_sensitivity": {
+                "hybrid": {
+                    "300->600": {
+                        "delta_any_gold_percentage_points": 10.0,
+                        "marginal_cost_usd_per_1pp_any_gold_gain": 1.0,
+                    }
+                }
+            }
+        }
+        self.assertIn("不作 600-token knee claim", REPORT_MD.knee_observation(unsupported))
+
+    def test_l6_table_enumerates_actual_artifact_intervals(self):
+        econ = {
+            "l6_budget_grid_sensitivity": {
+                "sparse": {
+                    "100->250": {
+                        "delta_any_gold_percentage_points": 3.25,
+                        "marginal_cost_usd_per_1pp_any_gold_gain": 0.125,
+                    }
+                }
+            }
+        }
+        rows = REPORT_MD.l6_rows(econ)
+        self.assertEqual(len(rows), 1)
+        self.assertIn("100->250", rows[0])
+        self.assertIn("3.25pp", rows[0])
 
 
 class HardwareParityTests(unittest.TestCase):
