@@ -79,7 +79,7 @@ def top_level_coverage_errors(data):
     dense = isinstance(data.get("modes"), list) and any(m in ("dense", "hybrid") for m in data["modes"])
     require("model_id", lambda v: (isinstance(v, str) and bool(v.strip())) or (v is None and not dense))
     require("dataset_sha256", digest)
-    require("corpus_fingerprints", lambda v: isinstance(v, dict) and bool(v) and all(isinstance(k, str) and bool(k) and digest(d) for k, d in v.items()) and all(isinstance(r.get("scope"), str) and r["scope"] in v for r in data["rows"]))
+    require("corpus_fingerprints", lambda v: isinstance(v, dict) and bool(v) and all(isinstance(k, str) and bool(k) and digest(d) for k, d in v.items()) and all(isinstance(r.get("scope"), str) for r in data["rows"]) and set(v) == {r["scope"] for r in data["rows"]})
     expected_idf = "one_database_per_conversation" if data.get("protocol") == 2 else "one_database_per_instance"
     require("idf_scope", lambda v: v == expected_idf)
     for field in ("generation_calls", "judge_calls"):
@@ -152,6 +152,32 @@ def strict_row_coverage_errors(data):
                 errors["invalid:selected_sources"] += 1
     return dict(sorted(errors.items()))
 
+def grid_cohort_errors(data):
+    """Every declared arm must measure the same nonempty query cohort once."""
+    if top_level_coverage_errors(data) or strict_row_coverage_errors(data):
+        return ["invalid provenance or row schema"]
+    grid = {(mode, budget): [] for mode in data["modes"] for budget in data["budgets"]}
+    metadata = {}
+    errors = []
+    for row in data["rows"]:
+        arm = (row["mode"], row["budget"])
+        if arm not in grid:
+            errors.append("measured row outside declared grid")
+            continue
+        query = (row["scope"], row["question_index"]) if data["protocol"] == 2 else (row["scope"],)
+        grid[arm].append(query)
+        fields = ("split", "category", "evidence_count", "resolved_count", "fully_resolved", "malformed_evidence") if data["protocol"] == 2 else ("split", "gold_sessions", "resolved_gold")
+        values = tuple(row.get(field) for field in fields)
+        if query in metadata and metadata[query] != values:
+            errors.append("query metadata differs across grid arms")
+        metadata[query] = values
+    expected = set(metadata)
+    for arm, queries in grid.items():
+        if not queries or len(queries) != len(set(queries)) or set(queries) != expected:
+            errors.append(f"incomplete or duplicate query cohort: {arm[0]}@{arm[1]}")
+    return sorted(set(errors))
+
+
 QUALITY_FIELDS = frozenset((
     "questions", "scorable", "no_gold_questions", "partially_or_unresolved_questions",
     "any_gold_hits", "any_gold_hit_rate", "all_gold_hit_rate", "macro_evidence_recall",
@@ -176,6 +202,9 @@ def summary_coverage_errors(data):
         return ["incomplete top-level provenance"]
     if any(row.get("split") not in ("development", "held_out") for row in data["rows"]):
         return ["measured row outside development/held_out partition"]
+    cohort_errors = grid_cohort_errors(data)
+    if cohort_errors:
+        return cohort_errors
     modes, budgets = data.get("modes"), data.get("budgets")
     if not isinstance(modes, list) or not modes or not isinstance(budgets, list) or not budgets:
         return ["missing mode/budget grid"]
@@ -301,7 +330,11 @@ def compare(cpu: dict, gpu: dict, *, float_tol: float = 0.0, max_mismatches: int
     if top_cpu or top_gpu:
         structural = True
         record({"kind": "top_level_identity_unavailable", "cpu": top_cpu, "gpu": top_gpu})
-    identity_complete = not top_cpu and not top_gpu and missing_cpu == 0 and missing_gpu == 0 and not row_errors_cpu and not row_errors_gpu
+    grid_cpu, grid_gpu = grid_cohort_errors(cpu), grid_cohort_errors(gpu)
+    if grid_cpu or grid_gpu:
+        structural = True
+        record({"kind": "grid_cohort_unavailable", "cpu": grid_cpu, "gpu": grid_gpu})
+    identity_complete = not grid_cpu and not grid_gpu and not top_cpu and not top_gpu and missing_cpu == 0 and missing_gpu == 0 and not row_errors_cpu and not row_errors_gpu
     if not identity_complete:
         record({"kind": "selection_identity_unavailable",
                 "cpu_rows_missing_selected_ids": missing_cpu, "gpu_rows_missing_selected_ids": missing_gpu,
@@ -375,6 +408,7 @@ def compare(cpu: dict, gpu: dict, *, float_tol: float = 0.0, max_mismatches: int
         "kind": "thm-hardware-semantic-parity",
         "identity_complete": identity_complete,
         "top_level_coverage_errors": {"cpu": top_cpu, "gpu": top_gpu},
+        "grid_cohort_errors": {"cpu": grid_cpu, "gpu": grid_gpu},
         "equivalent": strict, "strict_semantic_equivalent": strict,
         "aggregate_semantic_metrics_available": aggregate_available,
         "aggregate_summary_coverage_errors": {"cpu": coverage_cpu, "gpu": coverage_gpu},

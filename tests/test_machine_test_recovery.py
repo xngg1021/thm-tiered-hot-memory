@@ -366,6 +366,29 @@ class V2R1RegressionTests(unittest.TestCase):
         self.assertFalse(result["strict_semantic_equivalent"])
         self.assertFalse(result["aggregate_semantic_metrics_available"])
 
+    def test_fingerprinted_scope_must_have_rows(self):
+        cpu = HardwareParityTests().artifact("a")
+        cpu["corpus_fingerprints"]["missing"] = "e"*64
+        cpu["summaries"] = full_locomo_summaries(cpu)
+        result = PARITY.compare(cpu, cpu)
+        self.assertFalse(result["identity_complete"])
+        self.assertFalse(result["aggregate_semantic_metrics_equivalent"])
+
+    def test_grid_requires_complete_identical_query_cohorts(self):
+        cpu = HardwareParityTests().artifact("a")
+        cpu["budgets"] = [300, 600]
+        cpu["rows"] = [row("a", b, 100, 1, q=q) for b in (300,600) for q in (0,1)]
+        cpu["summaries"] = full_locomo_summaries(cpu)
+        self.assertTrue(PARITY.compare(cpu, cpu)["strict_semantic_equivalent"])
+        for removed in (1, 2):
+            bad = json.loads(json.dumps(cpu)); bad["rows"] = bad["rows"][removed:]
+            bad["summaries"] = full_locomo_summaries(bad)
+            result = PARITY.compare(bad, bad)
+            self.assertFalse(result["identity_complete"])
+            self.assertFalse(result["aggregate_semantic_metrics_equivalent"])
+        bad = json.loads(json.dumps(cpu)); bad["rows"][0]["split"] = "development"
+        self.assertFalse(PARITY.compare(bad, bad)["identity_complete"])
+
     def test_aggregate_counts_are_bound_to_the_scorable_rows(self):
         cpu = HardwareParityTests().artifact("a")
         cpu["rows"] = [row("a",600,500,1,q=0)] + [row("a",600,500,0,resolved=False,q=i) for i in range(1,10)]

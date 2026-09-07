@@ -67,3 +67,7 @@ LME CPU v2：pending-real-local-runtime。当前 Work 没有用户 Z6 G4 控制�
 ## 13. 顶层 provenance 与 split 分区
 
 第六次完成的 review 返回 2 个 P2。现在严格要求各协议的顶层身份字段、合法 dataset/corpus hashes、scope 覆盖及 model/config 标识，禁止共享缺失字段被当作相等；split 仅允许 development/held_out。缺失或无效 provenance 阻止 strict 与 aggregate 等价结论。305 项测试通过；新 canonical parity-v2r7 保持全部实测结论，r1–r6 原样保留。
+
+## 14. Scope 与实验臂 cohort 完整性
+
+第七次完成的 review 返回 2 个 P2。fingerprint scope 与 measured scope 现要求双向相等；每个 mode/budget 必须恰好一次覆盖相同非空 query cohort，且 query metadata 跨臂一致。缺 query、缺 arm 或仅有 fingerprint 无实测行均阻止 strict/aggregate parity。307 项测试通过；新 canonical parity-v2r8 保持全部实测结论，r1–r7 保留。
