@@ -97,7 +97,12 @@ def load_pricing_class(root: Path):
     if spec is None or spec.loader is None:
         raise ValueError("unable to load Context Economics model.py")
     module = importlib.util.module_from_spec(spec)
-    spec.loader.exec_module(module)
+    sys.modules[spec.name] = module
+    try:
+        spec.loader.exec_module(module)
+    except Exception:
+        sys.modules.pop(spec.name, None)
+        raise
     pricing = getattr(module, "Pricing", None)
     if pricing is None:
         raise ValueError("Context Economics model.py has no Pricing class")
@@ -138,8 +143,8 @@ def conversation_tokens(dataset: list, counter) -> dict[str, int]:
         scope = str(sample.get("sample_id"))
         if not scope or scope in out:
             raise ValueError("dataset contains missing/duplicate sample_id")
-        total = sum(counter(f"{doc.speaker}: {doc.text}") for doc in locomo_documents(sample))
-        out[scope] = total
+        blocks = [f"{doc.speaker}: {doc.text}" for doc in locomo_documents(sample)]
+        out[scope] = counter("\n\n".join(blocks))
     return out
 
 
