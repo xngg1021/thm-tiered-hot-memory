@@ -16,7 +16,8 @@ def present(value, text):
 def reorder(rows, query, weight=0.25):
     speakers = {r['speaker'] for r in rows if r['speaker'] and r['speaker'].lower() not in GENERIC
                 and present(r['speaker'], query)}
-    identifiers = {m[0].strip('`') for m in IDENTIFIER.finditer(query)}
+    identifiers = {m[0].strip('`') for m in IDENTIFIER.finditer(query)
+                   if m[0].strip('`').lower() not in GENERIC}
     if not speakers and not identifiers: return rows
     matched = [r['rowid'] for r in rows if r['speaker'] in speakers
                or any(present(value, r['text']) for value in identifiers)]

@@ -32,5 +32,14 @@ class EntityProjectionTests(unittest.TestCase):
         self.assertEqual([r['rowid'] for r in reorder(rows, 'Ann')],
                          [r['rowid'] for r in reorder(with_labels, 'Ann')])
 
+    def test_generic_literals_and_multilingual_exact_paths(self):
+        rows = [{'rowid': 1, 'speaker': '李四', 'text': 'Python project'},
+                {'rowid': 2, 'speaker': '张三', 'text': '资料/Version.md v1.5.0'}]
+        self.assertIs(reorder(rows, '`Python`'), rows)
+        self.assertIs(reorder(rows, '`project`'), rows)
+        self.assertEqual(reorder(rows, '张三 version')[0]['rowid'], 2)
+        self.assertEqual(reorder(rows, '`资料/Version.md`')[0]['rowid'], 2)
+        self.assertIs(reorder(rows, '`资料/version.md`'), rows)
+
 
 if __name__ == '__main__': unittest.main()
