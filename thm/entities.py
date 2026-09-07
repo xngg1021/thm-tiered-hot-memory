@@ -5,6 +5,7 @@ canonical identity, activity or tier residency. Fixed RRF bonus: 0.25.
 Over-complex queries fail soft; oversized source bodies get no identifier bonus.
 """
 import re
+import unicodedata
 
 GENERIC = {'python', 'windows', 'model', 'project'}
 MAX_IDENTIFIERS = 16
@@ -20,6 +21,8 @@ LEFT = r'(?<![\w./\\:@#%&=~+?\-])'
 RIGHT = r'(?!(?:[\w/\\:@#%&=~+\-]|[.?][\w/]))'
 TOKEN_START = re.compile(LEFT)
 TOKEN_END = re.compile(RIGHT)
+URL_WRAPPERS = ('()', '[]', '{}', '（）', '【】', '《》', '〈〉', '「」',
+                '『』', '〔〕', '〖〗', '〘〙', '〚〛', '｟｠', '｢｣', '“”', '‘’', '«»', '‹›')
 
 
 def exact_pattern(values):
@@ -43,13 +46,15 @@ def reorder(rows, query, weight=0.25):
             # Prose punctuation is outside unquoted URLs. Preserve balanced
             # path parentheses; count once so long wrapper tails stay linear.
             excess = {close: value.count(close) - value.count(opening)
-                      for opening, close in [('(', ')'), ('[', ']'), ('{', '}')]}
+                      for opening, close in URL_WRAPPERS}
             while end > start:
                 char = query[end - 1]
                 if char in '.,;!?:\"\'':
                     end -= 1
                 elif excess.get(char, 0) > 0:
                     excess[char] -= 1
+                    end -= 1
+                elif ord(char) > 127 and char not in excess and unicodedata.category(char) in {'Po', 'Pe', 'Pf'}:
                     end -= 1
                 else:
                     break

@@ -7,6 +7,6 @@
   "dataset_sha256": "79fa87e90f04081343b8c8debecb80a9a6842b76a7aa537dc9fdf651ea698ff4",
   "frozen_commit": "ba9e8453ff3ec701e16a6b45350406e432d691e5",
   "frozen_entity_sha256": "6ad7f38d10315a0a814602d0509cba7e3f77c03743b4eac03e695f1473a40c24",
-  "reviewed_entity_sha256": "522b7a28ce2bbbee18b0dee467bfa2821755fd7d20eed3aee6cb1037a6342658",
+  "reviewed_entity_sha256": "b40b59fe24b85cd63a0fc22e0f5e8f741f3731a7bcb11d019c1e36243e25b219",
   "implication": "Identical complete candidate order with the unchanged whole-turn serializer/packer implies identical evidence at every positive budget."
 }

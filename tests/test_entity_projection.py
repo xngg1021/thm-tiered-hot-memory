@@ -100,5 +100,17 @@ class EntityProjectionTests(unittest.TestCase):
         self.assertIs(reorder(rows,'https://a.test?revision=2.'),rows)
         self.assertIs(reorder(rows,'`https://a.test.`'),rows)
 
+    def test_url_unicode_punctuation_and_wrappers(self):
+        rows = [{'rowid': 1, 'speaker': '', 'text': 'unrelated'},
+                {'rowid': 2, 'speaker': '', 'text': 'https://a.test'}]
+        for query in ['See https://a.test。', '“https://a.test”',
+                      '（https://a.test）', '《https://a.test》',
+                      '「https://a.test」', 'See https://a.test！',
+                      'See https://a.test…', 'See https://a.test،']:
+            self.assertEqual(reorder(rows,query)[0]['rowid'],2,query)
+        path_rows = [rows[0], dict(rows[1],text='https://a.test/页（甲）')]
+        self.assertEqual(reorder(path_rows,'（https://a.test/页（甲））。')[0]['rowid'],2)
+        self.assertIs(reorder(rows,'`https://a.test。`'),rows)
+
 
 if __name__ == '__main__': unittest.main()
