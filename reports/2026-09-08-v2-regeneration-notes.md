@@ -51,3 +51,7 @@ LME CPU v2：pending-real-local-runtime。当前 Work 没有用户 Z6 G4 控制�
 ## 九、aggregate budget-use successor
 
 第二轮 review 发现 mean_budget_used 未纳入 aggregate whitelist，已加入 required coverage 与数值比较，并补缺失/差异测试。新 canonical parity 为 `2026-09-08-locomo-cpu-gpu-parity-v2r3.json`，比较 1680 个非 timing 语义指标，coverage errors 为空；25 entries / 22 rows、aggregate=true / strict=false、最大数值差异 0.0 全部保持。旧 v2r1/v2r2 均保留。
+
+## 十、strict-row / grid / mixed-drift successor
+
+第三次完成的 review 返回 3 个 P2，已修复：Protocol 2 ranked IDs 必需性、aggregate grid 外行的漏检、混合语义变化误记 rank-only。新 comparator 检查协议必需行字段与有效值、每行 grid 归属，并将 mixed drift 单列 other_semantic。`2026-09-08-locomo-cpu-gpu-parity-v2r4.json` 是新 canonical receipt：row/aggregate coverage 均完整，25 entries / 22 rows / 19 rank-only / 3 selected-set / 0 other-semantic，aggregate=true / strict=false。旧 v2r1/v2r2/v2r3 保留。

@@ -60,6 +60,64 @@ def _missing_selection_identity(rows: list[dict]) -> int:
     return sum(not isinstance(row.get("selected_ids"), list) for row in rows)
 
 
+
+def strict_row_coverage_errors(data):
+    """Known runner fields must be present before complete strict claims."""
+    if not data["rows"]:
+        return {"no_measured_rows": 1}
+    common = {"scope", "split", "mode", "budget", "hits", "selected_count",
+              "selected_ids", "reciprocal_rank", "budget_used"}
+    protocol = data.get("protocol")
+    if protocol == 2:
+        required = common | {"question_index", "category", "evidence_count", "resolved_count",
+                             "fully_resolved", "candidate_hits", "candidate_reciprocal_rank",
+                             "selected_ranked_ids", "ndcg", "malformed_evidence"}
+    elif protocol == 1 and data.get("benchmark") == "LongMemEval-S retrieval coverage (session-level evidence)":
+        required = common | {"gold_sessions", "resolved_gold", "candidate_hits", "selected_sources"}
+    else:
+        return {"unsupported_row_protocol": len(data["rows"]) or 1}
+    errors = Counter()
+    for row in data["rows"]:
+        for field in required - set(row):
+            errors[f"missing:{field}"] += 1
+        count_fields = {"question_index", "category", "budget", "hits", "selected_count", "budget_used",
+                        "evidence_count", "resolved_count", "gold_sessions", "resolved_gold", "candidate_hits"}
+        rate_fields = {"reciprocal_rank", "candidate_reciprocal_rank", "ndcg"}
+        for field in required & count_fields:
+            value = row.get(field)
+            if protocol == 1 and field == "candidate_hits" and value is None:
+                continue
+            if type(value) is not int or value < 0:
+                errors[f"invalid:{field}"] += 1
+        for field in required & rate_fields:
+            value = row.get(field)
+            if isinstance(value, bool) or not isinstance(value, (int, float)) or not math.isfinite(value):
+                errors[f"invalid:{field}"] += 1
+        for field in required & {"fully_resolved", "malformed_evidence"}:
+            if type(row.get(field)) is not bool:
+                errors[f"invalid:{field}"] += 1
+        for field in ("scope", "split", "mode"):
+            if not isinstance(row.get(field), str):
+                errors[f"invalid:{field}"] += 1
+        ids = row.get("selected_ids")
+        valid_ids = isinstance(ids, list) and all(isinstance(value, str) for value in ids)
+        if not valid_ids:
+            errors["invalid:selected_ids"] += 1
+            continue
+        if len(set(ids)) != len(ids) or type(row.get("selected_count")) is not int or row.get("selected_count") != len(ids):
+            errors["inconsistent:selected_count_or_ids"] += 1
+        if protocol == 2:
+            ranks = row.get("selected_ranked_ids")
+            if not isinstance(ranks, list) or not all(isinstance(value, str) for value in ranks):
+                errors["invalid:selected_ranked_ids"] += 1
+            elif len(ranks) != len(ids) or set(ranks) != set(ids):
+                errors["inconsistent:selected_ranked_ids"] += 1
+        else:
+            sources = row.get("selected_sources")
+            if not isinstance(sources, list) or len(sources) != len(ids) or not all(isinstance(value, str) for value in sources):
+                errors["invalid:selected_sources"] += 1
+    return dict(sorted(errors.items()))
+
 QUALITY_FIELDS = frozenset((
     "questions", "scorable", "no_gold_questions", "partially_or_unresolved_questions",
     "any_gold_hits", "any_gold_hit_rate", "all_gold_hit_rate", "macro_evidence_recall",
@@ -86,6 +144,8 @@ def summary_coverage_errors(data):
     if len(set(modes)) != len(modes) or len(set(budgets)) != len(budgets):
         return ["duplicate grid entries"]
     expected = {f"{mode}@{budget}" for mode in modes for budget in budgets}
+    if any(f"{row.get('mode')}@{row.get('budget')}" not in expected for row in data["rows"]):
+        return ["measured row outside declared mode/budget grid"]
     summaries = data.get("summaries")
     if not isinstance(summaries, dict) or set(summaries) != expected:
         return ["missing or unexpected summary configurations"]
@@ -166,10 +226,12 @@ def compare(cpu: dict, gpu: dict, *, float_tol: float = 0.0, max_mismatches: int
         record({"kind": "row_count", "cpu": len(cpu_rows), "gpu": len(gpu_rows)})
     missing_cpu = _missing_selection_identity(cpu_rows)
     missing_gpu = _missing_selection_identity(gpu_rows)
-    identity_complete = missing_cpu == 0 and missing_gpu == 0
+    row_errors_cpu, row_errors_gpu = strict_row_coverage_errors(cpu), strict_row_coverage_errors(gpu)
+    identity_complete = missing_cpu == 0 and missing_gpu == 0 and not row_errors_cpu and not row_errors_gpu
     if not identity_complete:
         record({"kind": "selection_identity_unavailable",
-                "cpu_rows_missing_selected_ids": missing_cpu, "gpu_rows_missing_selected_ids": missing_gpu})
+                "cpu_rows_missing_selected_ids": missing_cpu, "gpu_rows_missing_selected_ids": missing_gpu,
+                "cpu_row_coverage_errors": row_errors_cpu, "gpu_row_coverage_errors": row_errors_gpu})
     cpu_map = {row_key(row, i): row for i, row in enumerate(cpu_rows)}
     gpu_map = {row_key(row, i): row for i, row in enumerate(gpu_rows)}
     if len(cpu_map) != len(cpu_rows) or len(gpu_map) != len(gpu_rows):
@@ -183,6 +245,7 @@ def compare(cpu: dict, gpu: dict, *, float_tol: float = 0.0, max_mismatches: int
         row = left if left is not None else right
         changed = False
         selection_set = rank_only = False
+        changed_fields = set()
         if left is None or right is None:
             structural = True
             changed = True
@@ -200,13 +263,21 @@ def compare(cpu: dict, gpu: dict, *, float_tol: float = 0.0, max_mismatches: int
                     max_abs_diff = max(max_abs_diff, abs(float(a) - float(b)))
                 if not same(a, b, float_tol):
                     changed = True
+                    changed_fields.add(field)
                     record({"kind": "row_field", "row": repr(key), "field": field, "cpu": a, "gpu": b})
             if isinstance(left.get("selected_ids"), list) and isinstance(right.get("selected_ids"), list):
                 selection_set = set(left["selected_ids"]) != set(right["selected_ids"])
-                rank_only = not selection_set and left.get("selected_ranked_ids") != right.get("selected_ranked_ids")
+                rank_only = not selection_set and changed_fields == {"selected_ranked_ids"}
+                if cpu.get("protocol") == gpu.get("protocol") == 1 and not selection_set:
+                    ls, rs = left.get("selected_sources"), right.get("selected_sources")
+                    rank_only = (isinstance(ls, list) and isinstance(rs, list)
+                                 and dict(zip(left["selected_ids"], ls)) == dict(zip(right["selected_ids"], rs))
+                                 and "selected_ids" in changed_fields
+                                 and changed_fields <= {"selected_ids", "selected_sources"})
         if changed:
             cohort = "main_categories_1_to_4" if str(row.get("category")) in ("1", "2", "3", "4") else ("diagnostic_category_5" if str(row.get("category")) == "5" else "other")
-            increments = {"mismatching_rows": 1, "selection_set_rows": int(selection_set), "rank_only_rows": int(rank_only)}
+            increments = {"mismatching_rows": 1, "selection_set_rows": int(selection_set), "rank_only_rows": int(rank_only),
+                          "other_semantic_rows": int(not selection_set and not rank_only)}
             counts.update(increments)
             counts[cohort] += 1
             label = f"{row.get('mode')}@{row.get('budget')}/category={row.get('category')}"
@@ -242,13 +313,15 @@ def compare(cpu: dict, gpu: dict, *, float_tol: float = 0.0, max_mismatches: int
         "mismatching_row_count": counts["mismatching_rows"],
         "selection_set_mismatch_row_count": counts["selection_set_rows"],
         "rank_only_mismatch_row_count": counts["rank_only_rows"],
+        "other_semantic_mismatch_row_count": counts["other_semantic_rows"],
+        "strict_row_coverage_errors": {"cpu": row_errors_cpu, "gpu": row_errors_gpu},
         "main_category_mismatch_row_count": counts["main_categories_1_to_4"],
         "diagnostic_mismatch_row_count": counts["diagnostic_category_5"],
         "other_category_mismatch_row_count": counts["other"],
         "mismatch_counts_by_field": dict(sorted(fields.items())),
         "mismatch_rows_by_mode_budget_category": {k: dict(v) for k, v in sorted(breakdown.items())},
         "excluded_from_parity": ["timing_ms", "query_embedding_ms", "build/index seconds", "environment strings", "wall-clock throughput"],
-        "interpretation": "Strict parity includes selected IDs and ranked order across all rows, including category 5. Aggregate parity compares only explicit retrieval-quality summary fields. Rank-only classifies selection drift; other semantic field differences remain strict mismatches. Missing summaries do not establish aggregate parity.",
+        "interpretation": "Strict parity includes selected IDs and ranked order across all rows, including category 5. Aggregate parity compares only explicit retrieval-quality summary fields. Rank-only requires ordering to be the sole semantic drift; mixed changes are other-semantic rows unless the selected set differs. Protocol 2 requires ranked IDs; LME requires ordered IDs with aligned source identities. Missing summaries do not establish aggregate parity.",
     }
 
 

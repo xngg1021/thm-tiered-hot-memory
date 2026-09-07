@@ -221,20 +221,20 @@ class V2R1RegressionTests(unittest.TestCase):
             BRIDGE.build_report(bench,{"deepseek-v4-pro_offpeak_2026-08-16":FakePricing()},{})
 
     def test_preview_does_not_cap_total(self):
-        cpu = {"rows":[row("a",600,580,1,q=i) for i in range(10)]}
+        cpu = {"protocol":2,"rows":[row("a",600,580,1,q=i) for i in range(10)]}
         gpu = json.loads(json.dumps(cpu))
-        for r in gpu["rows"]: r["selected_ids"] = ["changed"]
+        for r in gpu["rows"]: r["budget_used"] += 1
         result = PARITY.compare(cpu,gpu,max_mismatches=3)
         self.assertEqual(result["total_mismatch_count"],10)
         self.assertEqual(result["mismatching_row_count"],10)
         self.assertEqual(result["mismatch_preview_count"],3)
         self.assertTrue(result["mismatch_preview_truncated"])
-        self.assertEqual(result["selection_set_mismatch_row_count"],10)
+        self.assertEqual(result["other_semantic_mismatch_row_count"],10)
 
     def test_aggregate_and_strict_classification(self):
         cpu = HardwareParityTests().artifact("a")
         cpu["summaries"] = full_locomo_summaries(cpu)
-        cpu["rows"][0].update(selected_ids=["a","b"],selected_ranked_ids=["a","b"])
+        cpu["rows"][0].update(selected_ids=["a","b"],selected_ranked_ids=["a","b"],selected_count=2)
         gpu = json.loads(json.dumps(cpu))
         gpu["summaries"]["hybrid@600"]["main_categories_1_to_4"]["latency_ms"]["p50"] = 1
         gpu["rows"][0]["selected_ranked_ids"] = ["b","a"]
@@ -266,6 +266,54 @@ class V2R1RegressionTests(unittest.TestCase):
             receipt = PARITY.compare(bad,bad)
             self.assertFalse(receipt["aggregate_semantic_metrics_equivalent"])
             self.assertTrue(receipt["aggregate_summary_coverage_errors"]["cpu"])
+
+    def test_missing_rank_and_semantic_fields_prevent_strict_pass(self):
+        for field in ("selected_ranked_ids", "hits", "question_index"):
+            cpu = HardwareParityTests().artifact("a")
+            cpu["rows"][0].pop(field)
+            result = PARITY.compare(cpu,cpu)
+            self.assertFalse(result["identity_complete"])
+            self.assertFalse(result["strict_semantic_equivalent"])
+            self.assertTrue(result["strict_row_coverage_errors"]["cpu"])
+
+    def test_invalid_scalar_or_empty_rows_cannot_prove_strict_parity(self):
+        cpu = HardwareParityTests().artifact("a")
+        for field, value in [("hits",None),("reciprocal_rank",float("inf")),("fully_resolved",1)]:
+            bad = json.loads(json.dumps(cpu)); bad["rows"][0][field] = value
+            self.assertFalse(PARITY.compare(bad,bad)["strict_semantic_equivalent"])
+        cpu["rows"] = []
+        self.assertFalse(PARITY.compare(cpu,cpu)["strict_semantic_equivalent"])
+
+    def test_outside_grid_rows_prevent_aggregate_pass(self):
+        cpu = HardwareParityTests().artifact("a")
+        cpu["summaries"] = full_locomo_summaries(cpu)
+        cpu["rows"].append(row("extra",1200,500,1,q=2))
+        result = PARITY.compare(cpu,cpu)
+        self.assertFalse(result["aggregate_semantic_metrics_available"])
+        self.assertFalse(result["aggregate_semantic_metrics_equivalent"])
+
+    def test_rank_plus_numeric_drift_is_not_rank_only(self):
+        cpu = HardwareParityTests().artifact("a")
+        cpu["rows"][0].update(selected_ids=["a","b"],selected_ranked_ids=["a","b"],selected_count=2)
+        gpu = json.loads(json.dumps(cpu))
+        gpu["rows"][0].update(selected_ranked_ids=["b","a"],budget_used=581)
+        result = PARITY.compare(cpu,gpu)
+        self.assertEqual(result["rank_only_mismatch_row_count"],0)
+        self.assertEqual(result["selection_set_mismatch_row_count"],0)
+        self.assertEqual(result["other_semantic_mismatch_row_count"],1)
+        self.assertEqual(result["total_mismatch_count"],2)
+
+    def test_lme_requires_ordered_ids_and_aligned_sources(self):
+        r = {"scope":"a","split":"held_out","mode":"hybrid","budget":600,
+             "gold_sessions":1,"resolved_gold":1,"hits":1,"candidate_hits":None,
+             "selected_count":2,"selected_ids":["a","b"],"selected_sources":["s","s"],
+             "reciprocal_rank":1.0,"budget_used":500}
+        cpu = {"protocol":1,"benchmark":"LongMemEval-S retrieval coverage (session-level evidence)","rows":[r]}
+        self.assertTrue(PARITY.compare(cpu,cpu)["strict_semantic_equivalent"])
+        gpu = json.loads(json.dumps(cpu)); gpu["rows"][0]["selected_ids"] = ["b","a"]
+        self.assertEqual(PARITY.compare(cpu,gpu)["rank_only_mismatch_row_count"],1)
+        cpu["rows"][0].pop("selected_sources")
+        self.assertFalse(PARITY.compare(cpu,cpu)["identity_complete"])
 
     def test_mean_budget_used_is_required_and_compared(self):
         cpu = HardwareParityTests().artifact("a")

@@ -58,7 +58,7 @@ Aggregate semantic metrics equivalent: **true** (1680 explicit retrieval-quality
 | Main categories 1–4 mismatch rows | 16 |
 | Diagnostic category 5 mismatch rows | 6 |
 
-The canonical parity receipt is now `2026-09-08-locomo-cpu-gpu-parity-v2r3.json`, generated after the review corrections. It includes mean_budget_used, validates complete summary schema and binds hashes to the exact parsed buffers. The v2r1 and v2r2 receipts are preserved as prior attempts. The new preview limit is 50; all 25 entries fit, so it is not truncated. The older cap of 25 did not prove the total even though the complete scan now happens to find exactly 25. Per-mode/budget/category counts are in the successor JSON. Near-tie floating-point drift is an inference only: no candidate score/delta trace proves causality. No ranking/tie-breaking/embedding semantics changed.
+The canonical parity receipt is now `2026-09-08-locomo-cpu-gpu-parity-v2r4.json`, generated after the review corrections. It includes mean_budget_used, validates complete summary schema and binds hashes to the exact parsed buffers. The v2r1, v2r2 and v2r3 receipts are preserved as prior attempts. The new preview limit is 50; all 25 entries fit, so it is not truncated. The older cap of 25 did not prove the total even though the complete scan now happens to find exactly 25. Per-mode/budget/category counts are in the successor JSON. Near-tie floating-point drift is an inference only: no candidate score/delta trace proves causality. No ranking/tie-breaking/embedding semantics changed.
 
 ## Superseded artifacts
 
@@ -68,9 +68,10 @@ The canonical parity receipt is now `2026-09-08-locomo-cpu-gpu-parity-v2r3.json`
 | 2026-09-08-suite-report.md | 2026-09-08-suite-report-v2r1.md |
 | 2026-09-08-economics-bridge-v2.json (1536 denominator) | 2026-09-08-economics-bridge-v2r1.json (1532) |
 | 2026-09-08-suite-report-v2.md (mixed denominator) | 2026-09-08-suite-report-v2r1.md |
-| 2026-09-08-locomo-cpu-gpu-parity.json (capped preview) | 2026-09-08-locomo-cpu-gpu-parity-v2r3.json |
-| 2026-09-08-locomo-cpu-gpu-parity-v2r1.json (before review hardening) | 2026-09-08-locomo-cpu-gpu-parity-v2r3.json |
-| 2026-09-08-locomo-cpu-gpu-parity-v2r2.json (omits mean_budget_used) | 2026-09-08-locomo-cpu-gpu-parity-v2r3.json |
+| 2026-09-08-locomo-cpu-gpu-parity.json (capped preview) | 2026-09-08-locomo-cpu-gpu-parity-v2r4.json |
+| 2026-09-08-locomo-cpu-gpu-parity-v2r1.json (before review hardening) | 2026-09-08-locomo-cpu-gpu-parity-v2r4.json |
+| 2026-09-08-locomo-cpu-gpu-parity-v2r2.json (omits mean_budget_used) | 2026-09-08-locomo-cpu-gpu-parity-v2r4.json |
+| 2026-09-08-locomo-cpu-gpu-parity-v2r3.json (before strict-row coverage hardening) | 2026-09-08-locomo-cpu-gpu-parity-v2r4.json |
 
 Additional evidence: `2026-09-08-economics-v2r1-delta-audit.json`; LME GPU evidence remains `2026-09-08-lme-retrieval-gpu-v2.json`. Historical artifact bytes remain unchanged. Regeneration notes are forward-corrected with retained defect history.
 
@@ -79,6 +80,8 @@ Additional evidence: `2026-09-08-economics-v2r1-delta-audit.json`; LME GPU evide
 First exact-head Codex review raised four P2 items: legacy README commands could overwrite evidence; aggregate summary completeness was not required; aggregate numeric differences were absent from the maximum delta; parity hashing reread source paths after parsing. All were forward-fixed with regression coverage. Standalone outputs now use exclusive creation, reads hash and parse one buffer, complete known runner schemas are checked, and aggregate deltas update the maximum. The new parity receipt retains the measured counts above, with no coverage errors. Economics/report were regenerated into temporary fresh files using the hardened readers and are byte-identical to the committed v2r1 artifacts. CPU optimization follow-up: [issue #13](https://github.com/xngg1021/thm-tiered-hot-memory/issues/13).
 
 Second-round review identified one additional P2: mean_budget_used was missing from the non-timing aggregate schema. It is now required and compared, with missing-field and aggregate-delta tests. The v2r3 receipt compares 1680 fields, including budget use, and retains all measured mismatch counts.
+
+Third completed review raised three further P2 items: ranked identities must be mandatory for Protocol 2; every measured row must belong to the declared aggregate grid; rank-only must exclude mixed semantic changes. These are forward-fixed with protocol-specific required row fields/valid values, grid coverage and disjoint rank-only/selected-set/other-semantic classification tests. The v2r4 receipt has complete row and aggregate coverage, retains 25 entries / 22 rows (19 rank-only, 3 selected-set), and reports 0 other-semantic rows. Synthetic LME tests require its ordered IDs and aligned source list without inventing a real CPU result.
 
 ## Validation contract
 
