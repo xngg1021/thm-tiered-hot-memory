@@ -363,6 +363,33 @@ class SearchIndex:
           WHERE {table} MATCH ? AND d.scope=? ORDER BY bm25({table},{weights}),d.id LIMIT ?'''
         return [r[0] for r in self.db.execute(sql, (match_query(tokens), scope, limit)).fetchall()]
 
+    def _rank_candidates(self, scope, query, ranked):
+        """Identity projection; research subclasses may ablate derived ranking."""
+        return ranked
+
+    def _pack_candidates(self, expanded, budget, query):
+        blocks, selected = [], []
+        used = 0
+        byte_counter = type(self.counter) is TokenCounter and self.counter.encode is None
+        for row in expanded:
+            label = json.dumps({'id': row['id'], 'speaker': row['speaker'], 'date': row['timestamp']}, ensure_ascii=False)
+            block = f"[source {label}]\n{row['text']}"
+            if byte_counter:
+                units = used + len(block.encode('utf-8')) + (2 if blocks else 0)
+            else:
+                units = self._count('\n\n'.join(blocks + [block]))
+            if units <= budget:
+                used = units
+                blocks.append(block)
+                selected.append({'id': row['id'], 'hash': row['hash'], 'source': row['source'],
+                                 'complete': True, 'text': row['text']})
+            # Oversized turns are skipped rather than terminating the packing pass.
+        context = '\n\n'.join(blocks)
+        final_units = self._count(context)
+        if final_units > budget:
+            raise ValueError('counter changed while packing; final context exceeds budget')
+        return context, selected, final_units
+
     def _search(self, scope: str, query: str, *, budget=600, mode='sparse', candidate_limit=100,
                neighbor_turns=0, encoder=None, model_id=None) -> dict:
         start = time.perf_counter()
@@ -420,6 +447,7 @@ class SearchIndex:
             for row in self.db.execute(f'SELECT * FROM docs WHERE scope=? AND rowid IN ({marks})', (scope, *batch)):
                 by_rowid[row['rowid']] = dict(row)
         ranked = [by_rowid[rid] for rid in ordered]
+        ranked = self._rank_candidates(scope, query, ranked)
         ranked_ids = [r['id'] for r in ranked]
         retrieval_ms = (time.perf_counter() - start) * 1000
         # Optional adjacent context is actual text, not automatic credit for unseen IDs.
@@ -435,26 +463,7 @@ class SearchIndex:
                 if item['rowid'] not in seen:
                     seen.add(item['rowid'])
                     expanded.append(item)
-        blocks, selected = [], []
-        used = 0
-        byte_counter = type(self.counter) is TokenCounter and self.counter.encode is None
-        for row in expanded:
-            label = json.dumps({'id': row['id'], 'speaker': row['speaker'], 'date': row['timestamp']}, ensure_ascii=False)
-            block = f"[source {label}]\n{row['text']}"
-            if byte_counter:
-                units = used + len(block.encode('utf-8')) + (2 if blocks else 0)
-            else:
-                units = self._count('\n\n'.join(blocks + [block]))
-            if units <= budget:
-                used = units
-                blocks.append(block)
-                selected.append({'id': row['id'], 'hash': row['hash'], 'source': row['source'],
-                                 'complete': True, 'text': row['text']})
-            # Oversized turns are skipped rather than terminating the packing pass.
-        context = '\n\n'.join(blocks)
-        final_units = self._count(context)
-        if final_units > budget:
-            raise ValueError('counter changed while packing; final context exceeds budget')
+        context, selected, final_units = self._pack_candidates(expanded, budget, query)
         total_ms = (time.perf_counter()-start)*1000
         return {'scope': scope, 'generation': generation[0], 'mode': mode, 'context': context,
                 'selected': selected, 'ranked_ids': ranked_ids, 'candidate_count': len(ranked),

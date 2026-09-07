@@ -1,0 +1,45 @@
+{
+  "schema": 1,
+  "predecessor": "b6643224802e45d701f6710786ecb88d8e78bedf",
+  "calibration_conversations": [
+    "conv-26",
+    "conv-30"
+  ],
+  "holdout_conversations": [
+    "conv-41",
+    "conv-42",
+    "conv-43",
+    "conv-44",
+    "conv-47",
+    "conv-48",
+    "conv-49",
+    "conv-50"
+  ],
+  "final_candidate": "entity",
+  "entity_weight": 0.25,
+  "parameter_sweep": false,
+  "budgets": [
+    128,
+    256,
+    400,
+    600,
+    800,
+    1200
+  ],
+  "admission": {
+    "holdout_any_gold_delta_pp_min": 1.0,
+    "holdout_all_gold_delta_pp_min": 0.0,
+    "maximum_category_regression_pp": 2.0,
+    "maximum_p95_ratio": 1.25
+  },
+  "rejected": {
+    "temporal": "No temporal-category gain; only one single-hop win.",
+    "segment": "Complete-source recall decreased; latency increased. No parent-ID credit for partial text.",
+    "association": "Small multi-hop gain, open-domain regression; cumulative stack regressed.",
+    "value": "Size normalization caused severe ranking pollution.",
+    "combined": "No any-gold gain and all-gold regression."
+  },
+  "holdout_not_yet_executed": true,
+  "no_generation_calls": true,
+  "no_embedding": true
+}
