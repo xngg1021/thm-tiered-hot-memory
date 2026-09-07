@@ -22,6 +22,7 @@ if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
 from thm.retrieval import TokenCounter
+from research.recall.scoring import SCORABLE_DEFINITION, is_scorable, validate_denominators
 
 CACHE_SHARES = (0.0, 0.5, 0.9)
 
@@ -153,7 +154,7 @@ def input_cost(tokens: int, pricing, rho: float) -> float:
 
 
 def _scorable(row: dict) -> bool:
-    return bool(row.get("fully_resolved", row.get("resolved_count") == row.get("evidence_count")))
+    return is_scorable(row)
 
 
 def economics_for_rows(rows: list[dict], pricing, full_history_tokens: dict[str, int] | None = None) -> dict:
@@ -274,6 +275,7 @@ def build_report(bench: dict, scenarios: dict, ce_provenance: dict,
         for rho in CACHE_SHARES:
             total = sum(input_cost(int(r["budget_used"]), pricing, rho) for r in all_main_rows)
             suite_totals["pricing_scenarios"][name][f"rho={rho}"] = {"total_input_cost_usd": usd(total)}
+    validate_denominators(bench, per_config, suite_totals)
     benchmark_info = {"file": result_name, "source_artifact_sha256": source_artifact_sha256,
         "protocol": bench.get("protocol"), "counter": bench.get("counter"), "dataset_sha256": bench.get("dataset_sha256"),
         "modes": bench.get("modes"), "budgets": bench.get("budgets"), "generation_calls": bench.get("generation_calls"),
@@ -288,6 +290,7 @@ def build_report(bench: dict, scenarios: dict, ce_provenance: dict,
             "observed_provider_bill": "not_measured"},
         "context_economics_provenance": ce_provenance, "benchmark": benchmark_info,
         "pricing_scenario_specs": SCENARIO_SPECS, "primary_proxy_scenario": primary_name,
+        "scorable_definition": dict(SCORABLE_DEFINITION),
         "per_config": per_config, "suite_totals": suite_totals,
         "l6_budget_grid_sensitivity": marginal_analysis(mode_budgets, primary),
         "interpretation_limits": interpretation_limits_for_bench(bench, has_full_history=full_history_tokens is not None)}

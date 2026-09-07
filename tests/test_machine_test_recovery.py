@@ -71,7 +71,7 @@ class EconomicsBridgeTests(unittest.TestCase):
     def test_suite_totals_count_config_query_executions_not_dataset_questions(self):
         rows=[]
         for budget in (300,600): rows += [row("a",budget,budget,1,q=1),row("b",budget,budget,0,q=2)]
-        bench={"protocol":2,"counter":"cl100k_base","modes":["hybrid"],"budgets":[300,600],"rows":rows,"summaries":{},"generation_calls":0,"judge_calls":0}
+        bench={"protocol":2,"counter":"cl100k_base","modes":["hybrid"],"budgets":[300,600],"rows":rows,"summaries":{f"hybrid@{b}": {"main_categories_1_to_4": {"questions":2,"scorable":2}} for b in (300,600)},"generation_calls":0,"judge_calls":0}
         report=BRIDGE.build_report(bench,{"deepseek-v4-pro_offpeak_2026-08-16":FakePricing()},{"model_sha256":"x"},{"a":10000,"b":20000},source_artifact_sha256="c"*64)
         self.assertEqual(report["suite_totals"]["config_count"],2); self.assertEqual(report["suite_totals"]["config_query_executions"],4)
         self.assertEqual(report["benchmark"]["source_artifact_sha256"],"c"*64)
@@ -111,7 +111,7 @@ class ReportClaimTests(unittest.TestCase):
                 "modes":["hybrid"],"budgets":list(budgets),"generation_calls":0,"judge_calls":0,"summaries":summaries}
     @classmethod
     def econ_for(cls,locomo,digest="c"*64):
-        return {"kind":"thm-x-context-economics-bridge-v2","benchmark":{"source_artifact_sha256":digest,**{f:locomo.get(f) for f in ("dataset_sha256","protocol","counter","modes","budgets","generation_calls","judge_calls")}}}
+        return {"per_config": {k: {"attempted_questions":1540,"scorable_questions":1532} for k in locomo["summaries"]}, "suite_totals": {"config_count":len(locomo["summaries"]), "config_query_executions":1540*len(locomo["summaries"]), "scorable_config_query_executions":1532*len(locomo["summaries"]), "attempted_questions_per_config":1540,"scorable_questions_per_config":1532}, "kind":"thm-x-context-economics-bridge-v2","benchmark":{"source_artifact_sha256":digest,**{f:locomo.get(f) for f in ("dataset_sha256","protocol","counter","modes","budgets","generation_calls","judge_calls")}}}
 
     def test_numerical_match_is_not_called_full_reproduction(self):
         claim=REPORT_MD.locomo_observation(self.locomo()); self.assertIn("数值上与仓库固定 reference 71.34% 相同",claim); self.assertIn("不单独构成完整协议复现证明",claim)
@@ -151,6 +151,101 @@ class HardwareParityTests(unittest.TestCase):
         self.assertFalse(PARITY.compare(self.artifact("D1:1"),self.artifact("D1:2"))["equivalent"])
     def test_legacy_aggregate_only_rows_are_insufficient_for_positive_parity(self):
         cpu=self.artifact("D1:1"); gpu=self.artifact("D1:1"); cpu["rows"][0].pop("selected_ids"); gpu["rows"][0].pop("selected_ids"); result=PARITY.compare(cpu,gpu); self.assertFalse(result["identity_complete"]); self.assertFalse(result["equivalent"])
+
+
+class V2R1RegressionTests(unittest.TestCase):
+    def test_true_counter_and_bridge_orchestration(self):
+        counter = BRIDGE.TokenCounter()
+        dataset = [{"sample_id":"a", "conversation":{"session_1":[{"speaker":"Alice", "text":"你好 world"}], "session_2":[{"speaker":"Bob", "text":"A second session"}] }},
+                   {"sample_id":"b", "conversation":{"session_1":[{"speaker":"Bob", "text":"Another scope"}]}}]
+        tokens = BRIDGE.conversation_tokens(dataset, counter)
+        self.assertEqual(tokens, {"a":counter("Alice: 你好 world\nBob: A second session"), "b":counter("Bob: Another scope")})
+        self.assertTrue(all(n > 0 for n in tokens.values()))
+        rows = [row("a",600,20,1), row("b",600,20,0)]
+        bench = {"rows":rows,"modes":["hybrid"],"budgets":[600], "summaries":{"hybrid@600":{"main_categories_1_to_4":{"questions":2,"scorable":2}}}}
+        result = BRIDGE.build_report(bench,{"deepseek-v4-pro_offpeak_2026-08-16":FakePricing()},{}, tokens)
+        self.assertEqual(result["per_config"]["hybrid@600"]["full_history_same_query_counterfactual"]["total_input_tokens"], sum(tokens.values()))
+
+    def test_canonical_scorable(self):
+        for evidence, resolved, expected in [(0,True,False),(1,False,False),(1,True,True)]:
+            self.assertEqual(BRIDGE._scorable({"evidence_count":evidence,"fully_resolved":resolved}),expected)
+        self.assertFalse(BRIDGE._scorable({"evidence_count":1}))
+
+    def test_denominator_contract_and_totals(self):
+        loc = ReportClaimTests.locomo()
+        econ = ReportClaimTests.econ_for(loc)
+        REPORT_MD.validate_locomo_bridge_pair(loc,econ,"c"*64)
+        econ["per_config"]["hybrid@600"]["scorable_questions"] = 1536
+        with self.assertRaisesRegex(ValueError,"denominator contract"):
+            REPORT_MD.validate_locomo_bridge_pair(loc,econ,"c"*64)
+        econ = ReportClaimTests.econ_for(loc)
+        econ["suite_totals"]["scorable_config_query_executions"] += 1
+        with self.assertRaisesRegex(ValueError,"suite total"):
+            REPORT_MD.validate_locomo_bridge_pair(loc,econ,"c"*64)
+
+    def test_twelve_config_bridge_excludes_no_gold_and_binds_source(self):
+        from research.recall.benchmark import aggregate
+        rows, summaries = [], {}
+        modes, budgets = ["literal","sparse","dense","hybrid"], [300,600,1200]
+        for mode in modes:
+            for budget in budgets:
+                cohort = [row("a",budget,20,1,q=0), row("a",budget,20,0,q=1), row("a",budget,20,0,resolved=False,q=2)]
+                cohort[1].update(evidence_count=0,resolved_count=0,fully_resolved=True)
+                for r in cohort: r.update(mode=mode,total_ms=0,query_embedding_ms=0)
+                summaries[f"{mode}@{budget}"] = {"main_categories_1_to_4":aggregate(cohort)}
+                rows.extend(cohort)
+        bench = {"rows":rows,"modes":modes,"budgets":budgets,"summaries":summaries}
+        report = BRIDGE.build_report(bench,{"deepseek-v4-pro_offpeak_2026-08-16":FakePricing()},{})
+        nconfigs = len(modes)*len(budgets)
+        self.assertEqual(report["suite_totals"]["config_query_executions"],nconfigs*3)
+        self.assertEqual(report["suite_totals"]["scorable_config_query_executions"],nconfigs)
+        summaries["hybrid@600"]["main_categories_1_to_4"]["scorable"] += 1
+        with self.assertRaisesRegex(ValueError,"denominator contract"):
+            BRIDGE.build_report(bench,{"deepseek-v4-pro_offpeak_2026-08-16":FakePricing()},{})
+
+    def test_preview_does_not_cap_total(self):
+        cpu = {"rows":[row("a",600,580,1,q=i) for i in range(10)]}
+        gpu = json.loads(json.dumps(cpu))
+        for r in gpu["rows"]: r["selected_ids"] = ["changed"]
+        result = PARITY.compare(cpu,gpu,max_mismatches=3)
+        self.assertEqual(result["total_mismatch_count"],10)
+        self.assertEqual(result["mismatching_row_count"],10)
+        self.assertEqual(result["mismatch_preview_count"],3)
+        self.assertTrue(result["mismatch_preview_truncated"])
+        self.assertEqual(result["selection_set_mismatch_row_count"],10)
+
+    def test_aggregate_and_strict_classification(self):
+        cpu = HardwareParityTests().artifact("a")
+        cpu["summaries"] = {"hybrid@600":{"main":{"questions":1,"any_gold_hits":1,"mrr":1,"latency_ms":{"p50":10}}}}
+        cpu["rows"][0].update(selected_ids=["a","b"],selected_ranked_ids=["a","b"])
+        gpu = json.loads(json.dumps(cpu))
+        gpu["summaries"]["hybrid@600"]["main"]["latency_ms"]["p50"] = 1
+        gpu["rows"][0]["selected_ranked_ids"] = ["b","a"]
+        result = PARITY.compare(cpu,gpu)
+        self.assertTrue(result["aggregate_semantic_metrics_equivalent"])
+        self.assertFalse(result["strict_semantic_equivalent"])
+        self.assertEqual(result["rank_only_mismatch_row_count"],1)
+        self.assertEqual(result["selection_set_mismatch_row_count"],0)
+        gpu["rows"][0]["selected_ids"] = ["a","c"]
+        result = PARITY.compare(cpu,gpu)
+        self.assertEqual(result["selection_set_mismatch_row_count"],1)
+        self.assertEqual(result["rank_only_mismatch_row_count"],0)
+        gpu["summaries"]["hybrid@600"]["main"]["mrr"] = .5
+        self.assertFalse(PARITY.compare(cpu,gpu)["aggregate_semantic_metrics_equivalent"])
+
+    def test_paths_fail_before_runtime(self):
+        from types import SimpleNamespace
+        args = SimpleNamespace(datasets_root=None, model_path=None, ce_root=None, skip_lme=True, modes=["hybrid"])
+        with self.assertRaisesRegex(ValueError,"datasets-root"): RUN_SUITE.validate_inputs(args)
+        with tempfile.TemporaryDirectory() as tmp:
+            args.datasets_root = tmp
+            Path(tmp,"locomo10.json").write_text("[]")
+            with self.assertRaisesRegex(ValueError,"model-path"): RUN_SUITE.validate_inputs(args)
+            args.model_path = tmp
+            with self.assertRaisesRegex(ValueError,"ce-root"): RUN_SUITE.validate_inputs(args)
+            args.ce_root = tmp
+            Path(tmp,"model.py").write_text("")
+            self.assertEqual(RUN_SUITE.validate_inputs(args)[0],Path(tmp).resolve())
 
 
 if __name__ == "__main__": unittest.main()

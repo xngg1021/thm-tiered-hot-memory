@@ -17,9 +17,7 @@ import time
 from pathlib import Path
 
 ENGINE = Path(__file__).resolve().parents[2]
-DEFAULT_MODEL_PATH = ENGINE.parent / "models" / "all-MiniLM-L6-v2"
 DEFAULT_MODEL_ID = "sentence-transformers/all-MiniLM-L6-v2"
-DEFAULT_DATASETS = ENGINE.parent / "datasets"
 DEFAULT_REPORTS = ENGINE / "reports"
 
 
@@ -115,6 +113,25 @@ def normalize_tag(value: str | None, device: str) -> str:
     return tag
 
 
+def validate_inputs(args):
+    if not args.datasets_root:
+        raise ValueError("--datasets-root or THM_DATASETS_ROOT is required (locomo10.json and longmemeval_s)")
+    datasets = Path(args.datasets_root).expanduser().resolve()
+    required = [datasets / "locomo10.json"]
+    if not args.skip_lme:
+        required.append(datasets / "longmemeval_s")
+    for path in required:
+        if not path.is_file():
+            raise ValueError(f"dataset file missing: {path.name}; set --datasets-root or THM_DATASETS_ROOT")
+    model = Path(args.model_path).expanduser().resolve() if args.model_path else None
+    if any(mode in ("dense", "hybrid") for mode in args.modes) and (model is None or not model.is_dir()):
+        raise ValueError("dense/hybrid requires existing --model-path or THM_MODEL_PATH")
+    ce = Path(args.ce_root).expanduser().resolve() if args.ce_root else None
+    if ce is None or not (ce / "model.py").is_file():
+        raise ValueError("--ce-root or CONTEXT_ECONOMICS_ROOT must contain model.py")
+    return datasets, model, ce
+
+
 def main():
     ap = argparse.ArgumentParser(description=__doc__)
     ap.add_argument("--skip-locomo", action="store_true")
@@ -128,9 +145,9 @@ def main():
         "--artifact-tag", default=None,
         help="nonempty filename tag; defaults to -cpu-v2 or -gpu-v2",
     )
-    ap.add_argument("--model-path", default=str(DEFAULT_MODEL_PATH))
+    ap.add_argument("--model-path", default=os.environ.get("THM_MODEL_PATH"))
     ap.add_argument("--model-id", default=DEFAULT_MODEL_ID)
-    ap.add_argument("--datasets-root", default=str(DEFAULT_DATASETS))
+    ap.add_argument("--datasets-root", default=os.environ.get("THM_DATASETS_ROOT"))
     ap.add_argument("--reports-dir", default=str(DEFAULT_REPORTS))
     ap.add_argument("--ce-root", default=os.environ.get("CONTEXT_ECONOMICS_ROOT"))
     args = ap.parse_args()
@@ -142,15 +159,13 @@ def main():
 
     tag = normalize_tag(args.artifact_tag, args.device)
     reports = Path(args.reports_dir).expanduser().resolve()
-    datasets = Path(args.datasets_root).expanduser().resolve()
-    model_path = Path(args.model_path).expanduser().resolve()
-    ce_root = Path(args.ce_root).expanduser().resolve() if args.ce_root else None
+    datasets, model_path, ce_root = validate_inputs(args)
     reports.mkdir(parents=True, exist_ok=True)
 
     redactions = [
         (str(sys.executable), "<PYTHON>"),
         (str(ce_root), "<CONTEXT_ECONOMICS_ROOT>") if ce_root else ("", ""),
-        (str(model_path), "<MODEL_PATH>"),
+        (str(model_path), "<MODEL_PATH>") if model_path else ("", ""),
         (str(datasets), "<DATASETS_ROOT>"),
         (str(reports), "<REPORTS_DIR>"),
         (str(ENGINE), "<THM_ROOT>"),
@@ -181,7 +196,7 @@ def main():
             "--counter", "cl100k_base",
             "--modes", *args.modes,
             "--budgets", *budgets,
-            "--model-path", str(model_path), "--model-id", args.model_id,
+            "--model-path", str(model_path) if model_path else "", "--model-id", args.model_id,
             "--device", args.device, "--batch-size", str(args.batch_size),
             "--output", str(locomo_out),
         ], "LoCoMo Protocol 2 full matrix", redactions))
@@ -194,7 +209,7 @@ def main():
             "--counter", "cl100k_base",
             "--modes", *args.modes,
             "--budgets", *budgets,
-            "--model-path", str(model_path), "--model-id", args.model_id,
+            "--model-path", str(model_path) if model_path else "", "--model-id", args.model_id,
             "--threads", str(args.threads),
             "--device", args.device, "--batch-size", str(args.batch_size),
             "--output", str(lme_out),

@@ -23,6 +23,7 @@ import time
 sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
 from thm.retrieval import SearchIndex, SentenceEncoder, TokenCounter
 from thm.sources import locomo_documents
+from research.recall.scoring import is_scorable
 
 DATASET_COMMIT = '3eb6f2c585f5e1699204e3c3bdf7adc5c28cb376'
 DATASET_SHA256 = '79fa87e90f04081343b8c8debecb80a9a6842b76a7aa537dc9fdf651ea698ff4'
@@ -54,7 +55,7 @@ def percentile(values, q):
 
 
 def aggregate(rows):
-    scored = [r for r in rows if r['evidence_count'] and r['fully_resolved']]
+    scored = [r for r in rows if is_scorable(r)]
     denominator = len(scored)
     return {'questions': len(rows), 'scorable': denominator,
             'no_gold_questions': sum(r['evidence_count']==0 for r in rows),

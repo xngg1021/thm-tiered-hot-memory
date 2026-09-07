@@ -6,6 +6,9 @@ import argparse
 import hashlib
 import json
 from pathlib import Path
+import sys
+sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
+from research.recall.scoring import validate_denominators
 
 PINNED_HYBRID_600_ANY_GOLD_PERCENT = 71.34
 
@@ -73,6 +76,7 @@ def validate_locomo_bridge_pair(locomo: dict, econ: dict, locomo_artifact_sha256
     if benchmark.get("counterfactual_dataset_matches_benchmark") is False:
         raise ValueError("bridge-v2 records a failed counterfactual dataset match")
 
+    validate_denominators(locomo, econ.get("per_config", {}), econ.get("suite_totals", {}))
 
 def main_summary(data: dict, mode: str, budget: int) -> dict | None:
     summary = data.get("summaries", {}).get(f"{mode}@{budget}")
