@@ -1,8 +1,12 @@
 # THM 硬件类比审计：从脑暴到可测的自适应驻留策略
 
+<!-- current-v1.4-status:start -->
+> **Current release status — implemented in THM 1.4.0.** The hardware-analogy audit below is the design provenance for the accepted shadow miss/residency/prefetch/budget control surface. Stable code/content milestone: `e6e4dda5835e3cb345207457d5491131c6959b2c`; recovery pointer: `archive/v1.4.0-stable`. The implementation remains advisory: it does not silently move T0–T3 or mutate Hermes/T0 budgets, and production superiority still requires held-out runtime/task A/B evidence. See [14-residency-control-plane.md](14-residency-control-plane.md) and [15-hermes-warm-directory.md](15-hermes-warm-directory.md).
+<!-- current-v1.4-status:end -->
+
 > 2026-09-07
 > 来源：本地模型旧版脑暴的七项硬件类比，经 THM 当前实现、Context Economics L4/L5、经典缓存研究与近期 prefetch 研究重新核对。
-> 状态：**研究/影子测量扩展；不改变当前 THM 1.1.1 residency、activity、validity 或索引写入语义。**
+> 状态：**THM 1.4 已实现并完成 accepted/stable 工程验收；控制面保持 shadow/advisory，不自动修改 T0–T3、budget、activity、validity 或原生记忆。**
 
 目标不是证明 agent memory 等于 CPU/OS cache，而是判断哪些硬件机制能转写成**可测、可失败、可回滚**的 THM 控制变量。
 
@@ -18,7 +22,7 @@
 | 期望损失最小化驱逐 | **最强保留** | 与 Context Economics L4/L5 的 expected net value / cost-per-success 对接 |
 | 分支预测式注入 | **保留为实验** | 改称 speculative memory prefetch；量化 accuracy/coverage/pollution |
 
-最值得进入下一阶段的组合：
+THM 1.4 已实现并冻结为 shadow/control surface 的组合：
 
 ```text
 miss telemetry

@@ -1,3 +1,3 @@
 name: thm
-version: 1.3.0
-description: "Local THM retrieval provider with explicit scope, context budget, and harness adapters."
+version: 1.4.0
+description: "Local THM retrieval provider with explicit scope/budget, harness adapters, shadow residency control, and opt-in Hermes T1 locator snapshot."

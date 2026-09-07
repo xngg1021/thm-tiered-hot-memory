@@ -1,5 +1,9 @@
 # 相关工作：分层记忆、上下文管理与验证边界
 
+<!-- current-v1.4-status:start -->
+> **Current release status — THM 1.4.0 accepted/stable implementation milestone.** Stable code/content milestone: `e6e4dda5835e3cb345207457d5491131c6959b2c`; immutable recovery pointer: `archive/v1.4.0-stable`. This document retains its original research/design/1.2/1.3 scope as historical foundation rather than rewriting old evidence as a new result. Current implementation state is tracked in [07-implementation-status.md](07-implementation-status.md), the 1.4 shadow control plane in [14-residency-control-plane.md](14-residency-control-plane.md), the opt-in Hermes T1 surface in [15-hermes-warm-directory.md](15-hermes-warm-directory.md), and the exact acceptance record in [the 1.4 closeout](../reports/2026-09-07-v1.4-closeout.md).
+<!-- current-v1.4-status:end -->
+
 读取日期：2026-09-06。本文比较选定公开系统，不是完整文献普查或性能排行榜。
 
 **THM 的公开贡献目前是四层设计、规则勘误和验证契约。** 已有系统分别提供文件化知识、时间图、语义召回、上下文压缩或执行恢复；“使用分层”不足以构成差异。更值得验证的问题是：在同一任务、有效性过滤和完整上下文预算下，THM 的驻留策略是否改善证据选择，且保持来源、删除和恢复语义。此处是比较问题，不是已验证优势。

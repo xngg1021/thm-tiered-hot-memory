@@ -1,5 +1,9 @@
 # THM 1.4 Hermes opt-in T1 warm-directory snapshot
 
+<!-- current-v1.4-status:start -->
+> **Release status — accepted/stable opt-in runtime surface.** The implementation described here is part of THM 1.4.0 frozen at `e6e4dda5835e3cb345207457d5491131c6959b2c` with recovery pointer `archive/v1.4.0-stable`. It is disabled by default, session-frozen when enabled, and remains independent of the shadow residency/prefetch/budget recommender.
+<!-- current-v1.4-status:end -->
+
 > Runtime surface added 2026-09-07. The **T0–T3 tier model is unchanged**. This feature only exposes a compact T1 locator projection to Hermes at a session boundary; it does not enable the shadow residency/prefetch/budget controller and does not perform a tier move.
 
 ## 1. Default behavior
