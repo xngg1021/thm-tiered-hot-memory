@@ -1,5 +1,7 @@
 # THM × Context-Economics 本地对接基准全家桶报告
 
+> **Historical artifact — economics section superseded.** Retrieval tables are retained as originally generated. The economics denominator/unit issues are documented in [`2026-09-08-machine-test-evidence-correction.md`](2026-09-08-machine-test-evidence-correction.md); use bridge-v2 outputs for new economic claims.
+
 - 生成时间:2026-09-08(本机,Windows,HP Z6 G4)
 - 引擎:thm-local-memory 1.4.0(engine-1.3 随公开仓 main)
 - 经济模型:context-economics Pricing(L0)与证据纪律
@@ -74,4 +76,3 @@ L6 边际分析(预算翻倍的增量成本,off-peak,rho=0):
 4. 保留意见:所有成本是 model-proxy 而非账单;检索覆盖不是答案正确率;
    定价口径存在矛盾信源(0.435 促销价与 0.66 峰谷价系列);LME-S 会话级证据
    比 LoCoMo 的 turn 级证据粗,不可直接横向对比绝对分数。
-
