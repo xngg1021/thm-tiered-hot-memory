@@ -60,3 +60,7 @@ Protocol 2 和历史 Hermes E2E 有其各自固定版本的远端运行证据。
 1.4 shadow control 的自动 policy mutation 仍关闭。要从“实现稳定”升级到“策略优于基线”，必须在留出真实任务中同时测 task quality、avoidable miss/reacquisition cost、latency、stale-state failure 与 prefetch waste。
 
 真实用户 memory、私有 catalog、telemetry、显式 hit chronology 和其他未授权材料不进入公开仓库。用户专属 optimum 需要用户自己的留出任务与运行数据，不能用仓库里的 synthetic trace 代替。
+
+## Unreleased retrieval successor
+
+The opt-in Python entity projection and its Protocol 2 evidence are documented in [the zero-LLM frontier](16-zero-llm-retrieval-frontier.md). It does not enable a harness option, change residency/activity/validity semantics, or move the 1.4 stable pointer.

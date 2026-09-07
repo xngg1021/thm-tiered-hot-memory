@@ -71,3 +71,7 @@ Use the weakest accurate label:
 ## Historical boundaries
 
 The legacy public engine, 1.1 hardening, 1.2 retrieval work and 1.3 harness integration remain recoverable through [the version history map](12-version-history.md). The stable 1.4 code/content milestone is frozen at `archive/v1.4.0-stable`; later closeout documentation does not move that pointer or rewrite prior history.
+
+## Unreleased retrieval successor
+
+The opt-in Python entity projection and its Protocol 2 evidence are documented in [the zero-LLM frontier](16-zero-llm-retrieval-frontier.md). It does not enable a harness option, change residency/activity/validity semantics, or move the 1.4 stable pointer.

@@ -2,6 +2,15 @@
 
 This changelog is reconstructed from the repository's existing Git history. It does not invent retrospective semantic versions for commits that did not carry an explicit version identity.
 
+## Unreleased — zero-LLM retrieval frontier
+
+- Reproduces the immutable Protocol 2 baseline and separates 116 candidate misses from 353 feasible packing/ranking losses.
+- Adds an opt-in Python `SearchIndex.search(..., entity_projection=True)` projection for exact speaker/identifier ranking in sparse/hybrid mode; default behavior is preserved.
+- Fixed-weight Track A full any-gold: 69.39% → 72.52%; held-out 1301 questions: 69.56% → 72.33%. No generative model calls or embedding model.
+- Excludes temporal, segment, bounded association and size-normalized ranking experiments from the production path; publishes their calibration ablations.
+- Corrects reversed category names in the research README without rewriting historical benchmark values.
+- No new stable version or archive pointer yet. See [frontier evidence](docs/16-zero-llm-retrieval-frontier.md).
+
 ## 1.4.0 accepted/stable — `e6e4dda5835e3cb345207457d5491131c6959b2c`
 
 Archive: `archive/v1.4.0-stable`

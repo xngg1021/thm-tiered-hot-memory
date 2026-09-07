@@ -1,0 +1,3298 @@
+{
+  "schema": 1,
+  "split": "full",
+  "dataset_sha256": "79fa87e90f04081343b8c8debecb80a9a6842b76a7aa537dc9fdf651ea698ff4",
+  "temporal_weight": 0.25,
+  "generation_calls": 0,
+  "parameter_search": false,
+  "embedding_used": false,
+  "summaries": {
+    "baseline": {
+      "sparse@128": {
+        "main_categories_1_to_4": {
+          "questions": 1540,
+          "scorable": 1532,
+          "no_gold_questions": 4,
+          "partially_or_unresolved_questions": 4,
+          "any_gold_hits": 666,
+          "any_gold_hit_rate": 0.4347258485639687,
+          "all_gold_hit_rate": 0.34986945169712796,
+          "macro_evidence_recall": 0.38516051507239496,
+          "micro_evidence_recall": 0.28766538625693555,
+          "candidate_any_gold_rate": 0.9242819843342036,
+          "empty_context_rate": 0,
+          "mean_budget_used": 114.4012987012987,
+          "latency_ms": {
+            "p50": 7.880946501245489,
+            "p95": 10.937225699490227,
+            "p99": 12.186708079971137,
+            "mean": 8.055753970072512
+          },
+          "mrr": 0.41612271540469975,
+          "ndcg": 0.3984963401048653,
+          "query_embedding_ms_mean": 0.0
+        },
+        "conversational_categories_1_2_4": {
+          "questions": 1444,
+          "scorable": 1440,
+          "no_gold_questions": 0,
+          "partially_or_unresolved_questions": 4,
+          "any_gold_hits": 645,
+          "any_gold_hit_rate": 0.4479166666666667,
+          "all_gold_hit_rate": 0.36527777777777776,
+          "macro_evidence_recall": 0.39952493686868684,
+          "micro_evidence_recall": 0.3053864168618267,
+          "candidate_any_gold_rate": 0.9409722222222222,
+          "empty_context_rate": 0,
+          "mean_budget_used": 114.42243767313019,
+          "latency_ms": {
+            "p50": 7.894175498222467,
+            "p95": 10.934448899752168,
+            "p99": 12.292580030116358,
+            "mean": 8.071397172374256
+          },
+          "mrr": 0.42916666666666664,
+          "ndcg": 0.4126295695350621,
+          "query_embedding_ms_mean": 0.0
+        },
+        "all_categories_diagnostic_only": {
+          "questions": 1986,
+          "scorable": 1978,
+          "no_gold_questions": 4,
+          "partially_or_unresolved_questions": 4,
+          "any_gold_hits": 870,
+          "any_gold_hit_rate": 0.4398382204246714,
+          "all_gold_hit_rate": 0.37158746208291205,
+          "macro_evidence_recall": 0.40018498942917546,
+          "micro_evidence_recall": 0.3132358187656083,
+          "candidate_any_gold_rate": 0.9352881698685541,
+          "empty_context_rate": 0,
+          "mean_budget_used": 114.46827794561933,
+          "latency_ms": {
+            "p50": 7.970818001922453,
+            "p95": 11.072927251007059,
+            "p99": 12.749417349732544,
+            "mean": 8.167901476297653
+          },
+          "mrr": 0.42087967644084934,
+          "ndcg": 0.40770904612583386,
+          "query_embedding_ms_mean": 0.0
+        },
+        "development": {
+          "questions": 233,
+          "scorable": 231,
+          "no_gold_questions": 2,
+          "partially_or_unresolved_questions": 0,
+          "any_gold_hits": 97,
+          "any_gold_hit_rate": 0.4199134199134199,
+          "all_gold_hit_rate": 0.37662337662337664,
+          "macro_evidence_recall": 0.3953823953823954,
+          "micro_evidence_recall": 0.313915857605178,
+          "candidate_any_gold_rate": 0.9437229437229437,
+          "empty_context_rate": 0,
+          "mean_budget_used": 112.8068669527897,
+          "latency_ms": {
+            "p50": 7.206657999631716,
+            "p95": 10.215584601246517,
+            "p99": 12.75615084145102,
+            "mean": 7.474618780999014
+          },
+          "mrr": 0.4134199134199134,
+          "ndcg": 0.40842154992110913,
+          "query_embedding_ms_mean": 0.0
+        },
+        "held_out": {
+          "questions": 1307,
+          "scorable": 1301,
+          "no_gold_questions": 2,
+          "partially_or_unresolved_questions": 4,
+          "any_gold_hits": 569,
+          "any_gold_hit_rate": 0.43735588009223675,
+          "all_gold_hit_rate": 0.345119139123751,
+          "macro_evidence_recall": 0.3833455616891435,
+          "micro_evidence_recall": 0.283677482792527,
+          "candidate_any_gold_rate": 0.9208301306687163,
+          "empty_context_rate": 0,
+          "mean_budget_used": 114.68553940321347,
+          "latency_ms": {
+            "p50": 7.978247998835286,
+            "p95": 10.972472296998603,
+            "p99": 12.131976520831815,
+            "mean": 8.159353433771154
+          },
+          "mrr": 0.4166026133743274,
+          "ndcg": 0.3967340622666237,
+          "query_embedding_ms_mean": 0.0
+        },
+        "by_category": {
+          "multi_hop": {
+            "questions": 282,
+            "scorable": 279,
+            "no_gold_questions": 0,
+            "partially_or_unresolved_questions": 3,
+            "any_gold_hits": 82,
+            "any_gold_hit_rate": 0.2939068100358423,
+            "all_gold_hit_rate": 0.0035842293906810036,
+            "macro_evidence_recall": 0.1146328880199848,
+            "micro_evidence_recall": 0.09919261822376009,
+            "candidate_any_gold_rate": 0.899641577060932,
+            "empty_context_rate": 0,
+            "mean_budget_used": 114.18794326241135,
+            "latency_ms": {
+              "p50": 7.618073999765329,
+              "p95": 10.740433948376449,
+              "p99": 11.872406501388468,
+              "mean": 7.859795116896329
+            },
+            "mrr": 0.27419354838709675,
+            "ndcg": 0.2082117616500448,
+            "query_embedding_ms_mean": 0.0
+          },
+          "temporal": {
+            "questions": 321,
+            "scorable": 321,
+            "no_gold_questions": 0,
+            "partially_or_unresolved_questions": 0,
+            "any_gold_hits": 169,
+            "any_gold_hit_rate": 0.5264797507788161,
+            "all_gold_hit_rate": 0.4797507788161994,
+            "macro_evidence_recall": 0.5020768431983386,
+            "micro_evidence_recall": 0.4533333333333333,
+            "candidate_any_gold_rate": 0.9190031152647975,
+            "empty_context_rate": 0,
+            "mean_budget_used": 114.14641744548287,
+            "latency_ms": {
+              "p50": 7.704740000917809,
+              "p95": 10.859115998755442,
+              "p99": 13.394424001307927,
+              "mean": 8.015840052949526
+            },
+            "mrr": 0.5124610591900312,
+            "ndcg": 0.5045252821516988,
+            "query_embedding_ms_mean": 0.0
+          },
+          "open_domain": {
+            "questions": 96,
+            "scorable": 92,
+            "no_gold_questions": 4,
+            "partially_or_unresolved_questions": 0,
+            "any_gold_hits": 21,
+            "any_gold_hit_rate": 0.22826086956521738,
+            "all_gold_hit_rate": 0.10869565217391304,
+            "macro_evidence_recall": 0.16032608695652173,
+            "micro_evidence_recall": 0.10576923076923077,
+            "candidate_any_gold_rate": 0.6630434782608695,
+            "empty_context_rate": 0,
+            "mean_budget_used": 114.08333333333333,
+            "latency_ms": {
+              "p50": 7.769578000079491,
+              "p95": 10.657265249392367,
+              "p99": 11.612547349614031,
+              "mean": 7.820454135450443
+            },
+            "mrr": 0.21195652173913043,
+            "ndcg": 0.1772805751104805,
+            "query_embedding_ms_mean": 0.0
+          },
+          "single_hop": {
+            "questions": 841,
+            "scorable": 840,
+            "no_gold_questions": 0,
+            "partially_or_unresolved_questions": 1,
+            "any_gold_hits": 394,
+            "any_gold_hit_rate": 0.46904761904761905,
+            "all_gold_hit_rate": 0.44166666666666665,
+            "macro_evidence_recall": 0.45496031746031745,
+            "micro_evidence_recall": 0.44344904815229563,
+            "candidate_any_gold_rate": 0.9630952380952381,
+            "empty_context_rate": 0,
+            "mean_budget_used": 114.6064209274673,
+            "latency_ms": {
+              "p50": 8.008805998542812,
+              "p95": 10.980443999869749,
+              "p99": 12.186322799971094,
+              "mean": 8.163556048688305
+            },
+            "mrr": 0.4488095238095238,
+            "ndcg": 0.44540819411837096,
+            "query_embedding_ms_mean": 0.0
+          },
+          "adversarial": {
+            "questions": 446,
+            "scorable": 446,
+            "no_gold_questions": 0,
+            "partially_or_unresolved_questions": 0,
+            "any_gold_hits": 204,
+            "any_gold_hit_rate": 0.45739910313901344,
+            "all_gold_hit_rate": 0.4461883408071749,
+            "macro_evidence_recall": 0.4517937219730942,
+            "micro_evidence_recall": 0.4434782608695652,
+            "candidate_any_gold_rate": 0.9730941704035875,
+            "empty_context_rate": 0,
+            "mean_budget_used": 114.69955156950672,
+            "latency_ms": {
+              "p50": 8.275063501059776,
+              "p95": 11.759098250877287,
+              "p99": 13.526282849852581,
+              "mean": 8.555137260124372
+            },
+            "mrr": 0.437219730941704,
+            "ndcg": 0.4393544847449455,
+            "query_embedding_ms_mean": 0.0
+          }
+        }
+      },
+      "sparse@256": {
+        "main_categories_1_to_4": {
+          "questions": 1540,
+          "scorable": 1532,
+          "no_gold_questions": 4,
+          "partially_or_unresolved_questions": 4,
+          "any_gold_hits": 887,
+          "any_gold_hit_rate": 0.5789817232375979,
+          "all_gold_hit_rate": 0.466710182767624,
+          "macro_evidence_recall": 0.5159494032870767,
+          "micro_evidence_recall": 0.40290226205719165,
+          "candidate_any_gold_rate": 0.9242819843342036,
+          "empty_context_rate": 0,
+          "mean_budget_used": 240.60584415584415,
+          "latency_ms": {
+            "p50": 12.226161001308355,
+            "p95": 17.173352300051192,
+            "p99": 20.60778073082474,
+            "mean": 12.600184593495875
+          },
+          "mrr": 0.47541340295909484,
+          "ndcg": 0.4644039031636996,
+          "query_embedding_ms_mean": 0.0
+        },
+        "conversational_categories_1_2_4": {
+          "questions": 1444,
+          "scorable": 1440,
+          "no_gold_questions": 0,
+          "partially_or_unresolved_questions": 4,
+          "any_gold_hits": 857,
+          "any_gold_hit_rate": 0.5951388888888889,
+          "all_gold_hit_rate": 0.4861111111111111,
+          "macro_evidence_recall": 0.5338086707193067,
+          "micro_evidence_recall": 0.4271662763466042,
+          "candidate_any_gold_rate": 0.9409722222222222,
+          "empty_context_rate": 0,
+          "mean_budget_used": 240.60041551246536,
+          "latency_ms": {
+            "p50": 12.231029000759008,
+            "p95": 17.118605550422217,
+            "p99": 20.60634901081357,
+            "mean": 12.615868126034648
+          },
+          "mrr": 0.48935185185185187,
+          "ndcg": 0.4802710791029893,
+          "query_embedding_ms_mean": 0.0
+        },
+        "all_categories_diagnostic_only": {
+          "questions": 1986,
+          "scorable": 1978,
+          "no_gold_questions": 4,
+          "partially_or_unresolved_questions": 4,
+          "any_gold_hits": 1154,
+          "any_gold_hit_rate": 0.583417593528817,
+          "all_gold_hit_rate": 0.49443882709807885,
+          "macro_evidence_recall": 0.5335866965802839,
+          "micro_evidence_recall": 0.43275062433107386,
+          "candidate_any_gold_rate": 0.9352881698685541,
+          "empty_context_rate": 0,
+          "mean_budget_used": 240.34541792547836,
+          "latency_ms": {
+            "p50": 12.226161001308355,
+            "p95": 17.109381249611033,
+            "p99": 20.64243170043483,
+            "mean": 12.639986931501753
+          },
+          "mrr": 0.4793309740478598,
+          "ndcg": 0.476201321345888,
+          "query_embedding_ms_mean": 0.0
+        },
+        "development": {
+          "questions": 233,
+          "scorable": 231,
+          "no_gold_questions": 2,
+          "partially_or_unresolved_questions": 0,
+          "any_gold_hits": 133,
+          "any_gold_hit_rate": 0.5757575757575758,
+          "all_gold_hit_rate": 0.4805194805194805,
+          "macro_evidence_recall": 0.5217893217893218,
+          "micro_evidence_recall": 0.4401294498381877,
+          "candidate_any_gold_rate": 0.9437229437229437,
+          "empty_context_rate": 0,
+          "mean_budget_used": 240.16738197424894,
+          "latency_ms": {
+            "p50": 11.698562000674428,
+            "p95": 16.084832599153735,
+            "p99": 18.293202200438827,
+            "mean": 12.004713497895677
+          },
+          "mrr": 0.4790764790764791,
+          "ndcg": 0.47385867537338866,
+          "query_embedding_ms_mean": 0.0
+        },
+        "held_out": {
+          "questions": 1307,
+          "scorable": 1301,
+          "no_gold_questions": 2,
+          "partially_or_unresolved_questions": 4,
+          "any_gold_hits": 754,
+          "any_gold_hit_rate": 0.579554189085319,
+          "all_gold_hit_rate": 0.4642582628747118,
+          "macro_evidence_recall": 0.5149124923155022,
+          "micro_evidence_recall": 0.3972468043264503,
+          "candidate_any_gold_rate": 0.9208301306687163,
+          "empty_context_rate": 0,
+          "mean_budget_used": 240.6840091813313,
+          "latency_ms": {
+            "p50": 12.285343000257853,
+            "p95": 17.416530099944797,
+            "p99": 20.61959242091689,
+            "mean": 12.706339731426134
+          },
+          "mrr": 0.4747630028183449,
+          "ndcg": 0.462725154216399,
+          "query_embedding_ms_mean": 0.0
+        },
+        "by_category": {
+          "multi_hop": {
+            "questions": 282,
+            "scorable": 279,
+            "no_gold_questions": 0,
+            "partially_or_unresolved_questions": 3,
+            "any_gold_hits": 130,
+            "any_gold_hit_rate": 0.4659498207885305,
+            "all_gold_hit_rate": 0.053763440860215055,
+            "macro_evidence_recall": 0.22288346177706675,
+            "micro_evidence_recall": 0.19607843137254902,
+            "candidate_any_gold_rate": 0.899641577060932,
+            "empty_context_rate": 0,
+            "mean_budget_used": 240.14893617021278,
+            "latency_ms": {
+              "p50": 12.090070498743444,
+              "p95": 18.01890024980821,
+              "p99": 20.59535732067161,
+              "mean": 12.503566762293852
+            },
+            "mrr": 0.3455794504181601,
+            "ndcg": 0.23868198066939525,
+            "query_embedding_ms_mean": 0.0
+          },
+          "temporal": {
+            "questions": 321,
+            "scorable": 321,
+            "no_gold_questions": 0,
+            "partially_or_unresolved_questions": 0,
+            "any_gold_hits": 207,
+            "any_gold_hit_rate": 0.6448598130841121,
+            "all_gold_hit_rate": 0.5919003115264797,
+            "macro_evidence_recall": 0.6194184839044652,
+            "micro_evidence_recall": 0.568,
+            "candidate_any_gold_rate": 0.9190031152647975,
+            "empty_context_rate": 0,
+            "mean_budget_used": 241.8442367601246,
+            "latency_ms": {
+              "p50": 12.259911000001011,
+              "p95": 17.132049997599097,
+              "p99": 21.868257200549145,
+              "mean": 12.76005938635079
+            },
+            "mrr": 0.5599688473520249,
+            "ndcg": 0.5648982998182437,
+            "query_embedding_ms_mean": 0.0
+          },
+          "open_domain": {
+            "questions": 96,
+            "scorable": 92,
+            "no_gold_questions": 4,
+            "partially_or_unresolved_questions": 0,
+            "any_gold_hits": 30,
+            "any_gold_hit_rate": 0.32608695652173914,
+            "all_gold_hit_rate": 0.16304347826086957,
+            "macro_evidence_recall": 0.23641304347826086,
+            "micro_evidence_recall": 0.15384615384615385,
+            "candidate_any_gold_rate": 0.6630434782608695,
+            "empty_context_rate": 0,
+            "mean_budget_used": 240.6875,
+            "latency_ms": {
+              "p50": 12.044343500747345,
+              "p95": 17.71756075140729,
+              "p99": 19.937447149459324,
+              "mean": 12.364278124891825
+            },
+            "mrr": 0.2572463768115942,
+            "ndcg": 0.21604810585307913,
+            "query_embedding_ms_mean": 0.0
+          },
+          "single_hop": {
+            "questions": 841,
+            "scorable": 840,
+            "no_gold_questions": 0,
+            "partially_or_unresolved_questions": 1,
+            "any_gold_hits": 520,
+            "any_gold_hit_rate": 0.6190476190476191,
+            "all_gold_hit_rate": 0.5892857142857143,
+            "macro_evidence_recall": 0.6043650793650793,
+            "micro_evidence_recall": 0.5923852183650616,
+            "candidate_any_gold_rate": 0.9630952380952381,
+            "empty_context_rate": 0,
+            "mean_budget_used": 240.2770511296076,
+            "latency_ms": {
+              "p50": 12.285343000257853,
+              "p95": 17.047796998667764,
+              "p99": 20.011727798555526,
+              "mean": 12.59848832819092
+            },
+            "mrr": 0.5101190476190476,
+            "ndcg": 0.5281734845951036,
+            "query_embedding_ms_mean": 0.0
+          },
+          "adversarial": {
+            "questions": 446,
+            "scorable": 446,
+            "no_gold_questions": 0,
+            "partially_or_unresolved_questions": 0,
+            "any_gold_hits": 267,
+            "any_gold_hit_rate": 0.5986547085201793,
+            "all_gold_hit_rate": 0.5896860986547086,
+            "macro_evidence_recall": 0.594170403587444,
+            "micro_evidence_recall": 0.5847826086956521,
+            "candidate_any_gold_rate": 0.9730941704035875,
+            "empty_context_rate": 0,
+            "mean_budget_used": 239.44618834080717,
+            "latency_ms": {
+              "p50": 12.226993998410762,
+              "p95": 16.843704499478918,
+              "p99": 21.07229325083609,
+              "mean": 12.777421013405455
+            },
+            "mrr": 0.4927877428998505,
+            "ndcg": 0.5167251882856024,
+            "query_embedding_ms_mean": 0.0
+          }
+        }
+      },
+      "sparse@400": {
+        "main_categories_1_to_4": {
+          "questions": 1540,
+          "scorable": 1532,
+          "no_gold_questions": 4,
+          "partially_or_unresolved_questions": 4,
+          "any_gold_hits": 998,
+          "any_gold_hit_rate": 0.6514360313315927,
+          "all_gold_hit_rate": 0.5234986945169713,
+          "macro_evidence_recall": 0.5810801632419805,
+          "micro_evidence_recall": 0.46777635510029875,
+          "candidate_any_gold_rate": 0.9242819843342036,
+          "empty_context_rate": 0,
+          "mean_budget_used": 384.17727272727274,
+          "latency_ms": {
+            "p50": 16.517829999429523,
+            "p95": 22.258986700580863,
+            "p99": 25.63675626977783,
+            "mean": 16.952479974653606
+          },
+          "mrr": 0.4914226656720129,
+          "ndcg": 0.49164339708215304,
+          "query_embedding_ms_mean": 0.0
+        },
+        "conversational_categories_1_2_4": {
+          "questions": 1444,
+          "scorable": 1440,
+          "no_gold_questions": 0,
+          "partially_or_unresolved_questions": 4,
+          "any_gold_hits": 961,
+          "any_gold_hit_rate": 0.6673611111111111,
+          "all_gold_hit_rate": 0.5451388888888888,
+          "macro_evidence_recall": 0.6002240647388674,
+          "micro_evidence_recall": 0.49461358313817333,
+          "candidate_any_gold_rate": 0.9409722222222222,
+          "empty_context_rate": 0,
+          "mean_budget_used": 384.41759002770084,
+          "latency_ms": {
+            "p50": 16.545291000511497,
+            "p95": 22.24889390054159,
+            "p99": 25.813179350443512,
+            "mean": 16.987033533910726
+          },
+          "mrr": 0.5052380952380953,
+          "ndcg": 0.5078028127150597,
+          "query_embedding_ms_mean": 0.0
+        },
+        "all_categories_diagnostic_only": {
+          "questions": 1986,
+          "scorable": 1978,
+          "no_gold_questions": 4,
+          "partially_or_unresolved_questions": 4,
+          "any_gold_hits": 1308,
+          "any_gold_hit_rate": 0.6612740141557129,
+          "all_gold_hit_rate": 0.5591506572295247,
+          "macro_evidence_recall": 0.6052653236029899,
+          "micro_evidence_recall": 0.5026757046022119,
+          "candidate_any_gold_rate": 0.9352881698685541,
+          "empty_context_rate": 0,
+          "mean_budget_used": 384.3267875125881,
+          "latency_ms": {
+            "p50": 16.592818001299747,
+            "p95": 22.51473649903346,
+            "p99": 26.260329797150924,
+            "mean": 17.078209205420222
+          },
+          "mrr": 0.4965164427752901,
+          "ndcg": 0.5059573251507588,
+          "query_embedding_ms_mean": 0.0
+        },
+        "development": {
+          "questions": 233,
+          "scorable": 231,
+          "no_gold_questions": 2,
+          "partially_or_unresolved_questions": 0,
+          "any_gold_hits": 151,
+          "any_gold_hit_rate": 0.6536796536796536,
+          "all_gold_hit_rate": 0.5367965367965368,
+          "macro_evidence_recall": 0.5903318903318904,
+          "micro_evidence_recall": 0.5080906148867314,
+          "candidate_any_gold_rate": 0.9437229437229437,
+          "empty_context_rate": 0,
+          "mean_budget_used": 383.81545064377684,
+          "latency_ms": {
+            "p50": 15.913580999040278,
+            "p95": 23.142678200383667,
+            "p99": 27.22573599923636,
+            "mean": 16.66188394018964
+          },
+          "mrr": 0.498051948051948,
+          "ndcg": 0.5034090593240709,
+          "query_embedding_ms_mean": 0.0
+        },
+        "held_out": {
+          "questions": 1307,
+          "scorable": 1301,
+          "no_gold_questions": 2,
+          "partially_or_unresolved_questions": 4,
+          "any_gold_hits": 847,
+          "any_gold_hit_rate": 0.6510376633358954,
+          "all_gold_hit_rate": 0.5211375864719446,
+          "macro_evidence_recall": 0.579437466118407,
+          "micro_evidence_recall": 0.4616519174041298,
+          "candidate_any_gold_rate": 0.9208301306687163,
+          "empty_context_rate": 0,
+          "mean_budget_used": 384.24177505738334,
+          "latency_ms": {
+            "p50": 16.558907998842187,
+            "p95": 22.191301498605753,
+            "p99": 25.3355889012164,
+            "mean": 17.004284776512904
+          },
+          "mrr": 0.49024559862376926,
+          "ndcg": 0.48955433637663187,
+          "query_embedding_ms_mean": 0.0
+        },
+        "by_category": {
+          "multi_hop": {
+            "questions": 282,
+            "scorable": 279,
+            "no_gold_questions": 0,
+            "partially_or_unresolved_questions": 3,
+            "any_gold_hits": 156,
+            "any_gold_hit_rate": 0.5591397849462365,
+            "all_gold_hit_rate": 0.0967741935483871,
+            "macro_evidence_recall": 0.29655670211697377,
+            "micro_evidence_recall": 0.26528258362168394,
+            "candidate_any_gold_rate": 0.899641577060932,
+            "empty_context_rate": 0,
+            "mean_budget_used": 383.790780141844,
+            "latency_ms": {
+              "p50": 16.134391000377946,
+              "p95": 22.749779853074863,
+              "p99": 27.118877329739913,
+              "mean": 16.74300235807237
+            },
+            "mrr": 0.36598395630653696,
+            "ndcg": 0.26916569861504047,
+            "query_embedding_ms_mean": 0.0
+          },
+          "temporal": {
+            "questions": 321,
+            "scorable": 321,
+            "no_gold_questions": 0,
+            "partially_or_unresolved_questions": 0,
+            "any_gold_hits": 229,
+            "any_gold_hit_rate": 0.7133956386292835,
+            "all_gold_hit_rate": 0.6510903426791277,
+            "macro_evidence_recall": 0.6819833852544133,
+            "micro_evidence_recall": 0.6346666666666667,
+            "candidate_any_gold_rate": 0.9190031152647975,
+            "empty_context_rate": 0,
+            "mean_budget_used": 384.4299065420561,
+            "latency_ms": {
+              "p50": 16.401220997067867,
+              "p95": 21.80869899893878,
+              "p99": 26.099302398506556,
+              "mean": 16.9702537040453
+            },
+            "mrr": 0.5752336448598131,
+            "ndcg": 0.5917841308426592,
+            "query_embedding_ms_mean": 0.0
+          },
+          "open_domain": {
+            "questions": 96,
+            "scorable": 92,
+            "no_gold_questions": 4,
+            "partially_or_unresolved_questions": 0,
+            "any_gold_hits": 37,
+            "any_gold_hit_rate": 0.40217391304347827,
+            "all_gold_hit_rate": 0.18478260869565216,
+            "macro_evidence_recall": 0.2814364876385337,
+            "micro_evidence_recall": 0.19230769230769232,
+            "candidate_any_gold_rate": 0.6630434782608695,
+            "empty_context_rate": 0,
+            "mean_budget_used": 380.5625,
+            "latency_ms": {
+              "p50": 16.081373500128393,
+              "p95": 22.30948774922581,
+              "p99": 25.30189349909051,
+              "mean": 16.432736854161096
+            },
+            "mrr": 0.27518115942028987,
+            "ndcg": 0.23871341326274526,
+            "query_embedding_ms_mean": 0.0
+          },
+          "single_hop": {
+            "questions": 841,
+            "scorable": 840,
+            "no_gold_questions": 0,
+            "partially_or_unresolved_questions": 1,
+            "any_gold_hits": 576,
+            "any_gold_hit_rate": 0.6857142857142857,
+            "all_gold_hit_rate": 0.6535714285714286,
+            "macro_evidence_recall": 0.6698412698412698,
+            "micro_evidence_recall": 0.658454647256439,
+            "candidate_any_gold_rate": 0.9630952380952381,
+            "empty_context_rate": 0,
+            "mean_budget_used": 384.6230677764566,
+            "latency_ms": {
+              "p50": 16.770079000707483,
+              "p95": 22.236926000914536,
+              "p99": 25.171187601517886,
+              "mean": 17.07526553982418
+            },
+            "mrr": 0.5247420634920635,
+            "ndcg": 0.5549715647566619,
+            "query_embedding_ms_mean": 0.0
+          },
+          "adversarial": {
+            "questions": 446,
+            "scorable": 446,
+            "no_gold_questions": 0,
+            "partially_or_unresolved_questions": 0,
+            "any_gold_hits": 310,
+            "any_gold_hit_rate": 0.695067264573991,
+            "all_gold_hit_rate": 0.6816143497757847,
+            "macro_evidence_recall": 0.6883408071748879,
+            "micro_evidence_recall": 0.6804347826086956,
+            "candidate_any_gold_rate": 0.9730941704035875,
+            "empty_context_rate": 0,
+            "mean_budget_used": 384.84304932735427,
+            "latency_ms": {
+              "p50": 16.837952498462982,
+              "p95": 23.341224749856337,
+              "p99": 26.58269530002144,
+              "mean": 17.51234152690136
+            },
+            "mrr": 0.5140134529147982,
+            "ndcg": 0.5551253471263282,
+            "query_embedding_ms_mean": 0.0
+          }
+        }
+      },
+      "sparse@600": {
+        "main_categories_1_to_4": {
+          "questions": 1540,
+          "scorable": 1532,
+          "no_gold_questions": 4,
+          "partially_or_unresolved_questions": 4,
+          "any_gold_hits": 1063,
+          "any_gold_hit_rate": 0.693864229765013,
+          "all_gold_hit_rate": 0.5652741514360313,
+          "macro_evidence_recall": 0.6242655135748504,
+          "micro_evidence_recall": 0.5138711054204012,
+          "candidate_any_gold_rate": 0.9242819843342036,
+          "empty_context_rate": 0,
+          "mean_budget_used": 583.9272727272727,
+          "latency_ms": {
+            "p50": 23.006411998721887,
+            "p95": 31.628443452609645,
+            "p99": 37.56260027905222,
+            "mean": 23.660955867560844
+          },
+          "mrr": 0.49735432467155705,
+          "ndcg": 0.5072407862532129,
+          "query_embedding_ms_mean": 0.0
+        },
+        "conversational_categories_1_2_4": {
+          "questions": 1444,
+          "scorable": 1440,
+          "no_gold_questions": 0,
+          "partially_or_unresolved_questions": 4,
+          "any_gold_hits": 1022,
+          "any_gold_hit_rate": 0.7097222222222223,
+          "all_gold_hit_rate": 0.5868055555555556,
+          "macro_evidence_recall": 0.643390701343004,
+          "micro_evidence_recall": 0.54192037470726,
+          "candidate_any_gold_rate": 0.9409722222222222,
+          "empty_context_rate": 0,
+          "mean_budget_used": 584.4515235457063,
+          "latency_ms": {
+            "p50": 23.072538000633358,
+            "p95": 31.654594649990027,
+            "p99": 38.10327554809188,
+            "mean": 23.725754772894614
+          },
+          "mrr": 0.5111532738095238,
+          "ndcg": 0.5233557378056961,
+          "query_embedding_ms_mean": 0.0
+        },
+        "all_categories_diagnostic_only": {
+          "questions": 1986,
+          "scorable": 1978,
+          "no_gold_questions": 4,
+          "partially_or_unresolved_questions": 4,
+          "any_gold_hits": 1393,
+          "any_gold_hit_rate": 0.7042467138523761,
+          "all_gold_hit_rate": 0.6016177957532861,
+          "macro_evidence_recall": 0.6488244523744544,
+          "micro_evidence_recall": 0.5486978237602569,
+          "candidate_any_gold_rate": 0.9352881698685541,
+          "empty_context_rate": 0,
+          "mean_budget_used": 584.0090634441087,
+          "latency_ms": {
+            "p50": 23.014549498839187,
+            "p95": 31.691730499005644,
+            "p99": 37.78731884867739,
+            "mean": 23.78087271302724
+          },
+          "mrr": 0.5025067408156387,
+          "ndcg": 0.5213941383911693,
+          "query_embedding_ms_mean": 0.0
+        },
+        "development": {
+          "questions": 233,
+          "scorable": 231,
+          "no_gold_questions": 2,
+          "partially_or_unresolved_questions": 0,
+          "any_gold_hits": 158,
+          "any_gold_hit_rate": 0.683982683982684,
+          "all_gold_hit_rate": 0.5800865800865801,
+          "macro_evidence_recall": 0.6296536796536797,
+          "micro_evidence_recall": 0.5469255663430421,
+          "candidate_any_gold_rate": 0.9437229437229437,
+          "empty_context_rate": 0,
+          "mean_budget_used": 583.9098712446352,
+          "latency_ms": {
+            "p50": 22.05549000063911,
+            "p95": 30.58496260200627,
+            "p99": 33.38928471916007,
+            "mean": 22.64574071253268
+          },
+          "mrr": 0.5020545591974164,
+          "ndcg": 0.5170607355967406,
+          "query_embedding_ms_mean": 0.0
+        },
+        "held_out": {
+          "questions": 1307,
+          "scorable": 1301,
+          "no_gold_questions": 2,
+          "partially_or_unresolved_questions": 4,
+          "any_gold_hits": 905,
+          "any_gold_hit_rate": 0.6956187548039969,
+          "all_gold_hit_rate": 0.5626441199077633,
+          "macro_evidence_recall": 0.6233088138329522,
+          "micro_evidence_recall": 0.5088495575221239,
+          "candidate_any_gold_rate": 0.9208301306687163,
+          "empty_context_rate": 0,
+          "mean_budget_used": 583.9303749043611,
+          "latency_ms": {
+            "p50": 23.13274799962528,
+            "p95": 31.774424600735074,
+            "p99": 38.39171434301534,
+            "mean": 23.841939135442683
+          },
+          "mrr": 0.49651977111623535,
+          "ndcg": 0.5054971980146619,
+          "query_embedding_ms_mean": 0.0
+        },
+        "by_category": {
+          "multi_hop": {
+            "questions": 282,
+            "scorable": 279,
+            "no_gold_questions": 0,
+            "partially_or_unresolved_questions": 3,
+            "any_gold_hits": 172,
+            "any_gold_hit_rate": 0.6164874551971327,
+            "all_gold_hit_rate": 0.13978494623655913,
+            "macro_evidence_recall": 0.35298426499614954,
+            "micro_evidence_recall": 0.3217993079584775,
+            "candidate_any_gold_rate": 0.899641577060932,
+            "empty_context_rate": 0,
+            "mean_budget_used": 584.9539007092199,
+            "latency_ms": {
+              "p50": 22.58931700271205,
+              "p95": 30.898524998337955,
+              "p99": 36.000499379370005,
+              "mean": 23.193441382911697
+            },
+            "mrr": 0.37431871195312055,
+            "ndcg": 0.2933954076493816,
+            "query_embedding_ms_mean": 0.0
+          },
+          "temporal": {
+            "questions": 321,
+            "scorable": 321,
+            "no_gold_questions": 0,
+            "partially_or_unresolved_questions": 0,
+            "any_gold_hits": 240,
+            "any_gold_hit_rate": 0.7476635514018691,
+            "all_gold_hit_rate": 0.6947040498442367,
+            "macro_evidence_recall": 0.721183800623053,
+            "micro_evidence_recall": 0.6773333333333333,
+            "candidate_any_gold_rate": 0.9190031152647975,
+            "empty_context_rate": 0,
+            "mean_budget_used": 583.4392523364486,
+            "latency_ms": {
+              "p50": 22.57238300080644,
+              "p95": 31.181193997326773,
+              "p99": 38.07884339839805,
+              "mean": 23.49886362310053
+            },
+            "mrr": 0.5797223458438412,
+            "ndcg": 0.605169841363387,
+            "query_embedding_ms_mean": 0.0
+          },
+          "open_domain": {
+            "questions": 96,
+            "scorable": 92,
+            "no_gold_questions": 4,
+            "partially_or_unresolved_questions": 0,
+            "any_gold_hits": 41,
+            "any_gold_hit_rate": 0.44565217391304346,
+            "all_gold_hit_rate": 0.22826086956521738,
+            "macro_evidence_recall": 0.32491474850809887,
+            "micro_evidence_recall": 0.22596153846153846,
+            "candidate_any_gold_rate": 0.6630434782608695,
+            "empty_context_rate": 0,
+            "mean_budget_used": 576.0416666666666,
+            "latency_ms": {
+              "p50": 21.824608002134482,
+              "p95": 30.882833498253603,
+              "p99": 34.80593639906146,
+              "mean": 22.68627233316541
+            },
+            "mrr": 0.2813707729468599,
+            "ndcg": 0.255006761953475,
+            "query_embedding_ms_mean": 0.0
+          },
+          "single_hop": {
+            "questions": 841,
+            "scorable": 840,
+            "no_gold_questions": 0,
+            "partially_or_unresolved_questions": 1,
+            "any_gold_hits": 610,
+            "any_gold_hit_rate": 0.7261904761904762,
+            "all_gold_hit_rate": 0.694047619047619,
+            "macro_evidence_recall": 0.7101190476190476,
+            "micro_evidence_recall": 0.6987681970884658,
+            "candidate_any_gold_rate": 0.9630952380952381,
+            "empty_context_rate": 0,
+            "mean_budget_used": 584.6694411414982,
+            "latency_ms": {
+              "p50": 23.463530000299215,
+              "p95": 31.73492200221517,
+              "p99": 37.6040705981723,
+              "mean": 23.99084922599697
+            },
+            "mrr": 0.5303987150415722,
+            "ndcg": 0.5684707436052115,
+            "query_embedding_ms_mean": 0.0
+          },
+          "adversarial": {
+            "questions": 446,
+            "scorable": 446,
+            "no_gold_questions": 0,
+            "partially_or_unresolved_questions": 0,
+            "any_gold_hits": 330,
+            "any_gold_hit_rate": 0.7399103139013453,
+            "all_gold_hit_rate": 0.726457399103139,
+            "macro_evidence_recall": 0.7331838565022422,
+            "micro_evidence_recall": 0.7260869565217392,
+            "candidate_any_gold_rate": 0.9730941704035875,
+            "empty_context_rate": 0,
+            "mean_budget_used": 584.2914798206278,
+            "latency_ms": {
+              "p50": 23.166036498878384,
+              "p95": 32.32723600103782,
+              "p99": 37.758674649921886,
+              "mean": 24.19493536329237
+            },
+            "mrr": 0.5202051747455335,
+            "ndcg": 0.5700105856453157,
+            "query_embedding_ms_mean": 0.0
+          }
+        }
+      },
+      "sparse@800": {
+        "main_categories_1_to_4": {
+          "questions": 1540,
+          "scorable": 1532,
+          "no_gold_questions": 4,
+          "partially_or_unresolved_questions": 4,
+          "any_gold_hits": 1102,
+          "any_gold_hit_rate": 0.7193211488250653,
+          "all_gold_hit_rate": 0.589425587467363,
+          "macro_evidence_recall": 0.6497197897548216,
+          "micro_evidence_recall": 0.5458813486982501,
+          "candidate_any_gold_rate": 0.9242819843342036,
+          "empty_context_rate": 0,
+          "mean_budget_used": 783.6805194805195,
+          "latency_ms": {
+            "p50": 28.673923998212558,
+            "p95": 38.99725439896429,
+            "p99": 46.82216034008888,
+            "mean": 29.51352455715474
+          },
+          "mrr": 0.49986769286704014,
+          "ndcg": 0.5157150712368861,
+          "query_embedding_ms_mean": 0.0
+        },
+        "conversational_categories_1_2_4": {
+          "questions": 1444,
+          "scorable": 1440,
+          "no_gold_questions": 0,
+          "partially_or_unresolved_questions": 4,
+          "any_gold_hits": 1060,
+          "any_gold_hit_rate": 0.7361111111111112,
+          "all_gold_hit_rate": 0.6125,
+          "macro_evidence_recall": 0.6698278405926432,
+          "micro_evidence_recall": 0.5742388758782201,
+          "candidate_any_gold_rate": 0.9409722222222222,
+          "empty_context_rate": 0,
+          "mean_budget_used": 784.3150969529086,
+          "latency_ms": {
+            "p50": 28.680286499366048,
+            "p95": 38.98957539913681,
+            "p99": 47.552586150522906,
+            "mean": 29.572934047094066
+          },
+          "mrr": 0.5137404127508294,
+          "ndcg": 0.5320071753008578,
+          "query_embedding_ms_mean": 0.0
+        },
+        "all_categories_diagnostic_only": {
+          "questions": 1986,
+          "scorable": 1978,
+          "no_gold_questions": 4,
+          "partially_or_unresolved_questions": 4,
+          "any_gold_hits": 1445,
+          "any_gold_hit_rate": 0.7305358948432761,
+          "all_gold_hit_rate": 0.6268958543983822,
+          "macro_evidence_recall": 0.6751115864026221,
+          "micro_evidence_recall": 0.5800927577595434,
+          "candidate_any_gold_rate": 0.9352881698685541,
+          "empty_context_rate": 0,
+          "mean_budget_used": 784.1117824773414,
+          "latency_ms": {
+            "p50": 28.92285549933149,
+            "p95": 40.42481524993491,
+            "p99": 48.98830519832708,
+            "mean": 29.921697517662565
+          },
+          "mrr": 0.5051052124484885,
+          "ndcg": 0.5298507683612241,
+          "query_embedding_ms_mean": 0.0
+        },
+        "development": {
+          "questions": 233,
+          "scorable": 231,
+          "no_gold_questions": 2,
+          "partially_or_unresolved_questions": 0,
+          "any_gold_hits": 170,
+          "any_gold_hit_rate": 0.7359307359307359,
+          "all_gold_hit_rate": 0.6277056277056277,
+          "macro_evidence_recall": 0.6794372294372294,
+          "micro_evidence_recall": 0.598705501618123,
+          "candidate_any_gold_rate": 0.9437229437229437,
+          "empty_context_rate": 0,
+          "mean_budget_used": 782.9527896995709,
+          "latency_ms": {
+            "p50": 28.351275002933107,
+            "p95": 39.76032139980816,
+            "p99": 51.02141216033492,
+            "mean": 29.08806393988847
+          },
+          "mrr": 0.5073936645365217,
+          "ndcg": 0.5327714460078764,
+          "query_embedding_ms_mean": 0.0
+        },
+        "held_out": {
+          "questions": 1307,
+          "scorable": 1301,
+          "no_gold_questions": 2,
+          "partially_or_unresolved_questions": 4,
+          "any_gold_hits": 932,
+          "any_gold_hit_rate": 0.7163720215219063,
+          "all_gold_hit_rate": 0.5826287471176018,
+          "macro_evidence_recall": 0.6444432881663233,
+          "micro_evidence_recall": 0.5378564405113078,
+          "candidate_any_gold_rate": 0.9208301306687163,
+          "empty_context_rate": 0,
+          "mean_budget_used": 783.8102524866106,
+          "latency_ms": {
+            "p50": 28.719011999783106,
+            "p95": 38.96157190138183,
+            "p99": 46.627862540044596,
+            "mean": 29.58937178272707
+          },
+          "mrr": 0.49853141350066793,
+          "ndcg": 0.5126866142252805,
+          "query_embedding_ms_mean": 0.0
+        },
+        "by_category": {
+          "multi_hop": {
+            "questions": 282,
+            "scorable": 279,
+            "no_gold_questions": 0,
+            "partially_or_unresolved_questions": 3,
+            "any_gold_hits": 187,
+            "any_gold_hit_rate": 0.6702508960573477,
+            "all_gold_hit_rate": 0.18996415770609318,
+            "macro_evidence_recall": 0.40520462528102597,
+            "micro_evidence_recall": 0.37139561707035756,
+            "candidate_any_gold_rate": 0.899641577060932,
+            "empty_context_rate": 0,
+            "mean_budget_used": 783.2411347517731,
+            "latency_ms": {
+              "p50": 27.987479499643086,
+              "p95": 39.952245550739455,
+              "p99": 48.61337903061212,
+              "mean": 29.185833014101565
+            },
+            "mrr": 0.3796000196537831,
+            "ndcg": 0.3134850620277485,
+            "query_embedding_ms_mean": 0.0
+          },
+          "temporal": {
+            "questions": 321,
+            "scorable": 321,
+            "no_gold_questions": 0,
+            "partially_or_unresolved_questions": 0,
+            "any_gold_hits": 243,
+            "any_gold_hit_rate": 0.7570093457943925,
+            "all_gold_hit_rate": 0.7040498442367601,
+            "macro_evidence_recall": 0.7315680166147456,
+            "micro_evidence_recall": 0.688,
+            "candidate_any_gold_rate": 0.9190031152647975,
+            "empty_context_rate": 0,
+            "mean_budget_used": 783.9719626168225,
+            "latency_ms": {
+              "p50": 28.746200001478428,
+              "p95": 40.51916700336733,
+              "p99": 45.603403799032094,
+              "mean": 29.68676821507312
+            },
+            "mrr": 0.5805420695607612,
+            "ndcg": 0.6081192332295065,
+            "query_embedding_ms_mean": 0.0
+          },
+          "open_domain": {
+            "questions": 96,
+            "scorable": 92,
+            "no_gold_questions": 4,
+            "partially_or_unresolved_questions": 0,
+            "any_gold_hits": 42,
+            "any_gold_hit_rate": 0.45652173913043476,
+            "all_gold_hit_rate": 0.22826086956521738,
+            "macro_evidence_recall": 0.3349850809889173,
+            "micro_evidence_recall": 0.2548076923076923,
+            "candidate_any_gold_rate": 0.6630434782608695,
+            "empty_context_rate": 0,
+            "mean_budget_used": 774.1354166666666,
+            "latency_ms": {
+              "p50": 28.30183249898255,
+              "p95": 38.033676249142445,
+              "p99": 43.59836375133454,
+              "mean": 28.619906812650697
+            },
+            "mrr": 0.2827294685990338,
+            "ndcg": 0.26070822501819696,
+            "query_embedding_ms_mean": 0.0
+          },
+          "single_hop": {
+            "questions": 841,
+            "scorable": 840,
+            "no_gold_questions": 0,
+            "partially_or_unresolved_questions": 1,
+            "any_gold_hits": 630,
+            "any_gold_hit_rate": 0.75,
+            "all_gold_hit_rate": 0.7178571428571429,
+            "macro_evidence_recall": 0.7341269841269841,
+            "micro_evidence_recall": 0.723404255319149,
+            "candidate_any_gold_rate": 0.9630952380952381,
+            "empty_context_rate": 0,
+            "mean_budget_used": 784.8061831153389,
+            "latency_ms": {
+              "p50": 28.882290000183275,
+              "p95": 38.73191300226608,
+              "p99": 45.69221819983797,
+              "mean": 29.659285680129273
+            },
+            "mrr": 0.5327664101771244,
+            "ndcg": 0.575502055072407,
+            "query_embedding_ms_mean": 0.0
+          },
+          "adversarial": {
+            "questions": 446,
+            "scorable": 446,
+            "no_gold_questions": 0,
+            "partially_or_unresolved_questions": 0,
+            "any_gold_hits": 343,
+            "any_gold_hit_rate": 0.7690582959641256,
+            "all_gold_hit_rate": 0.7556053811659192,
+            "macro_evidence_recall": 0.7623318385650224,
+            "micro_evidence_recall": 0.7543478260869565,
+            "candidate_any_gold_rate": 0.9730941704035875,
+            "empty_context_rate": 0,
+            "mean_budget_used": 785.6008968609865,
+            "latency_ms": {
+              "p50": 30.0124940022215,
+              "p95": 43.41816050146008,
+              "p99": 52.93628975105094,
+              "mean": 31.3310839732277
+            },
+            "mrr": 0.5230959747775892,
+            "ndcg": 0.5784065710394435,
+            "query_embedding_ms_mean": 0.0
+          }
+        }
+      },
+      "sparse@1200": {
+        "main_categories_1_to_4": {
+          "questions": 1540,
+          "scorable": 1532,
+          "no_gold_questions": 4,
+          "partially_or_unresolved_questions": 4,
+          "any_gold_hits": 1167,
+          "any_gold_hit_rate": 0.7617493472584856,
+          "all_gold_hit_rate": 0.6279373368146214,
+          "macro_evidence_recall": 0.6917053171475344,
+          "micro_evidence_recall": 0.5941101152368758,
+          "candidate_any_gold_rate": 0.9242819843342036,
+          "empty_context_rate": 0,
+          "mean_budget_used": 1182.4766233766234,
+          "latency_ms": {
+            "p50": 40.01524999875983,
+            "p95": 54.69072314899677,
+            "p99": 63.805316639773054,
+            "mean": 41.085190026647716
+          },
+          "mrr": 0.5028150986142118,
+          "ndcg": 0.5278675830055697,
+          "query_embedding_ms_mean": 0.0
+        },
+        "conversational_categories_1_2_4": {
+          "questions": 1444,
+          "scorable": 1440,
+          "no_gold_questions": 0,
+          "partially_or_unresolved_questions": 4,
+          "any_gold_hits": 1120,
+          "any_gold_hit_rate": 0.7777777777777778,
+          "all_gold_hit_rate": 0.6527777777777778,
+          "macro_evidence_recall": 0.7120992625186704,
+          "micro_evidence_recall": 0.6234192037470726,
+          "candidate_any_gold_rate": 0.9409722222222222,
+          "empty_context_rate": 0,
+          "mean_budget_used": 1183.6447368421052,
+          "latency_ms": {
+            "p50": 40.05896850139834,
+            "p95": 54.351660899010305,
+            "p99": 62.762629897115396,
+            "mean": 41.13717037813542
+          },
+          "mrr": 0.5166155175281852,
+          "ndcg": 0.5442160991679058,
+          "query_embedding_ms_mean": 0.0
+        },
+        "all_categories_diagnostic_only": {
+          "questions": 1986,
+          "scorable": 1978,
+          "no_gold_questions": 4,
+          "partially_or_unresolved_questions": 4,
+          "any_gold_hits": 1525,
+          "any_gold_hit_rate": 0.7709807886754297,
+          "all_gold_hit_rate": 0.6663296258847321,
+          "macro_evidence_recall": 0.7162247451314574,
+          "micro_evidence_recall": 0.627185158758473,
+          "candidate_any_gold_rate": 0.9352881698685541,
+          "empty_context_rate": 0,
+          "mean_budget_used": 1182.5644511581067,
+          "latency_ms": {
+            "p50": 40.13863549880625,
+            "p95": 54.961710752650106,
+            "p99": 64.97113950026689,
+            "mean": 41.34775669086083
+          },
+          "mrr": 0.507935942356617,
+          "ndcg": 0.541533651359862,
+          "query_embedding_ms_mean": 0.0
+        },
+        "development": {
+          "questions": 233,
+          "scorable": 231,
+          "no_gold_questions": 2,
+          "partially_or_unresolved_questions": 0,
+          "any_gold_hits": 177,
+          "any_gold_hit_rate": 0.7662337662337663,
+          "all_gold_hit_rate": 0.645021645021645,
+          "macro_evidence_recall": 0.7051948051948052,
+          "micro_evidence_recall": 0.6310679611650486,
+          "candidate_any_gold_rate": 0.9437229437229437,
+          "empty_context_rate": 0,
+          "mean_budget_used": 1180.128755364807,
+          "latency_ms": {
+            "p50": 37.617358000716195,
+            "p95": 51.80072819857742,
+            "p99": 56.3868453577743,
+            "mean": 39.213907811053744
+          },
+          "mrr": 0.5094144967928692,
+          "ndcg": 0.5401658948676165,
+          "query_embedding_ms_mean": 0.0
+        },
+        "held_out": {
+          "questions": 1307,
+          "scorable": 1301,
+          "no_gold_questions": 2,
+          "partially_or_unresolved_questions": 4,
+          "any_gold_hits": 990,
+          "any_gold_hit_rate": 0.7609531129900077,
+          "all_gold_hit_rate": 0.6249039200614912,
+          "macro_evidence_recall": 0.6893101812990182,
+          "micro_evidence_recall": 0.588495575221239,
+          "candidate_any_gold_rate": 0.9208301306687163,
+          "empty_context_rate": 0,
+          "mean_budget_used": 1182.8951798010712,
+          "latency_ms": {
+            "p50": 40.27664599925629,
+            "p95": 54.845786199803115,
+            "p99": 64.38734858122191,
+            "mean": 41.41878509645139
+          },
+          "mrr": 0.5016433376770328,
+          "ndcg": 0.5256839473098488,
+          "query_embedding_ms_mean": 0.0
+        },
+        "by_category": {
+          "multi_hop": {
+            "questions": 282,
+            "scorable": 279,
+            "no_gold_questions": 0,
+            "partially_or_unresolved_questions": 3,
+            "any_gold_hits": 205,
+            "any_gold_hit_rate": 0.7347670250896058,
+            "all_gold_hit_rate": 0.22939068100358423,
+            "macro_evidence_recall": 0.4644788698693622,
+            "micro_evidence_recall": 0.43137254901960786,
+            "candidate_any_gold_rate": 0.899641577060932,
+            "empty_context_rate": 0,
+            "mean_budget_used": 1184.0815602836878,
+            "latency_ms": {
+              "p50": 38.788023999586585,
+              "p95": 55.9230368993667,
+              "p99": 62.12174451186001,
+              "mean": 41.07891801428479
+            },
+            "mrr": 0.38396731666231315,
+            "ndcg": 0.3344263000782354,
+            "query_embedding_ms_mean": 0.0
+          },
+          "temporal": {
+            "questions": 321,
+            "scorable": 321,
+            "no_gold_questions": 0,
+            "partially_or_unresolved_questions": 0,
+            "any_gold_hits": 254,
+            "any_gold_hit_rate": 0.7912772585669782,
+            "all_gold_hit_rate": 0.7320872274143302,
+            "macro_evidence_recall": 0.7622014537902388,
+            "micro_evidence_recall": 0.7253333333333334,
+            "candidate_any_gold_rate": 0.9190031152647975,
+            "empty_context_rate": 0,
+            "mean_budget_used": 1184.9532710280373,
+            "latency_ms": {
+              "p50": 40.079002999846125,
+              "p95": 55.727445000229636,
+              "p99": 69.82659679997607,
+              "mean": 41.63978160446458
+            },
+            "mrr": 0.5830683622001871,
+            "ndcg": 0.6167846993989209,
+            "query_embedding_ms_mean": 0.0
+          },
+          "open_domain": {
+            "questions": 96,
+            "scorable": 92,
+            "no_gold_questions": 4,
+            "partially_or_unresolved_questions": 0,
+            "any_gold_hits": 47,
+            "any_gold_hit_rate": 0.5108695652173914,
+            "all_gold_hit_rate": 0.2391304347826087,
+            "macro_evidence_recall": 0.3724957374254049,
+            "micro_evidence_recall": 0.2932692307692308,
+            "candidate_any_gold_rate": 0.6630434782608695,
+            "empty_context_rate": 0,
+            "mean_budget_used": 1164.90625,
+            "latency_ms": {
+              "p50": 38.37518950058438,
+              "p95": 56.35141374932573,
+              "p99": 65.27403065119866,
+              "mean": 40.303318906353525
+            },
+            "mrr": 0.28680854169984604,
+            "ndcg": 0.2719777648124824,
+            "query_embedding_ms_mean": 0.0
+          },
+          "single_hop": {
+            "questions": 841,
+            "scorable": 840,
+            "no_gold_questions": 0,
+            "partially_or_unresolved_questions": 1,
+            "any_gold_hits": 661,
+            "any_gold_hit_rate": 0.7869047619047619,
+            "all_gold_hit_rate": 0.763095238095238,
+            "macro_evidence_recall": 0.7751984126984127,
+            "micro_evidence_recall": 0.7670772676371781,
+            "candidate_any_gold_rate": 0.9630952380952381,
+            "empty_context_rate": 0,
+            "mean_budget_used": 1182.998810939358,
+            "latency_ms": {
+              "p50": 40.37048000100185,
+              "p95": 53.100306999112945,
+              "p99": 62.13312619947832,
+              "mean": 40.96486236737944
+            },
+            "mrr": 0.5352791900304064,
+            "ndcg": 0.5861647102058369,
+            "query_embedding_ms_mean": 0.0
+          },
+          "adversarial": {
+            "questions": 446,
+            "scorable": 446,
+            "no_gold_questions": 0,
+            "partially_or_unresolved_questions": 0,
+            "any_gold_hits": 358,
+            "any_gold_hit_rate": 0.8026905829596412,
+            "all_gold_hit_rate": 0.7982062780269058,
+            "macro_evidence_recall": 0.8004484304932735,
+            "micro_evidence_recall": 0.7956521739130434,
+            "candidate_any_gold_rate": 0.9730941704035875,
+            "empty_context_rate": 0,
+            "mean_budget_used": 1182.8677130044844,
+            "latency_ms": {
+              "p50": 40.47635000097216,
+              "p95": 56.90344225058652,
+              "p99": 69.2101697513863,
+              "mean": 42.254377011237914
+            },
+            "mrr": 0.5255259257946544,
+            "ndcg": 0.5884762897427677,
+            "query_embedding_ms_mean": 0.0
+          }
+        }
+      }
+    },
+    "entity": {
+      "sparse@128": {
+        "main_categories_1_to_4": {
+          "questions": 1540,
+          "scorable": 1532,
+          "no_gold_questions": 4,
+          "partially_or_unresolved_questions": 4,
+          "any_gold_hits": 740,
+          "any_gold_hit_rate": 0.4830287206266319,
+          "all_gold_hit_rate": 0.3838120104438642,
+          "macro_evidence_recall": 0.42536178521904094,
+          "micro_evidence_recall": 0.3218096457533077,
+          "candidate_any_gold_rate": 0.9242819843342036,
+          "empty_context_rate": 0,
+          "mean_budget_used": 114.9064935064935,
+          "latency_ms": {
+            "p50": 8.330954500706866,
+            "p95": 11.562073349705315,
+            "p99": 14.335880617909407,
+            "mean": 8.540391792189734
+          },
+          "mrr": 0.4614882506527415,
+          "ndcg": 0.44109583650229317,
+          "query_embedding_ms_mean": 0.0
+        },
+        "conversational_categories_1_2_4": {
+          "questions": 1444,
+          "scorable": 1440,
+          "no_gold_questions": 0,
+          "partially_or_unresolved_questions": 4,
+          "any_gold_hits": 717,
+          "any_gold_hit_rate": 0.4979166666666667,
+          "all_gold_hit_rate": 0.4,
+          "macro_evidence_recall": 0.44090573260803523,
+          "micro_evidence_recall": 0.34192037470725994,
+          "candidate_any_gold_rate": 0.9409722222222222,
+          "empty_context_rate": 0,
+          "mean_budget_used": 114.88227146814404,
+          "latency_ms": {
+            "p50": 8.32760900084395,
+            "p95": 11.58297920064797,
+            "p99": 14.408011809027812,
+            "mean": 8.54867000135248
+          },
+          "mrr": 0.4756944444444444,
+          "ndcg": 0.45640466265681806,
+          "query_embedding_ms_mean": 0.0
+        },
+        "all_categories_diagnostic_only": {
+          "questions": 1986,
+          "scorable": 1978,
+          "no_gold_questions": 4,
+          "partially_or_unresolved_questions": 4,
+          "any_gold_hits": 794,
+          "any_gold_hit_rate": 0.40141557128412536,
+          "all_gold_hit_rate": 0.3235591506572295,
+          "macro_evidence_recall": 0.3562458316256677,
+          "micro_evidence_recall": 0.2882625758116304,
+          "candidate_any_gold_rate": 0.9352881698685541,
+          "empty_context_rate": 0,
+          "mean_budget_used": 114.62437059415912,
+          "latency_ms": {
+            "p50": 8.341158498296863,
+            "p95": 11.525971248374844,
+            "p99": 14.197759496710209,
+            "mean": 8.559534331300977
+          },
+          "mrr": 0.3823727671048197,
+          "ndcg": 0.3669454528096112,
+          "query_embedding_ms_mean": 0.0
+        },
+        "development": {
+          "questions": 233,
+          "scorable": 231,
+          "no_gold_questions": 2,
+          "partially_or_unresolved_questions": 0,
+          "any_gold_hits": 107,
+          "any_gold_hit_rate": 0.46320346320346323,
+          "all_gold_hit_rate": 0.3939393939393939,
+          "macro_evidence_recall": 0.424963924963925,
+          "micro_evidence_recall": 0.34627831715210355,
+          "candidate_any_gold_rate": 0.9437229437229437,
+          "empty_context_rate": 0,
+          "mean_budget_used": 113.21030042918454,
+          "latency_ms": {
+            "p50": 7.751436001854017,
+            "p95": 11.3442390000273,
+            "p99": 13.94557788182283,
+            "mean": 8.088093772641725
+          },
+          "mrr": 0.45670995670995673,
+          "ndcg": 0.4445743104649297,
+          "query_embedding_ms_mean": 0.0
+        },
+        "held_out": {
+          "questions": 1307,
+          "scorable": 1301,
+          "no_gold_questions": 2,
+          "partially_or_unresolved_questions": 4,
+          "any_gold_hits": 633,
+          "any_gold_hit_rate": 0.4865488086087625,
+          "all_gold_hit_rate": 0.38201383551114526,
+          "macro_evidence_recall": 0.4254324275856296,
+          "micro_evidence_recall": 0.31809242871189775,
+          "candidate_any_gold_rate": 0.9208301306687163,
+          "empty_context_rate": 0,
+          "mean_budget_used": 115.20887528691661,
+          "latency_ms": {
+            "p50": 8.403252002608497,
+            "p95": 11.58167840076203,
+            "p99": 14.392654478069753,
+            "mean": 8.62102334425912
+          },
+          "mrr": 0.462336664104535,
+          "ndcg": 0.44047821353121785,
+          "query_embedding_ms_mean": 0.0
+        },
+        "by_category": {
+          "multi_hop": {
+            "questions": 282,
+            "scorable": 279,
+            "no_gold_questions": 0,
+            "partially_or_unresolved_questions": 3,
+            "any_gold_hits": 100,
+            "any_gold_hit_rate": 0.35842293906810035,
+            "all_gold_hit_rate": 0.010752688172043012,
+            "macro_evidence_recall": 0.14601286125055224,
+            "micro_evidence_recall": 0.12687427912341406,
+            "candidate_any_gold_rate": 0.899641577060932,
+            "empty_context_rate": 0,
+            "mean_budget_used": 115.27304964539007,
+            "latency_ms": {
+              "p50": 8.130420499583124,
+              "p95": 11.394694351838552,
+              "p99": 13.848663168719211,
+              "mean": 8.42186461716452
+            },
+            "mrr": 0.33691756272401435,
+            "ndcg": 0.2608242460822769,
+            "query_embedding_ms_mean": 0.0
+          },
+          "temporal": {
+            "questions": 321,
+            "scorable": 321,
+            "no_gold_questions": 0,
+            "partially_or_unresolved_questions": 0,
+            "any_gold_hits": 180,
+            "any_gold_hit_rate": 0.5607476635514018,
+            "all_gold_hit_rate": 0.5077881619937694,
+            "macro_evidence_recall": 0.5327102803738317,
+            "micro_evidence_recall": 0.4826666666666667,
+            "candidate_any_gold_rate": 0.9190031152647975,
+            "empty_context_rate": 0,
+            "mean_budget_used": 114.7196261682243,
+            "latency_ms": {
+              "p50": 8.252019997598836,
+              "p95": 12.058968000928871,
+              "p99": 16.11932719897597,
+              "mean": 8.701483146210888
+            },
+            "mrr": 0.543613707165109,
+            "ndcg": 0.5345281785802704,
+            "query_embedding_ms_mean": 0.0
+          },
+          "open_domain": {
+            "questions": 96,
+            "scorable": 92,
+            "no_gold_questions": 4,
+            "partially_or_unresolved_questions": 0,
+            "any_gold_hits": 23,
+            "any_gold_hit_rate": 0.25,
+            "all_gold_hit_rate": 0.13043478260869565,
+            "macro_evidence_recall": 0.18206521739130435,
+            "micro_evidence_recall": 0.11538461538461539,
+            "candidate_any_gold_rate": 0.6630434782608695,
+            "empty_context_rate": 0,
+            "mean_budget_used": 115.27083333333333,
+            "latency_ms": {
+              "p50": 8.399034000831307,
+              "p95": 11.383589499018854,
+              "p99": 13.127533797705835,
+              "mean": 8.415873729366771
+            },
+            "mrr": 0.2391304347826087,
+            "ndcg": 0.2014794271271209,
+            "query_embedding_ms_mean": 0.0
+          },
+          "single_hop": {
+            "questions": 841,
+            "scorable": 840,
+            "no_gold_questions": 0,
+            "partially_or_unresolved_questions": 1,
+            "any_gold_hits": 437,
+            "any_gold_hit_rate": 0.5202380952380953,
+            "all_gold_hit_rate": 0.4880952380952381,
+            "macro_evidence_recall": 0.5037698412698413,
+            "micro_evidence_recall": 0.4916013437849944,
+            "candidate_any_gold_rate": 0.9630952380952381,
+            "empty_context_rate": 0,
+            "mean_budget_used": 114.81331747919144,
+            "latency_ms": {
+              "p50": 8.399682999879587,
+              "p95": 11.340221000864403,
+              "p99": 13.962582602107434,
+              "mean": 8.532862746704984
+            },
+            "mrr": 0.49583333333333335,
+            "ndcg": 0.4915109574340429,
+            "query_embedding_ms_mean": 0.0
+          },
+          "adversarial": {
+            "questions": 446,
+            "scorable": 446,
+            "no_gold_questions": 0,
+            "partially_or_unresolved_questions": 0,
+            "any_gold_hits": 54,
+            "any_gold_hit_rate": 0.1210762331838565,
+            "all_gold_hit_rate": 0.11659192825112108,
+            "macro_evidence_recall": 0.11883408071748879,
+            "micro_evidence_recall": 0.11739130434782609,
+            "candidate_any_gold_rate": 0.9730941704035875,
+            "empty_context_rate": 0,
+            "mean_budget_used": 113.65022421524664,
+            "latency_ms": {
+              "p50": 8.366099500562996,
+              "p95": 11.305419000564143,
+              "p99": 12.872169301772374,
+              "mean": 8.62563188787343
+            },
+            "mrr": 0.11061285500747384,
+            "ndcg": 0.11224054738990545,
+            "query_embedding_ms_mean": 0.0
+          }
+        }
+      },
+      "sparse@256": {
+        "main_categories_1_to_4": {
+          "questions": 1540,
+          "scorable": 1532,
+          "no_gold_questions": 4,
+          "partially_or_unresolved_questions": 4,
+          "any_gold_hits": 945,
+          "any_gold_hit_rate": 0.6168407310704961,
+          "all_gold_hit_rate": 0.4934725848563969,
+          "macro_evidence_recall": 0.5471765137089103,
+          "micro_evidence_recall": 0.4353393085787452,
+          "candidate_any_gold_rate": 0.9242819843342036,
+          "empty_context_rate": 0,
+          "mean_budget_used": 240.77142857142857,
+          "latency_ms": {
+            "p50": 12.136150999140227,
+            "p95": 16.07342669776699,
+            "p99": 18.65767099046934,
+            "mean": 12.364713975278262
+          },
+          "mrr": 0.5174608355091384,
+          "ndcg": 0.501753052491871,
+          "query_embedding_ms_mean": 0.0
+        },
+        "conversational_categories_1_2_4": {
+          "questions": 1444,
+          "scorable": 1440,
+          "no_gold_questions": 0,
+          "partially_or_unresolved_questions": 4,
+          "any_gold_hits": 912,
+          "any_gold_hit_rate": 0.6333333333333333,
+          "all_gold_hit_rate": 0.5131944444444444,
+          "macro_evidence_recall": 0.5652947354180907,
+          "micro_evidence_recall": 0.4613583138173302,
+          "candidate_any_gold_rate": 0.9409722222222222,
+          "empty_context_rate": 0,
+          "mean_budget_used": 240.92174515235456,
+          "latency_ms": {
+            "p50": 12.153509000199847,
+            "p95": 16.077021899764077,
+            "p99": 18.65762063051079,
+            "mean": 12.392254597604364
+          },
+          "mrr": 0.5322337962962963,
+          "ndcg": 0.5183384114241116,
+          "query_embedding_ms_mean": 0.0
+        },
+        "all_categories_diagnostic_only": {
+          "questions": 1986,
+          "scorable": 1978,
+          "no_gold_questions": 4,
+          "partially_or_unresolved_questions": 4,
+          "any_gold_hits": 1015,
+          "any_gold_hit_rate": 0.5131445904954499,
+          "all_gold_hit_rate": 0.416582406471183,
+          "macro_evidence_recall": 0.4586827194145857,
+          "micro_evidence_recall": 0.38886906885479844,
+          "candidate_any_gold_rate": 0.9352881698685541,
+          "empty_context_rate": 0,
+          "mean_budget_used": 240.77391742195368,
+          "latency_ms": {
+            "p50": 12.223915500726434,
+            "p95": 16.336576249159407,
+            "p99": 18.743354749494763,
+            "mean": 12.491737228042883
+          },
+          "mrr": 0.42902763734411864,
+          "ndcg": 0.41843859163749675,
+          "query_embedding_ms_mean": 0.0
+        },
+        "development": {
+          "questions": 233,
+          "scorable": 231,
+          "no_gold_questions": 2,
+          "partially_or_unresolved_questions": 0,
+          "any_gold_hits": 142,
+          "any_gold_hit_rate": 0.6147186147186147,
+          "all_gold_hit_rate": 0.5151515151515151,
+          "macro_evidence_recall": 0.5593073593073593,
+          "micro_evidence_recall": 0.47572815533980584,
+          "candidate_any_gold_rate": 0.9437229437229437,
+          "empty_context_rate": 0,
+          "mean_budget_used": 240.75536480686696,
+          "latency_ms": {
+            "p50": 11.267091998888645,
+            "p95": 15.11312660149997,
+            "p99": 15.806472199910786,
+            "mean": 11.470601441930853
+          },
+          "mrr": 0.5183982683982684,
+          "ndcg": 0.5107041184872386,
+          "query_embedding_ms_mean": 0.0
+        },
+        "held_out": {
+          "questions": 1307,
+          "scorable": 1301,
+          "no_gold_questions": 2,
+          "partially_or_unresolved_questions": 4,
+          "any_gold_hits": 803,
+          "any_gold_hit_rate": 0.617217524980784,
+          "all_gold_hit_rate": 0.48962336664104533,
+          "macro_evidence_recall": 0.545022612607264,
+          "micro_evidence_recall": 0.42920353982300885,
+          "candidate_any_gold_rate": 0.9208301306687163,
+          "empty_context_rate": 0,
+          "mean_budget_used": 240.77429227237948,
+          "latency_ms": {
+            "p50": 12.248702001670608,
+            "p95": 16.30785350171209,
+            "p99": 18.807828581848305,
+            "mean": 12.524108175943867
+          },
+          "mrr": 0.5172943889315911,
+          "ndcg": 0.5001637394673283,
+          "query_embedding_ms_mean": 0.0
+        },
+        "by_category": {
+          "multi_hop": {
+            "questions": 282,
+            "scorable": 279,
+            "no_gold_questions": 0,
+            "partially_or_unresolved_questions": 3,
+            "any_gold_hits": 153,
+            "any_gold_hit_rate": 0.5483870967741935,
+            "all_gold_hit_rate": 0.08243727598566308,
+            "macro_evidence_recall": 0.27428107169193755,
+            "micro_evidence_recall": 0.2422145328719723,
+            "candidate_any_gold_rate": 0.899641577060932,
+            "empty_context_rate": 0,
+            "mean_budget_used": 240.81560283687944,
+            "latency_ms": {
+              "p50": 11.829907500214176,
+              "p95": 15.726974402241465,
+              "p99": 18.812275749878605,
+              "mean": 12.117566361750686
+            },
+            "mrr": 0.41487455197132617,
+            "ndcg": 0.29727220753711653,
+            "query_embedding_ms_mean": 0.0
+          },
+          "temporal": {
+            "questions": 321,
+            "scorable": 321,
+            "no_gold_questions": 0,
+            "partially_or_unresolved_questions": 0,
+            "any_gold_hits": 218,
+            "any_gold_hit_rate": 0.6791277258566978,
+            "all_gold_hit_rate": 0.6292834890965732,
+            "macro_evidence_recall": 0.6536863966770509,
+            "micro_evidence_recall": 0.6,
+            "candidate_any_gold_rate": 0.9190031152647975,
+            "empty_context_rate": 0,
+            "mean_budget_used": 241.35202492211837,
+            "latency_ms": {
+              "p50": 11.971323001489509,
+              "p95": 16.07769600013853,
+              "p99": 16.554129801079398,
+              "mean": 12.28596510893645
+            },
+            "mrr": 0.593717549325026,
+            "ndcg": 0.5982140117860061,
+            "query_embedding_ms_mean": 0.0
+          },
+          "open_domain": {
+            "questions": 96,
+            "scorable": 92,
+            "no_gold_questions": 4,
+            "partially_or_unresolved_questions": 0,
+            "any_gold_hits": 33,
+            "any_gold_hit_rate": 0.358695652173913,
+            "all_gold_hit_rate": 0.18478260869565216,
+            "macro_evidence_recall": 0.26358695652173914,
+            "micro_evidence_recall": 0.16826923076923078,
+            "candidate_any_gold_rate": 0.6630434782608695,
+            "empty_context_rate": 0,
+            "mean_budget_used": 238.51041666666666,
+            "latency_ms": {
+              "p50": 11.902505000762176,
+              "p95": 15.446366001015122,
+              "p99": 17.583786002069242,
+              "mean": 11.950457114456489
+            },
+            "mrr": 0.286231884057971,
+            "ndcg": 0.24215613007418987,
+            "query_embedding_ms_mean": 0.0
+          },
+          "single_hop": {
+            "questions": 841,
+            "scorable": 840,
+            "no_gold_questions": 0,
+            "partially_or_unresolved_questions": 1,
+            "any_gold_hits": 541,
+            "any_gold_hit_rate": 0.6440476190476191,
+            "all_gold_hit_rate": 0.611904761904762,
+            "macro_evidence_recall": 0.6281746031746032,
+            "micro_evidence_recall": 0.6159014557670772,
+            "candidate_any_gold_rate": 0.9630952380952381,
+            "empty_context_rate": 0,
+            "mean_budget_used": 240.79310344827587,
+            "latency_ms": {
+              "p50": 12.371367000014288,
+              "p95": 16.277349001029506,
+              "p99": 18.81785139994463,
+              "mean": 12.524931183065881
+            },
+            "mrr": 0.547718253968254,
+            "ndcg": 0.5612400818625682,
+            "query_embedding_ms_mean": 0.0
+          },
+          "adversarial": {
+            "questions": 446,
+            "scorable": 446,
+            "no_gold_questions": 0,
+            "partially_or_unresolved_questions": 0,
+            "any_gold_hits": 70,
+            "any_gold_hit_rate": 0.15695067264573992,
+            "all_gold_hit_rate": 0.15246636771300448,
+            "macro_evidence_recall": 0.1547085201793722,
+            "micro_evidence_recall": 0.15217391304347827,
+            "candidate_any_gold_rate": 0.9730941704035875,
+            "empty_context_rate": 0,
+            "mean_budget_used": 240.78251121076232,
+            "latency_ms": {
+              "p50": 12.52601749911264,
+              "p95": 16.965693750535138,
+              "p99": 18.8317123993329,
+              "mean": 12.930337697230142
+            },
+            "mrr": 0.12526158445440957,
+            "ndcg": 0.13225528663996025,
+            "query_embedding_ms_mean": 0.0
+          }
+        }
+      },
+      "sparse@400": {
+        "main_categories_1_to_4": {
+          "questions": 1540,
+          "scorable": 1532,
+          "no_gold_questions": 4,
+          "partially_or_unresolved_questions": 4,
+          "any_gold_hits": 1033,
+          "any_gold_hit_rate": 0.6742819843342036,
+          "all_gold_hit_rate": 0.5424281984334204,
+          "macro_evidence_recall": 0.6019032991932599,
+          "micro_evidence_recall": 0.4946649594536918,
+          "candidate_any_gold_rate": 0.9242819843342036,
+          "empty_context_rate": 0,
+          "mean_budget_used": 384.4233766233766,
+          "latency_ms": {
+            "p50": 16.7780864994711,
+            "p95": 22.957095451602072,
+            "p99": 29.17688949168221,
+            "mean": 17.307215929168386
+          },
+          "mrr": 0.5303804550540843,
+          "ndcg": 0.52457493522146,
+          "query_embedding_ms_mean": 0.0
+        },
+        "conversational_categories_1_2_4": {
+          "questions": 1444,
+          "scorable": 1440,
+          "no_gold_questions": 0,
+          "partially_or_unresolved_questions": 4,
+          "any_gold_hits": 994,
+          "any_gold_hit_rate": 0.6902777777777778,
+          "all_gold_hit_rate": 0.5645833333333333,
+          "macro_evidence_recall": 0.6214516417833303,
+          "micro_evidence_recall": 0.5231850117096019,
+          "candidate_any_gold_rate": 0.9409722222222222,
+          "empty_context_rate": 0,
+          "mean_budget_used": 384.6419667590028,
+          "latency_ms": {
+            "p50": 16.809193999506533,
+            "p95": 22.975648399733473,
+            "p99": 29.168249131798788,
+            "mean": 17.349170799126437
+          },
+          "mrr": 0.5447635582010582,
+          "ndcg": 0.5413862749999652,
+          "query_embedding_ms_mean": 0.0
+        },
+        "all_categories_diagnostic_only": {
+          "questions": 1986,
+          "scorable": 1978,
+          "no_gold_questions": 4,
+          "partially_or_unresolved_questions": 4,
+          "any_gold_hits": 1138,
+          "any_gold_hit_rate": 0.5753286147623863,
+          "all_gold_hit_rate": 0.4711830131445905,
+          "macro_evidence_recall": 0.5182587736926563,
+          "micro_evidence_recall": 0.4509454156261149,
+          "candidate_any_gold_rate": 0.9352881698685541,
+          "empty_context_rate": 0,
+          "mean_budget_used": 384.2829808660624,
+          "latency_ms": {
+            "p50": 16.80688550004561,
+            "p95": 22.899002249687328,
+            "p99": 28.087133950794033,
+            "mean": 17.332670374077633
+          },
+          "mrr": 0.44256223217295004,
+          "ndcg": 0.4427906728184133,
+          "query_embedding_ms_mean": 0.0
+        },
+        "development": {
+          "questions": 233,
+          "scorable": 231,
+          "no_gold_questions": 2,
+          "partially_or_unresolved_questions": 0,
+          "any_gold_hits": 156,
+          "any_gold_hit_rate": 0.6753246753246753,
+          "all_gold_hit_rate": 0.5714285714285714,
+          "macro_evidence_recall": 0.6188311688311688,
+          "micro_evidence_recall": 0.540453074433657,
+          "candidate_any_gold_rate": 0.9437229437229437,
+          "empty_context_rate": 0,
+          "mean_budget_used": 385.6738197424893,
+          "latency_ms": {
+            "p50": 17.021322997607058,
+            "p95": 29.48417140069068,
+            "p99": 36.556508479261545,
+            "mean": 18.328919613678554
+          },
+          "mrr": 0.5332611832611832,
+          "ndcg": 0.5364869781186553,
+          "query_embedding_ms_mean": 0.0
+        },
+        "held_out": {
+          "questions": 1307,
+          "scorable": 1301,
+          "no_gold_questions": 2,
+          "partially_or_unresolved_questions": 4,
+          "any_gold_hits": 877,
+          "any_gold_hit_rate": 0.6740968485780169,
+          "all_gold_hit_rate": 0.5372790161414297,
+          "macro_evidence_recall": 0.5988976590039002,
+          "micro_evidence_recall": 0.48770894788593905,
+          "candidate_any_gold_rate": 0.9208301306687163,
+          "empty_context_rate": 0,
+          "mean_budget_used": 384.20045906656463,
+          "latency_ms": {
+            "p50": 16.753489999246085,
+            "p95": 22.390007699868878,
+            "p99": 25.10815219866346,
+            "mean": 17.12507594562526
+          },
+          "mrr": 0.5298689652648146,
+          "ndcg": 0.5224598837923654,
+          "query_embedding_ms_mean": 0.0
+        },
+        "by_category": {
+          "multi_hop": {
+            "questions": 282,
+            "scorable": 279,
+            "no_gold_questions": 0,
+            "partially_or_unresolved_questions": 3,
+            "any_gold_hits": 174,
+            "any_gold_hit_rate": 0.6236559139784946,
+            "all_gold_hit_rate": 0.14336917562724014,
+            "macro_evidence_recall": 0.35325100657585096,
+            "micro_evidence_recall": 0.31833910034602075,
+            "candidate_any_gold_rate": 0.899641577060932,
+            "empty_context_rate": 0,
+            "mean_budget_used": 384.5,
+            "latency_ms": {
+              "p50": 16.166557501492207,
+              "p95": 21.90087314993434,
+              "p99": 24.767048377398165,
+              "mean": 16.736366095646584
+            },
+            "mrr": 0.430500085338795,
+            "ndcg": 0.3282061636590599,
+            "query_embedding_ms_mean": 0.0
+          },
+          "temporal": {
+            "questions": 321,
+            "scorable": 321,
+            "no_gold_questions": 0,
+            "partially_or_unresolved_questions": 0,
+            "any_gold_hits": 234,
+            "any_gold_hit_rate": 0.7289719626168224,
+            "all_gold_hit_rate": 0.6666666666666666,
+            "macro_evidence_recall": 0.6973001038421599,
+            "micro_evidence_recall": 0.6506666666666666,
+            "candidate_any_gold_rate": 0.9190031152647975,
+            "empty_context_rate": 0,
+            "mean_budget_used": 385.14330218068534,
+            "latency_ms": {
+              "p50": 16.64207800058648,
+              "p95": 23.712187001365237,
+              "p99": 29.861330202402318,
+              "mean": 17.488172825465664
+            },
+            "mrr": 0.6037383177570094,
+            "ndcg": 0.6163212343010914,
+            "query_embedding_ms_mean": 0.0
+          },
+          "open_domain": {
+            "questions": 96,
+            "scorable": 92,
+            "no_gold_questions": 4,
+            "partially_or_unresolved_questions": 0,
+            "any_gold_hits": 39,
+            "any_gold_hit_rate": 0.42391304347826086,
+            "all_gold_hit_rate": 0.1956521739130435,
+            "macro_evidence_recall": 0.2959292412617221,
+            "micro_evidence_recall": 0.20192307692307693,
+            "candidate_any_gold_rate": 0.6630434782608695,
+            "empty_context_rate": 0,
+            "mean_budget_used": 381.1354166666667,
+            "latency_ms": {
+              "p50": 16.134484500071267,
+              "p95": 21.86272399922018,
+              "p99": 25.52042089937457,
+              "mean": 16.676144760216022
+            },
+            "mrr": 0.3052536231884058,
+            "ndcg": 0.2614409212970313,
+            "query_embedding_ms_mean": 0.0
+          },
+          "single_hop": {
+            "questions": 841,
+            "scorable": 840,
+            "no_gold_questions": 0,
+            "partially_or_unresolved_questions": 1,
+            "any_gold_hits": 586,
+            "any_gold_hit_rate": 0.6976190476190476,
+            "all_gold_hit_rate": 0.6654761904761904,
+            "macro_evidence_recall": 0.6815476190476191,
+            "micro_evidence_recall": 0.6685330347144457,
+            "candidate_any_gold_rate": 0.9630952380952381,
+            "empty_context_rate": 0,
+            "mean_budget_used": 384.49821640903684,
+            "latency_ms": {
+              "p50": 17.040984999766806,
+              "p95": 22.913250999408774,
+              "p99": 29.043714401632315,
+              "mean": 17.501597999990206
+            },
+            "mrr": 0.5601785714285714,
+            "ndcg": 0.5835566668195498,
+            "query_embedding_ms_mean": 0.0
+          },
+          "adversarial": {
+            "questions": 446,
+            "scorable": 446,
+            "no_gold_questions": 0,
+            "partially_or_unresolved_questions": 0,
+            "any_gold_hits": 105,
+            "any_gold_hit_rate": 0.23542600896860988,
+            "all_gold_hit_rate": 0.226457399103139,
+            "macro_evidence_recall": 0.23094170403587444,
+            "micro_evidence_recall": 0.22826086956521738,
+            "candidate_any_gold_rate": 0.9730941704035875,
+            "empty_context_rate": 0,
+            "mean_budget_used": 383.7982062780269,
+            "latency_ms": {
+              "p50": 16.91399250012182,
+              "p95": 22.70869450057944,
+              "p99": 24.72503264925763,
+              "mean": 17.420562403584892
+            },
+            "mrr": 0.14090860559470425,
+            "ndcg": 0.1618635651918043,
+            "query_embedding_ms_mean": 0.0
+          }
+        }
+      },
+      "sparse@600": {
+        "main_categories_1_to_4": {
+          "questions": 1540,
+          "scorable": 1532,
+          "no_gold_questions": 4,
+          "partially_or_unresolved_questions": 4,
+          "any_gold_hits": 1111,
+          "any_gold_hit_rate": 0.7251958224543081,
+          "all_gold_hit_rate": 0.5946475195822454,
+          "macro_evidence_recall": 0.6549008932654726,
+          "micro_evidence_recall": 0.5510029876227059,
+          "candidate_any_gold_rate": 0.9242819843342036,
+          "empty_context_rate": 0,
+          "mean_budget_used": 584.1207792207792,
+          "latency_ms": {
+            "p50": 22.754519000955042,
+            "p95": 31.040868050695277,
+            "p99": 34.48931782044382,
+            "mean": 23.33768783961417
+          },
+          "mrr": 0.537434725848564,
+          "ndcg": 0.5435827447916336,
+          "query_embedding_ms_mean": 0.0
+        },
+        "conversational_categories_1_2_4": {
+          "questions": 1444,
+          "scorable": 1440,
+          "no_gold_questions": 0,
+          "partially_or_unresolved_questions": 4,
+          "any_gold_hits": 1066,
+          "any_gold_hit_rate": 0.7402777777777778,
+          "all_gold_hit_rate": 0.6173611111111111,
+          "macro_evidence_recall": 0.6738421376990456,
+          "micro_evidence_recall": 0.5793911007025762,
+          "candidate_any_gold_rate": 0.9409722222222222,
+          "empty_context_rate": 0,
+          "mean_budget_used": 584.6738227146815,
+          "latency_ms": {
+            "p50": 22.809631500422256,
+            "p95": 31.081073450332042,
+            "p99": 34.329679421280154,
+            "mean": 23.385820330331423
+          },
+          "mrr": 0.5515963955026455,
+          "ndcg": 0.5599380121953497,
+          "query_embedding_ms_mean": 0.0
+        },
+        "all_categories_diagnostic_only": {
+          "questions": 1986,
+          "scorable": 1978,
+          "no_gold_questions": 4,
+          "partially_or_unresolved_questions": 4,
+          "any_gold_hits": 1294,
+          "any_gold_hit_rate": 0.654196157735086,
+          "all_gold_hit_rate": 0.5505561172901922,
+          "macro_evidence_recall": 0.598487446148991,
+          "micro_evidence_recall": 0.5262219051016768,
+          "candidate_any_gold_rate": 0.9352881698685541,
+          "empty_context_rate": 0,
+          "mean_budget_used": 584.3157099697885,
+          "latency_ms": {
+            "p50": 22.945060998608824,
+            "p95": 31.180927499917743,
+            "p99": 34.59547769998608,
+            "mean": 23.478348016608496
+          },
+          "mrr": 0.4530092926958448,
+          "ndcg": 0.46997339341976596,
+          "query_embedding_ms_mean": 0.0
+        },
+        "development": {
+          "questions": 233,
+          "scorable": 231,
+          "no_gold_questions": 2,
+          "partially_or_unresolved_questions": 0,
+          "any_gold_hits": 170,
+          "any_gold_hit_rate": 0.7359307359307359,
+          "all_gold_hit_rate": 0.6233766233766234,
+          "macro_evidence_recall": 0.6776334776334776,
+          "micro_evidence_recall": 0.598705501618123,
+          "candidate_any_gold_rate": 0.9437229437229437,
+          "empty_context_rate": 0,
+          "mean_budget_used": 583.5965665236051,
+          "latency_ms": {
+            "p50": 21.492817999387626,
+            "p95": 30.229987798520593,
+            "p99": 35.50015207758407,
+            "mean": 22.343329300317272
+          },
+          "mrr": 0.5419964955679242,
+          "ndcg": 0.5575019334866601,
+          "query_embedding_ms_mean": 0.0
+        },
+        "held_out": {
+          "questions": 1307,
+          "scorable": 1301,
+          "no_gold_questions": 2,
+          "partially_or_unresolved_questions": 4,
+          "any_gold_hits": 941,
+          "any_gold_hit_rate": 0.7232897770945427,
+          "all_gold_hit_rate": 0.5895465026902382,
+          "macro_evidence_recall": 0.6508645927358729,
+          "micro_evidence_recall": 0.543756145526057,
+          "candidate_any_gold_rate": 0.9208301306687163,
+          "empty_context_rate": 0,
+          "mean_budget_used": 584.2142310635043,
+          "latency_ms": {
+            "p50": 22.98546699967119,
+            "p95": 31.080878900684183,
+            "p99": 34.22331879919512,
+            "mean": 23.51495298089663
+          },
+          "mrr": 0.5366247575125361,
+          "ndcg": 0.541111313132486,
+          "query_embedding_ms_mean": 0.0
+        },
+        "by_category": {
+          "multi_hop": {
+            "questions": 282,
+            "scorable": 279,
+            "no_gold_questions": 0,
+            "partially_or_unresolved_questions": 3,
+            "any_gold_hits": 194,
+            "any_gold_hit_rate": 0.6953405017921147,
+            "all_gold_hit_rate": 0.2007168458781362,
+            "macro_evidence_recall": 0.422339348697583,
+            "micro_evidence_recall": 0.3829296424452134,
+            "candidate_any_gold_rate": 0.899641577060932,
+            "empty_context_rate": 0,
+            "mean_budget_used": 583.7375886524823,
+            "latency_ms": {
+              "p50": 22.085374001107994,
+              "p95": 30.890611051290758,
+              "p99": 32.69211043138057,
+              "mean": 22.752691312189523
+            },
+            "mrr": 0.4405259714399499,
+            "ndcg": 0.3560891847333872,
+            "query_embedding_ms_mean": 0.0
+          },
+          "temporal": {
+            "questions": 321,
+            "scorable": 321,
+            "no_gold_questions": 0,
+            "partially_or_unresolved_questions": 0,
+            "any_gold_hits": 247,
+            "any_gold_hit_rate": 0.7694704049844237,
+            "all_gold_hit_rate": 0.7165109034267912,
+            "macro_evidence_recall": 0.7429906542056075,
+            "micro_evidence_recall": 0.7013333333333334,
+            "candidate_any_gold_rate": 0.9190031152647975,
+            "empty_context_rate": 0,
+            "mean_budget_used": 585.0560747663551,
+            "latency_ms": {
+              "p50": 22.466369002358988,
+              "p95": 31.35535899855313,
+              "p99": 39.04313399980317,
+              "mean": 23.533224598097966
+            },
+            "mrr": 0.6091430549374475,
+            "ndcg": 0.6322925800989947,
+            "query_embedding_ms_mean": 0.0
+          },
+          "open_domain": {
+            "questions": 96,
+            "scorable": 92,
+            "no_gold_questions": 4,
+            "partially_or_unresolved_questions": 0,
+            "any_gold_hits": 45,
+            "any_gold_hit_rate": 0.4891304347826087,
+            "all_gold_hit_rate": 0.2391304347826087,
+            "macro_evidence_recall": 0.3584292412617221,
+            "micro_evidence_recall": 0.25961538461538464,
+            "candidate_any_gold_rate": 0.6630434782608695,
+            "empty_context_rate": 0,
+            "mean_budget_used": 575.8020833333334,
+            "latency_ms": {
+              "p50": 22.196279000127106,
+              "p95": 29.99534425089223,
+              "p99": 35.96175710154057,
+              "mean": 22.613694958408814
+            },
+            "mrr": 0.3157738095238095,
+            "ndcg": 0.2875872549943394,
+            "query_embedding_ms_mean": 0.0
+          },
+          "single_hop": {
+            "questions": 841,
+            "scorable": 840,
+            "no_gold_questions": 0,
+            "partially_or_unresolved_questions": 1,
+            "any_gold_hits": 625,
+            "any_gold_hit_rate": 0.7440476190476191,
+            "all_gold_hit_rate": 0.7178571428571429,
+            "macro_evidence_recall": 0.7309523809523809,
+            "micro_evidence_recall": 0.7189249720044792,
+            "candidate_any_gold_rate": 0.9630952380952381,
+            "empty_context_rate": 0,
+            "mean_budget_used": 584.8418549346017,
+            "latency_ms": {
+              "p50": 23.198121001769323,
+              "p95": 30.86715999961598,
+              "p99": 34.33467160139117,
+              "mean": 23.541855542177984
+            },
+            "mrr": 0.5664965986394558,
+            "ndcg": 0.5999951628677513,
+            "query_embedding_ms_mean": 0.0
+          },
+          "adversarial": {
+            "questions": 446,
+            "scorable": 446,
+            "no_gold_questions": 0,
+            "partially_or_unresolved_questions": 0,
+            "any_gold_hits": 183,
+            "any_gold_hit_rate": 0.4103139013452915,
+            "all_gold_hit_rate": 0.3991031390134529,
+            "macro_evidence_recall": 0.4047085201793722,
+            "micro_evidence_recall": 0.4,
+            "candidate_any_gold_rate": 0.9730941704035875,
+            "empty_context_rate": 0,
+            "mean_budget_used": 584.9887892376681,
+            "latency_ms": {
+              "p50": 23.278431501239538,
+              "p95": 31.883998749435705,
+              "p99": 35.032252299606625,
+              "mean": 23.964035623270515
+            },
+            "mrr": 0.16300982276318599,
+            "ndcg": 0.2171269218912878,
+            "query_embedding_ms_mean": 0.0
+          }
+        }
+      },
+      "sparse@800": {
+        "main_categories_1_to_4": {
+          "questions": 1540,
+          "scorable": 1532,
+          "no_gold_questions": 4,
+          "partially_or_unresolved_questions": 4,
+          "any_gold_hits": 1149,
+          "any_gold_hit_rate": 0.75,
+          "all_gold_hit_rate": 0.6207571801566579,
+          "macro_evidence_recall": 0.6816101427141247,
+          "micro_evidence_recall": 0.5808792146820316,
+          "candidate_any_gold_rate": 0.9242819843342036,
+          "empty_context_rate": 0,
+          "mean_budget_used": 783.3623376623376,
+          "latency_ms": {
+            "p50": 29.20064049976645,
+            "p95": 41.04408394741766,
+            "p99": 48.98567941963847,
+            "mean": 30.176633026575793
+          },
+          "mrr": 0.5398577017702344,
+          "ndcg": 0.5521315905040197,
+          "query_embedding_ms_mean": 0.0
+        },
+        "conversational_categories_1_2_4": {
+          "questions": 1444,
+          "scorable": 1440,
+          "no_gold_questions": 0,
+          "partially_or_unresolved_questions": 4,
+          "any_gold_hits": 1102,
+          "any_gold_hit_rate": 0.7652777777777777,
+          "all_gold_hit_rate": 0.6444444444444445,
+          "macro_evidence_recall": 0.7010935957317537,
+          "micro_evidence_recall": 0.609367681498829,
+          "candidate_any_gold_rate": 0.9409722222222222,
+          "empty_context_rate": 0,
+          "mean_budget_used": 784.1281163434903,
+          "latency_ms": {
+            "p50": 29.263386501042987,
+            "p95": 40.98068860148487,
+            "p99": 48.98550253965368,
+            "mean": 30.226253333761093
+          },
+          "mrr": 0.554017922663756,
+          "ndcg": 0.5685390390083483,
+          "query_embedding_ms_mean": 0.0
+        },
+        "all_categories_diagnostic_only": {
+          "questions": 1986,
+          "scorable": 1978,
+          "no_gold_questions": 4,
+          "partially_or_unresolved_questions": 4,
+          "any_gold_hits": 1431,
+          "any_gold_hit_rate": 0.7234580384226491,
+          "all_gold_hit_rate": 0.6208291203235592,
+          "macro_evidence_recall": 0.6692248425874818,
+          "micro_evidence_recall": 0.5872279700321085,
+          "candidate_any_gold_rate": 0.9352881698685541,
+          "empty_context_rate": 0,
+          "mean_budget_used": 783.6787512588116,
+          "latency_ms": {
+            "p50": 29.27492050002911,
+            "p95": 40.83790075037541,
+            "p99": 48.36685985046643,
+            "mean": 30.2374241857502
+          },
+          "mrr": 0.4598970936938581,
+          "ndcg": 0.49111120547033404,
+          "query_embedding_ms_mean": 0.0
+        },
+        "development": {
+          "questions": 233,
+          "scorable": 231,
+          "no_gold_questions": 2,
+          "partially_or_unresolved_questions": 0,
+          "any_gold_hits": 174,
+          "any_gold_hit_rate": 0.7532467532467533,
+          "all_gold_hit_rate": 0.6363636363636364,
+          "macro_evidence_recall": 0.692063492063492,
+          "micro_evidence_recall": 0.6148867313915858,
+          "candidate_any_gold_rate": 0.9437229437229437,
+          "empty_context_rate": 0,
+          "mean_budget_used": 782.1287553648069,
+          "latency_ms": {
+            "p50": 27.059052998083644,
+            "p95": 39.33422840054845,
+            "p99": 54.06064396214788,
+            "mean": 28.36915499550968
+          },
+          "mrr": 0.5438071188071188,
+          "ndcg": 0.5622245872153118,
+          "query_embedding_ms_mean": 0.0
+        },
+        "held_out": {
+          "questions": 1307,
+          "scorable": 1301,
+          "no_gold_questions": 2,
+          "partially_or_unresolved_questions": 4,
+          "any_gold_hits": 975,
+          "any_gold_hit_rate": 0.749423520368947,
+          "all_gold_hit_rate": 0.6179861644888547,
+          "macro_evidence_recall": 0.6797540906774575,
+          "micro_evidence_recall": 0.5757128810226155,
+          "candidate_any_gold_rate": 0.9208301306687163,
+          "empty_context_rate": 0,
+          "mean_budget_used": 783.5822494261668,
+          "latency_ms": {
+            "p50": 29.53043399975286,
+            "p95": 41.49136360065313,
+            "p99": 48.443884060325225,
+            "mean": 30.498853670216498
+          },
+          "mrr": 0.5391564601595347,
+          "ndcg": 0.5503395211417534,
+          "query_embedding_ms_mean": 0.0
+        },
+        "by_category": {
+          "multi_hop": {
+            "questions": 282,
+            "scorable": 279,
+            "no_gold_questions": 0,
+            "partially_or_unresolved_questions": 3,
+            "any_gold_hits": 200,
+            "any_gold_hit_rate": 0.7168458781362007,
+            "all_gold_hit_rate": 0.23297491039426524,
+            "macro_evidence_recall": 0.4536730389022409,
+            "micro_evidence_recall": 0.41522491349480967,
+            "candidate_any_gold_rate": 0.899641577060932,
+            "empty_context_rate": 0,
+            "mean_budget_used": 784.0886524822695,
+            "latency_ms": {
+              "p50": 28.27284100021643,
+              "p95": 40.097136948679676,
+              "p99": 45.96348664163087,
+              "mean": 29.5757479538779
+            },
+            "mrr": 0.4427676664235804,
+            "ndcg": 0.36830355433872,
+            "query_embedding_ms_mean": 0.0
+          },
+          "temporal": {
+            "questions": 321,
+            "scorable": 321,
+            "no_gold_questions": 0,
+            "partially_or_unresolved_questions": 0,
+            "any_gold_hits": 253,
+            "any_gold_hit_rate": 0.7881619937694704,
+            "all_gold_hit_rate": 0.735202492211838,
+            "macro_evidence_recall": 0.7627206645898235,
+            "micro_evidence_recall": 0.7253333333333334,
+            "candidate_any_gold_rate": 0.9190031152647975,
+            "empty_context_rate": 0,
+            "mean_budget_used": 783.1401869158879,
+            "latency_ms": {
+              "p50": 28.825878998759435,
+              "p95": 40.74521499933326,
+              "p99": 46.06083979888354,
+              "mean": 29.88640324917676
+            },
+            "mrr": 0.6108773884474819,
+            "ndcg": 0.6383047623797237,
+            "query_embedding_ms_mean": 0.0
+          },
+          "open_domain": {
+            "questions": 96,
+            "scorable": 92,
+            "no_gold_questions": 4,
+            "partially_or_unresolved_questions": 0,
+            "any_gold_hits": 47,
+            "any_gold_hit_rate": 0.5108695652173914,
+            "all_gold_hit_rate": 0.25,
+            "macro_evidence_recall": 0.37665174765558396,
+            "micro_evidence_recall": 0.28846153846153844,
+            "candidate_any_gold_rate": 0.6630434782608695,
+            "empty_context_rate": 0,
+            "mean_budget_used": 771.84375,
+            "latency_ms": {
+              "p50": 28.254408000066178,
+              "p95": 41.50792974996875,
+              "p99": 48.16094115085433,
+              "mean": 29.430260905996874
+            },
+            "mrr": 0.3182194616977226,
+            "ndcg": 0.2953193530449635,
+            "query_embedding_ms_mean": 0.0
+          },
+          "single_hop": {
+            "questions": 841,
+            "scorable": 840,
+            "no_gold_questions": 0,
+            "partially_or_unresolved_questions": 1,
+            "any_gold_hits": 649,
+            "any_gold_hit_rate": 0.7726190476190476,
+            "all_gold_hit_rate": 0.7464285714285714,
+            "macro_evidence_recall": 0.7597222222222222,
+            "micro_evidence_recall": 0.7491601343784995,
+            "candidate_any_gold_rate": 0.9630952380952381,
+            "empty_context_rate": 0,
+            "mean_budget_used": 784.5184304399525,
+            "latency_ms": {
+              "p50": 29.721111000981182,
+              "p95": 41.7204919976939,
+              "p99": 54.04978420192492,
+              "mean": 30.574094468456256
+            },
+            "mrr": 0.5692404619190333,
+            "ndcg": 0.6083853521281278,
+            "query_embedding_ms_mean": 0.0
+          },
+          "adversarial": {
+            "questions": 446,
+            "scorable": 446,
+            "no_gold_questions": 0,
+            "partially_or_unresolved_questions": 0,
+            "any_gold_hits": 282,
+            "any_gold_hit_rate": 0.6322869955156951,
+            "all_gold_hit_rate": 0.6210762331838565,
+            "macro_evidence_recall": 0.6266816143497758,
+            "micro_evidence_recall": 0.6195652173913043,
+            "candidate_any_gold_rate": 0.9730941704035875,
+            "empty_context_rate": 0,
+            "mean_budget_used": 784.7713004484305,
+            "latency_ms": {
+              "p50": 29.49240700036171,
+              "p95": 39.87782125022932,
+              "p99": 43.713145850051674,
+              "mean": 30.447330878863625
+            },
+            "mrr": 0.1852341977902516,
+            "ndcg": 0.2815075510496918,
+            "query_embedding_ms_mean": 0.0
+          }
+        }
+      },
+      "sparse@1200": {
+        "main_categories_1_to_4": {
+          "questions": 1540,
+          "scorable": 1532,
+          "no_gold_questions": 4,
+          "partially_or_unresolved_questions": 4,
+          "any_gold_hits": 1204,
+          "any_gold_hit_rate": 0.7859007832898173,
+          "all_gold_hit_rate": 0.6514360313315927,
+          "macro_evidence_recall": 0.7172610410069892,
+          "micro_evidence_recall": 0.6248399487836107,
+          "candidate_any_gold_rate": 0.9242819843342036,
+          "empty_context_rate": 0,
+          "mean_budget_used": 1182.472077922078,
+          "latency_ms": {
+            "p50": 40.588299998489674,
+            "p95": 55.079127000499284,
+            "p99": 63.24760931191118,
+            "mean": 41.52430321428491
+          },
+          "mrr": 0.5423562545758587,
+          "ndcg": 0.5626011161524703,
+          "query_embedding_ms_mean": 0.0
+        },
+        "conversational_categories_1_2_4": {
+          "questions": 1444,
+          "scorable": 1440,
+          "no_gold_questions": 0,
+          "partially_or_unresolved_questions": 4,
+          "any_gold_hits": 1156,
+          "any_gold_hit_rate": 0.8027777777777778,
+          "all_gold_hit_rate": 0.675,
+          "macro_evidence_recall": 0.7378409539209978,
+          "micro_evidence_recall": 0.6548009367681499,
+          "candidate_any_gold_rate": 0.9409722222222222,
+          "empty_context_rate": 0,
+          "mean_budget_used": 1183.75,
+          "latency_ms": {
+            "p50": 40.63508199942589,
+            "p95": 55.15095109822141,
+            "p99": 63.49003742074273,
+            "mean": 41.59249412256898
+          },
+          "mrr": 0.5566298089356655,
+          "ndcg": 0.5792907527205094,
+          "query_embedding_ms_mean": 0.0
+        },
+        "all_categories_diagnostic_only": {
+          "questions": 1986,
+          "scorable": 1978,
+          "no_gold_questions": 4,
+          "partially_or_unresolved_questions": 4,
+          "any_gold_hits": 1546,
+          "any_gold_hit_rate": 0.78159757330637,
+          "all_gold_hit_rate": 0.6744186046511628,
+          "macro_evidence_recall": 0.7269180560276579,
+          "micro_evidence_recall": 0.6457367106671423,
+          "candidate_any_gold_rate": 0.9352881698685541,
+          "empty_context_rate": 0,
+          "mean_budget_used": 1182.584592145015,
+          "latency_ms": {
+            "p50": 40.71954350001761,
+            "p95": 55.00251974990533,
+            "p99": 62.60197745123155,
+            "mean": 41.732842042297776
+          },
+          "mrr": 0.464091404290874,
+          "ndcg": 0.5070534455455662,
+          "query_embedding_ms_mean": 0.0
+        },
+        "development": {
+          "questions": 233,
+          "scorable": 231,
+          "no_gold_questions": 2,
+          "partially_or_unresolved_questions": 0,
+          "any_gold_hits": 185,
+          "any_gold_hit_rate": 0.8008658008658008,
+          "all_gold_hit_rate": 0.6666666666666666,
+          "macro_evidence_recall": 0.7344155844155844,
+          "micro_evidence_recall": 0.6666666666666666,
+          "candidate_any_gold_rate": 0.9437229437229437,
+          "empty_context_rate": 0,
+          "mean_budget_used": 1180.6309012875536,
+          "latency_ms": {
+            "p50": 37.553166002908256,
+            "p95": 52.39284220006082,
+            "p99": 65.0279773627699,
+            "mean": 39.045096038652225
+          },
+          "mrr": 0.5473211007709018,
+          "ndcg": 0.5745078531571621,
+          "query_embedding_ms_mean": 0.0
+        },
+        "held_out": {
+          "questions": 1307,
+          "scorable": 1301,
+          "no_gold_questions": 2,
+          "partially_or_unresolved_questions": 4,
+          "any_gold_hits": 1019,
+          "any_gold_hit_rate": 0.7832436587240584,
+          "all_gold_hit_rate": 0.6487317448116833,
+          "macro_evidence_recall": 0.7142151535916275,
+          "micro_evidence_recall": 0.6184857423795477,
+          "candidate_any_gold_rate": 0.9208301306687163,
+          "empty_context_rate": 0,
+          "mean_budget_used": 1182.8003060443764,
+          "latency_ms": {
+            "p50": 40.963895997265354,
+            "p95": 55.37399729946628,
+            "p99": 62.52622406136653,
+            "mean": 41.966273583009034
+          },
+          "mrr": 0.5414747177034106,
+          "ndcg": 0.5604870068149731,
+          "query_embedding_ms_mean": 0.0
+        },
+        "by_category": {
+          "multi_hop": {
+            "questions": 282,
+            "scorable": 279,
+            "no_gold_questions": 0,
+            "partially_or_unresolved_questions": 3,
+            "any_gold_hits": 216,
+            "any_gold_hit_rate": 0.7741935483870968,
+            "all_gold_hit_rate": 0.25448028673835127,
+            "macro_evidence_recall": 0.5065387346937997,
+            "micro_evidence_recall": 0.47520184544405997,
+            "candidate_any_gold_rate": 0.899641577060932,
+            "empty_context_rate": 0,
+            "mean_budget_used": 1184.0673758865248,
+            "latency_ms": {
+              "p50": 39.01219350154861,
+              "p95": 55.3738920509204,
+              "p99": 73.18591705778087,
+              "mean": 41.07508897872554
+            },
+            "mrr": 0.4469137358764177,
+            "ndcg": 0.3878374501717879,
+            "query_embedding_ms_mean": 0.0
+          },
+          "temporal": {
+            "questions": 321,
+            "scorable": 321,
+            "no_gold_questions": 0,
+            "partially_or_unresolved_questions": 0,
+            "any_gold_hits": 260,
+            "any_gold_hit_rate": 0.8099688473520249,
+            "all_gold_hit_rate": 0.7601246105919003,
+            "macro_evidence_recall": 0.7855659397715472,
+            "micro_evidence_recall": 0.752,
+            "candidate_any_gold_rate": 0.9190031152647975,
+            "empty_context_rate": 0,
+            "mean_budget_used": 1185.1588785046729,
+            "latency_ms": {
+              "p50": 40.31263800061424,
+              "p95": 56.253880000440404,
+              "p99": 63.302420999389156,
+              "mean": 41.85019485040949
+            },
+            "mrr": 0.6124661393215544,
+            "ndcg": 0.6445858874859216,
+            "query_embedding_ms_mean": 0.0
+          },
+          "open_domain": {
+            "questions": 96,
+            "scorable": 92,
+            "no_gold_questions": 4,
+            "partially_or_unresolved_questions": 0,
+            "any_gold_hits": 48,
+            "any_gold_hit_rate": 0.5217391304347826,
+            "all_gold_hit_rate": 0.2826086956521739,
+            "macro_evidence_recall": 0.3951406649616368,
+            "micro_evidence_recall": 0.3173076923076923,
+            "candidate_any_gold_rate": 0.6630434782608695,
+            "empty_context_rate": 0,
+            "mean_budget_used": 1163.25,
+            "latency_ms": {
+              "p50": 39.62259599938989,
+              "p95": 53.8868547500897,
+              "p99": 62.0112540487753,
+              "mean": 40.498598302178834
+            },
+            "mrr": 0.31894409937888196,
+            "ndcg": 0.30137202204403196,
+            "query_embedding_ms_mean": 0.0
+          },
+          "single_hop": {
+            "questions": 841,
+            "scorable": 840,
+            "no_gold_questions": 0,
+            "partially_or_unresolved_questions": 1,
+            "any_gold_hits": 680,
+            "any_gold_hit_rate": 0.8095238095238095,
+            "all_gold_hit_rate": 0.7821428571428571,
+            "macro_evidence_recall": 0.7964285714285714,
+            "micro_evidence_recall": 0.7883538633818589,
+            "candidate_any_gold_rate": 0.9630952380952381,
+            "empty_context_rate": 0,
+            "mean_budget_used": 1183.1058263971463,
+            "latency_ms": {
+              "p50": 41.13310400134651,
+              "p95": 54.480966999108205,
+              "p99": 60.58270140201786,
+              "mean": 41.667626485145725
+            },
+            "mrr": 0.5717337640900224,
+            "ndcg": 0.6179285302816951,
+            "query_embedding_ms_mean": 0.0
+          },
+          "adversarial": {
+            "questions": 446,
+            "scorable": 446,
+            "no_gold_questions": 0,
+            "partially_or_unresolved_questions": 0,
+            "any_gold_hits": 342,
+            "any_gold_hit_rate": 0.7668161434977578,
+            "all_gold_hit_rate": 0.7533632286995515,
+            "macro_evidence_recall": 0.7600896860986547,
+            "micro_evidence_recall": 0.7521739130434782,
+            "candidate_any_gold_rate": 0.9730941704035875,
+            "empty_context_rate": 0,
+            "mean_budget_used": 1182.9730941704036,
+            "latency_ms": {
+              "p50": 41.28419950029638,
+              "p95": 54.679646498698276,
+              "p99": 61.74293354979454,
+              "mean": 42.45290884754398
+            },
+            "mrr": 0.1952533983792227,
+            "ndcg": 0.3162484424743173,
+            "query_embedding_ms_mean": 0.0
+          }
+        }
+      }
+    }
+  },
+  "builds": {
+    "baseline": [
+      {
+        "scope": "conv-26",
+        "documents": 419,
+        "index_seconds": 0.03304865499740117
+      },
+      {
+        "scope": "conv-30",
+        "documents": 369,
+        "index_seconds": 0.025424468996789074
+      },
+      {
+        "scope": "conv-41",
+        "documents": 663,
+        "index_seconds": 0.04658416000165744
+      },
+      {
+        "scope": "conv-42",
+        "documents": 629,
+        "index_seconds": 0.04130918900045799
+      },
+      {
+        "scope": "conv-43",
+        "documents": 680,
+        "index_seconds": 0.046163522001734236
+      },
+      {
+        "scope": "conv-44",
+        "documents": 675,
+        "index_seconds": 0.057458860999759054
+      },
+      {
+        "scope": "conv-47",
+        "documents": 689,
+        "index_seconds": 0.04625656400094158
+      },
+      {
+        "scope": "conv-48",
+        "documents": 681,
+        "index_seconds": 0.045942978002130985
+      },
+      {
+        "scope": "conv-49",
+        "documents": 509,
+        "index_seconds": 0.038085213000158546
+      },
+      {
+        "scope": "conv-50",
+        "documents": 568,
+        "index_seconds": 0.04523842800335842
+      }
+    ],
+    "entity": [
+      {
+        "scope": "conv-26",
+        "documents": 419,
+        "index_seconds": 0.036908767997374525
+      },
+      {
+        "scope": "conv-30",
+        "documents": 369,
+        "index_seconds": 0.027608543998212554
+      },
+      {
+        "scope": "conv-41",
+        "documents": 663,
+        "index_seconds": 0.05050412299897289
+      },
+      {
+        "scope": "conv-42",
+        "documents": 629,
+        "index_seconds": 0.04566645999875618
+      },
+      {
+        "scope": "conv-43",
+        "documents": 680,
+        "index_seconds": 0.05253319799885503
+      },
+      {
+        "scope": "conv-44",
+        "documents": 675,
+        "index_seconds": 0.052258260002417956
+      },
+      {
+        "scope": "conv-47",
+        "documents": 689,
+        "index_seconds": 0.05017768100151443
+      },
+      {
+        "scope": "conv-48",
+        "documents": 681,
+        "index_seconds": 0.052094160000706324
+      },
+      {
+        "scope": "conv-49",
+        "documents": 509,
+        "index_seconds": 0.03868052899997565
+      },
+      {
+        "scope": "conv-50",
+        "documents": 568,
+        "index_seconds": 0.049050240999349626
+      }
+    ]
+  },
+  "paired": {
+    "128": {
+      "development": {
+        "denominator": 231,
+        "wins": 12,
+        "losses": 2,
+        "ties": 217,
+        "delta_pp": 4.329004329004329,
+        "relative_percent": 10.309278350515465,
+        "cluster_bootstrap_95ci_pp": [
+          0.6666666666666666,
+          11.11111111111111
+        ],
+        "bootstrap_unit": "conversation",
+        "bootstrap_seed": 20260907,
+        "replicates": 2000
+      },
+      "held_out": {
+        "denominator": 1301,
+        "wins": 84,
+        "losses": 20,
+        "ties": 1197,
+        "delta_pp": 4.919292851652575,
+        "relative_percent": 11.24780316344464,
+        "cluster_bootstrap_95ci_pp": [
+          3.610886458502377,
+          6.4623103788066665
+        ],
+        "bootstrap_unit": "conversation",
+        "bootstrap_seed": 20260907,
+        "replicates": 2000
+      },
+      "all": {
+        "denominator": 1532,
+        "wins": 96,
+        "losses": 22,
+        "ties": 1414,
+        "delta_pp": 4.830287206266319,
+        "relative_percent": 11.11111111111111,
+        "cluster_bootstrap_95ci_pp": [
+          3.3856009194395797,
+          6.581562914137108
+        ],
+        "bootstrap_unit": "conversation",
+        "bootstrap_seed": 20260907,
+        "replicates": 2000
+      }
+    },
+    "256": {
+      "development": {
+        "denominator": 231,
+        "wins": 12,
+        "losses": 3,
+        "ties": 216,
+        "delta_pp": 3.896103896103896,
+        "relative_percent": 6.7669172932330826,
+        "cluster_bootstrap_95ci_pp": [
+          3.7037037037037037,
+          4.0
+        ],
+        "bootstrap_unit": "conversation",
+        "bootstrap_seed": 20260907,
+        "replicates": 2000
+      },
+      "held_out": {
+        "denominator": 1301,
+        "wins": 76,
+        "losses": 27,
+        "ties": 1198,
+        "delta_pp": 3.7663335895465027,
+        "relative_percent": 6.49867374005305,
+        "cluster_bootstrap_95ci_pp": [
+          3.2233883058470765,
+          4.297569672055823
+        ],
+        "bootstrap_unit": "conversation",
+        "bootstrap_seed": 20260907,
+        "replicates": 2000
+      },
+      "all": {
+        "denominator": 1532,
+        "wins": 88,
+        "losses": 30,
+        "ties": 1414,
+        "delta_pp": 3.7859007832898173,
+        "relative_percent": 6.538895152198422,
+        "cluster_bootstrap_95ci_pp": [
+          3.3485807457888583,
+          4.240904034551162
+        ],
+        "bootstrap_unit": "conversation",
+        "bootstrap_seed": 20260907,
+        "replicates": 2000
+      }
+    },
+    "400": {
+      "development": {
+        "denominator": 231,
+        "wins": 9,
+        "losses": 4,
+        "ties": 218,
+        "delta_pp": 2.1645021645021645,
+        "relative_percent": 3.3112582781456954,
+        "cluster_bootstrap_95ci_pp": [
+          1.3333333333333333,
+          3.7037037037037037
+        ],
+        "bootstrap_unit": "conversation",
+        "bootstrap_seed": 20260907,
+        "replicates": 2000
+      },
+      "held_out": {
+        "denominator": 1301,
+        "wins": 57,
+        "losses": 27,
+        "ties": 1217,
+        "delta_pp": 2.3059185242121445,
+        "relative_percent": 3.541912632821724,
+        "cluster_bootstrap_95ci_pp": [
+          1.5948429527781811,
+          3.173343923954176
+        ],
+        "bootstrap_unit": "conversation",
+        "bootstrap_seed": 20260907,
+        "replicates": 2000
+      },
+      "all": {
+        "denominator": 1532,
+        "wins": 66,
+        "losses": 31,
+        "ties": 1435,
+        "delta_pp": 2.284595300261097,
+        "relative_percent": 3.5070140280561124,
+        "cluster_bootstrap_95ci_pp": [
+          1.65433587425796,
+          3.0075996442719695
+        ],
+        "bootstrap_unit": "conversation",
+        "bootstrap_seed": 20260907,
+        "replicates": 2000
+      }
+    },
+    "600": {
+      "development": {
+        "denominator": 231,
+        "wins": 14,
+        "losses": 2,
+        "ties": 215,
+        "delta_pp": 5.194805194805195,
+        "relative_percent": 7.594936708860759,
+        "cluster_bootstrap_95ci_pp": [
+          4.666666666666667,
+          6.172839506172839
+        ],
+        "bootstrap_unit": "conversation",
+        "bootstrap_seed": 20260907,
+        "replicates": 2000
+      },
+      "held_out": {
+        "denominator": 1301,
+        "wins": 55,
+        "losses": 19,
+        "ties": 1227,
+        "delta_pp": 2.7671022290545735,
+        "relative_percent": 3.977900552486188,
+        "cluster_bootstrap_95ci_pp": [
+          1.7945632605340542,
+          3.824735839251689
+        ],
+        "bootstrap_unit": "conversation",
+        "bootstrap_seed": 20260907,
+        "replicates": 2000
+      },
+      "all": {
+        "denominator": 1532,
+        "wins": 69,
+        "losses": 21,
+        "ties": 1442,
+        "delta_pp": 3.133159268929504,
+        "relative_percent": 4.51552210724365,
+        "cluster_bootstrap_95ci_pp": [
+          2.1651902211234724,
+          4.199162665945409
+        ],
+        "bootstrap_unit": "conversation",
+        "bootstrap_seed": 20260907,
+        "replicates": 2000
+      }
+    },
+    "800": {
+      "development": {
+        "denominator": 231,
+        "wins": 6,
+        "losses": 2,
+        "ties": 223,
+        "delta_pp": 1.7316017316017316,
+        "relative_percent": 2.3529411764705883,
+        "cluster_bootstrap_95ci_pp": [
+          1.3333333333333333,
+          2.4691358024691357
+        ],
+        "bootstrap_unit": "conversation",
+        "bootstrap_seed": 20260907,
+        "replicates": 2000
+      },
+      "held_out": {
+        "denominator": 1301,
+        "wins": 51,
+        "losses": 8,
+        "ties": 1242,
+        "delta_pp": 3.3051498847040737,
+        "relative_percent": 4.613733905579399,
+        "cluster_bootstrap_95ci_pp": [
+          1.7480237154150198,
+          5.000598086124398
+        ],
+        "bootstrap_unit": "conversation",
+        "bootstrap_seed": 20260907,
+        "replicates": 2000
+      },
+      "all": {
+        "denominator": 1532,
+        "wins": 57,
+        "losses": 10,
+        "ties": 1465,
+        "delta_pp": 3.0678851174934727,
+        "relative_percent": 4.26497277676951,
+        "cluster_bootstrap_95ci_pp": [
+          1.7801383341565193,
+          4.570290131704522
+        ],
+        "bootstrap_unit": "conversation",
+        "bootstrap_seed": 20260907,
+        "replicates": 2000
+      }
+    },
+    "1200": {
+      "development": {
+        "denominator": 231,
+        "wins": 8,
+        "losses": 0,
+        "ties": 223,
+        "delta_pp": 3.463203463203463,
+        "relative_percent": 4.519774011299435,
+        "cluster_bootstrap_95ci_pp": [
+          3.3333333333333335,
+          3.7037037037037037
+        ],
+        "bootstrap_unit": "conversation",
+        "bootstrap_seed": 20260907,
+        "replicates": 2000
+      },
+      "held_out": {
+        "denominator": 1301,
+        "wins": 35,
+        "losses": 6,
+        "ties": 1260,
+        "delta_pp": 2.229054573405073,
+        "relative_percent": 2.9292929292929295,
+        "cluster_bootstrap_95ci_pp": [
+          1.1838989739542225,
+          3.49879056801228
+        ],
+        "bootstrap_unit": "conversation",
+        "bootstrap_seed": 20260907,
+        "replicates": 2000
+      },
+      "all": {
+        "denominator": 1532,
+        "wins": 43,
+        "losses": 6,
+        "ties": 1483,
+        "delta_pp": 2.4151436031331595,
+        "relative_percent": 3.170522707797772,
+        "cluster_bootstrap_95ci_pp": [
+          1.4431016623094757,
+          3.4942185396996934
+        ],
+        "bootstrap_unit": "conversation",
+        "bootstrap_seed": 20260907,
+        "replicates": 2000
+      }
+    }
+  },
+  "category_paired_600": {
+    "1": {
+      "denominator": 236,
+      "wins": 16,
+      "losses": 0,
+      "ties": 220,
+      "delta_pp": 6.779661016949152,
+      "relative_percent": 10.738255033557047,
+      "cluster_bootstrap_95ci_pp": [
+        4.123358282728428,
+        9.166666666666666
+      ],
+      "bootstrap_unit": "conversation",
+      "bootstrap_seed": 20260907,
+      "replicates": 2000
+    },
+    "2": {
+      "denominator": 258,
+      "wins": 10,
+      "losses": 3,
+      "ties": 245,
+      "delta_pp": 2.7131782945736433,
+      "relative_percent": 3.8251366120218577,
+      "cluster_bootstrap_95ci_pp": [
+        0.37453183520599254,
+        5.532505910165482
+      ],
+      "bootstrap_unit": "conversation",
+      "bootstrap_seed": 20260907,
+      "replicates": 2000
+    },
+    "3": {
+      "denominator": 81,
+      "wins": 3,
+      "losses": 0,
+      "ties": 78,
+      "delta_pp": 3.7037037037037037,
+      "relative_percent": 8.571428571428571,
+      "cluster_bootstrap_95ci_pp": [
+        1.1235955056179776,
+        7.248144220572631
+      ],
+      "bootstrap_unit": "conversation",
+      "bootstrap_seed": 20260907,
+      "replicates": 2000
+    },
+    "4": {
+      "denominator": 726,
+      "wins": 26,
+      "losses": 16,
+      "ties": 684,
+      "delta_pp": 1.3774104683195592,
+      "relative_percent": 1.858736059479554,
+      "cluster_bootstrap_95ci_pp": [
+        -0.24540630982348774,
+        2.9096805575950824
+      ],
+      "bootstrap_unit": "conversation",
+      "bootstrap_seed": 20260907,
+      "replicates": 2000
+    }
+  },
+  "failure_census_v2": {
+    "baseline": {
+      "denominator": 1532,
+      "candidate_missing": 116,
+      "candidate_present_not_packed": 353,
+      "causal_labels": "Temporal/entity/association causes and stale/scope cases not inferred from category."
+    },
+    "entity": {
+      "denominator": 1532,
+      "candidate_missing": 116,
+      "candidate_present_not_packed": 305,
+      "causal_labels": "Temporal/entity/association causes and stale/scope cases not inferred from category."
+    }
+  },
+  "preregistered_admission": {
+    "checks": {
+      "any_gold_at_least_1pp": true,
+      "all_gold_nonnegative": true,
+      "no_category_regression_over_2pp": true,
+      "p95_ratio_at_most_1_25": true
+    },
+    "passed": true
+  }
+}

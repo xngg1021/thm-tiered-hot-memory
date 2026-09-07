@@ -99,3 +99,9 @@ THM 1.4 已完成并冻结为 **accepted/stable implementation milestone**。稳
 这些能力已经通过 1.4 的 correctness、Hermes 与 multi-harness 验收；1.4 没有修改 retrieval path，因此没有冒充产生新的 LoCoMo/Protocol 2 数字。自动 T0–T3 换层和自动预算修改仍保持关闭，直到真实留出任务 A/B 能同时证明质量、成本、延迟和 reacquisition 改善。详见 [1.4 control plane](docs/14-residency-control-plane.md)、[Hermes T1 directory](docs/15-hermes-warm-directory.md) 与 [1.4 closeout](reports/2026-09-07-v1.4-closeout.md)。
 
 Version identity: **1.4.0 accepted/stable implementation milestone**.
+
+## 零生成式 LLM 检索扩展（未发布）
+
+显式启用 Python API 参数 `entity_projection=True`，可用来源中的精确说话人姓名和标识符调整已有候选的排序。固定 600 tokens 的 Protocol 2 全量 any-gold 从 69.39% 提高到 72.52%；1301 道留出题从 69.56% 提高到 72.33%。候选覆盖率保持不变。没有生成式模型调用，也没有使用嵌入模型；T0–T3 与原生记忆保持不变。时间、分段、关联和大小排序实验未进入生产路径。此扩展尚未登记为 1.5 稳定版本。
+
+[Protocol 2 / evidence](docs/16-zero-llm-retrieval-frontier.md)

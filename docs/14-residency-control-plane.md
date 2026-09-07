@@ -236,3 +236,7 @@ Until then THM exposes recommendations and receipts instead of hidden policy cha
 - tests: `tests/test_residency_control.py`, `tests/test_residency_guardrails.py`, `tests/test_residency_cli.py`, `tests/test_miss_telemetry.py`
 
 The earlier hardware-analogy audit and its evidence boundaries remain in [the preceding design note](13-hardware-inspired-adaptive-residency.md).
+
+## Unreleased retrieval successor
+
+The opt-in Python entity projection and its Protocol 2 evidence are documented in [the zero-LLM frontier](16-zero-llm-retrieval-frontier.md). It does not enable a harness option, change residency/activity/validity semantics, or move the 1.4 stable pointer.

@@ -104,3 +104,7 @@ Protocol 2 completed successfully in workflow run `34042410130` at THM commit `7
 - Hermes integration is pinned to `NousResearch/hermes-agent@77915e344cb0cd8e20661d4a7b393f987a2eef32` for the recorded E2E run.
 
 No private Family HF code, private histories or cross-project runtime internals are inputs to this extension.
+
+## Unreleased retrieval successor
+
+The opt-in Python entity projection and its Protocol 2 evidence are documented in [the zero-LLM frontier](16-zero-llm-retrieval-frontier.md). It does not enable a harness option, change residency/activity/validity semantics, or move the 1.4 stable pointer.

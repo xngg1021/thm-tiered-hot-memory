@@ -106,3 +106,7 @@ A recoverable commit is not automatically a quality claim. Historical benchmark,
 - automatic T0–T3 or budget mutation remains gated on separate runtime/task A/B evidence.
 
 This separation is intentional: version history answers **what bytes can be recovered**, while reports and workflows answer **what was actually tested**.
+
+## Unreleased retrieval successor
+
+The opt-in Python entity projection and its Protocol 2 evidence are documented in [the zero-LLM frontier](16-zero-llm-retrieval-frontier.md). It does not enable a harness option, change residency/activity/validity semantics, or move the 1.4 stable pointer.

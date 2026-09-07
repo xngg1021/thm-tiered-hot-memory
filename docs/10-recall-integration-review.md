@@ -110,3 +110,7 @@ python scripts/check_docs.py
 - SQLite FTS5/BM25：https://www.sqlite.org/fts5.html
 
 本补丁只针对公开 THM 源码、公开评测定义与独立合成数据。没有复制其他私有项目的代码、概念映射、真实记忆或内部资料，许可证保持不变。
+
+## Unreleased retrieval successor
+
+The opt-in Python entity projection and its Protocol 2 evidence are documented in [the zero-LLM frontier](16-zero-llm-retrieval-frontier.md). It does not enable a harness option, change residency/activity/validity semantics, or move the 1.4 stable pointer.
