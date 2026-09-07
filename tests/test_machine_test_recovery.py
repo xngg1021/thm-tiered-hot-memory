@@ -153,6 +153,18 @@ class EconomicsBridgeTests(unittest.TestCase):
         self.assertEqual(report["suite_totals"]["config_query_executions"], 4)
         self.assertEqual(report["suite_totals"]["attempted_questions_per_config"], 2)
 
+    def test_interpretation_limit_uses_actual_budget_grid(self):
+        custom = BRIDGE.interpretation_limits_for_bench({"budgets": [100, 250]})
+        text = " ".join(custom)
+        self.assertIn("[100, 250]", text)
+        self.assertNotIn("600-token", text)
+        self.assertNotIn("three tested budgets", text)
+
+        canonical = BRIDGE.interpretation_limits_for_bench(
+            {"budgets": [300, 600, 1200]}
+        )
+        self.assertTrue(any("600" in item and "knee candidate" in item for item in canonical))
+
 
 class SuiteReceiptTests(unittest.TestCase):
     def test_default_tags_cannot_target_historical_untagged_artifacts(self):
@@ -207,10 +219,26 @@ class ReportClaimTests(unittest.TestCase):
         return {
             "protocol": 2,
             "counter": "cl100k_base",
+            "dataset_sha256": "a" * 64,
             "dataset_matches_pinned_reference": pinned,
             "modes": ["hybrid"],
             "budgets": list(budgets),
+            "generation_calls": 0,
+            "judge_calls": 0,
             "summaries": summaries,
+        }
+
+    @classmethod
+    def econ_for(cls, locomo: dict) -> dict:
+        return {
+            "kind": "thm-x-context-economics-bridge-v2",
+            "benchmark": {
+                field: locomo.get(field)
+                for field in (
+                    "dataset_sha256", "protocol", "counter", "modes", "budgets",
+                    "generation_calls", "judge_calls",
+                )
+            },
         }
 
     def test_reference_reproduction_claim_requires_pinned_matching_artifact(self):
@@ -228,6 +256,30 @@ class ReportClaimTests(unittest.TestCase):
         claim = REPORT_MD.locomo_observation(self.locomo(budgets=(300, 900)))
         self.assertNotIn("71.34%", claim)
         self.assertIn("未包含 hybrid@600 / hybrid@1200", claim)
+
+    def test_report_rejects_mismatched_bridge_benchmark_identity(self):
+        locomo = self.locomo()
+        econ = self.econ_for(locomo)
+        REPORT_MD.validate_locomo_bridge_pair(locomo, econ)
+
+        for field, changed in (
+            ("dataset_sha256", "b" * 64),
+            ("modes", ["sparse"]),
+            ("budgets", [300, 600]),
+        ):
+            bad = json.loads(json.dumps(econ))
+            bad["benchmark"][field] = changed
+            with self.subTest(field=field):
+                with self.assertRaisesRegex(ValueError, "does not match"):
+                    REPORT_MD.validate_locomo_bridge_pair(locomo, bad)
+
+    def test_report_rejects_counterfactual_hash_mismatch(self):
+        locomo = self.locomo()
+        econ = self.econ_for(locomo)
+        econ["benchmark"]["counterfactual_dataset_sha256"] = "b" * 64
+        econ["benchmark"]["counterfactual_dataset_matches_benchmark"] = False
+        with self.assertRaises(ValueError):
+            REPORT_MD.validate_locomo_bridge_pair(locomo, econ)
 
     def test_knee_claim_is_derived_from_actual_adjacent_grid(self):
         supported = {
