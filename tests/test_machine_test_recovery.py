@@ -41,6 +41,23 @@ def row(scope, budget, used, hits, *, resolved=True, q=0):
             "ndcg": 1.0 if hits else 0.0, "budget_used": used, "malformed_evidence": False}
 
 
+def full_locomo_summaries(artifact):
+    from research.recall.benchmark import aggregate, CATEGORY
+    out = {}
+    for mode in artifact["modes"]:
+        for budget in artifact["budgets"]:
+            rows = [{"total_ms":0,"query_embedding_ms":0,**r} for r in artifact["rows"] if r["mode"] == mode and r["budget"] == budget]
+            out[f"{mode}@{budget}"] = {
+                "main_categories_1_to_4":aggregate([r for r in rows if r["category"] != 5]),
+                "conversational_categories_1_2_4":aggregate([r for r in rows if r["category"] in (1,2,4)]),
+                "all_categories_diagnostic_only":aggregate(rows),
+                "development":aggregate([r for r in rows if r["split"] == "development" and r["category"] != 5]),
+                "held_out":aggregate([r for r in rows if r["split"] == "held_out" and r["category"] != 5]),
+                "by_category":{name:aggregate([r for r in rows if r["category"] == c]) for c,name in CATEGORY.items()},
+            }
+    return out
+
+
 class EconomicsBridgeTests(unittest.TestCase):
     def test_load_pricing_class_supports_dataclass_module(self):
         with tempfile.TemporaryDirectory() as temp:
@@ -71,7 +88,7 @@ class EconomicsBridgeTests(unittest.TestCase):
     def test_suite_totals_count_config_query_executions_not_dataset_questions(self):
         rows=[]
         for budget in (300,600): rows += [row("a",budget,budget,1,q=1),row("b",budget,budget,0,q=2)]
-        bench={"protocol":2,"counter":"cl100k_base","modes":["hybrid"],"budgets":[300,600],"rows":rows,"summaries":{},"generation_calls":0,"judge_calls":0}
+        bench={"protocol":2,"counter":"cl100k_base","modes":["hybrid"],"budgets":[300,600],"rows":rows,"summaries":{f"hybrid@{b}": {"main_categories_1_to_4": {"questions":2,"scorable":2}} for b in (300,600)},"generation_calls":0,"judge_calls":0}
         report=BRIDGE.build_report(bench,{"deepseek-v4-pro_offpeak_2026-08-16":FakePricing()},{"model_sha256":"x"},{"a":10000,"b":20000},source_artifact_sha256="c"*64)
         self.assertEqual(report["suite_totals"]["config_count"],2); self.assertEqual(report["suite_totals"]["config_query_executions"],4)
         self.assertEqual(report["benchmark"]["source_artifact_sha256"],"c"*64)
@@ -111,7 +128,7 @@ class ReportClaimTests(unittest.TestCase):
                 "modes":["hybrid"],"budgets":list(budgets),"generation_calls":0,"judge_calls":0,"summaries":summaries}
     @classmethod
     def econ_for(cls,locomo,digest="c"*64):
-        return {"kind":"thm-x-context-economics-bridge-v2","benchmark":{"source_artifact_sha256":digest,**{f:locomo.get(f) for f in ("dataset_sha256","protocol","counter","modes","budgets","generation_calls","judge_calls")}}}
+        return {"per_config": {k: {"attempted_questions":1540,"scorable_questions":1532} for k in locomo["summaries"]}, "suite_totals": {"config_count":len(locomo["summaries"]), "config_query_executions":1540*len(locomo["summaries"]), "scorable_config_query_executions":1532*len(locomo["summaries"]), "attempted_questions_per_config":1540,"scorable_questions_per_config":1532}, "kind":"thm-x-context-economics-bridge-v2","benchmark":{"source_artifact_sha256":digest,**{f:locomo.get(f) for f in ("dataset_sha256","protocol","counter","modes","budgets","generation_calls","judge_calls")}}}
 
     def test_numerical_match_is_not_called_full_reproduction(self):
         claim=REPORT_MD.locomo_observation(self.locomo()); self.assertIn("数值上与仓库固定 reference 71.34% 相同",claim); self.assertIn("不单独构成完整协议复现证明",claim)
@@ -144,13 +161,321 @@ class ReportClaimTests(unittest.TestCase):
 
 class HardwareParityTests(unittest.TestCase):
     def artifact(self,selected):
-        return {"protocol":2,"counter":"cl100k_base","modes":["hybrid"],"budgets":[600],"model_id":"m","dataset_sha256":"abc","corpus_fingerprints":{"a":"g"},"rows":[{**row("a",600,580,1,q=1),"selected_ids":[selected],"selected_ranked_ids":[selected],"total_ms":50.0,"query_embedding_ms":20.0}]}
+        return {"protocol":2,"counter":"cl100k_base","modes":["hybrid"],"budgets":[600],"model_id":"m","dataset_sha256":"a"*64,"corpus_fingerprints":{"a":"d"*64},"idf_scope":"one_database_per_conversation","neighbor_turns":0,"generation_calls":0,"judge_calls":0,"dataset_upstream_commit":None,"dataset_matches_pinned_reference":False,"rows":[{**row("a",600,580,1,q=1),"selected_ids":[selected],"selected_ranked_ids":[selected],"total_ms":50.0,"query_embedding_ms":20.0}]}
     def test_timing_differences_do_not_break_semantic_parity(self):
         cpu=self.artifact("D1:1"); gpu=self.artifact("D1:1"); gpu["rows"][0]["total_ms"]=5.0; self.assertTrue(PARITY.compare(cpu,gpu)["equivalent"])
     def test_retrieval_difference_breaks_parity(self):
         self.assertFalse(PARITY.compare(self.artifact("D1:1"),self.artifact("D1:2"))["equivalent"])
     def test_legacy_aggregate_only_rows_are_insufficient_for_positive_parity(self):
         cpu=self.artifact("D1:1"); gpu=self.artifact("D1:1"); cpu["rows"][0].pop("selected_ids"); gpu["rows"][0].pop("selected_ids"); result=PARITY.compare(cpu,gpu); self.assertFalse(result["identity_complete"]); self.assertFalse(result["equivalent"])
+
+
+class V2R1RegressionTests(unittest.TestCase):
+    def test_true_counter_and_bridge_orchestration(self):
+        counter = BRIDGE.TokenCounter()
+        dataset = [{"sample_id":"a", "conversation":{"session_1":[{"speaker":"Alice", "text":"你好 world"}], "session_2":[{"speaker":"Bob", "text":"A second session"}] }},
+                   {"sample_id":"b", "conversation":{"session_1":[{"speaker":"Bob", "text":"Another scope"}]}}]
+        tokens = BRIDGE.conversation_tokens(dataset, counter)
+        self.assertEqual(tokens, {"a":counter("Alice: 你好 world\nBob: A second session"), "b":counter("Bob: Another scope")})
+        self.assertTrue(all(n > 0 for n in tokens.values()))
+        rows = [row("a",600,20,1), row("b",600,20,0)]
+        bench = {"rows":rows,"modes":["hybrid"],"budgets":[600], "summaries":{"hybrid@600":{"main_categories_1_to_4":{"questions":2,"scorable":2}}}}
+        result = BRIDGE.build_report(bench,{"deepseek-v4-pro_offpeak_2026-08-16":FakePricing()},{}, tokens)
+        self.assertEqual(result["per_config"]["hybrid@600"]["full_history_same_query_counterfactual"]["total_input_tokens"], sum(tokens.values()))
+
+    def test_canonical_scorable(self):
+        for evidence, resolved, expected in [(0,True,False),(1,False,False),(1,True,True)]:
+            self.assertEqual(BRIDGE._scorable({"evidence_count":evidence,"fully_resolved":resolved}),expected)
+        self.assertFalse(BRIDGE._scorable({"evidence_count":1}))
+
+    def test_denominator_contract_and_totals(self):
+        loc = ReportClaimTests.locomo()
+        econ = ReportClaimTests.econ_for(loc)
+        REPORT_MD.validate_locomo_bridge_pair(loc,econ,"c"*64)
+        econ["per_config"]["hybrid@600"]["scorable_questions"] = 1536
+        with self.assertRaisesRegex(ValueError,"denominator contract"):
+            REPORT_MD.validate_locomo_bridge_pair(loc,econ,"c"*64)
+        econ = ReportClaimTests.econ_for(loc)
+        econ["suite_totals"]["scorable_config_query_executions"] += 1
+        with self.assertRaisesRegex(ValueError,"suite total"):
+            REPORT_MD.validate_locomo_bridge_pair(loc,econ,"c"*64)
+
+    def test_twelve_config_bridge_excludes_no_gold_and_binds_source(self):
+        from research.recall.benchmark import aggregate
+        rows, summaries = [], {}
+        modes, budgets = ["literal","sparse","dense","hybrid"], [300,600,1200]
+        for mode in modes:
+            for budget in budgets:
+                cohort = [row("a",budget,20,1,q=0), row("a",budget,20,0,q=1), row("a",budget,20,0,resolved=False,q=2)]
+                cohort[1].update(evidence_count=0,resolved_count=0,fully_resolved=True)
+                for r in cohort: r.update(mode=mode,total_ms=0,query_embedding_ms=0)
+                summaries[f"{mode}@{budget}"] = {"main_categories_1_to_4":aggregate(cohort)}
+                rows.extend(cohort)
+        bench = {"rows":rows,"modes":modes,"budgets":budgets,"summaries":summaries}
+        report = BRIDGE.build_report(bench,{"deepseek-v4-pro_offpeak_2026-08-16":FakePricing()},{})
+        nconfigs = len(modes)*len(budgets)
+        self.assertEqual(report["suite_totals"]["config_query_executions"],nconfigs*3)
+        self.assertEqual(report["suite_totals"]["scorable_config_query_executions"],nconfigs)
+        summaries["hybrid@600"]["main_categories_1_to_4"]["scorable"] += 1
+        with self.assertRaisesRegex(ValueError,"denominator contract"):
+            BRIDGE.build_report(bench,{"deepseek-v4-pro_offpeak_2026-08-16":FakePricing()},{})
+
+    def test_preview_does_not_cap_total(self):
+        cpu = HardwareParityTests().artifact("a")
+        cpu["rows"] = [row("a",600,580,1,q=i) for i in range(10)]
+        gpu = json.loads(json.dumps(cpu))
+        for r in gpu["rows"]: r["budget_used"] += 1
+        result = PARITY.compare(cpu,gpu,max_mismatches=3)
+        self.assertEqual(result["total_mismatch_count"],10)
+        self.assertEqual(result["mismatching_row_count"],10)
+        self.assertEqual(result["mismatch_preview_count"],3)
+        self.assertTrue(result["mismatch_preview_truncated"])
+        self.assertEqual(result["other_semantic_mismatch_row_count"],10)
+
+    def test_aggregate_and_strict_classification(self):
+        cpu = HardwareParityTests().artifact("a")
+        cpu["summaries"] = full_locomo_summaries(cpu)
+        cpu["rows"][0].update(selected_ids=["a","b"],selected_ranked_ids=["a","b"],selected_count=2)
+        gpu = json.loads(json.dumps(cpu))
+        gpu["summaries"]["hybrid@600"]["main_categories_1_to_4"]["latency_ms"]["p50"] = 1
+        gpu["rows"][0]["selected_ranked_ids"] = ["b","a"]
+        result = PARITY.compare(cpu,gpu)
+        self.assertTrue(result["aggregate_semantic_metrics_equivalent"])
+        self.assertFalse(result["strict_semantic_equivalent"])
+        self.assertEqual(result["rank_only_mismatch_row_count"],1)
+        self.assertEqual(result["selection_set_mismatch_row_count"],0)
+        gpu["rows"][0]["selected_ids"] = ["a","c"]
+        result = PARITY.compare(cpu,gpu)
+        self.assertEqual(result["selection_set_mismatch_row_count"],1)
+        self.assertEqual(result["rank_only_mismatch_row_count"],0)
+        gpu["summaries"]["hybrid@600"]["main_categories_1_to_4"]["mrr"] = .5
+        self.assertFalse(PARITY.compare(cpu,gpu)["aggregate_semantic_metrics_equivalent"])
+        self.assertEqual(PARITY.compare(cpu,gpu)["max_semantic_numeric_abs_diff"],.5)
+
+    def test_incomplete_aggregate_summaries_fail_closed(self):
+        cpu = HardwareParityTests().artifact("a")
+        cpu["summaries"] = full_locomo_summaries(cpu)
+        self.assertTrue(PARITY.compare(cpu,cpu)["aggregate_semantic_metrics_equivalent"])
+        for mutate in [
+            lambda x: x["summaries"].pop("hybrid@600"),
+            lambda x: x["summaries"]["hybrid@600"].pop("held_out"),
+            lambda x: x["summaries"]["hybrid@600"]["main_categories_1_to_4"].pop("any_gold_hit_rate"),
+            lambda x: x["summaries"]["hybrid@600"]["main_categories_1_to_4"].update(any_gold_hit_rate=None),
+            lambda x: x.update(summaries={"hybrid@600":{"main_categories_1_to_4":{"questions":1}}}),
+        ]:
+            bad = json.loads(json.dumps(cpu)); mutate(bad)
+            receipt = PARITY.compare(bad,bad)
+            self.assertFalse(receipt["aggregate_semantic_metrics_equivalent"])
+            self.assertTrue(receipt["aggregate_summary_coverage_errors"]["cpu"])
+
+    def test_missing_rank_and_semantic_fields_prevent_strict_pass(self):
+        for field in ("selected_ranked_ids", "hits", "question_index"):
+            cpu = HardwareParityTests().artifact("a")
+            cpu["rows"][0].pop(field)
+            result = PARITY.compare(cpu,cpu)
+            self.assertFalse(result["identity_complete"])
+            self.assertFalse(result["strict_semantic_equivalent"])
+            self.assertTrue(result["strict_row_coverage_errors"]["cpu"])
+
+    def test_invalid_scalar_or_empty_rows_cannot_prove_strict_parity(self):
+        cpu = HardwareParityTests().artifact("a")
+        for field, value in [("hits",None),("reciprocal_rank",float("inf")),("fully_resolved",1)]:
+            bad = json.loads(json.dumps(cpu)); bad["rows"][0][field] = value
+            self.assertFalse(PARITY.compare(bad,bad)["strict_semantic_equivalent"])
+        cpu["rows"] = []
+        self.assertFalse(PARITY.compare(cpu,cpu)["strict_semantic_equivalent"])
+
+    def test_normalized_row_and_summary_scores_must_be_in_range(self):
+        for field in ("reciprocal_rank","candidate_reciprocal_rank","ndcg"):
+            for value in (-.01, 1.01):
+                bad = HardwareParityTests().artifact("a"); bad["rows"][0][field] = value
+                self.assertFalse(PARITY.compare(bad,bad)["strict_semantic_equivalent"])
+        for value in (-.01,1.01):
+            bad = HardwareParityTests().artifact("a"); bad["summaries"] = full_locomo_summaries(bad)
+            bad["summaries"]["hybrid@600"]["main_categories_1_to_4"]["mrr"] = value
+            self.assertFalse(PARITY.compare(bad,bad)["aggregate_semantic_metrics_equivalent"])
+
+    def test_runners_preserve_output_created_after_preflight(self):
+        import sys
+        from unittest.mock import patch
+        for filename in ("benchmark.py", "lme_retrieval.py"):
+            runner = load_module("race_"+filename[:-3],"research/recall/"+filename)
+            with tempfile.TemporaryDirectory() as tmp:
+                dataset, output = Path(tmp,"data.json"), Path(tmp,"output.json")
+                dataset.write_text("[]")
+                def concurrent_output(*args,**kwargs):
+                    output.write_text("other-writer-evidence")
+                    return {"rows":[]}
+                argv = ["runner","--dataset",str(dataset),"--output",str(output),"--counter","utf8_bytes"]
+                with patch.object(sys,"argv",argv), patch.object(runner,"run",side_effect=concurrent_output):
+                    with self.assertRaises(FileExistsError): runner.main()
+                self.assertEqual(output.read_text(),"other-writer-evidence")
+
+    def test_outside_grid_rows_prevent_aggregate_pass(self):
+        cpu = HardwareParityTests().artifact("a")
+        cpu["summaries"] = full_locomo_summaries(cpu)
+        cpu["rows"].append(row("extra",1200,500,1,q=2))
+        result = PARITY.compare(cpu,cpu)
+        self.assertFalse(result["aggregate_semantic_metrics_available"])
+        self.assertFalse(result["aggregate_semantic_metrics_equivalent"])
+
+    def test_rank_plus_numeric_drift_is_not_rank_only(self):
+        cpu = HardwareParityTests().artifact("a")
+        cpu["rows"][0].update(selected_ids=["a","b"],selected_ranked_ids=["a","b"],selected_count=2)
+        gpu = json.loads(json.dumps(cpu))
+        gpu["rows"][0].update(selected_ranked_ids=["b","a"],budget_used=581)
+        result = PARITY.compare(cpu,gpu)
+        self.assertEqual(result["rank_only_mismatch_row_count"],0)
+        self.assertEqual(result["selection_set_mismatch_row_count"],0)
+        self.assertEqual(result["other_semantic_mismatch_row_count"],1)
+        self.assertEqual(result["total_mismatch_count"],2)
+
+    def test_lme_requires_ordered_ids_and_aligned_sources(self):
+        r = {"scope":"a","split":"held_out","mode":"hybrid","budget":600,
+             "gold_sessions":1,"resolved_gold":1,"hits":1,"candidate_hits":None,
+             "selected_count":2,"selected_ids":["a","b"],"selected_sources":["s","s"],
+             "reciprocal_rank":1.0,"budget_used":500}
+        cpu = HardwareParityTests().artifact("a")
+        cpu.update(protocol=1, benchmark="LongMemEval-S retrieval coverage (session-level evidence)", idf_scope="one_database_per_instance", rows=[r])
+        self.assertTrue(PARITY.compare(cpu,cpu)["strict_semantic_equivalent"])
+        gpu = json.loads(json.dumps(cpu)); gpu["rows"][0]["selected_ids"] = ["b","a"]
+        self.assertEqual(PARITY.compare(cpu,gpu)["rank_only_mismatch_row_count"],1)
+        cpu["rows"][0].pop("selected_sources")
+        self.assertFalse(PARITY.compare(cpu,cpu)["identity_complete"])
+
+    def test_shared_missing_provenance_cannot_pass(self):
+        cpu = HardwareParityTests().artifact("a")
+        cpu["summaries"] = full_locomo_summaries(cpu)
+        for field in set(cpu) - {"rows", "summaries"}:
+            bad = json.loads(json.dumps(cpu)); bad.pop(field)
+            result = PARITY.compare(bad, bad)
+            self.assertFalse(result["strict_semantic_equivalent"], field)
+            self.assertFalse(result["aggregate_semantic_metrics_equivalent"], field)
+        for field, value in (("dataset_sha256", "bad"), ("counter", ""), ("model_id", None), ("corpus_fingerprints", {"other":"d"*64}), ("modes", [["hybrid"]]), ("budgets", [True])):
+            bad = json.loads(json.dumps(cpu)); bad[field] = value
+            self.assertFalse(PARITY.compare(bad, bad)["identity_complete"], field)
+        cpu.update(modes=["sparse"], model_id=None)
+        cpu["rows"][0]["mode"] = "sparse"
+        self.assertTrue(PARITY.compare(cpu, cpu)["strict_semantic_equivalent"])
+
+    def test_unknown_split_cannot_escape_partition(self):
+        cpu = HardwareParityTests().artifact("a")
+        cpu["rows"][0]["split"] = "unknown"
+        cpu["summaries"] = full_locomo_summaries(cpu)
+        result = PARITY.compare(cpu, cpu)
+        self.assertFalse(result["strict_semantic_equivalent"])
+        self.assertFalse(result["aggregate_semantic_metrics_available"])
+
+    def test_fingerprinted_scope_must_have_rows(self):
+        cpu = HardwareParityTests().artifact("a")
+        cpu["corpus_fingerprints"]["missing"] = "e"*64
+        cpu["summaries"] = full_locomo_summaries(cpu)
+        result = PARITY.compare(cpu, cpu)
+        self.assertFalse(result["identity_complete"])
+        self.assertFalse(result["aggregate_semantic_metrics_equivalent"])
+
+    def test_grid_requires_complete_identical_query_cohorts(self):
+        cpu = HardwareParityTests().artifact("a")
+        cpu["budgets"] = [300, 600]
+        cpu["rows"] = [row("a", b, 100, 1, q=q) for b in (300,600) for q in (0,1)]
+        cpu["summaries"] = full_locomo_summaries(cpu)
+        self.assertTrue(PARITY.compare(cpu, cpu)["strict_semantic_equivalent"])
+        for removed in (1, 2):
+            bad = json.loads(json.dumps(cpu)); bad["rows"] = bad["rows"][removed:]
+            bad["summaries"] = full_locomo_summaries(bad)
+            result = PARITY.compare(bad, bad)
+            self.assertFalse(result["identity_complete"])
+            self.assertFalse(result["aggregate_semantic_metrics_equivalent"])
+        bad = json.loads(json.dumps(cpu)); bad["rows"][0]["split"] = "development"
+        self.assertFalse(PARITY.compare(bad, bad)["identity_complete"])
+
+    def test_aggregate_counts_are_bound_to_the_scorable_rows(self):
+        cpu = HardwareParityTests().artifact("a")
+        cpu["rows"] = [row("a",600,500,1,q=0)] + [row("a",600,500,0,resolved=False,q=i) for i in range(1,10)]
+        cpu["summaries"] = full_locomo_summaries(cpu)
+        self.assertTrue(PARITY.compare(cpu,cpu)["aggregate_semantic_metrics_available"])
+        for change in ({"any_gold_hits":10}, {"scorable":2}, {"no_gold_questions":1},
+                       {"partially_or_unresolved_questions":8}, {"any_gold_hit_rate":.5}):
+            bad = json.loads(json.dumps(cpu))
+            bad["summaries"]["hybrid@600"]["main_categories_1_to_4"].update(change)
+            result = PARITY.compare(bad,bad)
+            self.assertFalse(result["aggregate_semantic_metrics_available"])
+            self.assertFalse(result["aggregate_semantic_metrics_equivalent"])
+
+    def test_mean_budget_used_is_required_and_compared(self):
+        cpu = HardwareParityTests().artifact("a")
+        cpu["summaries"] = full_locomo_summaries(cpu)
+        gpu = json.loads(json.dumps(cpu))
+        gpu["summaries"]["hybrid@600"]["main_categories_1_to_4"]["mean_budget_used"] += 2.5
+        result = PARITY.compare(cpu,gpu)
+        self.assertFalse(result["aggregate_semantic_metrics_equivalent"])
+        self.assertFalse(result["strict_semantic_equivalent"])
+        self.assertEqual(result["max_semantic_numeric_abs_diff"],2.5)
+        for value in (cpu,gpu):
+            value["summaries"]["hybrid@600"]["main_categories_1_to_4"].pop("mean_budget_used")
+        self.assertFalse(PARITY.compare(cpu,gpu)["aggregate_semantic_metrics_available"])
+
+    def test_bound_read_uses_one_byte_buffer(self):
+        from unittest.mock import patch
+        from research.evidence_io import read_json_bound
+        raw = b'{"rows":[]}'
+        with patch.object(Path,"read_bytes",return_value=raw) as read:
+            data, digest = read_json_bound(Path("unused"))
+        read.assert_called_once()
+        self.assertEqual(data,{"rows":[]})
+        self.assertEqual(digest,hashlib.sha256(raw).hexdigest())
+
+    def test_parity_cli_binds_snapshot_even_if_path_changes(self):
+        import sys
+        from unittest.mock import patch
+        compare = PARITY.compare
+        with tempfile.TemporaryDirectory() as tmp:
+            cpu_path, gpu_path, output = (Path(tmp,n) for n in ("cpu.json","gpu.json","receipt.json"))
+            raw = json.dumps(HardwareParityTests().artifact("a")).encode()
+            cpu_path.write_bytes(raw); gpu_path.write_bytes(raw)
+            def replace_during_compare(cpu,gpu,**kwargs):
+                cpu_path.write_text('{"rows":[]}')
+                return compare(cpu,gpu,**kwargs)
+            argv = ["parity","--cpu",str(cpu_path),"--gpu",str(gpu_path),"--output",str(output)]
+            with patch.object(sys,"argv",argv), patch.object(PARITY,"compare",side_effect=replace_during_compare):
+                with self.assertRaises(SystemExit) as exit_result: PARITY.main()
+            self.assertEqual(exit_result.exception.code,0)
+            receipt = json.loads(output.read_text())
+            self.assertEqual(receipt["source_artifacts"]["cpu"]["sha256"],hashlib.sha256(raw).hexdigest())
+            self.assertEqual(receipt["rows_cpu"],1)
+
+    def test_standalone_clis_refuse_existing_outputs(self):
+        import subprocess, sys
+        from research.evidence_io import write_new_text
+        with tempfile.TemporaryDirectory() as tmp:
+            out = Path(tmp,"preserved.json"); out.write_text("preserved")
+            cases = [
+                ["research/economics/thm_ce_bridge.py","--results","missing"],
+                ["research/economics/report_md.py"],
+                ["research/recall/hardware_parity.py","--cpu","missing","--gpu","missing"],
+                ["research/recall/benchmark.py","--dataset","missing"],
+                ["research/recall/lme_retrieval.py","--dataset","missing"],
+            ]
+            for args in cases:
+                proc = subprocess.run([sys.executable,*args,"--output",str(out)],cwd=ROOT,capture_output=True,text=True)
+                self.assertNotEqual(proc.returncode,0)
+                self.assertIn("refusing to overwrite evidence",proc.stderr)
+                self.assertEqual(out.read_text(),"preserved")
+            with self.assertRaises(FileExistsError): write_new_text(out,"replacement")
+
+    def test_paths_fail_before_runtime(self):
+        from types import SimpleNamespace
+        args = SimpleNamespace(datasets_root=None, model_path=None, ce_root=None, skip_lme=True, modes=["hybrid"])
+        with self.assertRaisesRegex(ValueError,"datasets-root"): RUN_SUITE.validate_inputs(args)
+        with tempfile.TemporaryDirectory() as tmp:
+            args.datasets_root = tmp
+            Path(tmp,"locomo10.json").write_text("[]")
+            with self.assertRaisesRegex(ValueError,"model-path"): RUN_SUITE.validate_inputs(args)
+            args.model_path = tmp
+            with self.assertRaisesRegex(ValueError,"ce-root"): RUN_SUITE.validate_inputs(args)
+            args.ce_root = tmp
+            Path(tmp,"model.py").write_text("")
+            self.assertEqual(RUN_SUITE.validate_inputs(args)[0],Path(tmp).resolve())
 
 
 if __name__ == "__main__": unittest.main()

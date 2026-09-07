@@ -21,7 +21,9 @@ ROOT = Path(__file__).resolve().parents[2]
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
+from research.evidence_io import read_json_bound, require_new_output, write_new_text
 from thm.retrieval import TokenCounter
+from research.recall.scoring import SCORABLE_DEFINITION, is_scorable, validate_denominators
 
 CACHE_SHARES = (0.0, 0.5, 0.9)
 
@@ -93,10 +95,10 @@ def load_benchmark(path: Path) -> dict:
 
 
 def load_dataset_verified(path: Path, expected_sha256: str) -> tuple[object, str]:
-    digest = sha256_file(path)
+    dataset, digest = read_json_bound(path)
     if digest != expected_sha256:
         raise ValueError(f"counterfactual dataset SHA-256 does not match benchmark artifact: expected {expected_sha256}, got {digest}")
-    return json.loads(path.read_text(encoding="utf-8")), digest
+    return dataset, digest
 
 
 def _speaker_text(turn: dict) -> str:
@@ -153,7 +155,7 @@ def input_cost(tokens: int, pricing, rho: float) -> float:
 
 
 def _scorable(row: dict) -> bool:
-    return bool(row.get("fully_resolved", row.get("resolved_count") == row.get("evidence_count")))
+    return is_scorable(row)
 
 
 def economics_for_rows(rows: list[dict], pricing, full_history_tokens: dict[str, int] | None = None) -> dict:
@@ -274,6 +276,7 @@ def build_report(bench: dict, scenarios: dict, ce_provenance: dict,
         for rho in CACHE_SHARES:
             total = sum(input_cost(int(r["budget_used"]), pricing, rho) for r in all_main_rows)
             suite_totals["pricing_scenarios"][name][f"rho={rho}"] = {"total_input_cost_usd": usd(total)}
+    validate_denominators(bench, per_config, suite_totals)
     benchmark_info = {"file": result_name, "source_artifact_sha256": source_artifact_sha256,
         "protocol": bench.get("protocol"), "counter": bench.get("counter"), "dataset_sha256": bench.get("dataset_sha256"),
         "modes": bench.get("modes"), "budgets": bench.get("budgets"), "generation_calls": bench.get("generation_calls"),
@@ -288,6 +291,7 @@ def build_report(bench: dict, scenarios: dict, ce_provenance: dict,
             "observed_provider_bill": "not_measured"},
         "context_economics_provenance": ce_provenance, "benchmark": benchmark_info,
         "pricing_scenario_specs": SCENARIO_SPECS, "primary_proxy_scenario": primary_name,
+        "scorable_definition": dict(SCORABLE_DEFINITION),
         "per_config": per_config, "suite_totals": suite_totals,
         "l6_budget_grid_sensitivity": marginal_analysis(mode_budgets, primary),
         "interpretation_limits": interpretation_limits_for_bench(bench, has_full_history=full_history_tokens is not None)}
@@ -300,9 +304,14 @@ def main():
     ap.add_argument("--ce-root", help="Context Economics checkout; or CONTEXT_ECONOMICS_ROOT")
     ap.add_argument("--output", required=True)
     args = ap.parse_args()
+    require_new_output(args.output)
     bench_path = Path(args.results)
-    source_artifact_sha256 = sha256_file(bench_path)
-    bench = load_benchmark(bench_path)
+    bench, source_artifact_sha256 = read_json_bound(bench_path)
+    if not isinstance(bench, dict) or not isinstance(bench.get("rows"), list):
+        raise ValueError("invalid benchmark artifact")
+    digest = bench.get("dataset_sha256")
+    if not isinstance(digest, str) or len(digest) != 64:
+        raise ValueError("benchmark artifact is missing a valid dataset_sha256")
     ce_root = resolve_ce_root(args.ce_root)
     pricing_cls, ce_provenance = load_pricing_class(ce_root)
     scenarios = build_scenarios(pricing_cls)
@@ -316,7 +325,7 @@ def main():
                           source_artifact_sha256=source_artifact_sha256)
     out = Path(args.output)
     out.parent.mkdir(parents=True, exist_ok=True)
-    out.write_text(json.dumps(report, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+    write_new_text(out, json.dumps(report, ensure_ascii=False, indent=2) + "\n")
     print(f"wrote {out}")
 
 

@@ -6,6 +6,10 @@ import argparse
 import hashlib
 import json
 from pathlib import Path
+import sys
+sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
+from research.recall.scoring import validate_denominators
+from research.evidence_io import read_json_bound, require_new_output, write_new_text
 
 PINNED_HYBRID_600_ANY_GOLD_PERCENT = 71.34
 
@@ -73,6 +77,7 @@ def validate_locomo_bridge_pair(locomo: dict, econ: dict, locomo_artifact_sha256
     if benchmark.get("counterfactual_dataset_matches_benchmark") is False:
         raise ValueError("bridge-v2 records a failed counterfactual dataset match")
 
+    validate_denominators(locomo, econ.get("per_config", {}), econ.get("suite_totals", {}))
 
 def main_summary(data: dict, mode: str, budget: int) -> dict | None:
     summary = data.get("summaries", {}).get(f"{mode}@{budget}")
@@ -156,15 +161,16 @@ def main():
     ap = argparse.ArgumentParser(description=__doc__)
     ap.add_argument("--locomo", default="reports/2026-09-08-local-full-matrix.json")
     ap.add_argument("--lme", default=None, help="optional LongMemEval-S artifact; omitted means no LME section")
-    ap.add_argument("--econ", default="reports/2026-09-08-economics-bridge-v2.json")
-    ap.add_argument("--output", default="reports/2026-09-08-suite-report-v2.md")
+    ap.add_argument("--econ", default="reports/2026-09-08-economics-bridge-v2r1.json")
+    ap.add_argument("--output", required=True, help="fresh successor filename; existing files are refused")
     args = ap.parse_args()
+    require_new_output(args.output)
     locomo_path = Path(args.locomo)
-    locomo = json.loads(locomo_path.read_text(encoding="utf-8"))
+    locomo, locomo_digest = read_json_bound(locomo_path)
     econ = json.loads(Path(args.econ).read_text(encoding="utf-8"))
     if econ.get("kind") != "thm-x-context-economics-bridge-v2":
         raise ValueError("report_md.py requires corrected bridge-v2 economics artifact")
-    validate_locomo_bridge_pair(locomo, econ, sha256_file(locomo_path))
+    validate_locomo_bridge_pair(locomo, econ, locomo_digest)
     lme = load_optional_lme(args.lme)
     first = locomo["summaries"][f"{locomo['modes'][0]}@{locomo['budgets'][0]}"]["main_categories_1_to_4"]
     primary = econ["primary_proxy_scenario"]
@@ -184,7 +190,7 @@ def main():
     out.append(f"3. {knee_observation(econ)}")
     out.append("4. LongMemEval-S 提供第二数据集的 session-level generalization evidence，但其命中粒度与 LoCoMo 不同。" if lme else "4. 当前报告未提供 LongMemEval-S artifact，因此不作第二数据集 generalization claim。")
     out.append("5. CPU/GPU 一致性应由独立 parity comparator 产物确认；运行时加速与检索质量必须分开报告。")
-    Path(args.output).write_text("\n".join(out) + "\n", encoding="utf-8")
+    write_new_text(args.output, "\n".join(out) + "\n")
     print(f"wrote {args.output}")
 
 

@@ -27,6 +27,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
 from thm.retrieval import Document, SearchIndex, SentenceEncoder, TokenCounter
+from research.evidence_io import require_new_output, write_new_text
 
 
 def percentile(values, q):
@@ -191,6 +192,7 @@ def main():
     ap.add_argument("--device", default="cpu")
     ap.add_argument("--batch-size", type=int, default=64)
     args = ap.parse_args()
+    require_new_output(args.output)
     raw = Path(args.dataset).read_bytes()
     dataset = json.loads(raw)
     result = run(dataset, TokenCounter(args.counter), args.modes, args.budgets,
@@ -201,7 +203,7 @@ def main():
                              "sqlite": sqlite3.sqlite_version}
     out = Path(args.output)
     out.parent.mkdir(parents=True, exist_ok=True)
-    out.write_text(json.dumps(result, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+    write_new_text(out, json.dumps(result, ensure_ascii=False, indent=2) + "\n")
     summary = {k: v for k, v in result.items() if k != "rows"}
     print("LME_BENCHMARK_SUMMARY_BEGIN")
     print(json.dumps(summary, ensure_ascii=False, indent=2))

@@ -47,20 +47,25 @@ set CONTEXT_ECONOMICS_ROOT=D:\path\to\context-economics
 
 ## 推荐运行方式
 
+Standalone benchmark/LME/bridge/report/parity CLIs exclusively create outputs and refuse existing filenames, including files created during a concurrent run. Choose a fresh successor/rerun suffix each time; the sample rerun-01 names are not reusable.
+
 ```bash
 # CPU 全套；默认原子占用 -cpu-v2。若该 tag 已存在或曾中断，必须换新 tag
 python research/economics/run_suite.py \
   --device cpu \
+  --datasets-root ../datasets --model-path ../models/all-MiniLM-L6-v2 \
   --ce-root ../context-economics
 
 # GPU 全套；默认原子占用 -gpu-v2
 python research/economics/run_suite.py \
   --device cuda --batch-size 64 \
+  --datasets-root ../datasets --model-path ../models/all-MiniLM-L6-v2 \
   --ce-root ../context-economics
 
 # 如需重复实验，显式使用新的唯一 tag；失败/中断的 tag 也不复用
 python research/economics/run_suite.py \
   --device cpu --artifact-tag cpu-v2-rerun-02 \
+  --datasets-root ../datasets --model-path ../models/all-MiniLM-L6-v2 \
   --ce-root ../context-economics
 
 # 只重算修正后的经济桥（无需重跑 retrieval）
@@ -68,13 +73,13 @@ python research/economics/thm_ce_bridge.py \
   --results reports/2026-09-08-local-full-matrix.json \
   --dataset ../datasets/locomo10.json \
   --ce-root ../context-economics \
-  --output reports/2026-09-08-economics-bridge-v2.json
+  --output reports/local-economics-bridge-v2-rerun-01.json
 
 python research/economics/report_md.py \
   --locomo reports/2026-09-08-local-full-matrix.json \
   --lme reports/2026-09-08-lme-retrieval.json \
-  --econ reports/2026-09-08-economics-bridge-v2.json \
-  --output reports/2026-09-08-suite-report-v2.md
+  --econ reports/local-economics-bridge-v2-rerun-01.json \
+  --output reports/local-suite-report-v2-rerun-01.md
 ```
 
 ## CPU/GPU semantic parity
@@ -87,7 +92,7 @@ GPU 加速和检索质量是两件事。用独立 comparator 检查 selected IDs
 python research/recall/hardware_parity.py \
   --cpu reports/2026-09-08-local-full-matrix.json \
   --gpu reports/2026-09-08-local-full-matrix-gpu.json \
-  --output reports/2026-09-08-locomo-cpu-gpu-parity.json
+  --output reports/local-locomo-parity-rerun-01.json
 ```
 
 历史 LongMemEval-S artifact **没有**保存 selected document identities，因此只能证明聚合指标一致，不能产生 positive semantic-parity receipt。当前 runner 已补 `selected_ids` / `selected_sources`；必须用新 runner 重跑 CPU/GPU 后再验证：
@@ -96,7 +101,7 @@ python research/recall/hardware_parity.py \
 python research/recall/hardware_parity.py \
   --cpu reports/2026-09-08-lme-retrieval-cpu-v2.json \
   --gpu reports/2026-09-08-lme-retrieval-gpu-v2.json \
-  --output reports/2026-09-08-lme-cpu-gpu-parity-v2.json
+  --output reports/local-lme-parity-rerun-01.json
 ```
 
 只有 comparator receipt 同时满足 `identity_complete=true` 与 `equivalent=true` 时，才把 CPU/GPU 结果称为 checked semantic parity。
@@ -113,3 +118,11 @@ python research/recall/hardware_parity.py \
 | tested budget grid | L6 | finite-grid sensitivity / budget feedback candidate；具体 knee 结论必须由 artifact 本身支持 |
 
 定价仍使用情景口径并明确 provenance；如果定价来源互相冲突，必须并列而不是挑选最有利 headline。
+
+## v2r1 canonical closeout
+
+See [machine-test v2r1 closeout](../../reports/2026-09-08-machine-test-v2r1-closeout.md) for corrected denominator, immutable successor artifacts, measured aggregate/strict parity, and the pending real-local LME CPU command.
+
+`run_suite.py` requires `--datasets-root` or `THM_DATASETS_ROOT` (containing `locomo10.json` and, unless skipped, the `longmemeval_s` JSON file), `--model-path` or `THM_MODEL_PATH` for dense/hybrid, and `--ce-root` or `CONTEXT_ECONOMICS_ROOT` containing `model.py`. No parent-directory layout is assumed. Input checks precede the atomic tag reservation and all long-running subprocesses. Each retry still requires a fresh artifact tag. Use the standalone LME command in the closeout when only LME CPU is pending.
+
+Canonical scoring requires positive gold evidence and fully resolved gold. Bridge generation and report rendering bind every configuration and suite denominator to the source canonical summary. Old mixed-denominator bridge-v2 artifacts are rejected; use economics-bridge-v2r1.json.
