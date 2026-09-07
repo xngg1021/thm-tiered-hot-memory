@@ -1,234 +1,378 @@
 #!/usr/bin/env python3
-"""THM x Context-Economics bridge: retrieval telemetry -> L4/L5/L6 economics.
+"""THM x Context Economics bridge: retrieval telemetry -> cost proxies.
 
-Reads a THM retrieval benchmark result (research/recall/benchmark.py output),
-applies the context-economics Pricing model (imported from the CE repository),
-and produces per-configuration task-economic estimates plus a full-history
-carry-along counterfactual arm.
+This is a research adapter, not a taxonomy merge and not a task-quality model.
+THM T0-T3 remain memory tiers; Context Economics L0-L6 remain analysis/control
+layers. The bridge consumes THM retrieval telemetry and applies the exact
+Context Economics Pricing implementation from an explicitly supplied checkout.
 
-Evidence discipline (CE labels):
-  - retrieval metrics: runtime-measured on this machine (benchmark JSON).
-  - cost figures: model-proxy. They are billing estimates from published
-    pricing, NOT observed bills. generation_calls=0, judge_calls=0.
-  - pricing: provider-doc-as-relayed. Multiple conflicting third-party
-    snapshots exist for deepseek-v4-pro (promo 0.435 vs Aug-16 peak/off-peak
-    0.66/1.32); all are presented as scenarios, none asserted as the live rate.
+Evidence discipline:
+  - retrieval metrics: runtime-measured in the input benchmark artifact.
+  - cost figures: model-proxy estimates, never observed provider bills.
+  - pricing: scenario inputs documented below; conflicting snapshots remain
+    separate scenarios.
+  - evidence coverage is not answer accuracy or task success.
 
-Retrieval evidence coverage is not answer accuracy; costs here are the cost
-of the retrieval context only.
+The full-history arm is a same-query counterfactual: for every benchmark query,
+the source conversation's full history is priced instead of the packed retrieval
+context. It does NOT by itself establish chronological O(N^2) carry growth.
 """
 from __future__ import annotations
 
 import argparse
 import hashlib
+import importlib.util
 import json
-import math
+import os
+import subprocess
 import sys
 from pathlib import Path
+from typing import Any
 
-sys.path.insert(0, str(Path(__file__).resolve().parents[2]))          # THM engine
-sys.path.insert(0, r"D:/hermes-home/you/repos/context-economics")      # CE repo
+THM_ROOT = Path(__file__).resolve().parents[2]
+sys.path.insert(0, str(THM_ROOT))
 
-from model import Pricing  # noqa: E402  (context-economics L0 model)
 from thm.retrieval import TokenCounter  # noqa: E402
+from thm.sources import locomo_documents  # noqa: E402
 
+CACHE_SHARES = (0.0, 0.5, 0.9)
 
-# ---- Pricing scenarios (all USD per 1M tokens; provider-doc-as-relayed) ----
-SCENARIOS = {
-    "deepseek-v4-pro_offpeak_2026-08-16": Pricing(
-        "deepseek-v4-pro-offpeak", 0.66, 0.022, 1.98),
-    "deepseek-v4-pro_peak_2026-08-16": Pricing(
-        "deepseek-v4-pro-peak", 1.32, 0.044, 3.96),
-    "deepseek-v4-pro_promo_2026-05-22": Pricing(
-        "deepseek-v4-pro-promo", 0.435, 0.003625, 0.87),
-    "kimi-k3_study_snapshot": Pricing(
-        "kimi-k3-study-snapshot", 3.00, 0.30, 15.00),
+SCENARIO_SPECS = {
+    "deepseek-v4-pro_offpeak_2026-08-16": {
+        "name": "deepseek-v4-pro-offpeak",
+        "p_in": 0.66, "p_cache": 0.022, "p_out": 1.98,
+    },
+    "deepseek-v4-pro_peak_2026-08-16": {
+        "name": "deepseek-v4-pro-peak",
+        "p_in": 1.32, "p_cache": 0.044, "p_out": 3.96,
+    },
+    "deepseek-v4-pro_promo_2026-05-22": {
+        "name": "deepseek-v4-pro-promo",
+        "p_in": 0.435, "p_cache": 0.003625, "p_out": 0.87,
+    },
+    "kimi-k3_study_snapshot": {
+        "name": "kimi-k3-study-snapshot",
+        "p_in": 3.00, "p_cache": 0.30, "p_out": 15.00,
+    },
 }
 
-CACHE_SHARES = [0.0, 0.5, 0.9]  # rho scenarios for the recall context prefix
+
+def sha256_file(path: Path) -> str:
+    h = hashlib.sha256()
+    with path.open("rb") as fh:
+        for chunk in iter(lambda: fh.read(1024 * 1024), b""):
+            h.update(chunk)
+    return h.hexdigest()
+
+
+def git_head(path: Path) -> str | None:
+    try:
+        proc = subprocess.run(
+            ["git", "-C", str(path), "rev-parse", "HEAD"],
+            capture_output=True, text=True, encoding="utf-8", errors="replace",
+            timeout=5, check=False,
+        )
+    except (OSError, subprocess.SubprocessError):
+        return None
+    value = proc.stdout.strip()
+    return value if proc.returncode == 0 and len(value) == 40 else None
+
+
+def resolve_ce_root(value: str | None) -> Path:
+    raw = value or os.environ.get("CONTEXT_ECONOMICS_ROOT")
+    if not raw:
+        raise ValueError(
+            "Context Economics checkout required: pass --ce-root or set "
+            "CONTEXT_ECONOMICS_ROOT"
+        )
+    root = Path(raw).expanduser().resolve()
+    if not root.is_dir() or not (root / "model.py").is_file():
+        raise ValueError("Context Economics root must contain model.py")
+    return root
+
+
+def load_pricing_class(root: Path):
+    model_path = root / "model.py"
+    spec = importlib.util.spec_from_file_location("_thm_ce_pricing_model", model_path)
+    if spec is None or spec.loader is None:
+        raise ValueError("unable to load Context Economics model.py")
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    pricing = getattr(module, "Pricing", None)
+    if pricing is None:
+        raise ValueError("Context Economics model.py has no Pricing class")
+    provenance = {
+        "repository": "xngg1021/context-economics",
+        "git_commit": git_head(root),
+        "model_sha256": sha256_file(model_path),
+    }
+    return pricing, provenance
+
+
+def build_scenarios(pricing_cls) -> dict[str, Any]:
+    return {name: pricing_cls(**spec) for name, spec in SCENARIO_SPECS.items()}
 
 
 def load_benchmark(path: Path) -> dict:
     data = json.loads(path.read_text(encoding="utf-8"))
     if "rows" not in data or "summaries" not in data:
         raise ValueError("not a THM benchmark result (missing rows/summaries)")
+    if data.get("protocol") != 2:
+        raise ValueError("economics bridge requires THM LoCoMo Protocol 2")
+    if data.get("counter") != "cl100k_base":
+        raise ValueError("economics bridge requires cl100k_base accounting")
     return data
 
 
-def load_dataset(path: Path) -> dict:
-    return json.loads(path.read_text(encoding="utf-8"))
+def load_dataset(path: Path) -> list:
+    data = json.loads(path.read_text(encoding="utf-8"))
+    if not isinstance(data, list) or not data:
+        raise ValueError("LoCoMo dataset must be a nonempty list")
+    return data
 
 
-def conversation_tokens(dataset: list, counter) -> dict:
-    """Total document tokens per conversation (cl100k_base), for the
-    full-history carry-along counterfactual arm. Uses the same parsing as
-    the benchmark (thm.sources.locomo_documents)."""
-    from thm.sources import locomo_documents
-    out = {}
+def conversation_tokens(dataset: list, counter) -> dict[str, int]:
+    """Return full-history tokens by LoCoMo conversation scope."""
+    out: dict[str, int] = {}
     for sample in dataset:
-        total = 0
-        for doc in locomo_documents(sample):
-            total += counter(f"{doc.speaker}: {doc.text}")
-        out[str(sample.get("sample_id"))] = total
+        scope = str(sample.get("sample_id"))
+        if not scope or scope in out:
+            raise ValueError("dataset contains missing/duplicate sample_id")
+        total = sum(counter(f"{doc.speaker}: {doc.text}") for doc in locomo_documents(sample))
+        out[scope] = total
     return out
 
 
-def usd(v: float) -> float:
-    return round(v, 6)
+def usd(value: float) -> float:
+    return round(value, 6)
 
 
-def economics_for_rows(rows, questions_total, pricing: Pricing, counterfactual_tokens: int | None = None):
-    """L5 per-config economics for one mode@budget slice."""
+def input_cost(tokens: int | float, pricing, rho: float) -> float:
+    """Price one request, honoring CE long-context request-rate semantics."""
+    rate = pricing.effective_input_rate(rho, prompt_tokens=float(tokens))
+    return float(tokens) / 1_000_000 * rate
+
+
+def _scorable(row: dict) -> bool:
+    return bool(row.get("fully_resolved")) and int(row.get("evidence_count", 0)) > 0
+
+
+def economics_for_rows(
+    rows: list[dict],
+    pricing,
+    full_history_tokens: dict[str, int] | None = None,
+) -> dict:
+    """Cost proxies for one mode@budget slice on one common query denominator."""
     if not rows:
         return {}
-    budget = rows[0]["budget"]
-    mean_budget_used = sum(r["budget_used"] for r in rows) / len(rows)
-    total_recall_tokens = sum(r["budget_used"] for r in rows)
+    budgets = {int(r["budget"]) for r in rows}
+    if len(budgets) != 1:
+        raise ValueError("one economics slice must contain exactly one budget")
+    budget = budgets.pop()
     n = len(rows)
-    gold_hits = sum(r["hits"] for r in rows)
-    any_gold_questions = sum(1 for r in rows if r["hits"] > 0 and r["fully_resolved"])
+    scorable = sum(_scorable(r) for r in rows)
+    packed_tokens = [int(r["budget_used"]) for r in rows]
+    total_packed_tokens = sum(packed_tokens)
+    gold_hits = sum(int(r["hits"]) for r in rows if _scorable(r))
+    any_gold = sum(int(r["hits"]) > 0 for r in rows if _scorable(r))
 
     scenarios = {}
     for rho in CACHE_SHARES:
-        p_eff = pricing.effective_input_rate(rho)
-        per_query_input = mean_budget_used / 1_000_000 * p_eff
-        total_input = total_recall_tokens / 1_000_000 * p_eff
+        costs = [input_cost(tokens, pricing, rho) for tokens in packed_tokens]
+        total_cost = sum(costs)
         scenarios[f"rho={rho}"] = {
-            "effective_input_rate_per_1M": usd(p_eff),
-            "per_query_input_cost_usd": usd(per_query_input),
-            "total_input_cost_usd": usd(total_input),
-            "cost_per_gold_hit_usd": usd(total_input / gold_hits) if gold_hits else None,
-            "cost_per_any_gold_question_usd": usd(total_input / any_gold_questions) if any_gold_questions else None,
+            "mean_effective_input_rate_per_1M": usd(
+                sum(pricing.effective_input_rate(rho, prompt_tokens=t) for t in packed_tokens) / n
+            ),
+            "per_query_input_cost_usd": usd(total_cost / n),
+            "total_input_cost_usd": usd(total_cost),
+            "cost_per_gold_evidence_hit_usd": usd(total_cost / gold_hits) if gold_hits else None,
+            "cost_per_any_gold_scorable_question_usd": usd(total_cost / any_gold) if any_gold else None,
         }
 
     out = {
-        "questions": n,
+        "attempted_questions": n,
+        "scorable_questions": scorable,
         "budget": budget,
-        "mean_budget_used_tokens": round(mean_budget_used, 2),
-        "total_recall_tokens": total_recall_tokens,
-        "gold_hits": gold_hits,
-        "any_gold_questions": any_gold_questions,
+        "mean_budget_used_tokens": round(total_packed_tokens / n, 2),
+        "total_packed_retrieval_tokens": total_packed_tokens,
+        "gold_evidence_hits": gold_hits,
+        "any_gold_scorable_questions": any_gold,
         "pricing_scenarios": scenarios,
     }
-    if counterfactual_tokens:
-        # Full-history carry-along: the whole conversation is re-sent per query.
-        per_query_tokens = counterfactual_tokens
-        out["counterfactual_full_history"] = {
-            "per_query_tokens": per_query_tokens,
-            "tokens_ratio_vs_recall": round(per_query_tokens / mean_budget_used, 1),
-            "costs": {},
+
+    if full_history_tokens is not None:
+        missing = sorted({str(r["scope"]) for r in rows} - set(full_history_tokens))
+        if missing:
+            raise ValueError(f"full-history token map missing scopes: {missing[:5]}")
+        full_tokens = [full_history_tokens[str(r["scope"])] for r in rows]
+        total_full_tokens = sum(full_tokens)
+        arm = {
+            "attempted_questions": n,
+            "mean_input_tokens_per_query": round(total_full_tokens / n, 2),
+            "total_input_tokens": total_full_tokens,
+            "tokens_ratio_vs_packed_retrieval": round(
+                total_full_tokens / total_packed_tokens, 4
+            ) if total_packed_tokens else None,
+            "pricing_scenarios": {},
         }
         for rho in CACHE_SHARES:
-            p_eff = pricing.effective_input_rate(rho)
-            per_query = per_query_tokens / 1_000_000 * p_eff
-            out["counterfactual_full_history"]["costs"][f"rho={rho}"] = {
-                "per_query_input_cost_usd": usd(per_query),
-                "total_cost_usd_1986_queries": usd(per_query * questions_total),
+            full_cost = sum(input_cost(tokens, pricing, rho) for tokens in full_tokens)
+            packed_cost = sum(input_cost(tokens, pricing, rho) for tokens in packed_tokens)
+            arm["pricing_scenarios"][f"rho={rho}"] = {
+                "per_query_input_cost_usd": usd(full_cost / n),
+                "total_input_cost_usd_same_queries": usd(full_cost),
+                "cost_ratio_vs_packed_retrieval": round(
+                    full_cost / packed_cost, 4
+                ) if packed_cost else None,
             }
+        out["full_history_same_query_counterfactual"] = arm
     return out
 
 
-def marginal_analysis(summaries_keyed, rows_keyed):
-    """L6-style budget feedback: delta recall vs delta cost across budgets."""
+def marginal_analysis(rows_keyed: dict, pricing) -> dict:
+    """L6-style grid sensitivity, with percentage-point units explicit."""
     out = {}
-    for mode in rows_keyed:
-        budgets = sorted(rows_keyed[mode], key=lambda b: int(b))
+    for mode, budget_rows in rows_keyed.items():
+        budgets = sorted(budget_rows)
         if len(budgets) < 2:
             continue
         out[mode] = {}
         for lo, hi in zip(budgets, budgets[1:]):
-            r_lo = rows_keyed[mode][lo]
-            r_hi = rows_keyed[mode][hi]
-            scorable_lo = sum(1 for r in r_lo if r["fully_resolved"])
-            scorable_hi = sum(1 for r in r_hi if r["fully_resolved"])
-            any_lo = sum(1 for r in r_lo if r["hits"] > 0 and r["fully_resolved"]) / scorable_lo if scorable_lo else 0
-            any_hi = sum(1 for r in r_hi if r["hits"] > 0 and r["fully_resolved"]) / scorable_hi if scorable_hi else 0
-            d_recall = any_hi - any_lo
-            d_tokens = sum(r["budget_used"] for r in r_hi) - sum(r["budget_used"] for r in r_lo)
-            # cost delta at off-peak, rho=0
-            d_cost = d_tokens / 1_000_000 * SCENARIOS["deepseek-v4-pro_offpeak_2026-08-16"].p_in
+            r_lo, r_hi = budget_rows[lo], budget_rows[hi]
+            s_lo = [r for r in r_lo if _scorable(r)]
+            s_hi = [r for r in r_hi if _scorable(r)]
+            if not s_lo or not s_hi or len(s_lo) != len(s_hi):
+                raise ValueError("marginal comparison requires equal nonempty scorable cohorts")
+            any_lo = sum(int(r["hits"]) > 0 for r in s_lo) / len(s_lo)
+            any_hi = sum(int(r["hits"]) > 0 for r in s_hi) / len(s_hi)
+            delta_rate = any_hi - any_lo
+            cost_lo = sum(input_cost(int(r["budget_used"]), pricing, 0.0) for r in r_lo)
+            cost_hi = sum(input_cost(int(r["budget_used"]), pricing, 0.0) for r in r_hi)
+            delta_cost = cost_hi - cost_lo
+            delta_pp = delta_rate * 100.0
             out[mode][f"{lo}->{hi}"] = {
-                "delta_any_gold_rate": round(d_recall, 4),
-                "delta_recall_tokens": d_tokens,
-                "delta_input_cost_usd_offpeak_rho0": usd(d_cost),
-                "marginal_cost_per_point_of_recall_usd": usd(d_cost / d_recall) if d_recall > 0 else None,
+                "delta_any_gold_rate": round(delta_rate, 6),
+                "delta_any_gold_percentage_points": round(delta_pp, 4),
+                "delta_packed_tokens": sum(int(r["budget_used"]) for r in r_hi)
+                                      - sum(int(r["budget_used"]) for r in r_lo),
+                "delta_input_cost_usd_rho0": usd(delta_cost),
+                "marginal_cost_usd_per_1pp_any_gold_gain": (
+                    usd(delta_cost / delta_pp) if delta_pp > 0 else None
+                ),
             }
     return out
 
 
-def main():
-    ap = argparse.ArgumentParser(description=__doc__)
-    ap.add_argument("--results", required=True)
-    ap.add_argument("--dataset", default=None, help="locomo10.json for the counterfactual arm")
-    ap.add_argument("--output", required=True)
-    args = ap.parse_args()
-
-    bench = load_benchmark(Path(args.results))
+def build_report(
+    bench: dict,
+    scenarios: dict,
+    ce_provenance: dict,
+    full_history_tokens: dict[str, int] | None = None,
+    result_name: str | None = None,
+) -> dict:
     rows = bench["rows"]
-
-    # Key rows by mode and budget, main categories 1-4 only.
-    mode_budgets: dict[str, dict[int, list]] = {}
-    for r in rows:
-        if r["category"] == 5:
+    mode_budgets: dict[str, dict[int, list[dict]]] = {}
+    for row in rows:
+        if int(row["category"]) == 5:
             continue
-        mode_budgets.setdefault(r["mode"], {}).setdefault(int(r["budget"]), []).append(r)
+        mode_budgets.setdefault(str(row["mode"]), {}).setdefault(
+            int(row["budget"]), []
+        ).append(row)
 
-    counter_tokens = {}
-    if args.dataset:
-        ds = load_dataset(Path(args.dataset))
-        counter_tokens = conversation_tokens(ds, TokenCounter("cl100k_base"))
+    primary_name = "deepseek-v4-pro_offpeak_2026-08-16"
+    primary = scenarios[primary_name]
+    per_config = {}
+    for mode, budgets in mode_budgets.items():
+        for budget, slice_rows in budgets.items():
+            per_config[f"{mode}@{budget}"] = economics_for_rows(
+                slice_rows, primary, full_history_tokens
+            )
 
-    report = {
-        "kind": "thm-x-context-economics-bridge",
+    all_main_rows = [row for row in rows if int(row["category"]) != 5]
+    config_count = len(per_config)
+    attempted_by_config = sorted({v["attempted_questions"] for v in per_config.values()})
+    scorable_by_config = sorted({v["scorable_questions"] for v in per_config.values()})
+
+    suite_totals = {
+        "config_count": config_count,
+        "config_query_executions": len(all_main_rows),
+        "scorable_config_query_executions": sum(_scorable(r) for r in all_main_rows),
+        "attempted_questions_per_config": attempted_by_config[0] if len(attempted_by_config) == 1 else attempted_by_config,
+        "scorable_questions_per_config": scorable_by_config[0] if len(scorable_by_config) == 1 else scorable_by_config,
+        "total_packed_retrieval_tokens": sum(int(r["budget_used"]) for r in all_main_rows),
+        "note": (
+            "Suite totals sum every mode@budget arm. They are experiment-run totals, "
+            "not the cost of one deployed policy."
+        ),
+        "pricing_scenarios": {},
+    }
+    for name, pricing in scenarios.items():
+        suite_totals["pricing_scenarios"][name] = {}
+        for rho in CACHE_SHARES:
+            total = sum(input_cost(int(r["budget_used"]), pricing, rho) for r in all_main_rows)
+            suite_totals["pricing_scenarios"][name][f"rho={rho}"] = {
+                "total_input_cost_usd": usd(total)
+            }
+
+    return {
+        "kind": "thm-x-context-economics-bridge-v2",
         "evidence_labels": {
             "retrieval_metrics": "runtime-measured",
             "cost_figures": "model-proxy",
             "pricing": "provider-doc-as-relayed (conflicting snapshots; scenarios only)",
+            "answer_accuracy": "not_measured",
+            "observed_provider_bill": "not_measured",
         },
+        "context_economics_provenance": ce_provenance,
         "benchmark": {
-            "file": Path(args.results).name,
+            "file": result_name,
             "protocol": bench.get("protocol"),
             "counter": bench.get("counter"),
+            "dataset_sha256": bench.get("dataset_sha256"),
             "modes": bench.get("modes"),
             "budgets": bench.get("budgets"),
             "generation_calls": bench.get("generation_calls"),
             "judge_calls": bench.get("judge_calls"),
         },
-        "l5_per_config": {},
-        "l6_marginal": marginal_analysis({}, mode_budgets),
+        "pricing_scenario_specs": SCENARIO_SPECS,
+        "primary_proxy_scenario": primary_name,
+        "per_config": per_config,
+        "suite_totals": suite_totals,
+        "l6_budget_grid_sensitivity": marginal_analysis(mode_budgets, primary),
+        "interpretation_limits": [
+            "Retrieval evidence coverage is not answer accuracy or task success.",
+            "All monetary values are pricing-model proxies, not observed bills.",
+            "Per-config full-history comparisons use exactly the same benchmark queries.",
+            "Suite totals aggregate all experimental arms and are not a deployed-policy cost.",
+            "The full-history counterfactual does not by itself prove chronological O(N^2) growth.",
+            "Only three tested budgets are present; a 600-token knee is a grid observation, not an optimized threshold.",
+        ],
     }
 
-    for mode, budgets in mode_budgets.items():
-        for budget, slice_rows in budgets.items():
-            key = f"{mode}@{budget}"
-            cf = None
-            if counter_tokens and slice_rows:
-                # Counterfactual uses the mean conversation size seen by these rows.
-                scope_tokens = {}
-                for r in slice_rows:
-                    scope_tokens[r["scope"]] = counter_tokens.get(r["scope"], 0)
-                if scope_tokens:
-                    cf = int(sum(scope_tokens.values()) / len(scope_tokens))
-            report["l5_per_config"][key] = economics_for_rows(
-                slice_rows, len(slice_rows), SCENARIOS["deepseek-v4-pro_offpeak_2026-08-16"], cf)
 
-    # Total-scope numbers: full 1986-question run cost per scenario.
-    total_questions = len([r for r in rows if r["category"] != 5])
-    report["l5_totals"] = {}
-    for name, pricing in SCENARIOS.items():
-        total_tokens = sum(r["budget_used"] for r in rows if r["category"] != 5)
-        rho_totals = {}
-        for rho in CACHE_SHARES:
-            p_eff = pricing.effective_input_rate(rho)
-            rho_totals[f"rho={rho}"] = {
-                "total_input_cost_usd": usd(total_tokens / 1_000_000 * p_eff),
-            }
-        report["l5_totals"][name] = {
-            "questions": total_questions,
-            "total_recall_tokens": total_tokens,
-            "per_scenario": rho_totals,
-        }
+def main():
+    ap = argparse.ArgumentParser(description=__doc__)
+    ap.add_argument("--results", required=True)
+    ap.add_argument("--dataset", help="locomo10.json for same-query full-history counterfactual")
+    ap.add_argument("--ce-root", help="Context Economics checkout; or CONTEXT_ECONOMICS_ROOT")
+    ap.add_argument("--output", required=True)
+    args = ap.parse_args()
 
+    bench_path = Path(args.results)
+    bench = load_benchmark(bench_path)
+    ce_root = resolve_ce_root(args.ce_root)
+    pricing_cls, ce_provenance = load_pricing_class(ce_root)
+    scenarios = build_scenarios(pricing_cls)
+
+    full_history = None
+    if args.dataset:
+        dataset = load_dataset(Path(args.dataset))
+        full_history = conversation_tokens(dataset, TokenCounter("cl100k_base"))
+
+    report = build_report(
+        bench, scenarios, ce_provenance, full_history, bench_path.name
+    )
     out = Path(args.output)
     out.parent.mkdir(parents=True, exist_ok=True)
     out.write_text(json.dumps(report, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
