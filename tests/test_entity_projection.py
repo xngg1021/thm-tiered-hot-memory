@@ -74,5 +74,10 @@ class EntityProjectionTests(unittest.TestCase):
         long_rows = [{'rowid': 1, 'speaker': '', 'text': 'x'*9000+' BUG-42'}]
         self.assertIs(reorder(long_rows,'BUG-42'),long_rows)
 
+    def test_longest_known_full_speaker_wins_over_prefix(self):
+        rows = [{'rowid': 1, 'speaker': 'Ann', 'text': 'text'},
+                {'rowid': 2, 'speaker': 'Ann Marie', 'text': 'text'}]
+        self.assertEqual(reorder(rows, 'Ann Marie visited')[0]['rowid'], 2)
+
 
 if __name__ == '__main__': unittest.main()

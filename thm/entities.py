@@ -21,7 +21,7 @@ RIGHT = r'(?!(?:[\w/\\:@#%&=~+\-]|[.?][\w/]))'
 
 
 def exact_pattern(values):
-    return re.compile(LEFT + '(?:' + '|'.join(re.escape(v) for v in sorted(values)) + ')' + RIGHT)
+    return re.compile(LEFT + '(?:' + '|'.join(re.escape(v) for v in sorted(values, key=lambda value: (-len(value), value))) + ')' + RIGHT)
 
 
 def present(value, text):

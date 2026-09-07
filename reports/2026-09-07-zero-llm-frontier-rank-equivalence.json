@@ -1,10 +1,12 @@
 {
   "question_requests": 1986,
-  "computed_full_orderings_checked": 1976,
-  "cached_repeat_queries": 10,
+  "computed_full_orderings_checked": 1986,
   "all_candidate_orderings_identical": true,
+  "method": "Replay immutable baseline candidate IDs with original source speaker/text metadata, comparing the complete ordering of the frozen and current pure projections. No packing or timing claim is inferred from this instrumentation.",
+  "baseline_trace_sha256": "0ccfd4eb07ed766dcb3ba69dc1424ce8976e8dcb16e4404a9a37e81349316d60",
+  "dataset_sha256": "79fa87e90f04081343b8c8debecb80a9a6842b76a7aa537dc9fdf651ea698ff4",
   "frozen_commit": "ba9e8453ff3ec701e16a6b45350406e432d691e5",
   "frozen_entity_sha256": "6ad7f38d10315a0a814602d0509cba7e3f77c03743b4eac03e695f1473a40c24",
-  "reviewed_entity_sha256": "3aee10da70a183f97ff3f7f9602c11482c49940770a0fd828aee627f0d1f9c55",
-  "implication": "Whole-turn packing is unchanged at every positive budget because full candidate ordering is identical. Cache repeats reuse an already checked deterministic query. No timing claim is taken from the instrumented run."
+  "reviewed_entity_sha256": "42e673f2c695342c390b12549b97fdc666ab5508e3ddbecac17f234d8faacf10",
+  "implication": "Identical complete candidate order with the unchanged whole-turn serializer/packer implies identical evidence at every positive budget."
 }
