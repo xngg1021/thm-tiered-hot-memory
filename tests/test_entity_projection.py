@@ -112,5 +112,20 @@ class EntityProjectionTests(unittest.TestCase):
         self.assertEqual(reorder(path_rows,'（https://a.test/页（甲））。')[0]['rowid'],2)
         self.assertIs(reorder(rows,'`https://a.test。`'),rows)
 
+    def test_known_cjk_speakers_in_unspaced_prose(self):
+        for name, query in [('张三', '请问张三讨论了什么？'),
+                            ('田中', '田中さんは何を話しましたか？'),
+                            ('민수', '민수는무엇을말했나요?')]:
+            rows = [{'rowid': 1, 'speaker': 'Other', 'text': 'text'},
+                    {'rowid': 2, 'speaker': name, 'text': 'text'}]
+            self.assertEqual(reorder(rows,query)[0]['rowid'],2,query)
+            self.assertIs(reorder(rows,'prefix/'+name),rows)
+            self.assertIs(reorder(rows,name+'-suffix'),rows)
+        rows = [{'rowid': 1, 'speaker': '张三', 'text': 'text'},
+                {'rowid': 2, 'speaker': '张三丰', 'text': 'text'}]
+        self.assertEqual(reorder(rows,'请问张三丰说了什么？')[0]['rowid'],2)
+        from thm.entities import present
+        self.assertFalse(present('资料/版本.md','资料/版本.md副本'))
+
 
 if __name__ == '__main__': unittest.main()

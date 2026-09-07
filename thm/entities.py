@@ -23,6 +23,8 @@ TOKEN_START = re.compile(LEFT)
 TOKEN_END = re.compile(RIGHT)
 URL_WRAPPERS = ('()', '[]', '{}', '（）', '【】', '《》', '〈〉', '「」',
                 '『』', '〔〕', '〖〗', '〘〙', '〚〛', '｟｠', '｢｣', '“”', '‘’', '«»', '‹›')
+CJK_CHARS = '\u3400-\u4dbf\u4e00-\u9fff\uf900-\ufaff\U00020000-\U000323af\u3040-\u30ff\u31f0-\u31ff\u1100-\u11ff\u3130-\u318f\uac00-\ud7af'
+CJK_CHAR = re.compile('[' + CJK_CHARS + ']')
 
 
 def exact_pattern(values):
@@ -32,6 +34,20 @@ def exact_pattern(values):
 def present(value, text):
     """Exact, case-sensitive identifier occurrence, including compound boundaries."""
     return bool(exact_pattern([value]).search(text))
+
+
+def speaker_pattern(names):
+    """Known CJK names may adjoin CJK prose; longest known names win.
+
+    Only the name's CJK endpoints relax boundaries. Identifiers and Latin
+    endpoints retain the strict compound boundaries; this is not word NER.
+    """
+    patterns = []
+    for name in sorted(names, key=lambda value: (-len(value), value)):
+        left = '(?:' + LEFT + '|(?<=[' + CJK_CHARS + ']))' if CJK_CHAR.fullmatch(name[0]) else LEFT
+        right = '(?:' + RIGHT + '|(?=[' + CJK_CHARS + ']))' if CJK_CHAR.fullmatch(name[-1]) else RIGHT
+        patterns.append(left + re.escape(name) + right)
+    return re.compile('(?:' + '|'.join(patterns) + ')')
 
 
 def reorder(rows, query, weight=0.25):
@@ -73,7 +89,7 @@ def reorder(rows, query, weight=0.25):
              and r['speaker'].lower() not in GENERIC}
     speakers = set()
     if names and len(names) <= MAX_SPEAKERS:
-        speakers = {m[0] for m in exact_pattern(names).finditer(query)}
+        speakers = {m[0] for m in speaker_pattern(names).finditer(query)}
     pattern = exact_pattern(identifiers) if identifiers else None
     if not speakers and pattern is None:
         return rows

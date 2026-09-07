@@ -117,7 +117,7 @@ Projection admission is bounded to 16 unique identifiers of at most 256
 characters, 64 speaker names of at most 128 characters, and 3000 candidates.
 At most two patterns are compiled per query. Identifier matching skips source
 bodies over 8192 characters; over-complex identifier queries use the unchanged
-base order. Compound-name/path continuations are not accepted as exact matches.
+base order. Latin compound-name and identifier/path continuations are not accepted as exact matches. Known CJK speaker names may adjoin CJK prose; longest known names take precedence. This endpoint-specific relaxation applies only to speaker metadata, never to identifier matching. It recognizes known name strings and does not resolve unknown longer names or perform general word segmentation/NER.
 These are safety bounds, not holdout-tuned weights.
 
 Current production evidence is the [reviewed manifest](../reports/2026-09-07-zero-llm-frontier-reviewed-production-summary.json).
