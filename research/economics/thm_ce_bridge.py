@@ -1,22 +1,10 @@
 #!/usr/bin/env python3
-"""THM x Context Economics bridge: retrieval telemetry -> cost proxies.
+"""Bridge THM retrieval artifacts into Context Economics pricing proxies.
 
-This is a research adapter, not a taxonomy merge and not a task-quality model.
-THM T0-T3 remain memory tiers; Context Economics L0-L6 remain analysis/control
-layers. The bridge consumes THM retrieval telemetry and applies the exact
-Context Economics Pricing implementation from an explicitly supplied checkout.
-
-Evidence discipline:
-  - retrieval metrics: runtime-measured in the input benchmark artifact.
-  - cost figures: model-proxy estimates, never observed provider bills.
-  - pricing: scenario inputs documented below; conflicting snapshots remain
-    separate scenarios.
-  - evidence coverage is not answer accuracy or task success.
-
-The full-history arm is a same-query counterfactual: for every benchmark query,
-the source conversation's full history is priced instead of the packed retrieval
-context. Its dataset bytes must match the benchmark dataset SHA-256. It does NOT
-by itself establish chronological O(N^2) carry growth.
+This module deliberately remains a research adapter rather than a production
+cross-repository dependency. It consumes runtime-measured THM evidence and an
+explicit Context Economics checkout, then emits model-proxy economics with
+matched query denominators and pinned provenance.
 """
 from __future__ import annotations
 
@@ -27,148 +15,188 @@ import json
 import os
 import subprocess
 import sys
+from dataclasses import asdict
 from pathlib import Path
-from typing import Any
 
-THM_ROOT = Path(__file__).resolve().parents[2]
-sys.path.insert(0, str(THM_ROOT))
+ROOT = Path(__file__).resolve().parents[2]
+if str(ROOT) not in sys.path:
+    sys.path.insert(0, str(ROOT))
 
-from thm.retrieval import TokenCounter  # noqa: E402
-from thm.sources import locomo_documents  # noqa: E402
+from thm.retrieval import TokenCounter
 
 CACHE_SHARES = (0.0, 0.5, 0.9)
 
 SCENARIO_SPECS = {
     "deepseek-v4-pro_offpeak_2026-08-16": {
-        "name": "deepseek-v4-pro-offpeak",
-        "p_in": 0.66, "p_cache": 0.022, "p_out": 1.98,
+        "name": "deepseek-v4-pro_offpeak_2026-08-16",
+        "p_in": 0.66,
+        "p_cache": 0.022,
+        "p_out": 2.64,
     },
     "deepseek-v4-pro_peak_2026-08-16": {
-        "name": "deepseek-v4-pro-peak",
-        "p_in": 1.32, "p_cache": 0.044, "p_out": 3.96,
+        "name": "deepseek-v4-pro_peak_2026-08-16",
+        "p_in": 1.32,
+        "p_cache": 0.044,
+        "p_out": 5.28,
     },
-    "deepseek-v4-pro_promo_2026-05-22": {
-        "name": "deepseek-v4-pro-promo",
-        "p_in": 0.435, "p_cache": 0.003625, "p_out": 0.87,
-    },
-    "kimi-k3_study_snapshot": {
-        "name": "kimi-k3-study-snapshot",
-        "p_in": 3.00, "p_cache": 0.30, "p_out": 15.00,
+    "deepseek-v4-pro_promo_2026-08-16": {
+        "name": "deepseek-v4-pro_promo_2026-08-16",
+        "p_in": 0.435,
+        "p_cache": 0.0145,
+        "p_out": 1.74,
     },
 }
 
 
 def sha256_file(path: Path) -> str:
-    h = hashlib.sha256()
-    with path.open("rb") as fh:
-        for chunk in iter(lambda: fh.read(1024 * 1024), b""):
-            h.update(chunk)
-    return h.hexdigest()
+    digest = hashlib.sha256()
+    with path.open("rb") as handle:
+        for chunk in iter(lambda: handle.read(1024 * 1024), b""):
+            digest.update(chunk)
+    return digest.hexdigest()
 
 
-def git_head(path: Path) -> str | None:
-    try:
-        proc = subprocess.run(
-            ["git", "-C", str(path), "rev-parse", "HEAD"],
-            capture_output=True, text=True, encoding="utf-8", errors="replace",
-            timeout=5, check=False,
-        )
-    except (OSError, subprocess.SubprocessError):
-        return None
-    value = proc.stdout.strip()
-    return value if proc.returncode == 0 and len(value) == 40 else None
-
-
-def resolve_ce_root(value: str | None) -> Path:
-    raw = value or os.environ.get("CONTEXT_ECONOMICS_ROOT")
+def resolve_ce_root(cli_value: str | None) -> Path:
+    raw = cli_value or os.environ.get("CONTEXT_ECONOMICS_ROOT")
     if not raw:
         raise ValueError(
-            "Context Economics checkout required: pass --ce-root or set "
+            "Context Economics checkout is required: pass --ce-root or set "
             "CONTEXT_ECONOMICS_ROOT"
         )
     root = Path(raw).expanduser().resolve()
-    if not root.is_dir() or not (root / "model.py").is_file():
-        raise ValueError("Context Economics root must contain model.py")
+    model = root / "model.py"
+    if not model.is_file():
+        raise FileNotFoundError(f"Context Economics model.py not found under {root}")
     return root
+
+
+def _git_commit(root: Path) -> str | None:
+    try:
+        proc = subprocess.run(
+            ["git", "-C", str(root), "rev-parse", "HEAD"],
+            capture_output=True,
+            text=True,
+            check=True,
+        )
+    except (OSError, subprocess.CalledProcessError):
+        return None
+    value = proc.stdout.strip()
+    return value if len(value) == 40 else None
 
 
 def load_pricing_class(root: Path):
     model_path = root / "model.py"
-    spec = importlib.util.spec_from_file_location("_thm_ce_pricing_model", model_path)
+    module_name = f"context_economics_model_{sha256_file(model_path)[:12]}"
+    spec = importlib.util.spec_from_file_location(module_name, model_path)
     if spec is None or spec.loader is None:
-        raise ValueError("unable to load Context Economics model.py")
+        raise RuntimeError(f"unable to load {model_path}")
     module = importlib.util.module_from_spec(spec)
-    sys.modules[spec.name] = module
+    # dataclasses and other decorators may inspect sys.modules while a module is
+    # executing, so register this explicitly before exec_module().
+    sys.modules[module_name] = module
     try:
         spec.loader.exec_module(module)
     except Exception:
-        sys.modules.pop(spec.name, None)
+        sys.modules.pop(module_name, None)
         raise
-    pricing = getattr(module, "Pricing", None)
-    if pricing is None:
-        raise ValueError("Context Economics model.py has no Pricing class")
-    provenance = {
-        "repository": "xngg1021/context-economics",
-        "git_commit": git_head(root),
+    pricing_cls = getattr(module, "Pricing", None)
+    if pricing_cls is None:
+        raise AttributeError(f"{model_path} has no Pricing class")
+    return pricing_cls, {
+        "root_name": root.name,
+        "git_commit": _git_commit(root),
         "model_sha256": sha256_file(model_path),
     }
-    return pricing, provenance
 
 
-def build_scenarios(pricing_cls) -> dict[str, Any]:
-    return {name: pricing_cls(**spec) for name, spec in SCENARIO_SPECS.items()}
+def build_scenarios(pricing_cls) -> dict:
+    scenarios = {}
+    for name, spec in SCENARIO_SPECS.items():
+        scenarios[name] = pricing_cls(**spec)
+    return scenarios
 
 
 def load_benchmark(path: Path) -> dict:
     data = json.loads(path.read_text(encoding="utf-8"))
-    if "rows" not in data or "summaries" not in data:
-        raise ValueError("not a THM benchmark result (missing rows/summaries)")
-    if data.get("protocol") != 2:
-        raise ValueError("economics bridge requires THM LoCoMo Protocol 2")
-    if data.get("counter") != "cl100k_base":
-        raise ValueError("economics bridge requires cl100k_base accounting")
+    if not isinstance(data, dict) or not isinstance(data.get("rows"), list):
+        raise ValueError(f"invalid benchmark artifact: {path}")
+    digest = data.get("dataset_sha256")
+    if not isinstance(digest, str) or len(digest) != 64:
+        raise ValueError("benchmark artifact is missing a valid dataset_sha256")
     return data
 
 
-def load_dataset_verified(path: Path, expected_sha256: str) -> tuple[list, str]:
-    if not isinstance(expected_sha256, str) or len(expected_sha256) != 64:
-        raise ValueError("benchmark artifact must carry a 64-character dataset_sha256")
-    raw = path.read_bytes()
-    digest = hashlib.sha256(raw).hexdigest()
+def load_dataset_verified(path: Path, expected_sha256: str) -> tuple[object, str]:
+    digest = sha256_file(path)
     if digest != expected_sha256:
         raise ValueError(
-            "counterfactual dataset SHA-256 does not match the benchmark artifact"
+            "counterfactual dataset SHA-256 does not match benchmark artifact: "
+            f"expected {expected_sha256}, got {digest}"
         )
-    data = json.loads(raw)
-    if not isinstance(data, list) or not data:
-        raise ValueError("LoCoMo dataset must be a nonempty list")
-    return data, digest
+    return json.loads(path.read_text(encoding="utf-8")), digest
 
 
-def conversation_tokens(dataset: list, counter) -> dict[str, int]:
-    """Return full-history tokens by LoCoMo conversation scope."""
+def _speaker_text(turn: dict) -> str:
+    speaker = turn.get("speaker") or turn.get("name") or turn.get("role") or "unknown"
+    text = turn.get("text") or turn.get("content") or turn.get("message") or ""
+    return f"{speaker}: {text}"
+
+
+def _extract_conversation(sample: dict) -> list[dict]:
+    conversation = sample.get("conversation") or sample.get("conversations") or sample.get("dialogue")
+    if isinstance(conversation, list):
+        return [turn for turn in conversation if isinstance(turn, dict)]
+    # LoCoMo commonly stores sessions as conversation/session_N arrays. Preserve
+    # source order and concatenate each session as one full-history text stream.
+    if isinstance(conversation, dict):
+        turns: list[dict] = []
+        for key, value in conversation.items():
+            if str(key).lower().startswith("session") and isinstance(value, list):
+                turns.extend(turn for turn in value if isinstance(turn, dict))
+        if turns:
+            return turns
+    turns = []
+    for key, value in sample.items():
+        if str(key).lower().startswith("session") and isinstance(value, list):
+            turns.extend(turn for turn in value if isinstance(turn, dict))
+    return turns
+
+
+def conversation_tokens(dataset: object, counter: TokenCounter) -> dict[str, int]:
+    if isinstance(dataset, dict):
+        samples = dataset.get("data") or dataset.get("samples") or dataset.get("conversations")
+    else:
+        samples = dataset
+    if not isinstance(samples, list):
+        raise ValueError("counterfactual dataset must contain a list of LoCoMo samples")
     out: dict[str, int] = {}
-    for sample in dataset:
-        scope = str(sample.get("sample_id"))
-        if not scope or scope in out:
-            raise ValueError("dataset contains missing/duplicate sample_id")
-        blocks = [f"{doc.speaker}: {doc.text}" for doc in locomo_documents(sample)]
-        out[scope] = counter("\n\n".join(blocks))
+    for index, sample in enumerate(samples):
+        if not isinstance(sample, dict):
+            continue
+        scope = str(sample.get("sample_id") or sample.get("conversation_id") or index)
+        turns = _extract_conversation(sample)
+        text = "\n".join(_speaker_text(turn) for turn in turns)
+        out[scope] = counter.count(text)
     return out
 
 
-def usd(value: float) -> float:
-    return round(value, 6)
+def usd(value: float | None) -> float | None:
+    return None if value is None else round(float(value), 6)
 
 
-def input_cost(tokens: int | float, pricing, rho: float) -> float:
-    """Price one request, honoring CE long-context request-rate semantics."""
-    rate = pricing.effective_input_rate(rho, prompt_tokens=float(tokens))
-    return float(tokens) / 1_000_000 * rate
+def _effective_rate(pricing, rho: float, prompt_tokens: int) -> float:
+    try:
+        return float(pricing.effective_input_rate(rho, prompt_tokens=prompt_tokens))
+    except TypeError:
+        return float(pricing.effective_input_rate(rho))
+
+
+def input_cost(tokens: int, pricing, rho: float) -> float:
+    return tokens / 1_000_000.0 * _effective_rate(pricing, rho, tokens)
 
 
 def _scorable(row: dict) -> bool:
-    return bool(row.get("fully_resolved")) and int(row.get("evidence_count", 0)) > 0
+    return bool(row.get("fully_resolved", row.get("resolved_count") == row.get("evidence_count")))
 
 
 def economics_for_rows(
@@ -176,47 +204,33 @@ def economics_for_rows(
     pricing,
     full_history_tokens: dict[str, int] | None = None,
 ) -> dict:
-    """Cost proxies for one mode@budget slice on one common query denominator."""
-    if not rows:
-        return {}
-    budgets = {int(r["budget"]) for r in rows}
-    if len(budgets) != 1:
-        raise ValueError("one economics slice must contain exactly one budget")
-    budget = budgets.pop()
     n = len(rows)
-    scorable = sum(_scorable(r) for r in rows)
-    packed_tokens = [int(r["budget_used"]) for r in rows]
+    if n == 0:
+        raise ValueError("economics_for_rows requires a nonempty query cohort")
+    scorable = [row for row in rows if _scorable(row)]
+    any_gold = sum(int(row.get("hits", 0)) > 0 for row in scorable)
+    packed_tokens = [int(row.get("budget_used", 0)) for row in rows]
     total_packed_tokens = sum(packed_tokens)
-    gold_hits = sum(int(r["hits"]) for r in rows if _scorable(r))
-    any_gold = sum(int(r["hits"]) > 0 for r in rows if _scorable(r))
-
-    scenarios = {}
-    for rho in CACHE_SHARES:
-        costs = [input_cost(tokens, pricing, rho) for tokens in packed_tokens]
-        total_cost = sum(costs)
-        scenarios[f"rho={rho}"] = {
-            "mean_effective_input_rate_per_1M": usd(
-                sum(pricing.effective_input_rate(rho, prompt_tokens=t) for t in packed_tokens) / n
-            ),
-            "per_query_input_cost_usd": usd(total_cost / n),
-            "total_input_cost_usd": usd(total_cost),
-            "cost_per_gold_evidence_hit_usd": usd(total_cost / gold_hits) if gold_hits else None,
-            "cost_per_any_gold_scorable_question_usd": usd(total_cost / any_gold) if any_gold else None,
-        }
-
     out = {
         "attempted_questions": n,
-        "scorable_questions": scorable,
-        "budget": budget,
-        "mean_budget_used_tokens": round(total_packed_tokens / n, 2),
-        "total_packed_retrieval_tokens": total_packed_tokens,
-        "gold_evidence_hits": gold_hits,
+        "scorable_questions": len(scorable),
         "any_gold_scorable_questions": any_gold,
-        "pricing_scenarios": scenarios,
+        "mean_packed_tokens_per_query": round(total_packed_tokens / n, 2),
+        "total_packed_tokens": total_packed_tokens,
+        "pricing_scenarios": {},
     }
+    for rho in CACHE_SHARES:
+        packed_cost = sum(input_cost(tokens, pricing, rho) for tokens in packed_tokens)
+        out["pricing_scenarios"][f"rho={rho}"] = {
+            "per_query_input_cost_usd": usd(packed_cost / n),
+            "total_input_cost_usd_same_queries": usd(packed_cost),
+            "cost_per_any_gold_scorable_question_usd": (
+                usd(packed_cost / any_gold) if any_gold else None
+            ),
+        }
 
     if full_history_tokens is not None:
-        missing = sorted({str(r["scope"]) for r in rows} - set(full_history_tokens))
+        missing = sorted({str(r["scope"]) for r in rows if str(r["scope"]) not in full_history_tokens})
         if missing:
             raise ValueError(f"full-history token map missing scopes: {missing[:5]}")
         full_tokens = [full_history_tokens[str(r["scope"])] for r in rows]
@@ -276,6 +290,30 @@ def marginal_analysis(rows_keyed: dict, pricing) -> dict:
                 ),
             }
     return out
+
+
+def interpretation_limits_for_bench(bench: dict) -> list[str]:
+    limits = [
+        "Retrieval evidence coverage is not answer accuracy or task success.",
+        "All monetary values are pricing-model proxies, not observed bills.",
+        "Per-config full-history comparisons use exactly the same benchmark queries and dataset bytes.",
+        "Suite totals aggregate all experimental arms and are not a deployed-policy cost.",
+        "The full-history counterfactual does not by itself prove chronological O(N^2) growth.",
+    ]
+    budgets = sorted({int(value) for value in (bench.get("budgets") or [])})
+    if budgets == [300, 600, 1200]:
+        limits.append(
+            "The tested budget grid is 300/600/1200; 600 can at most be treated as a grid-level knee candidate, not an optimized global threshold."
+        )
+    elif budgets:
+        limits.append(
+            f"Budget sensitivity is limited to the tested grid {budgets}; no untested budget or global optimum is established."
+        )
+    else:
+        limits.append(
+            "No explicit budget grid is recorded; no budget-knee or global-optimum claim is supported."
+        )
+    return limits
 
 
 def build_report(
@@ -362,14 +400,7 @@ def build_report(
         "per_config": per_config,
         "suite_totals": suite_totals,
         "l6_budget_grid_sensitivity": marginal_analysis(mode_budgets, primary),
-        "interpretation_limits": [
-            "Retrieval evidence coverage is not answer accuracy or task success.",
-            "All monetary values are pricing-model proxies, not observed bills.",
-            "Per-config full-history comparisons use exactly the same benchmark queries and dataset bytes.",
-            "Suite totals aggregate all experimental arms and are not a deployed-policy cost.",
-            "The full-history counterfactual does not by itself prove chronological O(N^2) growth.",
-            "Only three tested budgets are present; a 600-token knee is a grid observation, not an optimized threshold.",
-        ],
+        "interpretation_limits": interpretation_limits_for_bench(bench),
     }
 
 
