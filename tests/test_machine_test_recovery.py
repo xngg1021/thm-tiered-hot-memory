@@ -161,7 +161,7 @@ class ReportClaimTests(unittest.TestCase):
 
 class HardwareParityTests(unittest.TestCase):
     def artifact(self,selected):
-        return {"protocol":2,"counter":"cl100k_base","modes":["hybrid"],"budgets":[600],"model_id":"m","dataset_sha256":"abc","corpus_fingerprints":{"a":"g"},"rows":[{**row("a",600,580,1,q=1),"selected_ids":[selected],"selected_ranked_ids":[selected],"total_ms":50.0,"query_embedding_ms":20.0}]}
+        return {"protocol":2,"counter":"cl100k_base","modes":["hybrid"],"budgets":[600],"model_id":"m","dataset_sha256":"a"*64,"corpus_fingerprints":{"a":"d"*64},"idf_scope":"one_database_per_conversation","neighbor_turns":0,"generation_calls":0,"judge_calls":0,"dataset_upstream_commit":None,"dataset_matches_pinned_reference":False,"rows":[{**row("a",600,580,1,q=1),"selected_ids":[selected],"selected_ranked_ids":[selected],"total_ms":50.0,"query_embedding_ms":20.0}]}
     def test_timing_differences_do_not_break_semantic_parity(self):
         cpu=self.artifact("D1:1"); gpu=self.artifact("D1:1"); gpu["rows"][0]["total_ms"]=5.0; self.assertTrue(PARITY.compare(cpu,gpu)["equivalent"])
     def test_retrieval_difference_breaks_parity(self):
@@ -221,7 +221,8 @@ class V2R1RegressionTests(unittest.TestCase):
             BRIDGE.build_report(bench,{"deepseek-v4-pro_offpeak_2026-08-16":FakePricing()},{})
 
     def test_preview_does_not_cap_total(self):
-        cpu = {"protocol":2,"rows":[row("a",600,580,1,q=i) for i in range(10)]}
+        cpu = HardwareParityTests().artifact("a")
+        cpu["rows"] = [row("a",600,580,1,q=i) for i in range(10)]
         gpu = json.loads(json.dumps(cpu))
         for r in gpu["rows"]: r["budget_used"] += 1
         result = PARITY.compare(cpu,gpu,max_mismatches=3)
@@ -334,12 +335,36 @@ class V2R1RegressionTests(unittest.TestCase):
              "gold_sessions":1,"resolved_gold":1,"hits":1,"candidate_hits":None,
              "selected_count":2,"selected_ids":["a","b"],"selected_sources":["s","s"],
              "reciprocal_rank":1.0,"budget_used":500}
-        cpu = {"protocol":1,"benchmark":"LongMemEval-S retrieval coverage (session-level evidence)","rows":[r]}
+        cpu = HardwareParityTests().artifact("a")
+        cpu.update(protocol=1, benchmark="LongMemEval-S retrieval coverage (session-level evidence)", idf_scope="one_database_per_instance", rows=[r])
         self.assertTrue(PARITY.compare(cpu,cpu)["strict_semantic_equivalent"])
         gpu = json.loads(json.dumps(cpu)); gpu["rows"][0]["selected_ids"] = ["b","a"]
         self.assertEqual(PARITY.compare(cpu,gpu)["rank_only_mismatch_row_count"],1)
         cpu["rows"][0].pop("selected_sources")
         self.assertFalse(PARITY.compare(cpu,cpu)["identity_complete"])
+
+    def test_shared_missing_provenance_cannot_pass(self):
+        cpu = HardwareParityTests().artifact("a")
+        cpu["summaries"] = full_locomo_summaries(cpu)
+        for field in set(cpu) - {"rows", "summaries"}:
+            bad = json.loads(json.dumps(cpu)); bad.pop(field)
+            result = PARITY.compare(bad, bad)
+            self.assertFalse(result["strict_semantic_equivalent"], field)
+            self.assertFalse(result["aggregate_semantic_metrics_equivalent"], field)
+        for field, value in (("dataset_sha256", "bad"), ("counter", ""), ("model_id", None), ("corpus_fingerprints", {"other":"d"*64}), ("modes", [["hybrid"]]), ("budgets", [True])):
+            bad = json.loads(json.dumps(cpu)); bad[field] = value
+            self.assertFalse(PARITY.compare(bad, bad)["identity_complete"], field)
+        cpu.update(modes=["sparse"], model_id=None)
+        cpu["rows"][0]["mode"] = "sparse"
+        self.assertTrue(PARITY.compare(cpu, cpu)["strict_semantic_equivalent"])
+
+    def test_unknown_split_cannot_escape_partition(self):
+        cpu = HardwareParityTests().artifact("a")
+        cpu["rows"][0]["split"] = "unknown"
+        cpu["summaries"] = full_locomo_summaries(cpu)
+        result = PARITY.compare(cpu, cpu)
+        self.assertFalse(result["strict_semantic_equivalent"])
+        self.assertFalse(result["aggregate_semantic_metrics_available"])
 
     def test_aggregate_counts_are_bound_to_the_scorable_rows(self):
         cpu = HardwareParityTests().artifact("a")

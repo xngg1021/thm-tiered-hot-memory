@@ -63,3 +63,7 @@ LME CPU v2：pending-real-local-runtime。当前 Work 没有用户 Z6 G4 控制�
 ## 十二、canonical aggregate count binding
 
 第五次完成的 review 返回 1 个 P2：any_gold_hits 必须受 scorable 分母约束。现已按每个 cohort 的 rows 重算 questions/scorable/no-gold/partial-unresolved/any-gold counts，并验证对应 any-gold rate；共享 canonical scoring predicate。测试拒绝 10 attempted / 1 scorable / 10 any-gold 等不可能组合及分区计数漂移。新 canonical parity-v2r6 重算通过，实测结论不变；旧 r1–r5 保留。
+
+## 13. 顶层 provenance 与 split 分区
+
+第六次完成的 review 返回 2 个 P2。现在严格要求各协议的顶层身份字段、合法 dataset/corpus hashes、scope 覆盖及 model/config 标识，禁止共享缺失字段被当作相等；split 仅允许 development/held_out。缺失或无效 provenance 阻止 strict 与 aggregate 等价结论。305 项测试通过；新 canonical parity-v2r7 保持全部实测结论，r1–r6 原样保留。

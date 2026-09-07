@@ -13,6 +13,7 @@ from collections import Counter
 import sys
 import json
 import math
+import re
 from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
 from research.evidence_io import read_json_bound, require_new_output, write_new_text
@@ -21,6 +22,7 @@ from research.recall.scoring import is_scorable
 TOP_LEVEL_IDENTITY = (
     "protocol", "counter", "modes", "budgets", "model_id", "dataset_sha256",
     "dataset_upstream_commit", "dataset_matches_pinned_reference",
+    "idf_scope", "neighbor_turns", "generation_calls", "judge_calls",
 )
 ROW_IDENTITY = (
     "scope", "question_index", "split", "mode", "budget", "category",
@@ -62,6 +64,35 @@ def _missing_selection_identity(rows: list[dict]) -> int:
 
 
 
+def top_level_coverage_errors(data):
+    """Shared omissions cannot establish the provenance of a parity pair."""
+    errors = []
+    def require(field, valid):
+        if field not in data or not valid(data.get(field)):
+            errors.append(field)
+    def digest(value, length=64):
+        return isinstance(value, str) and re.fullmatch(r"[0-9a-fA-F]{%d}" % length, value) is not None
+    require("protocol", lambda v: type(v) is int and v in (1, 2))
+    require("counter", lambda v: isinstance(v, str) and bool(v.strip()))
+    require("modes", lambda v: isinstance(v, list) and bool(v) and all(isinstance(m, str) and m in ("literal", "sparse", "dense", "hybrid") for m in v) and len(set(v)) == len(v))
+    require("budgets", lambda v: isinstance(v, list) and bool(v) and all(type(b) is int and b >= 0 for b in v) and len(set(v)) == len(v))
+    dense = isinstance(data.get("modes"), list) and any(m in ("dense", "hybrid") for m in data["modes"])
+    require("model_id", lambda v: (isinstance(v, str) and bool(v.strip())) or (v is None and not dense))
+    require("dataset_sha256", digest)
+    require("corpus_fingerprints", lambda v: isinstance(v, dict) and bool(v) and all(isinstance(k, str) and bool(k) and digest(d) for k, d in v.items()) and all(isinstance(r.get("scope"), str) and r["scope"] in v for r in data["rows"]))
+    expected_idf = "one_database_per_conversation" if data.get("protocol") == 2 else "one_database_per_instance"
+    require("idf_scope", lambda v: v == expected_idf)
+    for field in ("generation_calls", "judge_calls"):
+        require(field, lambda v: type(v) is int and v >= 0)
+    if data.get("protocol") == 2:
+        require("neighbor_turns", lambda v: type(v) is int and v >= 0)
+        require("dataset_matches_pinned_reference", lambda v: type(v) is bool)
+        require("dataset_upstream_commit", lambda v: digest(v, 40) or (v is None and data.get("dataset_matches_pinned_reference") is False))
+    elif data.get("protocol") == 1:
+        require("benchmark", lambda v: v == "LongMemEval-S retrieval coverage (session-level evidence)")
+    return errors
+
+
 def strict_row_coverage_errors(data):
     """Known runner fields must be present before complete strict claims."""
     if not data["rows"]:
@@ -100,6 +131,8 @@ def strict_row_coverage_errors(data):
         for field in ("scope", "split", "mode"):
             if not isinstance(row.get(field), str):
                 errors[f"invalid:{field}"] += 1
+        if row.get("split") not in ("development", "held_out"):
+            errors["invalid:split"] += 1
         ids = row.get("selected_ids")
         valid_ids = isinstance(ids, list) and all(isinstance(value, str) for value in ids)
         if not valid_ids:
@@ -139,6 +172,10 @@ def quality_projection(value, prefix=()):
 
 def summary_coverage_errors(data):
     """Require the full known runner schema, including empty cohorts."""
+    if top_level_coverage_errors(data):
+        return ["incomplete top-level provenance"]
+    if any(row.get("split") not in ("development", "held_out") for row in data["rows"]):
+        return ["measured row outside development/held_out partition"]
     modes, budgets = data.get("modes"), data.get("budgets")
     if not isinstance(modes, list) or not modes or not isinstance(budgets, list) or not budgets:
         return ["missing mode/budget grid"]
@@ -260,7 +297,11 @@ def compare(cpu: dict, gpu: dict, *, float_tol: float = 0.0, max_mismatches: int
     missing_cpu = _missing_selection_identity(cpu_rows)
     missing_gpu = _missing_selection_identity(gpu_rows)
     row_errors_cpu, row_errors_gpu = strict_row_coverage_errors(cpu), strict_row_coverage_errors(gpu)
-    identity_complete = missing_cpu == 0 and missing_gpu == 0 and not row_errors_cpu and not row_errors_gpu
+    top_cpu, top_gpu = top_level_coverage_errors(cpu), top_level_coverage_errors(gpu)
+    if top_cpu or top_gpu:
+        structural = True
+        record({"kind": "top_level_identity_unavailable", "cpu": top_cpu, "gpu": top_gpu})
+    identity_complete = not top_cpu and not top_gpu and missing_cpu == 0 and missing_gpu == 0 and not row_errors_cpu and not row_errors_gpu
     if not identity_complete:
         record({"kind": "selection_identity_unavailable",
                 "cpu_rows_missing_selected_ids": missing_cpu, "gpu_rows_missing_selected_ids": missing_gpu,
@@ -333,6 +374,7 @@ def compare(cpu: dict, gpu: dict, *, float_tol: float = 0.0, max_mismatches: int
     return {
         "kind": "thm-hardware-semantic-parity",
         "identity_complete": identity_complete,
+        "top_level_coverage_errors": {"cpu": top_cpu, "gpu": top_gpu},
         "equivalent": strict, "strict_semantic_equivalent": strict,
         "aggregate_semantic_metrics_available": aggregate_available,
         "aggregate_summary_coverage_errors": {"cpu": coverage_cpu, "gpu": coverage_gpu},

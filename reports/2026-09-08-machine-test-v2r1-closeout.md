@@ -58,7 +58,7 @@ Aggregate semantic metrics equivalent: **true** (1680 explicit retrieval-quality
 | Main categories 1–4 mismatch rows | 16 |
 | Diagnostic category 5 mismatch rows | 6 |
 
-The canonical parity receipt is now `2026-09-08-locomo-cpu-gpu-parity-v2r6.json`, generated after the review corrections. It includes mean_budget_used, validates complete summary schema and binds hashes to the exact parsed buffers. The v2r1 through v2r5 receipts are preserved as prior attempts. The new preview limit is 50; all 25 entries fit, so it is not truncated. The older cap of 25 did not prove the total even though the complete scan now happens to find exactly 25. Per-mode/budget/category counts are in the successor JSON. Near-tie floating-point drift is an inference only: no candidate score/delta trace proves causality. No ranking/tie-breaking/embedding semantics changed.
+The canonical parity receipt is now `2026-09-08-locomo-cpu-gpu-parity-v2r7.json`, generated after the review corrections. It includes mean_budget_used, validates complete summary schema and binds hashes to the exact parsed buffers. The v2r1 through v2r6 receipts are preserved as prior attempts. The new preview limit is 50; all 25 entries fit, so it is not truncated. The older cap of 25 did not prove the total even though the complete scan now happens to find exactly 25. Per-mode/budget/category counts are in the successor JSON. Near-tie floating-point drift is an inference only: no candidate score/delta trace proves causality. No ranking/tie-breaking/embedding semantics changed.
 
 ## Superseded artifacts
 
@@ -68,12 +68,12 @@ The canonical parity receipt is now `2026-09-08-locomo-cpu-gpu-parity-v2r6.json`
 | 2026-09-08-suite-report.md | 2026-09-08-suite-report-v2r1.md |
 | 2026-09-08-economics-bridge-v2.json (1536 denominator) | 2026-09-08-economics-bridge-v2r1.json (1532) |
 | 2026-09-08-suite-report-v2.md (mixed denominator) | 2026-09-08-suite-report-v2r1.md |
-| 2026-09-08-locomo-cpu-gpu-parity.json (capped preview) | 2026-09-08-locomo-cpu-gpu-parity-v2r6.json |
-| 2026-09-08-locomo-cpu-gpu-parity-v2r1.json (before review hardening) | 2026-09-08-locomo-cpu-gpu-parity-v2r6.json |
-| 2026-09-08-locomo-cpu-gpu-parity-v2r2.json (omits mean_budget_used) | 2026-09-08-locomo-cpu-gpu-parity-v2r6.json |
-| 2026-09-08-locomo-cpu-gpu-parity-v2r3.json (before strict-row coverage hardening) | 2026-09-08-locomo-cpu-gpu-parity-v2r6.json |
-| 2026-09-08-locomo-cpu-gpu-parity-v2r4.json (before range validation) | 2026-09-08-locomo-cpu-gpu-parity-v2r6.json |
-| 2026-09-08-locomo-cpu-gpu-parity-v2r5.json (before canonical aggregate-count binding) | 2026-09-08-locomo-cpu-gpu-parity-v2r6.json |
+| 2026-09-08-locomo-cpu-gpu-parity.json (capped preview) | 2026-09-08-locomo-cpu-gpu-parity-v2r7.json |
+| 2026-09-08-locomo-cpu-gpu-parity-v2r1.json (before review hardening) | 2026-09-08-locomo-cpu-gpu-parity-v2r7.json |
+| 2026-09-08-locomo-cpu-gpu-parity-v2r2.json (omits mean_budget_used) | 2026-09-08-locomo-cpu-gpu-parity-v2r7.json |
+| 2026-09-08-locomo-cpu-gpu-parity-v2r3.json (before strict-row coverage hardening) | 2026-09-08-locomo-cpu-gpu-parity-v2r7.json |
+| 2026-09-08-locomo-cpu-gpu-parity-v2r4.json (before range validation) | 2026-09-08-locomo-cpu-gpu-parity-v2r7.json |
+| 2026-09-08-locomo-cpu-gpu-parity-v2r5.json (before canonical aggregate-count binding) | 2026-09-08-locomo-cpu-gpu-parity-v2r7.json |
 
 Additional evidence: `2026-09-08-economics-v2r1-delta-audit.json`; LME GPU evidence remains `2026-09-08-lme-retrieval-gpu-v2.json`. Historical artifact bytes remain unchanged. Regeneration notes are forward-corrected with retained defect history.
 
@@ -121,3 +121,5 @@ Get-Content -Raw $parityFile
 ```
 
 Record `git rev-parse HEAD`, `git status --porcelain`, Python/package versions, model file manifest and actual machine identity alongside the new CPU run. Any model/runtime/source mismatch must be reported before interpreting parity. CPU embedding optimization belongs in the separate follow-up planning issue; no performance improvement is claimed here.
+
+Sixth completed review identified two P2 items: shared missing provenance and unknown split values. Protocol-specific top-level metadata, valid dataset/corpus digests, scope coverage, model/config identity, and the development/held_out split domain are now required. Missing or invalid provenance blocks both strict and aggregate equivalence. v2r7 was freshly generated after these changes; measured parity results remain unchanged. The v2r6 receipt is retained as a prior attempt. Local regression suite: 305 tests pass.
