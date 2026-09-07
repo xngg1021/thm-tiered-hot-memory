@@ -1,65 +1,104 @@
-# THM × Context-Economics 对接层
+# THM × Context Economics 对接层
 
-本目录是 THM(T0–T3 记忆分层)与 context-economics(CE,L0–L6 上下文经济学)的本地对接实验区。
+本目录是 THM（T0–T3 memory Tiers）与 `context-economics`（L0–L6 analysis/control Layers）的**研究适配层**。两套分类体系保持独立；这里不把 THM 变成 Context Economics 子模块，也不把 Context Economics 变成 THM 规范。
 
-## 对接原则(继承 CE README 的边界)
+## 对接原则
 
-- THM 的 T0–T3 与 CE 的 L0–L6 是两套独立的分类体系,不合并。
-- 两者只通过 telemetry/contract 交换证据:miss、hit、locator、prefetch、budget、latency。
-- THM 负责产出检索遥测;CE 负责把遥测换算成经济指标。任何"策略更好"的声明必须带证据等级标签。
+- THM 产出 retrieval/runtime telemetry；Context Economics 提供计价、证据等级和控制分析方法。
+- 桥只交换可测量量：packed tokens、evidence hit、latency、budget、miss/locator/prefetch 等。
+- 检索覆盖不等于答案正确率；`generation_calls=0`、`judge_calls=0` 的 benchmark 不能升级成 answer-level evidence。
+- 所有美元数字都是 `model-proxy`，不是 observed provider bill，也不是 `cost_per_success`。
+- full-history 对照必须与 packed retrieval 使用**完全相同的 query denominator**；实验套件把多个 mode@budget arm 相加时，只表示实验运行总量，不能拿来和单一 policy 直接比较。
 
 ## 组件
 
 | 文件 | 职责 |
 |---|---|
-| `thm_ce_bridge.py` | 读 THM 基准结果 JSON,按 CE Pricing 模型计算 L5 每配置经济学与全历史携带对照臂 |
-| `../recall/benchmark.py` | LoCoMo Protocol 2 检索基准(THM 侧,已存在) |
-| `../recall/lme_retrieval.py` | LongMemEval-S 检索覆盖率 runner(新增,零 LLM) |
+| `thm_ce_bridge.py` | 读取 LoCoMo Protocol 2 rows，加载显式指定的 Context Economics `Pricing` 实现，生成同查询 cost proxy、suite execution totals 和 L6 budget-grid sensitivity |
+| `report_md.py` | 从 corrected bridge-v2 artifact 生成对外可读报告；拒绝旧 bridge schema |
+| `run_suite.py` | 编排 CPU/GPU-tagged benchmark、bridge-v2 和报告；新产物不覆盖 2026-09-08 历史 artifact |
+| `../recall/hardware_parity.py` | 对 CPU/GPU artifacts 做机器可验证的 retrieval-semantic parity；timing 不参与等价判定 |
+| `../recall/benchmark.py` | LoCoMo Protocol 2 retrieval-only benchmark |
+| `../recall/lme_retrieval.py` | LongMemEval-S session-level retrieval coverage runner |
 
-## 证据等级(CE 2026-09-07 纪律)
+## 2026-09-08 口径修正
 
-- 检索指标:`runtime-measured`(本机实测)。
-- 成本数字:`model-proxy`(定价换算的代理指标,不是真实账单)。
-- 定价:`provider-doc-as-relayed`。deepseek-v4-pro 存在互相矛盾的第三方口径
-  (2026-05-22 促销价 0.435/0.003625/0.87 与 2026-08-16 峰谷价 0.66/1.32 系列),
-  桥脚本一律按情景并列呈现,不选边。
-- 检索证据覆盖 ≠ 答案正确率:两套基准 generation_calls=0、judge_calls=0。
+历史 `2026-09-08-economics-bridge.json` / `suite-report.md` 存在 denominator 混用：单配置主类别实际尝试 1540 题、主评分分母 1532 题；12 个 mode@budget 配置合计是 18,480 次 config-query execution，而不是 1,986 次。旧 bridge 还用“按 conversation 去重后的平均长度”近似 full-history arm，不能与逐 query packed arm 严格配对。
 
-## 运行
+bridge-v2 改为：
+
+1. 每个配置显式记录 `attempted_questions` 与 `scorable_questions`；
+2. full-history arm 按**每一条 query 所属 scope**逐行计 token，再与同一组 rows 的 packed tokens 比较；
+3. suite totals 明确标为所有实验臂的运行总量，不再作为单 policy savings；
+4. L6 marginal cost 使用 `USD per +1 percentage point any-gold gain`，不再把 0–1 rate 单位误称为“一个百分点”；
+5. full-history same-query counterfactual 只证明 carry-vs-retrieval 的静态成本差，不单独证明 chronological `O(N²)`；
+6. 300/600/1200 只有三个网格点，因此 600 只能称为 `knee candidate`，不能称为已求得全局最优阈值。
+
+## Context Economics provenance
+
+`thm_ce_bridge.py` 不再硬编码任何个人 Windows 路径。运行时必须显式提供 Context Economics checkout：
 
 ```bash
-# 1. LoCoMo 全矩阵(THM 侧)
-cd memory-system/engine-1.3
-python research/recall/benchmark.py --dataset ../datasets/locomo10.json \
-  --counter cl100k_base --modes literal sparse dense hybrid \
-  --budgets 300 600 1200 \
-  --model-path ../models/all-MiniLM-L6-v2 \
-  --model-id sentence-transformers/all-MiniLM-L6-v2 \
-  --output reports/2026-09-08-local-full-matrix.json
+set CONTEXT_ECONOMICS_ROOT=D:\path\to\context-economics
+# 或 Linux/macOS: export CONTEXT_ECONOMICS_ROOT=/path/to/context-economics
+```
 
-# 2. LongMemEval-S 检索覆盖(THM 侧;--threads 按本机核数调,默认 8)
-python research/recall/lme_retrieval.py --dataset ../datasets/longmemeval_s \
-  --counter cl100k_base --modes literal sparse dense hybrid \
-  --budgets 300 600 1200 \
-  --model-path ../models/all-MiniLM-L6-v2 \
-  --model-id sentence-transformers/all-MiniLM-L6-v2 \
-  --threads 16 \
-  --output reports/2026-09-08-lme-retrieval.json
+桥通过 `importlib` 加载该 checkout 的 `model.py`，并把 `git_commit`（可取得时）和 `model_sha256` 写入 artifact。这样 THM 只依赖一次显式研究运行，不形成 production cross-repo dependency。
 
-# 3. 经济学桥(CE 侧)
+## 推荐运行方式
+
+```bash
+# CPU 全套
+python research/economics/run_suite.py \
+  --device cpu \
+  --ce-root ../context-economics
+
+# GPU 全套；默认输出 -gpu 后缀，不覆盖 CPU artifact
+python research/economics/run_suite.py \
+  --device cuda --batch-size 64 \
+  --ce-root ../context-economics
+
+# 只重算修正后的经济桥（无需重跑 retrieval）
 python research/economics/thm_ce_bridge.py \
   --results reports/2026-09-08-local-full-matrix.json \
   --dataset ../datasets/locomo10.json \
-  --output reports/2026-09-08-economics-bridge.json
+  --ce-root ../context-economics \
+  --output reports/2026-09-08-economics-bridge-v2.json
+
+python research/economics/report_md.py \
+  --locomo reports/2026-09-08-local-full-matrix.json \
+  --lme reports/2026-09-08-lme-retrieval.json \
+  --econ reports/2026-09-08-economics-bridge-v2.json \
+  --output reports/2026-09-08-suite-report-v2.md
 ```
 
-## 指标映射(telemetry/contract)
+## CPU/GPU semantic parity
 
-| THM 遥测 | CE 层 | 用途 |
+GPU 加速和检索质量是两件事。用独立 comparator 检查 selected IDs、hits、MRR/nDCG、budget use 等 retrieval semantics；timing、embedding throughput 和环境字符串不参与等价判定：
+
+```bash
+python research/recall/hardware_parity.py \
+  --cpu reports/2026-09-08-local-full-matrix.json \
+  --gpu reports/2026-09-08-local-full-matrix-gpu.json \
+  --output reports/2026-09-08-locomo-cpu-gpu-parity.json
+
+python research/recall/hardware_parity.py \
+  --cpu reports/2026-09-08-lme-retrieval.json \
+  --gpu reports/2026-09-08-lme-retrieval-gpu.json \
+  --output reports/2026-09-08-lme-cpu-gpu-parity.json
+```
+
+只有 comparator receipt `equivalent=true` 时，才把 CPU/GPU 结果称为 checked semantic parity。
+
+## 指标映射
+
+| THM telemetry | CE 位置 | 可支持的结论 |
 |---|---|---|
-| `budget_used`(预算打包后实际 token) | L0/L4 | 记忆驻留租金、每查询输入成本 |
-| `hits` / `any_gold_hit_rate` | L5 | 每命中成本、召回-成本曲线 |
-| `latency_ms` | L5 | 检索延迟,任务经济学观测项 |
-| `builds`(文档数、建索引秒数) | L4 | 索引驻留成本 |
-| 全历史 tokens(对照臂) | L3/L5 | O(N²) 携带 vs 固定预算打包 |
-| budget 300→600→1200 增量 | L6 | budget feedback、边际成本 |
+| `budget_used` | L0/L4 | packed context input-cost proxy |
+| `hits` / `any_gold_hit_rate` | L5 | evidence-coverage / cost curve；不是 task success |
+| `latency_ms` | L5 | retrieval runtime observation |
+| `builds` | L4 | derived-index build/residency overhead |
+| same-query full-history tokens | L3/L5 | full carry 与 fixed-budget retrieval 的静态 counterfactual |
+| budget 300→600→1200 | L6 | finite-grid sensitivity / budget feedback candidate |
+
+定价仍使用情景口径并明确 provenance；如果定价来源互相冲突，必须并列而不是挑选最有利 headline。
