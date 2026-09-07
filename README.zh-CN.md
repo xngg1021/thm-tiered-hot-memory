@@ -96,7 +96,7 @@ Canonical LoCoMo Protocol 2 使用 1,532 道证据完全解析的非对抗问题
 | Local dense | 51.11% | 40.01% | — |
 | Hybrid | **71.34%** | **57.64%** | **57.88 ms** |
 
-当前 opt-in deterministic entity projection 将全量 sparse any-gold 从 **69.39% 提高到 72.52%**，冻结的 1,301 道 holdout 从 **69.56% 提高到 72.33%**，candidate coverage 保持不变。这个结果说明收益来自把**已经存在的候选**更好地排进 600-token slice，而不是再调用模型扩大 candidate pool。
+当前 opt-in deterministic entity projection 将全量 sparse any-gold 从 **69.39% 提高到 72.52%**，冻结的 1,301 道 holdout 从 **69.56% 提高到 72.33%**，candidate coverage 保持不变。这个结果说明收益来自把 **已经存在的候选** 更好地排进 600-token slice，而不是再调用模型扩大 candidate pool。
 
 这些数字只衡量**最终打包进去的检索证据**，不等于最终回答正确率、用户满意度或普适优越性。详见 [Protocol 2](reports/2026-09-06-recall-protocol2.md) 和 [zero-LLM frontier](docs/16-zero-llm-retrieval-frontier.md)。
 
