@@ -6,16 +6,16 @@ This supersedes the current-source claim of the [pre-review result report](2026-
 
 The first final review identified one P1 (unbounded repeated identifier regex work) and two P2 findings (compound-prefix collisions and stale production source fingerprints). The policy now admits at most 16 identifiers, limits identifier/name/body lengths, precompiles at most two patterns, and fails soft to base order for over-complex identifier queries. Longest known full names take precedence over shorter names. The follow-up P2 repair captures complete multi-component versions and applies the same exact boundaries during query extraction, rejecting truncated release, build, ticket, path, and URL prefixes. Unquoted URL extraction also removes terminal prose punctuation and unmatched closing wrappers in linear work, preserving balanced path parentheses and explicit backtick literals. Exact boundaries reject Ann/Ann-Marie and path/path.old prefix collisions while allowing terminal sentence punctuation.
 
-The 1200-identifier / 1000-candidate reproduction returns unchanged order in 0.024 ms locally. This measures only the guarded projection, not complete search latency. Regression tests assert the work/compile bounds rather than imposing a flaky wall-time threshold. The complete local suite has 261 passing tests.
+The 1200-identifier / 1000-candidate reproduction returns unchanged order in 0.024 ms locally. This measures only the guarded projection, not complete search latency. Regression tests assert the work/compile bounds rather than imposing a flaky wall-time threshold. The complete local suite has 262 passing tests.
 
 ## Fresh canonical run
 
-Unicode URL prose punctuation and common paired wrappers were subsequently added with regression coverage; explicit backtick literals and balanced Unicode path wrappers are preserved. The final CJK follow-through allows known speaker names to adjoin CJK prose, preferring longest known names and keeping identifier/Latin boundaries strict; it is a known-string signal, not general segmentation or NER. Both the fresh manifest and compressed trace were regenerated after the fixes; every recorded source SHA-256 was checked against the actual source files. No tuning was performed.
+Unicode URL prose punctuation and common paired wrappers were subsequently added with regression coverage; explicit backtick literals and balanced Unicode path wrappers are preserved. The final CJK follow-through allows known speaker names to adjoin CJK prose, preferring longest known names and keeping identifier/Latin boundaries strict; it is a known-string signal, not general segmentation or NER. Longer known names also block fallback to shorter prefixes when their trailing boundary is rejected, for both CJK and Latin names. Both the fresh manifest and compressed trace were regenerated after the fixes; every recorded source SHA-256 was checked against the actual source files. No tuning was performed.
 
 | Policy | Any-gold | All-gold | MRR | nDCG | p50 ms | p95 ms | p99 ms | Mean tokens |
 | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
-| baseline | 69.3864% | 56.5274% | 0.497354 | 0.507241 | 22.82 | 31.53 | 37.46 | 583.93 |
-| entity | 72.5196% | 59.4648% | 0.537435 | 0.543583 | 22.92 | 31.57 | 36.01 | 584.12 |
+| baseline | 69.3864% | 56.5274% | 0.497354 | 0.507241 | 23.96 | 38.72 | 47.67 | 583.93 |
+| entity | 72.5196% | 59.4648% | 0.537435 | 0.543583 | 24.43 | 39.77 | 50.02 | 584.12 |
 
 The dataset, 1532 main-question denominator, 1301-question holdout, candidate coverage (92.4282%), and fixed 600 cl100k_base budget are unchanged. Holdout improvement remains +2.7671 pp (55 wins / 19 losses), cluster-bootstrap interval [+1.7946, +3.8247] pp. All preregistered metric gates still pass. No new generative calls, judge calls, embeddings, native-memory writes, or tier changes.
 

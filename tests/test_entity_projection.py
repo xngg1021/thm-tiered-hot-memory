@@ -127,5 +127,15 @@ class EntityProjectionTests(unittest.TestCase):
         from thm.entities import present
         self.assertFalse(present('资料/版本.md','资料/版本.md副本'))
 
+    def test_rejected_longer_speaker_never_falls_back_to_prefix(self):
+        for short, long in [('张三', '张三丰'), ('Ann', 'Ann Marie')]:
+            rows = [{'rowid': 1, 'speaker': 'Other', 'text': 'text'},
+                    {'rowid': 2, 'speaker': short, 'text': 'text'},
+                    {'rowid': 3, 'speaker': long, 'text': 'text'}]
+            self.assertEqual(reorder(rows,long)[0]['rowid'],3)
+            self.assertEqual(reorder(rows,short)[0]['rowid'],2)
+            for suffix in ['-suffix', '/suffix', '.suffix']:
+                self.assertIs(reorder(rows,long+suffix),rows,long+suffix)
+
 
 if __name__ == '__main__': unittest.main()

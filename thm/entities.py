@@ -46,7 +46,10 @@ def speaker_pattern(names):
     for name in sorted(names, key=lambda value: (-len(value), value)):
         left = '(?:' + LEFT + '|(?<=[' + CJK_CHARS + ']))' if CJK_CHAR.fullmatch(name[0]) else LEFT
         right = '(?:' + RIGHT + '|(?=[' + CJK_CHARS + ']))' if CJK_CHAR.fullmatch(name[-1]) else RIGHT
-        patterns.append(left + re.escape(name) + right)
+        # A rejected longer known name must never fall back to its prefix.
+        suffixes = sorted(other[len(name):] for other in names if len(other) > len(name) and other.startswith(name))
+        no_longer_name = '(?!' + '|'.join(re.escape(suffix) for suffix in suffixes) + ')' if suffixes else ''
+        patterns.append(left + re.escape(name) + no_longer_name + right)
     return re.compile('(?:' + '|'.join(patterns) + ')')
 
 
