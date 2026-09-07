@@ -10,3 +10,5 @@ legacy-index.backup.json
 .thm-tmp-*
 thm.conf
 warm/
+*.egg-info/
+uv.lock
