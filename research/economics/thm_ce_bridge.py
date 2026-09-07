@@ -133,7 +133,7 @@ def conversation_tokens(dataset: object, counter: TokenCounter) -> dict[str, int
             continue
         scope = str(sample.get("sample_id") or sample.get("conversation_id") or index)
         text = "\n".join(_speaker_text(turn) for turn in _extract_conversation(sample))
-        out[scope] = counter.count(text)
+        out[scope] = counter(text)
     return out
 
 
