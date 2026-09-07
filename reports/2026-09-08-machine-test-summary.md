@@ -1,5 +1,7 @@
 # 2026-09-08 实机测试汇总:THM 全矩阵基准 × GPU 切换 × CE 经济学桥
 
+> **勘误状态：检索结果继续有效；原经济学聚合已被 supersede。** 详见 [`2026-09-08-machine-test-evidence-correction.md`](2026-09-08-machine-test-evidence-correction.md)。新的 bridge-v2 必须重新生成后才能发布修正后的经济数字。
+>
 > 证据等级:检索指标 runtime-measured(本机实测,零 LLM);成本数字 model-proxy(定价换算,非账单);定价 provider-doc-as-relayed(多口径并列,不选边);检索证据覆盖 ≠ 答案正确率。
 
 ## 1. 环境
@@ -10,7 +12,9 @@
 - GPU:torch 2.13.0+cu130(驱动 616.56 / CUDA 13.4)。cu128 通道仅有 2.11.0 且与 transformers 不兼容,已换 cu130 通道同版本号 2.13.0
 - 计数器:cl100k_base;数据集 pin 校验通过(locomo10.json,SHA256 匹配)
 
-## 2. LoCoMo Protocol 2 检索全矩阵(any-gold hit rate,主类别 1-4,1540 题)
+## 2. LoCoMo Protocol 2 检索全矩阵(any-gold hit rate,主类别 1-4)
+
+- 每配置 attempted questions:1540;主评分 scorable:1532;类别 5 仅诊断,不计入主指标
 
 | 模式 | @300 | @600 | @1200 |
 |---|---|---|---|
@@ -45,11 +49,15 @@
 | LoCoMo 全矩阵 | ~40 min | ~8 min | 5x |
 | 检索延迟(hybrid@600) | 45.6/53.1 ms | 45.4/48.9 ms | LoCoMo 持平,LME-S 略降 |
 
-- 24/24 配置(2 基准 × 4 模式 × 3 预算)GPU 与 CPU 结果逐项对比,全部一致,最大差异 0
+- 原始本机对比报告称 24/24 配置(2 基准 × 4 模式 × 3 预算)CPU/GPU 聚合结果一致、最大差异 0
+- 历史 LoCoMo rows 已保存 `selected_ids`,可由 `research/recall/hardware_parity.py` 进一步生成机器可验证的 semantic-parity receipt
+- 历史 LME-S rows 未保存 selected document identity,因此**不能**从旧 artifact 生成 positive semantic-parity receipt;当前 runner 已补 `selected_ids` / `selected_sources`,需要用新 runner 重跑 CPU/GPU 才能升级该证据
 - SentenceEncoder 新增 device/batch_size 参数,默认 cpu,向后兼容
 - 剩余瓶颈:FTS 索引重建与 JSON 加载(与 GPU 无关)
 
-## 5. THM × CE 经济学桥(deepseek-v4-pro off-peak,rho=0)
+## 5. 历史 THM × CE 经济学桥(已 supersede)
+
+下表和两条聚合结论保留用于追踪原始运行,**不得作为当前 accepted economics claim**。旧实现混用了 1540/1986/18480 denominator,full-history arm 又使用了按唯一 conversation 求均值的近似。新 bridge-v2 改为验证 dataset SHA 后逐 query scope 配对并明确 percentage-point 单位。
 
 | 配置 | 每查询召回成本 | 每 gold-hit 成本 | 全携带每查询成本 | 携带/召回倍率 |
 |---|---|---|---|---|
@@ -58,24 +66,24 @@
 | hybrid@600 | $0.000387 | $0.000470 | $0.011951 | 30.9x |
 | hybrid@1200 | $0.000783 | $0.000801 | $0.011951 | 15.3x |
 
-- L5:1986 题 12 配置召回输入总和 $8.35(off-peak,rho=0);全携带对照 $18.40
-- L6 边际:预算 300→600 每召回点 $2.5-3.5;600→1200 每召回点 $6.4-9.0,倍率 2.2-2.6x,收益递减明确
+历史原文中的 `$8.35 vs $18.40`、`O(N²) 实机证明`、以及“每召回点”美元单位均已撤回;修正后的可发布数字等待同一 raw retrieval artifact 上重新运行 bridge-v2。
 
 ## 6. 产物清单
 
 - reports/2026-09-08-local-full-matrix.json.gz(完整 rows,25.8MB 原始 → 1.8MB gz)
 - reports/2026-09-08-local-full-matrix-gpu.json.gz(GPU 重跑,同上)
-- reports/2026-09-08-lme-retrieval.json / -gpu.json(2.6MB each,含 rows)
-- reports/2026-09-08-economics-bridge.json(24KB)
-- reports/2026-09-08-suite-report.json(144KB,编排器产物)
-- reports/2026-09-08-suite-report.md(3.4KB)
+- reports/2026-09-08-lme-retrieval.json / -gpu.json(2.6MB each,含 rows;历史版缺 selected identities)
+- reports/2026-09-08-economics-bridge.json(历史,经济口径已 supersede)
+- reports/2026-09-08-suite-report.json / .md(历史;见勘误)
+- reports/2026-09-08-machine-test-evidence-correction.md(当前勘误入口)
 - research/economics/(thm_ce_bridge.py、run_suite.py、report_md.py、README.md)
+- research/recall/hardware_parity.py
 - research/recall/lme_retrieval.py
 - research/recall/benchmark.py 与 thm/retrieval.py(device/batch-size 参数,默认兼容)
 
 ## 7. 保留意见
 
 - 全部成本为 model-proxy,非真实账单;未接 provider 认证 trace
-- 检索证据覆盖不是答案正确率;与业界答案级分数(如 Mem0 LoCoMo 92.5)不同口径,不可直接比
+- 检索证据覆盖不是答案正确率;与业界答案级分数不可直接横比
 - deepseek-v4-pro 定价存在矛盾信源(促销 0.435 系列 vs 峰谷 0.66/1.32 系列),报告按情景并列
-- dense 单独在 LoCoMo 上仅 51.1%(@600),纯语义检索不占优;hybrid 是推荐配置
+- dense 单独在 LoCoMo 上仅 51.1%(@600),纯语义检索不占优;hybrid 是当前 tested-grid 推荐配置
