@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import importlib.util
 from pathlib import Path
+import tempfile
 import unittest
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -53,6 +54,26 @@ def row(scope, budget, used, hits, *, resolved=True, q=0):
 
 
 class EconomicsBridgeTests(unittest.TestCase):
+    def test_load_pricing_class_supports_dataclass_module(self):
+        with tempfile.TemporaryDirectory() as temp:
+            root = Path(temp)
+            (root / "model.py").write_text(
+                "from dataclasses import dataclass\n"
+                "@dataclass(frozen=True)\n"
+                "class Pricing:\n"
+                "    name: str\n"
+                "    p_in: float\n"
+                "    p_cache: float\n"
+                "    p_out: float\n"
+                "    def effective_input_rate(self, rho, prompt_tokens=0.0):\n"
+                "        return (1-rho)*self.p_in + rho*self.p_cache\n",
+                encoding="utf-8",
+            )
+            pricing_cls, provenance = BRIDGE.load_pricing_class(root)
+            pricing = pricing_cls("x", 1.0, 0.1, 2.0)
+            self.assertEqual(pricing.effective_input_rate(0.5), 0.55)
+            self.assertEqual(len(provenance["model_sha256"]), 64)
+
     def test_same_query_counterfactual_uses_row_weighted_scopes(self):
         rows = [
             row("a", 600, 500, 1, q=1),
