@@ -73,3 +73,7 @@ Personal indexes, actual memory text, private residency catalogs/telemetry, conf
 ## Finite next evidence work
 
 The public 1.4 implementation is closed as a stable milestone. The remaining adaptive-policy question is empirical rather than missing core code: compare the stable fixed-budget/activity baseline against shadow recommendations on held-out runtime tasks, measuring task quality together with avoidable miss/reacquisition cost, latency, stale-state failures and prefetch waste. Only after that evidence should automatic T0–T3 or budget mutation be considered.
+
+## Unreleased retrieval successor
+
+The opt-in Python entity projection and its Protocol 2 evidence are documented in [the zero-LLM frontier](16-zero-llm-retrieval-frontier.md). It does not enable a harness option, change residency/activity/validity semantics, or move the 1.4 stable pointer.

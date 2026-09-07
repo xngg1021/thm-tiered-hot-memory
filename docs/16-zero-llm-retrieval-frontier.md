@@ -59,5 +59,54 @@ pipelines, memory taxonomies, and graph architectures are not adopted.
 ## Evidence status
 
 The existing lexical baseline has been reproduced before new algorithms.
-No new retrieval mechanism has yet passed holdout admission. Retrieval coverage
+The fixed entity projection passed the preregistered holdout metric gates; release acceptance still requires completed review and exact-commit verification. Retrieval coverage
 is not answer accuracy, and runtime correctness is not real-user task evidence.
+
+## Retained Python API surface
+
+```python
+from thm.retrieval import SearchIndex, TokenCounter
+
+index = SearchIndex("recall.sqlite3", TokenCounter("cl100k_base"), readonly=True)
+try:
+    result = index.search("my-scope", "What did Caroline discuss?",
+                          mode="sparse", budget=600, entity_projection=True)
+finally:
+    index.close()
+```
+
+The default is false. Only sparse and hybrid accept this flag. The projection
+uses exact speaker names and explicit technical identifiers within already
+retrieved, scope-filtered candidates. A fixed 0.25 reciprocal-rank bonus favors
+matching candidates. No new candidate membership, native write, alias identity
+merge, activity event, validity extension, residency move or prompt-directory
+metadata is introduced. With no signal, candidate order is unchanged.
+
+This is a candidate projection, not a general entity extractor or persistent
+alias side index. Automatic bilingual alias generation and coreference are not
+implemented. Adapters and MCP do not expose this new flag in this successor.
+The production option is measured on Track A; hybrid support is an API capability
+without a new Track B evidence claim because no local encoder was available.
+
+## Staged admission results
+
+At 600 tokens on calibration (231 questions), baseline hits were 158. Temporal
+produced 159 with no temporal-category gain; entity 170; segment 157; adjacency
+association 171 but regressed open-domain; size-normalized ranking 115; cumulative
+entity plus association 158 with worse all-gold. Only entity reached holdout.
+Rejected prototypes remain under `research/recall` solely for reproducibility;
+there is no production temporal, segment or association engine. Narrow query
+grammar was not added after these results.
+
+On 1301 held-out questions entity produced 55 wins and 19 losses (+2.7671 pp);
+conversation-cluster bootstrap 95% interval: +1.7946 to +3.8247 pp. Every official
+category's point estimate improved. These intervals describe eight correlated
+conversation clusters, not universal task performance. Full comparable any-gold
+is 69.3864% → 72.5196%; all-gold is 56.5274% → 59.4648%. Candidate coverage stays
+92.4282%. The full aggregate includes calibration and is labeled accordingly.
+
+See [baseline and census](../reports/2026-09-07-zero-llm-frontier-baseline.md),
+[calibration](../reports/2026-09-07-zero-llm-frontier-calibration.json),
+[pre-holdout freeze](../reports/2026-09-07-zero-llm-frontier-freeze.json),
+[full summary](../reports/2026-09-07-zero-llm-frontier-full-summary.json), and
+[resource census](../reports/2026-09-07-zero-llm-frontier-resources.json).

@@ -63,3 +63,9 @@ THM 1.4 は **accepted/stable implementation milestone** として完了・凍�
 これらは 1.4 correctness、Hermes、multi-harness の受け入れ検証を通過しています。1.4 は retrieval path を変更していないため、新しい LoCoMo/Protocol 2 数値は主張しません。自動 T0–T3 移動と自動予算変更は、held-out runtime/task A/B が品質・コスト・遅延・reacquisition の改善を示すまで無効のままです。詳細は [1.4 control plane](docs/14-residency-control-plane.md)、[Hermes T1 directory](docs/15-hermes-warm-directory.md)、[1.4 closeout](reports/2026-09-07-v1.4-closeout.md) を参照してください。
 
 Version identity: **1.4.0 accepted/stable implementation milestone**.
+
+## 生成 LLM 呼び出しゼロの検索拡張（未リリース）
+
+Python API の `entity_projection=True` を明示すると、出典の正確な話者名と識別子で既存候補を並べ替えます。600 tokens の Protocol 2 全体 any-gold は 69.39% から 72.52%、留保した1301問は 69.56% から 72.33% になりました。候補カバレッジは不変です。生成モデル呼び出しも埋め込みモデル使用もなく、T0–T3 と元の記憶は変わりません。時間・分割・関連展開・サイズ順位の実験は本番経路に入りません。1.5 安定版としてはまだ登録していません。
+
+[Protocol 2 / evidence](docs/16-zero-llm-retrieval-frontier.md)

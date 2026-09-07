@@ -86,3 +86,9 @@ Sobre la capa de recall harness-neutral de 1.3, 1.4 añade telemetry explícita 
 Estas superficies superaron la aceptación correctness, Hermes y multi-harness de 1.4. Como 1.4 no cambió el retrieval path, no se atribuyen nuevos números LoCoMo/Protocol 2. El movimiento automático T0–T3 y el cambio automático de presupuesto siguen desactivados hasta que A/B held-out de runtime/tareas demuestre mejoras conjuntas de calidad, coste, latencia y reacquisition. Véanse [1.4 control plane](docs/14-residency-control-plane.md), [Hermes T1 directory](docs/15-hermes-warm-directory.md) y [1.4 closeout](reports/2026-09-07-v1.4-closeout.md).
 
 Version identity: **1.4.0 accepted/stable implementation milestone**.
+
+## Extensión sin llamadas a LLM generativos (sin publicar)
+
+La opción explícita de Python `entity_projection=True` reordena candidatos existentes mediante nombres exactos de hablantes e identificadores de las fuentes. A 600 tokens, Protocol 2 pasa de 69.39% a 72.52% any-gold global; las 1301 preguntas reservadas pasan de 69.56% a 72.33%. La cobertura de candidatos no cambia. No se usan llamadas generativas ni embeddings; T0–T3 y la memoria nativa se conservan. Los experimentos temporales, de segmentos, asociaciones y ordenación por tamaño no entran en producción. Todavía no es una versión 1.5 estable.
+
+[Protocol 2 / evidence](docs/16-zero-llm-retrieval-frontier.md)

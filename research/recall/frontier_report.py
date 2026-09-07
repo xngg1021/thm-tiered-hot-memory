@@ -16,8 +16,11 @@ def paired(before, after, split='held_out', budget=600, category=None):
         return (r['budget'] == budget and r['category'] != 5 and r['evidence_count']
                 and r['fully_resolved'] and (split == 'all' or r['split'] == split)
                 and (category is None or r['category'] == category))
-    a = {(r['scope'], r['question_index']): r for r in before if eligible(r)}
-    b = {(r['scope'], r['question_index']): r for r in after if eligible(r)}
+    left = [r for r in before if eligible(r)]
+    right = [r for r in after if eligible(r)]
+    a = {(r['scope'], r['question_index']): r for r in left}
+    b = {(r['scope'], r['question_index']): r for r in right}
+    if len(a) != len(left) or len(b) != len(right): raise ValueError('duplicate question identity')
     if a.keys() != b.keys(): raise ValueError('paired question identity mismatch')
     groups = defaultdict(list)
     wins = losses = ties = 0
@@ -46,6 +49,12 @@ def report(data):
     name = next(k for k in policies if k != 'baseline')
     a, b = policies['baseline'], policies[name]
     budgets = a['budgets']
+    if a['protocol'] != 2 or b['protocol'] != 2 or a['budgets'] != b['budgets']:
+        raise ValueError('Protocol 2 and matched budgets required')
+    if data['split'] == 'full':
+        baseline = a['summaries']['sparse@600']['main_categories_1_to_4']
+        if baseline['scorable'] != 1532 or abs(baseline['any_gold_hit_rate'] - 0.693864229765013) > 1e-12:
+            raise ValueError('historical sparse baseline did not reproduce')
     out = {k: v for k, v in data.items() if k != 'policies'}
     out['summaries'] = {k: v['summaries'] for k, v in policies.items()}
     out['builds'] = {k: v['builds'] for k, v in policies.items()}
@@ -60,6 +69,18 @@ def report(data):
             'denominator': len(rows), 'candidate_missing': sum(r['candidate_hits'] == 0 for r in rows),
             'candidate_present_not_packed': sum(r['candidate_hits'] > 0 and r['hits'] == 0 for r in rows),
             'causal_labels': 'Temporal/entity/association causes and stale/scope cases not inferred from category.'}
+    if data['split'] == 'full':
+        before = a['summaries']['sparse@600']['held_out']
+        after = b['summaries']['sparse@600']['held_out']
+        category_ok = all(x['delta_pp'] is not None and x['delta_pp'] >= -2
+                          for x in out['category_paired_600'].values())
+        checks = {
+            'any_gold_at_least_1pp': 100*(after['any_gold_hit_rate']-before['any_gold_hit_rate']) >= 1,
+            'all_gold_nonnegative': after['all_gold_hit_rate'] >= before['all_gold_hit_rate'],
+            'no_category_regression_over_2pp': category_ok,
+            'p95_ratio_at_most_1_25': after['latency_ms']['p95'] <= 1.25*before['latency_ms']['p95'],
+        }
+        out['preregistered_admission'] = {'checks': checks, 'passed': all(checks.values())}
     return out
 
 

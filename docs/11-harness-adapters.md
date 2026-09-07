@@ -140,3 +140,7 @@ THM does **not** advertise Hermes pre-compress checkpoint API v2. A v2 provider 
 ## Boundaries
 
 Harness support does not change THM into a universal memory database. Native memory/source ownership remains outside the adapters. Automatic tier movement remains separate from retrieval. Source imports still require explicit refresh unless a harness-specific derived live scope is enabled. No adapter turns `mention_observed`, retrieval, or a source write into a `hit`. Current integration CI intentionally makes zero model calls, so provider/tool plumbing is measured separately from generated-answer quality.
+
+## Unreleased retrieval successor
+
+The opt-in Python entity projection and its Protocol 2 evidence are documented in [the zero-LLM frontier](16-zero-llm-retrieval-frontier.md). It does not enable a harness option, change residency/activity/validity semantics, or move the 1.4 stable pointer.

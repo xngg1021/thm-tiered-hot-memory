@@ -125,3 +125,7 @@ The opt-in directory does not:
 The provider lifecycle and prompt-block invariants can be tested against pinned/current Hermes upstream revisions. That verifies integration behavior and read-only/frozen-snapshot contracts.
 
 It does **not** establish that enabling the directory improves real task success, latency or total cost. That requires held-out runtime A/B tasks with the directory disabled/enabled and explicit accounting for locator-token carry, retrieval calls, miss avoidance and generated-answer/task quality.
+
+## Unreleased retrieval successor
+
+The opt-in Python entity projection and its Protocol 2 evidence are documented in [the zero-LLM frontier](16-zero-llm-retrieval-frontier.md). It does not enable a harness option, change residency/activity/validity semantics, or move the 1.4 stable pointer.

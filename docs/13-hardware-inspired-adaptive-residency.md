@@ -253,3 +253,7 @@ Context Economics 已提供 resident cost、reacquisition、retry、latency、fa
 ## 当前状态声明
 
 本次新增 telemetry 只用于离线/影子测量：不修改 `scripts/thm.py` activity 公式；不改变 T0/T1/T2/T3；不自动 promote/demote；不把 prefetch/mention/retrieval 变成 hit；不声称 ARC/TinyLFU/TCP/SSD 机制已在 THM 上验证有效。
+
+## Unreleased retrieval successor
+
+The opt-in Python entity projection and its Protocol 2 evidence are documented in [the zero-LLM frontier](16-zero-llm-retrieval-frontier.md). It does not enable a harness option, change residency/activity/validity semantics, or move the 1.4 stable pointer.

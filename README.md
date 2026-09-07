@@ -105,6 +105,12 @@ THM 1.4 已完成并冻结为 **accepted/stable implementation milestone**。稳
 这些能力已经通过 1.4 的 correctness、Hermes 与 multi-harness 验收；1.4 没有修改 retrieval path，因此没有冒充产生新的 LoCoMo/Protocol 2 数字。自动 T0–T3 换层和自动预算修改仍保持关闭，直到真实留出任务 A/B 能同时证明质量、成本、延迟和 reacquisition 改善。详见 [1.4 control plane](docs/14-residency-control-plane.md)、[Hermes T1 directory](docs/15-hermes-warm-directory.md) 与 [1.4 closeout](reports/2026-09-07-v1.4-closeout.md)。
 
 Version identity: **1.4.0 accepted/stable implementation milestone**.
+
+## 零生成式 LLM 检索扩展（未发布）
+
+显式启用 Python API 参数 `entity_projection=True`，可用来源中的精确说话人姓名和标识符调整已有候选的排序。固定 600 tokens 的 Protocol 2 全量 any-gold 从 69.39% 提高到 72.52%；1301 道留出题从 69.56% 提高到 72.33%。候选覆盖率保持不变。没有生成式模型调用，也没有使用嵌入模型；T0–T3 与原生记忆保持不变。时间、分段、关联和大小排序实验未进入生产路径。此扩展尚未登记为 1.5 稳定版本。
+
+[Protocol 2 / evidence](docs/16-zero-llm-retrieval-frontier.md)
 <!-- locale:zh-CN:end -->
 
 </details>
@@ -210,6 +216,12 @@ THM 1.4 已完成並凍結為 **accepted/stable implementation milestone**。穩
 這些能力已通過 1.4 correctness、Hermes 與 multi-harness 驗收；1.4 沒有修改 retrieval path，因此沒有宣稱產生新的 LoCoMo/Protocol 2 數字。自動 T0–T3 換層和自動預算修改仍保持關閉，直到真實留出任務 A/B 能同時證明品質、成本、延遲和 reacquisition 改善。詳見 [1.4 control plane](docs/14-residency-control-plane.md)、[Hermes T1 directory](docs/15-hermes-warm-directory.md) 與 [1.4 closeout](reports/2026-09-07-v1.4-closeout.md)。
 
 Version identity: **1.4.0 accepted/stable implementation milestone**.
+
+## 零生成式 LLM 檢索擴充（未發布）
+
+明確啟用 Python API 參數 `entity_projection=True`，可用來源中的精確說話人姓名和識別符調整既有候選的排序。固定 600 tokens 的 Protocol 2 全量 any-gold 從 69.39% 提高到 72.52%；1301 道保留測試題從 69.56% 提高到 72.33%。候選覆蓋率維持不變。沒有生成式模型呼叫，也沒有使用嵌入模型；T0–T3 與原生記憶維持不變。時間、分段、關聯和大小排序實驗未進入正式執行路徑。此擴充尚未登記為 1.5 穩定版本。
+
+[Protocol 2 / evidence](docs/16-zero-llm-retrieval-frontier.md)
 <!-- locale:zh-TW:end -->
 
 </details>
@@ -279,6 +291,12 @@ THM 1.4 は **accepted/stable implementation milestone** として完了・凍�
 これらは 1.4 correctness、Hermes、multi-harness の受け入れ検証を通過しています。1.4 は retrieval path を変更していないため、新しい LoCoMo/Protocol 2 数値は主張しません。自動 T0–T3 移動と自動予算変更は、held-out runtime/task A/B が品質・コスト・遅延・reacquisition の改善を示すまで無効のままです。詳細は [1.4 control plane](docs/14-residency-control-plane.md)、[Hermes T1 directory](docs/15-hermes-warm-directory.md)、[1.4 closeout](reports/2026-09-07-v1.4-closeout.md) を参照してください。
 
 Version identity: **1.4.0 accepted/stable implementation milestone**.
+
+## 生成 LLM 呼び出しゼロの検索拡張（未リリース）
+
+Python API の `entity_projection=True` を明示すると、出典の正確な話者名と識別子で既存候補を並べ替えます。600 tokens の Protocol 2 全体 any-gold は 69.39% から 72.52%、留保した1301問は 69.56% から 72.33% になりました。候補カバレッジは不変です。生成モデル呼び出しも埋め込みモデル使用もなく、T0–T3 と元の記憶は変わりません。時間・分割・関連展開・サイズ順位の実験は本番経路に入りません。1.5 安定版としてはまだ登録していません。
+
+[Protocol 2 / evidence](docs/16-zero-llm-retrieval-frontier.md)
 <!-- locale:ja:end -->
 
 </details>
@@ -348,6 +366,12 @@ THM 1.4는 **accepted/stable implementation milestone**로 완료되어 고정�
 이 기능들은 1.4 correctness, Hermes, multi-harness 승인 검증을 통과했습니다. 1.4는 retrieval path를 변경하지 않았으므로 새로운 LoCoMo/Protocol 2 수치를 주장하지 않습니다. 자동 T0–T3 이동과 자동 예산 변경은 held-out runtime/task A/B가 품질·비용·지연·reacquisition 개선을 입증할 때까지 비활성화 상태입니다. 자세한 내용은 [1.4 control plane](docs/14-residency-control-plane.md), [Hermes T1 directory](docs/15-hermes-warm-directory.md), [1.4 closeout](reports/2026-09-07-v1.4-closeout.md)을 참조하십시오.
 
 Version identity: **1.4.0 accepted/stable implementation milestone**.
+
+## 생성형 LLM 호출 없는 검색 확장（미출시）
+
+Python API에서 `entity_projection=True`를 명시하면 출처의 정확한 화자 이름과 식별자로 기존 후보 순서를 조정합니다. 600 tokens Protocol 2 전체 any-gold는 69.39%에서 72.52%, 별도 보류한 1301문항은 69.56%에서 72.33%로 증가했습니다. 후보 커버리지는 동일합니다. 생성 모델 호출과 임베딩 모델 사용이 없으며 T0–T3와 원본 메모리는 유지됩니다. 시간·분할·연관 확장·크기 순위 실험은 운영 경로에 포함하지 않습니다. 1.5 안정 버전으로 아직 등록하지 않았습니다.
+
+[Protocol 2 / evidence](docs/16-zero-llm-retrieval-frontier.md)
 <!-- locale:ko:end -->
 
 </details>
@@ -440,6 +464,12 @@ Sobre la capa de recall harness-neutral de 1.3, 1.4 añade telemetry explícita 
 Estas superficies superaron la aceptación correctness, Hermes y multi-harness de 1.4. Como 1.4 no cambió el retrieval path, no se atribuyen nuevos números LoCoMo/Protocol 2. El movimiento automático T0–T3 y el cambio automático de presupuesto siguen desactivados hasta que A/B held-out de runtime/tareas demuestre mejoras conjuntas de calidad, coste, latencia y reacquisition. Véanse [1.4 control plane](docs/14-residency-control-plane.md), [Hermes T1 directory](docs/15-hermes-warm-directory.md) y [1.4 closeout](reports/2026-09-07-v1.4-closeout.md).
 
 Version identity: **1.4.0 accepted/stable implementation milestone**.
+
+## Extensión sin llamadas a LLM generativos (sin publicar)
+
+La opción explícita de Python `entity_projection=True` reordena candidatos existentes mediante nombres exactos de hablantes e identificadores de las fuentes. A 600 tokens, Protocol 2 pasa de 69.39% a 72.52% any-gold global; las 1301 preguntas reservadas pasan de 69.56% a 72.33%. La cobertura de candidatos no cambia. No se usan llamadas generativas ni embeddings; T0–T3 y la memoria nativa se conservan. Los experimentos temporales, de segmentos, asociaciones y ordenación por tamaño no entran en producción. Todavía no es una versión 1.5 estable.
+
+[Protocol 2 / evidence](docs/16-zero-llm-retrieval-frontier.md)
 <!-- locale:es:end -->
 
 </details>
@@ -507,6 +537,12 @@ Au-dessus du recall harness-neutral de 1.3, la 1.4 ajoute une telemetry explicit
 Ces surfaces ont passé l'acceptation correctness, Hermes et multi-harness de la 1.4. La 1.4 n'ayant pas modifié le retrieval path, aucun nouveau chiffre LoCoMo/Protocol 2 n'est revendiqué. Le mouvement automatique T0–T3 et la modification automatique du budget restent désactivés jusqu'à ce qu'un A/B held-out runtime/tâches démontre simultanément des gains de qualité, coût, latence et reacquisition. Voir [1.4 control plane](docs/14-residency-control-plane.md), [Hermes T1 directory](docs/15-hermes-warm-directory.md) et [1.4 closeout](reports/2026-09-07-v1.4-closeout.md).
 
 Version identity: **1.4.0 accepted/stable implementation milestone**.
+
+## Extension sans appel à un LLM génératif (non publiée)
+
+L’option Python explicite `entity_projection=True` réordonne les candidats existants selon les noms exacts des locuteurs et les identifiants des sources. À 600 tokens, Protocol 2 passe de 69.39% à 72.52% any-gold global ; les 1301 questions réservées passent de 69.56% à 72.33%. La couverture des candidats reste identique. Aucun appel génératif ni modèle d’embedding ; T0–T3 et la mémoire native restent inchangés. Les expériences temporelles, de segmentation, d’association et de classement par taille ne sont pas intégrées en production. Aucune version stable 1.5 n’est encore enregistrée.
+
+[Protocol 2 / evidence](docs/16-zero-llm-retrieval-frontier.md)
 <!-- locale:fr:end -->
 
 </details>
@@ -574,6 +610,12 @@ Auf der harness-neutralen Recall-Schicht von 1.3 ergänzt 1.4 explizite resident
 Diese Oberflächen haben die 1.4-Akzeptanz für correctness, Hermes und multi-harness bestanden. Da 1.4 den retrieval path nicht geändert hat, werden keine neuen LoCoMo/Protocol-2-Zahlen beansprucht. Automatische T0–T3-Bewegung und automatische Budgetänderung bleiben deaktiviert, bis held-out Runtime-/Task-A/B gemeinsam Verbesserungen bei Qualität, Kosten, Latenz und Reacquisition nachweist. Siehe [1.4 control plane](docs/14-residency-control-plane.md), [Hermes T1 directory](docs/15-hermes-warm-directory.md) und [1.4 closeout](reports/2026-09-07-v1.4-closeout.md).
 
 Version identity: **1.4.0 accepted/stable implementation milestone**.
+
+## Retrieval-Erweiterung ohne generative LLM-Aufrufe (unveröffentlicht)
+
+Die explizite Python-Option `entity_projection=True` ordnet vorhandene Kandidaten anhand exakter Sprechernamen und Quellbezeichner neu. Bei 600 tokens steigt Protocol 2 global von 69.39% auf 72.52% any-gold; die 1301 zurückgehaltenen Fragen steigen von 69.56% auf 72.33%. Die Kandidatenabdeckung bleibt gleich. Es gibt keine generativen Aufrufe und kein Embedding-Modell; T0–T3 und native Erinnerungen bleiben unverändert. Zeit-, Segment-, Assoziations- und Größenranking-Experimente gelangen nicht in den Produktionspfad. Version 1.5 ist noch nicht als stabil registriert.
+
+[Protocol 2 / evidence](docs/16-zero-llm-retrieval-frontier.md)
 <!-- locale:de:end -->
 
 </details>
@@ -676,3 +718,7 @@ THM does **not** currently claim real-user end-to-end answer accuracy, a univers
 Normal correctness CI runs on Linux, macOS and Windows. Heavy LoCoMo/model downloads and harness integration jobs are separate. Documentation: [project index](docs/README.md) · [engine guide](docs/06-engine-guide.md) · [retrieval / scan / decay](docs/09-retrieval-and-measurement.md) · [Harness adapters](docs/11-harness-adapters.md) · [version history / recovery map](docs/12-version-history.md) · [changelog](CHANGELOG.md) · [benchmark protocol](research/recall/README.md).
 
 Related project: [hermes-academic-skills](https://github.com/xngg1021/hermes-academic-skills).
+
+## Zero-generative-LLM retrieval successor (unreleased)
+
+The explicit Python API option `entity_projection=True` reorders existing candidates using exact source speaker names and identifiers. At 600 tokens, full Protocol 2 any-gold improves from **69.39% to 72.52%**; the 1301 held-out questions improve from **69.56% to 72.33%**. Candidate coverage is unchanged. No generative calls or embedding model are used; T0–T3 and native memory are unchanged. Temporal, segment, association and size-ranking experiments are excluded from the production path. No 1.5 stable release has been registered. See [the experiment and evidence](docs/16-zero-llm-retrieval-frontier.md).

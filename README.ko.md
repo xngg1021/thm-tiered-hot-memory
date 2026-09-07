@@ -63,3 +63,9 @@ THM 1.4는 **accepted/stable implementation milestone**로 완료되어 고정�
 이 기능들은 1.4 correctness, Hermes, multi-harness 승인 검증을 통과했습니다. 1.4는 retrieval path를 변경하지 않았으므로 새로운 LoCoMo/Protocol 2 수치를 주장하지 않습니다. 자동 T0–T3 이동과 자동 예산 변경은 held-out runtime/task A/B가 품질·비용·지연·reacquisition 개선을 입증할 때까지 비활성화 상태입니다. 자세한 내용은 [1.4 control plane](docs/14-residency-control-plane.md), [Hermes T1 directory](docs/15-hermes-warm-directory.md), [1.4 closeout](reports/2026-09-07-v1.4-closeout.md)을 참조하십시오.
 
 Version identity: **1.4.0 accepted/stable implementation milestone**.
+
+## 생성형 LLM 호출 없는 검색 확장（미출시）
+
+Python API에서 `entity_projection=True`를 명시하면 출처의 정확한 화자 이름과 식별자로 기존 후보 순서를 조정합니다. 600 tokens Protocol 2 전체 any-gold는 69.39%에서 72.52%, 별도 보류한 1301문항은 69.56%에서 72.33%로 증가했습니다. 후보 커버리지는 동일합니다. 생성 모델 호출과 임베딩 모델 사용이 없으며 T0–T3와 원본 메모리는 유지됩니다. 시간·분할·연관 확장·크기 순위 실험은 운영 경로에 포함하지 않습니다. 1.5 안정 버전으로 아직 등록하지 않았습니다.
+
+[Protocol 2 / evidence](docs/16-zero-llm-retrieval-frontier.md)
