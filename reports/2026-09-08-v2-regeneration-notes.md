@@ -59,3 +59,7 @@ LME CPU v2：pending-real-local-runtime。当前 Work 没有用户 Z6 G4 控制�
 ## 十一、normalized ranges / runner output successor
 
 第四次完成的 review 返回 2 个 P2，已修复：normalized row scores 及 aggregate rates 限制为 [0,1]；LoCoMo/LME runner 均以独占方式创建实际输出，防止预检查后的并发覆盖。竞态回归验证其他写入者的字节被保留。新 canonical `2026-09-08-locomo-cpu-gpu-parity-v2r5.json` 重算通过全部范围/覆盖检查，实测结论不变；旧 r1–r4 保留。检索、排序、embedding 算法未变，LME CPU 仍待真实本机运行。
+
+## 十二、canonical aggregate count binding
+
+第五次完成的 review 返回 1 个 P2：any_gold_hits 必须受 scorable 分母约束。现已按每个 cohort 的 rows 重算 questions/scorable/no-gold/partial-unresolved/any-gold counts，并验证对应 any-gold rate；共享 canonical scoring predicate。测试拒绝 10 attempted / 1 scorable / 10 any-gold 等不可能组合及分区计数漂移。新 canonical parity-v2r6 重算通过，实测结论不变；旧 r1–r5 保留。

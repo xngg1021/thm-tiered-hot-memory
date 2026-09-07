@@ -58,7 +58,7 @@ Aggregate semantic metrics equivalent: **true** (1680 explicit retrieval-quality
 | Main categories 1–4 mismatch rows | 16 |
 | Diagnostic category 5 mismatch rows | 6 |
 
-The canonical parity receipt is now `2026-09-08-locomo-cpu-gpu-parity-v2r5.json`, generated after the review corrections. It includes mean_budget_used, validates complete summary schema and binds hashes to the exact parsed buffers. The v2r1 through v2r4 receipts are preserved as prior attempts. The new preview limit is 50; all 25 entries fit, so it is not truncated. The older cap of 25 did not prove the total even though the complete scan now happens to find exactly 25. Per-mode/budget/category counts are in the successor JSON. Near-tie floating-point drift is an inference only: no candidate score/delta trace proves causality. No ranking/tie-breaking/embedding semantics changed.
+The canonical parity receipt is now `2026-09-08-locomo-cpu-gpu-parity-v2r6.json`, generated after the review corrections. It includes mean_budget_used, validates complete summary schema and binds hashes to the exact parsed buffers. The v2r1 through v2r5 receipts are preserved as prior attempts. The new preview limit is 50; all 25 entries fit, so it is not truncated. The older cap of 25 did not prove the total even though the complete scan now happens to find exactly 25. Per-mode/budget/category counts are in the successor JSON. Near-tie floating-point drift is an inference only: no candidate score/delta trace proves causality. No ranking/tie-breaking/embedding semantics changed.
 
 ## Superseded artifacts
 
@@ -68,11 +68,12 @@ The canonical parity receipt is now `2026-09-08-locomo-cpu-gpu-parity-v2r5.json`
 | 2026-09-08-suite-report.md | 2026-09-08-suite-report-v2r1.md |
 | 2026-09-08-economics-bridge-v2.json (1536 denominator) | 2026-09-08-economics-bridge-v2r1.json (1532) |
 | 2026-09-08-suite-report-v2.md (mixed denominator) | 2026-09-08-suite-report-v2r1.md |
-| 2026-09-08-locomo-cpu-gpu-parity.json (capped preview) | 2026-09-08-locomo-cpu-gpu-parity-v2r5.json |
-| 2026-09-08-locomo-cpu-gpu-parity-v2r1.json (before review hardening) | 2026-09-08-locomo-cpu-gpu-parity-v2r5.json |
-| 2026-09-08-locomo-cpu-gpu-parity-v2r2.json (omits mean_budget_used) | 2026-09-08-locomo-cpu-gpu-parity-v2r5.json |
-| 2026-09-08-locomo-cpu-gpu-parity-v2r3.json (before strict-row coverage hardening) | 2026-09-08-locomo-cpu-gpu-parity-v2r5.json |
-| 2026-09-08-locomo-cpu-gpu-parity-v2r4.json (before range validation) | 2026-09-08-locomo-cpu-gpu-parity-v2r5.json |
+| 2026-09-08-locomo-cpu-gpu-parity.json (capped preview) | 2026-09-08-locomo-cpu-gpu-parity-v2r6.json |
+| 2026-09-08-locomo-cpu-gpu-parity-v2r1.json (before review hardening) | 2026-09-08-locomo-cpu-gpu-parity-v2r6.json |
+| 2026-09-08-locomo-cpu-gpu-parity-v2r2.json (omits mean_budget_used) | 2026-09-08-locomo-cpu-gpu-parity-v2r6.json |
+| 2026-09-08-locomo-cpu-gpu-parity-v2r3.json (before strict-row coverage hardening) | 2026-09-08-locomo-cpu-gpu-parity-v2r6.json |
+| 2026-09-08-locomo-cpu-gpu-parity-v2r4.json (before range validation) | 2026-09-08-locomo-cpu-gpu-parity-v2r6.json |
+| 2026-09-08-locomo-cpu-gpu-parity-v2r5.json (before canonical aggregate-count binding) | 2026-09-08-locomo-cpu-gpu-parity-v2r6.json |
 
 Additional evidence: `2026-09-08-economics-v2r1-delta-audit.json`; LME GPU evidence remains `2026-09-08-lme-retrieval-gpu-v2.json`. Historical artifact bytes remain unchanged. Regeneration notes are forward-corrected with retained defect history.
 
@@ -85,6 +86,8 @@ Second-round review identified one additional P2: mean_budget_used was missing f
 Third completed review raised three further P2 items: ranked identities must be mandatory for Protocol 2; every measured row must belong to the declared aggregate grid; rank-only must exclude mixed semantic changes. These are forward-fixed with protocol-specific required row fields/valid values, grid coverage and disjoint rank-only/selected-set/other-semantic classification tests. The v2r4 receipt has complete row and aggregate coverage, retains 25 entries / 22 rows (19 rank-only, 3 selected-set), and reports 0 other-semantic rows. Synthetic LME tests require its ordered IDs and aligned source list without inventing a real CPU result.
 
 Fourth completed review raised two P2 items: normalized score ranges and the local LME output race. Row reciprocal-rank/nDCG and aggregate normalized metrics now require [0,1], with typed nonnegative aggregate counts. Both LoCoMo and LME standalone runners perform output preflight and exclusive final creation; a race regression creates another writer's artifact after preflight and confirms preservation. Retrieval/embedding/ranking logic is unchanged. The v2r5 receipt is regenerated under these checks and retains the measured results.
+
+Fifth completed review identified one P2: any_gold_hits must be bounded by the scorable cohort. Aggregate availability now binds questions/scorable/no-gold/partial-unresolved/any-gold counts directly to each cohort's rows using the shared canonical scoring predicate, and checks the corresponding any-gold rate. This enforces both the scorable upper bound and cohort partition relationships. Malformed 10-attempt/1-scorable/10-hit summaries and related count/rate changes are regression-gated. v2r6 retains all real measured results.
 
 ## Validation contract
 

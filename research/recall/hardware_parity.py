@@ -16,6 +16,7 @@ import math
 from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
 from research.evidence_io import read_json_bound, require_new_output, write_new_text
+from research.recall.scoring import is_scorable
 
 TOP_LEVEL_IDENTITY = (
     "protocol", "counter", "modes", "budgets", "model_id", "dataset_sha256",
@@ -171,7 +172,8 @@ def summary_coverage_errors(data):
     for config in sorted(expected):
         rows = [r for r in data["rows"] if f"{r.get('mode')}@{r.get('budget')}" == config]
         for cohort, predicate in predicates.items():
-            count = sum(predicate(r) for r in rows)
+            cohort_rows = [r for r in rows if predicate(r)]
+            count = len(cohort_rows)
             leaf = summaries[config]
             present = True
             for part in cohort.split("/"):
@@ -187,6 +189,30 @@ def summary_coverage_errors(data):
                 continue
             if type(leaf["questions"]) is not int or leaf["questions"] != count:
                 errors.append(f"{config}/{cohort}: row denominator mismatch")
+            if any(type(r.get("hits")) is not int or r["hits"] < 0 for r in cohort_rows):
+                errors.append(f"{config}/{cohort}: invalid row hits for count binding")
+                continue
+            if data.get("protocol") == 2:
+                if any(type(r.get("evidence_count")) is not int or r["evidence_count"] < 0
+                       or type(r.get("fully_resolved")) is not bool for r in cohort_rows):
+                    errors.append(f"{config}/{cohort}: invalid row scoring fields for count binding")
+                    continue
+                scored = [r for r in cohort_rows if is_scorable(r)]
+                expected_counts = {
+                    "questions": count, "scorable": len(scored),
+                    "no_gold_questions": sum(r["evidence_count"] == 0 for r in cohort_rows),
+                    "partially_or_unresolved_questions": sum(r["evidence_count"] > 0 and not r["fully_resolved"] for r in cohort_rows),
+                    "any_gold_hits": sum(r["hits"] > 0 for r in scored),
+                }
+            else:
+                scored = cohort_rows
+                expected_counts = {"questions": count, "any_gold_hits": sum(r["hits"] > 0 for r in scored)}
+            for field, expected_count in expected_counts.items():
+                if type(leaf[field]) is not int or leaf[field] != expected_count:
+                    errors.append(f"{config}/{cohort}/{field}: canonical row count mismatch")
+            expected_rate = expected_counts["any_gold_hits"] / len(scored) if scored else None
+            if leaf["any_gold_hit_rate"] != expected_rate:
+                errors.append(f"{config}/{cohort}/any_gold_hit_rate: count/rate mismatch")
             for field in required:
                 value = leaf[field]
                 denominator = count if field in ("empty_context_rate", "mean_budget_used") or data.get("protocol") == 1 else leaf.get("scorable", 0)

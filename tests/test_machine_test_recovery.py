@@ -341,6 +341,19 @@ class V2R1RegressionTests(unittest.TestCase):
         cpu["rows"][0].pop("selected_sources")
         self.assertFalse(PARITY.compare(cpu,cpu)["identity_complete"])
 
+    def test_aggregate_counts_are_bound_to_the_scorable_rows(self):
+        cpu = HardwareParityTests().artifact("a")
+        cpu["rows"] = [row("a",600,500,1,q=0)] + [row("a",600,500,0,resolved=False,q=i) for i in range(1,10)]
+        cpu["summaries"] = full_locomo_summaries(cpu)
+        self.assertTrue(PARITY.compare(cpu,cpu)["aggregate_semantic_metrics_available"])
+        for change in ({"any_gold_hits":10}, {"scorable":2}, {"no_gold_questions":1},
+                       {"partially_or_unresolved_questions":8}, {"any_gold_hit_rate":.5}):
+            bad = json.loads(json.dumps(cpu))
+            bad["summaries"]["hybrid@600"]["main_categories_1_to_4"].update(change)
+            result = PARITY.compare(bad,bad)
+            self.assertFalse(result["aggregate_semantic_metrics_available"])
+            self.assertFalse(result["aggregate_semantic_metrics_equivalent"])
+
     def test_mean_budget_used_is_required_and_compared(self):
         cpu = HardwareParityTests().artifact("a")
         cpu["summaries"] = full_locomo_summaries(cpu)
