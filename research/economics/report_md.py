@@ -42,6 +42,42 @@ def money(value) -> str:
     return "-" if value is None else f"${value:.6f}"
 
 
+def validate_locomo_bridge_pair(locomo: dict, econ: dict) -> None:
+    """Fail closed unless retrieval and economics describe the same benchmark."""
+    benchmark = econ.get("benchmark")
+    if not isinstance(benchmark, dict):
+        raise ValueError("bridge-v2 artifact is missing benchmark identity")
+
+    fields = (
+        "dataset_sha256",
+        "protocol",
+        "counter",
+        "modes",
+        "budgets",
+        "generation_calls",
+        "judge_calls",
+    )
+    mismatches = []
+    for field in fields:
+        if locomo.get(field) != benchmark.get(field):
+            mismatches.append(
+                f"{field}: locomo={locomo.get(field)!r} bridge={benchmark.get(field)!r}"
+            )
+    if mismatches:
+        raise ValueError(
+            "LoCoMo retrieval artifact does not match bridge-v2 benchmark identity: "
+            + "; ".join(mismatches)
+        )
+
+    counterfactual = benchmark.get("counterfactual_dataset_sha256")
+    if counterfactual is not None and counterfactual != locomo.get("dataset_sha256"):
+        raise ValueError(
+            "bridge-v2 counterfactual dataset does not match LoCoMo retrieval dataset"
+        )
+    if benchmark.get("counterfactual_dataset_matches_benchmark") is False:
+        raise ValueError("bridge-v2 records a failed counterfactual dataset match")
+
+
 def main_summary(data: dict, mode: str, budget: int) -> dict | None:
     summary = data.get("summaries", {}).get(f"{mode}@{budget}")
     if not isinstance(summary, dict):
@@ -86,7 +122,6 @@ def economics_rows(econ: dict) -> list[str]:
     benchmark = econ.get("benchmark", {})
     modes = benchmark.get("modes") or []
     budgets = benchmark.get("budgets") or []
-    primary = econ["primary_proxy_scenario"]
     lines: list[str] = []
     for mode in modes:
         for budget in budgets:
@@ -180,6 +215,8 @@ def main():
     econ = json.loads(Path(args.econ).read_text(encoding="utf-8"))
     if econ.get("kind") != "thm-x-context-economics-bridge-v2":
         raise ValueError("report_md.py requires corrected bridge-v2 economics artifact")
+    validate_locomo_bridge_pair(locomo, econ)
+
     lme_path = Path(args.lme)
     lme = json.loads(lme_path.read_text(encoding="utf-8")) if lme_path.is_file() else None
 
