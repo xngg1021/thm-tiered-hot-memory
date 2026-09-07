@@ -49,13 +49,15 @@
 | LoCoMo 全矩阵 | ~40 min | ~8 min | 5x |
 | 检索延迟(hybrid@600) | 45.6/53.1 ms | 45.4/48.9 ms | LoCoMo 持平,LME-S 略降 |
 
-- 原始本机对比报告称 24/24 配置(2 基准 × 4 模式 × 3 预算)CPU/GPU 结果一致、最大差异 0;当前新增 `research/recall/hardware_parity.py` 作为正式机器校验器,在 comparator receipt 生成前不把该口头/脚本外对比升级为 accepted parity artifact
+- 原始本机对比报告称 24/24 配置(2 基准 × 4 模式 × 3 预算)CPU/GPU 聚合结果一致、最大差异 0
+- 历史 LoCoMo rows 已保存 `selected_ids`,可由 `research/recall/hardware_parity.py` 进一步生成机器可验证的 semantic-parity receipt
+- 历史 LME-S rows 未保存 selected document identity,因此**不能**从旧 artifact 生成 positive semantic-parity receipt;当前 runner 已补 `selected_ids` / `selected_sources`,需要用新 runner 重跑 CPU/GPU 才能升级该证据
 - SentenceEncoder 新增 device/batch_size 参数,默认 cpu,向后兼容
 - 剩余瓶颈:FTS 索引重建与 JSON 加载(与 GPU 无关)
 
 ## 5. 历史 THM × CE 经济学桥(已 supersede)
 
-下表和两条聚合结论保留用于追踪原始运行,**不得作为当前 accepted economics claim**。旧实现混用了 1540/1986/18480 denominator,full-history arm 又使用了按唯一 conversation 求均值的近似。新 bridge-v2 改为逐 query scope 配对并明确 percentage-point 单位。
+下表和两条聚合结论保留用于追踪原始运行,**不得作为当前 accepted economics claim**。旧实现混用了 1540/1986/18480 denominator,full-history arm 又使用了按唯一 conversation 求均值的近似。新 bridge-v2 改为验证 dataset SHA 后逐 query scope 配对并明确 percentage-point 单位。
 
 | 配置 | 每查询召回成本 | 每 gold-hit 成本 | 全携带每查询成本 | 携带/召回倍率 |
 |---|---|---|---|---|
@@ -70,7 +72,7 @@
 
 - reports/2026-09-08-local-full-matrix.json.gz(完整 rows,25.8MB 原始 → 1.8MB gz)
 - reports/2026-09-08-local-full-matrix-gpu.json.gz(GPU 重跑,同上)
-- reports/2026-09-08-lme-retrieval.json / -gpu.json(2.6MB each,含 rows)
+- reports/2026-09-08-lme-retrieval.json / -gpu.json(2.6MB each,含 rows;历史版缺 selected identities)
 - reports/2026-09-08-economics-bridge.json(历史,经济口径已 supersede)
 - reports/2026-09-08-suite-report.json / .md(历史;见勘误)
 - reports/2026-09-08-machine-test-evidence-correction.md(当前勘误入口)
