@@ -41,6 +41,23 @@ def row(scope, budget, used, hits, *, resolved=True, q=0):
             "ndcg": 1.0 if hits else 0.0, "budget_used": used, "malformed_evidence": False}
 
 
+def full_locomo_summaries(artifact):
+    from research.recall.benchmark import aggregate, CATEGORY
+    out = {}
+    for mode in artifact["modes"]:
+        for budget in artifact["budgets"]:
+            rows = [{"total_ms":0,"query_embedding_ms":0,**r} for r in artifact["rows"] if r["mode"] == mode and r["budget"] == budget]
+            out[f"{mode}@{budget}"] = {
+                "main_categories_1_to_4":aggregate([r for r in rows if r["category"] != 5]),
+                "conversational_categories_1_2_4":aggregate([r for r in rows if r["category"] in (1,2,4)]),
+                "all_categories_diagnostic_only":aggregate(rows),
+                "development":aggregate([r for r in rows if r["split"] == "development" and r["category"] != 5]),
+                "held_out":aggregate([r for r in rows if r["split"] == "held_out" and r["category"] != 5]),
+                "by_category":{name:aggregate([r for r in rows if r["category"] == c]) for c,name in CATEGORY.items()},
+            }
+    return out
+
+
 class EconomicsBridgeTests(unittest.TestCase):
     def test_load_pricing_class_supports_dataclass_module(self):
         with tempfile.TemporaryDirectory() as temp:
@@ -216,10 +233,10 @@ class V2R1RegressionTests(unittest.TestCase):
 
     def test_aggregate_and_strict_classification(self):
         cpu = HardwareParityTests().artifact("a")
-        cpu["summaries"] = {"hybrid@600":{"main":{"questions":1,"any_gold_hits":1,"mrr":1,"latency_ms":{"p50":10}}}}
+        cpu["summaries"] = full_locomo_summaries(cpu)
         cpu["rows"][0].update(selected_ids=["a","b"],selected_ranked_ids=["a","b"])
         gpu = json.loads(json.dumps(cpu))
-        gpu["summaries"]["hybrid@600"]["main"]["latency_ms"]["p50"] = 1
+        gpu["summaries"]["hybrid@600"]["main_categories_1_to_4"]["latency_ms"]["p50"] = 1
         gpu["rows"][0]["selected_ranked_ids"] = ["b","a"]
         result = PARITY.compare(cpu,gpu)
         self.assertTrue(result["aggregate_semantic_metrics_equivalent"])
@@ -230,8 +247,71 @@ class V2R1RegressionTests(unittest.TestCase):
         result = PARITY.compare(cpu,gpu)
         self.assertEqual(result["selection_set_mismatch_row_count"],1)
         self.assertEqual(result["rank_only_mismatch_row_count"],0)
-        gpu["summaries"]["hybrid@600"]["main"]["mrr"] = .5
+        gpu["summaries"]["hybrid@600"]["main_categories_1_to_4"]["mrr"] = .5
         self.assertFalse(PARITY.compare(cpu,gpu)["aggregate_semantic_metrics_equivalent"])
+        self.assertEqual(PARITY.compare(cpu,gpu)["max_semantic_numeric_abs_diff"],.5)
+
+    def test_incomplete_aggregate_summaries_fail_closed(self):
+        cpu = HardwareParityTests().artifact("a")
+        cpu["summaries"] = full_locomo_summaries(cpu)
+        self.assertTrue(PARITY.compare(cpu,cpu)["aggregate_semantic_metrics_equivalent"])
+        for mutate in [
+            lambda x: x["summaries"].pop("hybrid@600"),
+            lambda x: x["summaries"]["hybrid@600"].pop("held_out"),
+            lambda x: x["summaries"]["hybrid@600"]["main_categories_1_to_4"].pop("any_gold_hit_rate"),
+            lambda x: x["summaries"]["hybrid@600"]["main_categories_1_to_4"].update(any_gold_hit_rate=None),
+            lambda x: x.update(summaries={"hybrid@600":{"main_categories_1_to_4":{"questions":1}}}),
+        ]:
+            bad = json.loads(json.dumps(cpu)); mutate(bad)
+            receipt = PARITY.compare(bad,bad)
+            self.assertFalse(receipt["aggregate_semantic_metrics_equivalent"])
+            self.assertTrue(receipt["aggregate_summary_coverage_errors"]["cpu"])
+
+    def test_bound_read_uses_one_byte_buffer(self):
+        from unittest.mock import patch
+        from research.evidence_io import read_json_bound
+        raw = b'{"rows":[]}'
+        with patch.object(Path,"read_bytes",return_value=raw) as read:
+            data, digest = read_json_bound(Path("unused"))
+        read.assert_called_once()
+        self.assertEqual(data,{"rows":[]})
+        self.assertEqual(digest,hashlib.sha256(raw).hexdigest())
+
+    def test_parity_cli_binds_snapshot_even_if_path_changes(self):
+        import sys
+        from unittest.mock import patch
+        compare = PARITY.compare
+        with tempfile.TemporaryDirectory() as tmp:
+            cpu_path, gpu_path, output = (Path(tmp,n) for n in ("cpu.json","gpu.json","receipt.json"))
+            raw = json.dumps(HardwareParityTests().artifact("a")).encode()
+            cpu_path.write_bytes(raw); gpu_path.write_bytes(raw)
+            def replace_during_compare(cpu,gpu,**kwargs):
+                cpu_path.write_text('{"rows":[]}')
+                return compare(cpu,gpu,**kwargs)
+            argv = ["parity","--cpu",str(cpu_path),"--gpu",str(gpu_path),"--output",str(output)]
+            with patch.object(sys,"argv",argv), patch.object(PARITY,"compare",side_effect=replace_during_compare):
+                with self.assertRaises(SystemExit) as exit_result: PARITY.main()
+            self.assertEqual(exit_result.exception.code,0)
+            receipt = json.loads(output.read_text())
+            self.assertEqual(receipt["source_artifacts"]["cpu"]["sha256"],hashlib.sha256(raw).hexdigest())
+            self.assertEqual(receipt["rows_cpu"],1)
+
+    def test_standalone_clis_refuse_existing_outputs(self):
+        import subprocess, sys
+        from research.evidence_io import write_new_text
+        with tempfile.TemporaryDirectory() as tmp:
+            out = Path(tmp,"preserved.json"); out.write_text("preserved")
+            cases = [
+                ["research/economics/thm_ce_bridge.py","--results","missing"],
+                ["research/economics/report_md.py"],
+                ["research/recall/hardware_parity.py","--cpu","missing","--gpu","missing"],
+            ]
+            for args in cases:
+                proc = subprocess.run([sys.executable,*args,"--output",str(out)],cwd=ROOT,capture_output=True,text=True)
+                self.assertNotEqual(proc.returncode,0)
+                self.assertIn("refusing to overwrite evidence",proc.stderr)
+                self.assertEqual(out.read_text(),"preserved")
+            with self.assertRaises(FileExistsError): write_new_text(out,"replacement")
 
     def test_paths_fail_before_runtime(self):
         from types import SimpleNamespace

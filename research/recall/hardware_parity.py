@@ -10,10 +10,12 @@ from __future__ import annotations
 
 import argparse
 from collections import Counter
-import hashlib
+import sys
 import json
 import math
 from pathlib import Path
+sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
+from research.evidence_io import read_json_bound, require_new_output, write_new_text
 
 TOP_LEVEL_IDENTITY = (
     "protocol", "counter", "modes", "budgets", "model_id", "dataset_sha256",
@@ -33,10 +35,10 @@ SEMANTIC_FIELDS = (
 
 
 def load(path: Path) -> dict:
-    value = json.loads(path.read_text(encoding="utf-8"))
+    value, digest = read_json_bound(path)
     if not isinstance(value, dict) or not isinstance(value.get("rows"), list):
         raise ValueError(f"{path} is not a THM retrieval artifact with rows")
-    return value
+    return value, digest
 
 
 def row_key(row: dict, position: int) -> tuple:
@@ -74,6 +76,68 @@ def quality_projection(value, prefix=()):
             elif isinstance(child, dict):
                 out.update(quality_projection(child, prefix + (key,)))
     return out
+
+
+def summary_coverage_errors(data):
+    """Require the full known runner schema, including empty cohorts."""
+    modes, budgets = data.get("modes"), data.get("budgets")
+    if not isinstance(modes, list) or not modes or not isinstance(budgets, list) or not budgets:
+        return ["missing mode/budget grid"]
+    if len(set(modes)) != len(modes) or len(set(budgets)) != len(budgets):
+        return ["duplicate grid entries"]
+    expected = {f"{mode}@{budget}" for mode in modes for budget in budgets}
+    summaries = data.get("summaries")
+    if not isinstance(summaries, dict) or set(summaries) != expected:
+        return ["missing or unexpected summary configurations"]
+    if data.get("protocol") == 2:
+        predicates = {
+            "main_categories_1_to_4": lambda r: r.get("category") in (1,2,3,4),
+            "conversational_categories_1_2_4": lambda r: r.get("category") in (1,2,4),
+            "all_categories_diagnostic_only": lambda r: True,
+            "development": lambda r: r.get("split") == "development" and r.get("category") in (1,2,3,4),
+            "held_out": lambda r: r.get("split") == "held_out" and r.get("category") in (1,2,3,4),
+        }
+        for category, name in enumerate(("multi_hop", "temporal", "open_domain", "single_hop", "adversarial"), 1):
+            predicates[f"by_category/{name}"] = lambda r, c=category: r.get("category") == c
+        required = QUALITY_FIELDS
+    elif data.get("protocol") == 1 and data.get("benchmark") == "LongMemEval-S retrieval coverage (session-level evidence)":
+        predicates = {"all_instances": lambda r: True,
+                      "development": lambda r: r.get("split") == "development",
+                      "held_out": lambda r: r.get("split") == "held_out"}
+        required = QUALITY_FIELDS - {"scorable", "no_gold_questions", "partially_or_unresolved_questions", "candidate_any_gold_rate", "mrr", "ndcg"}
+    else:
+        return ["unsupported aggregate summary protocol"]
+    errors = []
+    for config in sorted(expected):
+        rows = [r for r in data["rows"] if f"{r.get('mode')}@{r.get('budget')}" == config]
+        for cohort, predicate in predicates.items():
+            count = sum(predicate(r) for r in rows)
+            leaf = summaries[config]
+            present = True
+            for part in cohort.split("/"):
+                if not isinstance(leaf, dict) or part not in leaf:
+                    present = False
+                    break
+                leaf = leaf[part]
+            # LME emits null only for a recorded empty cohort.
+            if present and data.get("protocol") == 1 and count == 0 and leaf is None:
+                continue
+            if not present or not isinstance(leaf, dict) or not required.issubset(leaf):
+                errors.append(f"{config}/{cohort}: missing quality fields")
+                continue
+            if type(leaf["questions"]) is not int or leaf["questions"] != count:
+                errors.append(f"{config}/{cohort}: row denominator mismatch")
+            for field in required:
+                value = leaf[field]
+                denominator = count if field == "empty_context_rate" or data.get("protocol") == 1 else leaf.get("scorable", 0)
+                count_field = field in {"questions", "scorable", "no_gold_questions", "partially_or_unresolved_questions", "any_gold_hits"}
+                if value is None and (count_field or denominator != 0):
+                    errors.append(f"{config}/{cohort}/{field}: missing numeric metric")
+                if value is not None and (isinstance(value, bool) or not isinstance(value, (int, float)) or not math.isfinite(value)):
+                    errors.append(f"{config}/{cohort}/{field}: invalid numeric metric")
+    if not data["rows"]:
+        errors.append("no measured rows")
+    return errors
 
 
 def compare(cpu: dict, gpu: dict, *, float_tol: float = 0.0, max_mismatches: int = 50) -> dict:
@@ -148,19 +212,26 @@ def compare(cpu: dict, gpu: dict, *, float_tol: float = 0.0, max_mismatches: int
             label = f"{row.get('mode')}@{row.get('budget')}/category={row.get('category')}"
             breakdown.setdefault(label, Counter()).update(increments)
     cq, gq = quality_projection(cpu.get("summaries", {})), quality_projection(gpu.get("summaries", {}))
+    coverage_cpu, coverage_gpu = summary_coverage_errors(cpu), summary_coverage_errors(gpu)
     aggregate_diff = []
     for key in sorted(set(cq) | set(gq)):
+        a, b = cq.get(key), gq.get(key)
+        if (isinstance(a, (int, float)) and not isinstance(a, bool)
+            and isinstance(b, (int, float)) and not isinstance(b, bool)
+            and math.isfinite(float(a)) and math.isfinite(float(b))):
+            max_abs_diff = max(max_abs_diff, abs(float(a) - float(b)))
         if key not in cq or key not in gq or not same(cq.get(key), gq.get(key), float_tol):
             item = {"kind": "aggregate_metric", "field": "/".join(key), "cpu": cq.get(key), "gpu": gq.get(key)}
             aggregate_diff.append(item)
             record(item)
-    aggregate_available = bool(cq) and bool(gq)
+    aggregate_available = not coverage_cpu and not coverage_gpu
     strict = identity_complete and total == 0
     return {
         "kind": "thm-hardware-semantic-parity",
         "identity_complete": identity_complete,
         "equivalent": strict, "strict_semantic_equivalent": strict,
         "aggregate_semantic_metrics_available": aggregate_available,
+        "aggregate_summary_coverage_errors": {"cpu": coverage_cpu, "gpu": coverage_gpu},
         "aggregate_semantic_metrics_equivalent": aggregate_available and not structural and not aggregate_diff,
         "aggregate_metric_fields_compared": len(set(cq) & set(gq)),
         "rows_cpu": len(cpu_rows), "rows_gpu": len(gpu_rows), "rows_compared": compared,
@@ -192,16 +263,17 @@ def main():
     if args.float_tol < 0 or args.max_mismatches <= 0:
         raise ValueError("float tolerance must be >=0 and mismatch cap must be >0")
 
-    receipt = compare(
-        load(Path(args.cpu)),
-        load(Path(args.gpu)),
-        float_tol=args.float_tol,
-        max_mismatches=args.max_mismatches,
-    )
-    receipt["source_artifacts"] = {name: {"file": Path(path).name, "sha256": hashlib.sha256(Path(path).read_bytes()).hexdigest()} for name, path in (("cpu", args.cpu), ("gpu", args.gpu))}
+    require_new_output(args.output)
+    cpu, cpu_digest = load(Path(args.cpu))
+    gpu, gpu_digest = load(Path(args.gpu))
+    receipt = compare(cpu, gpu, float_tol=args.float_tol, max_mismatches=args.max_mismatches)
+    receipt["source_artifacts"] = {
+        "cpu": {"file": Path(args.cpu).name, "sha256": cpu_digest},
+        "gpu": {"file": Path(args.gpu).name, "sha256": gpu_digest},
+    }
     out = Path(args.output)
     out.parent.mkdir(parents=True, exist_ok=True)
-    out.write_text(json.dumps(receipt, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+    write_new_text(out, json.dumps(receipt, ensure_ascii=False, indent=2) + "\n")
     print(
         f"wrote {out}: equivalent={receipt['equivalent']} "
         f"identity_complete={receipt['identity_complete']}"

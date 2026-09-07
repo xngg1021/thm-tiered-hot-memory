@@ -43,3 +43,7 @@ run_suite 现在要求显式 --datasets-root/THM_DATASETS_ROOT、--model-path/TH
 ## 七、剩余事项
 
 LME CPU v2：pending-real-local-runtime。当前 Work 没有用户 Z6 G4 控制接口，未以云 CPU 替代。GPU v2 有 selected_ids/selected_sources；其 CPU 对应运行与 strict parity 均待本机执行。可复制命令见 canonical [v2r1 closeout](2026-09-08-machine-test-v2r1-closeout.md)。
+
+## 八、PR #12 首轮 review forward-fixes
+
+首轮 exact-head Codex review 返回 4 个 P2，均已 forward-fix：独立 CLI 和 README 覆盖风险、summary 完整性、aggregate 最大数值差异、解析/哈希重读竞态。新的 `2026-09-08-locomo-cpu-gpu-parity-v2r2.json` 保留同样 25 entries / 22 rows 和 aggregate=true / strict=false，额外通过完整 schema coverage，输入哈希来自解析的同一 byte buffer。先前 v2r1 receipt 保留，不覆盖。economics/report 在新读取实现下以临时新文件重算，字节与已提交 v2r1 完全相同。

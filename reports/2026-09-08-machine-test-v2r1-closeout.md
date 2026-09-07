@@ -58,7 +58,7 @@ Aggregate semantic metrics equivalent: **true** (1560 explicit retrieval-quality
 | Main categories 1–4 mismatch rows | 16 |
 | Diagnostic category 5 mismatch rows | 6 |
 
-The new preview limit is 50; all 25 entries fit, so it is not truncated. The older cap of 25 did not prove the total even though the complete scan now happens to find exactly 25. Per-mode/budget/category counts are in the successor JSON. Near-tie floating-point drift is an inference only: no candidate score/delta trace proves causality. No ranking/tie-breaking/embedding semantics changed.
+The canonical parity receipt is now `2026-09-08-locomo-cpu-gpu-parity-v2r2.json`, generated after the first review round. It validates complete summary schema and binds hashes to the exact parsed buffers. The v2r1 receipt is preserved as the prior attempt. The new preview limit is 50; all 25 entries fit, so it is not truncated. The older cap of 25 did not prove the total even though the complete scan now happens to find exactly 25. Per-mode/budget/category counts are in the successor JSON. Near-tie floating-point drift is an inference only: no candidate score/delta trace proves causality. No ranking/tie-breaking/embedding semantics changed.
 
 ## Superseded artifacts
 
@@ -68,9 +68,14 @@ The new preview limit is 50; all 25 entries fit, so it is not truncated. The old
 | 2026-09-08-suite-report.md | 2026-09-08-suite-report-v2r1.md |
 | 2026-09-08-economics-bridge-v2.json (1536 denominator) | 2026-09-08-economics-bridge-v2r1.json (1532) |
 | 2026-09-08-suite-report-v2.md (mixed denominator) | 2026-09-08-suite-report-v2r1.md |
-| 2026-09-08-locomo-cpu-gpu-parity.json (capped preview) | 2026-09-08-locomo-cpu-gpu-parity-v2r1.json |
+| 2026-09-08-locomo-cpu-gpu-parity.json (capped preview) | 2026-09-08-locomo-cpu-gpu-parity-v2r2.json |
+| 2026-09-08-locomo-cpu-gpu-parity-v2r1.json (before review hardening) | 2026-09-08-locomo-cpu-gpu-parity-v2r2.json |
 
 Additional evidence: `2026-09-08-economics-v2r1-delta-audit.json`; LME GPU evidence remains `2026-09-08-lme-retrieval-gpu-v2.json`. Historical artifact bytes remain unchanged. Regeneration notes are forward-corrected with retained defect history.
+
+## Review corrections
+
+First exact-head Codex review raised four P2 items: legacy README commands could overwrite evidence; aggregate summary completeness was not required; aggregate numeric differences were absent from the maximum delta; parity hashing reread source paths after parsing. All were forward-fixed with regression coverage. Standalone outputs now use exclusive creation, reads hash and parse one buffer, complete known runner schemas are checked, and aggregate deltas update the maximum. The new parity receipt retains the measured counts above, with no coverage errors. Economics/report were regenerated into temporary fresh files using the hardened readers and are byte-identical to the committed v2r1 artifacts. CPU optimization follow-up: [issue #13](https://github.com/xngg1021/thm-tiered-hot-memory/issues/13).
 
 ## Validation contract
 
