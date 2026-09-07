@@ -15,7 +15,8 @@ Evidence discipline:
 
 The full-history arm is a same-query counterfactual: for every benchmark query,
 the source conversation's full history is priced instead of the packed retrieval
-context. It does NOT by itself establish chronological O(N^2) carry growth.
+context. Its dataset bytes must match the benchmark dataset SHA-256. It does NOT
+by itself establish chronological O(N^2) carry growth.
 """
 from __future__ import annotations
 
@@ -129,11 +130,19 @@ def load_benchmark(path: Path) -> dict:
     return data
 
 
-def load_dataset(path: Path) -> list:
-    data = json.loads(path.read_text(encoding="utf-8"))
+def load_dataset_verified(path: Path, expected_sha256: str) -> tuple[list, str]:
+    if not isinstance(expected_sha256, str) or len(expected_sha256) != 64:
+        raise ValueError("benchmark artifact must carry a 64-character dataset_sha256")
+    raw = path.read_bytes()
+    digest = hashlib.sha256(raw).hexdigest()
+    if digest != expected_sha256:
+        raise ValueError(
+            "counterfactual dataset SHA-256 does not match the benchmark artifact"
+        )
+    data = json.loads(raw)
     if not isinstance(data, list) or not data:
         raise ValueError("LoCoMo dataset must be a nonempty list")
-    return data
+    return data, digest
 
 
 def conversation_tokens(dataset: list, counter) -> dict[str, int]:
@@ -275,6 +284,7 @@ def build_report(
     ce_provenance: dict,
     full_history_tokens: dict[str, int] | None = None,
     result_name: str | None = None,
+    counterfactual_dataset_sha256: str | None = None,
 ) -> dict:
     rows = bench["rows"]
     mode_budgets: dict[str, dict[int, list[dict]]] = {}
@@ -320,6 +330,22 @@ def build_report(
                 "total_input_cost_usd": usd(total)
             }
 
+    benchmark_info = {
+        "file": result_name,
+        "protocol": bench.get("protocol"),
+        "counter": bench.get("counter"),
+        "dataset_sha256": bench.get("dataset_sha256"),
+        "modes": bench.get("modes"),
+        "budgets": bench.get("budgets"),
+        "generation_calls": bench.get("generation_calls"),
+        "judge_calls": bench.get("judge_calls"),
+    }
+    if counterfactual_dataset_sha256 is not None:
+        benchmark_info["counterfactual_dataset_sha256"] = counterfactual_dataset_sha256
+        benchmark_info["counterfactual_dataset_matches_benchmark"] = (
+            counterfactual_dataset_sha256 == bench.get("dataset_sha256")
+        )
+
     return {
         "kind": "thm-x-context-economics-bridge-v2",
         "evidence_labels": {
@@ -330,16 +356,7 @@ def build_report(
             "observed_provider_bill": "not_measured",
         },
         "context_economics_provenance": ce_provenance,
-        "benchmark": {
-            "file": result_name,
-            "protocol": bench.get("protocol"),
-            "counter": bench.get("counter"),
-            "dataset_sha256": bench.get("dataset_sha256"),
-            "modes": bench.get("modes"),
-            "budgets": bench.get("budgets"),
-            "generation_calls": bench.get("generation_calls"),
-            "judge_calls": bench.get("judge_calls"),
-        },
+        "benchmark": benchmark_info,
         "pricing_scenario_specs": SCENARIO_SPECS,
         "primary_proxy_scenario": primary_name,
         "per_config": per_config,
@@ -348,7 +365,7 @@ def build_report(
         "interpretation_limits": [
             "Retrieval evidence coverage is not answer accuracy or task success.",
             "All monetary values are pricing-model proxies, not observed bills.",
-            "Per-config full-history comparisons use exactly the same benchmark queries.",
+            "Per-config full-history comparisons use exactly the same benchmark queries and dataset bytes.",
             "Suite totals aggregate all experimental arms and are not a deployed-policy cost.",
             "The full-history counterfactual does not by itself prove chronological O(N^2) growth.",
             "Only three tested budgets are present; a 600-token knee is a grid observation, not an optimized threshold.",
@@ -371,12 +388,16 @@ def main():
     scenarios = build_scenarios(pricing_cls)
 
     full_history = None
+    dataset_digest = None
     if args.dataset:
-        dataset = load_dataset(Path(args.dataset))
+        dataset, dataset_digest = load_dataset_verified(
+            Path(args.dataset), bench.get("dataset_sha256")
+        )
         full_history = conversation_tokens(dataset, TokenCounter("cl100k_base"))
 
     report = build_report(
-        bench, scenarios, ce_provenance, full_history, bench_path.name
+        bench, scenarios, ce_provenance, full_history, bench_path.name,
+        counterfactual_dataset_sha256=dataset_digest,
     )
     out = Path(args.output)
     out.parent.mkdir(parents=True, exist_ok=True)
