@@ -23,7 +23,7 @@ BUG-1(thm_ce_bridge.py):conversation_tokens 调用 `counter.count(text)`,而 thm
 ## 四、实测发现
 
 1. 历史报告"24/24 配置全部一致、最大差异 0"在聚合指标层面成立,在严格行级语义下不成立。parity receipt 已将该声称精确化。
-2. LME GPU v2(新 runner,含 selected_ids/selected_sources)与历史 LME artifact 的聚合 summary 逐项一致,差异为零。
+2. LME GPU v2(新 runner,含 selected_ids/selected_sources)与历史 LME GPU artifact 的聚合 retrieval-quality 指标逐项一致，差异为零；timing 不参与此比较，完整 summaries JSON 并不相同。
 3. bridge-v2 修正口径后的结果:packed 与 full-history 同分母对照,倍率从 300 档约 65x 递减至 1200 档约 15.6x;hybrid 每 +1pp 边际成本 300→600 为 0.025 美元,600→1200 为 0.064 美元(2.60 倍)。
 
 ## 五、CPU 优化后续实验
