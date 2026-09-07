@@ -8,18 +8,18 @@
 - 桥只交换可测量量：packed tokens、evidence hit、latency、budget、miss/locator/prefetch 等。
 - 检索覆盖不等于答案正确率；`generation_calls=0`、`judge_calls=0` 的 benchmark 不能升级成 answer-level evidence。
 - 所有美元数字都是 `model-proxy`，不是 observed provider bill，也不是 `cost_per_success`。
-- full-history 对照必须与 packed retrieval 使用**完全相同的 query denominator**；实验套件把多个 mode@budget arm 相加时，只表示实验运行总量，不能拿来和单一 policy 直接比较。
+- full-history 对照必须与 packed retrieval 使用**完全相同的 query denominator 和 dataset bytes**；实验套件把多个 mode@budget arm 相加时，只表示实验运行总量，不能拿来和单一 policy 直接比较。
 
 ## 组件
 
 | 文件 | 职责 |
 |---|---|
-| `thm_ce_bridge.py` | 读取 LoCoMo Protocol 2 rows，加载显式指定的 Context Economics `Pricing` 实现，生成同查询 cost proxy、suite execution totals 和 L6 budget-grid sensitivity |
+| `thm_ce_bridge.py` | 读取 LoCoMo Protocol 2 rows，验证 counterfactual dataset SHA，加载显式指定的 Context Economics `Pricing` 实现，生成同查询 cost proxy、suite execution totals 和 L6 budget-grid sensitivity |
 | `report_md.py` | 从 corrected bridge-v2 artifact 生成对外可读报告；拒绝旧 bridge schema |
-| `run_suite.py` | 编排 CPU/GPU-tagged benchmark、bridge-v2 和报告；新产物不覆盖 2026-09-08 历史 artifact |
-| `../recall/hardware_parity.py` | 对 CPU/GPU artifacts 做机器可验证的 retrieval-semantic parity；timing 不参与等价判定 |
+| `run_suite.py` | 编排 CPU/GPU-tagged benchmark、bridge-v2 和报告；默认 `-cpu-v2/-gpu-v2`，且拒绝覆盖任何既有产物；公开 receipt 中路径自动脱敏 |
+| `../recall/hardware_parity.py` | 对 CPU/GPU artifacts 做机器可验证的 retrieval-semantic parity；timing 不参与等价判定；没有 `selected_ids` 的 legacy artifact 只能判为 evidence insufficient |
 | `../recall/benchmark.py` | LoCoMo Protocol 2 retrieval-only benchmark |
-| `../recall/lme_retrieval.py` | LongMemEval-S session-level retrieval coverage runner |
+| `../recall/lme_retrieval.py` | LongMemEval-S session-level retrieval coverage runner；新运行会保存 selected IDs/source identities 供 parity 核验 |
 
 ## 2026-09-08 口径修正
 
@@ -28,7 +28,7 @@
 bridge-v2 改为：
 
 1. 每个配置显式记录 `attempted_questions` 与 `scorable_questions`；
-2. full-history arm 按**每一条 query 所属 scope**逐行计 token，再与同一组 rows 的 packed tokens 比较；
+2. full-history arm 先验证所给 LoCoMo bytes 的 SHA-256 与 benchmark artifact 完全一致，再按**每一条 query 所属 scope**逐行计 token；
 3. suite totals 明确标为所有实验臂的运行总量，不再作为单 policy savings；
 4. L6 marginal cost 使用 `USD per +1 percentage point any-gold gain`，不再把 0–1 rate 单位误称为“一个百分点”；
 5. full-history same-query counterfactual 只证明 carry-vs-retrieval 的静态成本差，不单独证明 chronological `O(N²)`；
@@ -43,19 +43,24 @@ set CONTEXT_ECONOMICS_ROOT=D:\path\to\context-economics
 # 或 Linux/macOS: export CONTEXT_ECONOMICS_ROOT=/path/to/context-economics
 ```
 
-桥通过 `importlib` 加载该 checkout 的 `model.py`，并把 `git_commit`（可取得时）和 `model_sha256` 写入 artifact。这样 THM 只依赖一次显式研究运行，不形成 production cross-repo dependency。
+桥通过 `importlib` 加载该 checkout 的 `model.py`，并把 `git_commit`（可取得时）和 `model_sha256` 写入 artifact。这样 THM 只依赖一次显式研究运行，不形成 production cross-repo dependency。`run_suite.py` 的公开 receipt 只保留 `<PYTHON>`、`<THM_ROOT>`、`<DATASETS_ROOT>`、`<MODEL_PATH>`、`<CONTEXT_ECONOMICS_ROOT>`、`<REPORTS_DIR>` 等占位符，不保存用户名或本机目录。
 
 ## 推荐运行方式
 
 ```bash
-# CPU 全套
+# CPU 全套；默认新建 -cpu-v2 产物，若文件已存在则拒绝覆盖
 python research/economics/run_suite.py \
   --device cpu \
   --ce-root ../context-economics
 
-# GPU 全套；默认输出 -gpu 后缀，不覆盖 CPU artifact
+# GPU 全套；默认新建 -gpu-v2 产物
 python research/economics/run_suite.py \
   --device cuda --batch-size 64 \
+  --ce-root ../context-economics
+
+# 如需重复实验，显式使用新的唯一 tag
+python research/economics/run_suite.py \
+  --device cpu --artifact-tag cpu-v2-rerun-02 \
   --ce-root ../context-economics
 
 # 只重算修正后的经济桥（无需重跑 retrieval）
@@ -74,21 +79,27 @@ python research/economics/report_md.py \
 
 ## CPU/GPU semantic parity
 
-GPU 加速和检索质量是两件事。用独立 comparator 检查 selected IDs、hits、MRR/nDCG、budget use 等 retrieval semantics；timing、embedding throughput 和环境字符串不参与等价判定：
+GPU 加速和检索质量是两件事。用独立 comparator 检查 selected IDs、hits、MRR/nDCG、budget use 等 retrieval semantics；timing、embedding throughput 和环境字符串不参与等价判定。
+
+历史 LoCoMo CPU/GPU artifact 已保存 `selected_ids`，可以直接跑 comparator：
 
 ```bash
 python research/recall/hardware_parity.py \
   --cpu reports/2026-09-08-local-full-matrix.json \
   --gpu reports/2026-09-08-local-full-matrix-gpu.json \
   --output reports/2026-09-08-locomo-cpu-gpu-parity.json
-
-python research/recall/hardware_parity.py \
-  --cpu reports/2026-09-08-lme-retrieval.json \
-  --gpu reports/2026-09-08-lme-retrieval-gpu.json \
-  --output reports/2026-09-08-lme-cpu-gpu-parity.json
 ```
 
-只有 comparator receipt `equivalent=true` 时，才把 CPU/GPU 结果称为 checked semantic parity。
+历史 LongMemEval-S artifact **没有**保存 selected document identities，因此只能证明聚合指标一致，不能产生 positive semantic-parity receipt。当前 runner 已补 `selected_ids` / `selected_sources`；必须用新 runner 重跑 CPU/GPU 后再验证：
+
+```bash
+python research/recall/hardware_parity.py \
+  --cpu reports/2026-09-08-lme-retrieval-cpu-v2.json \
+  --gpu reports/2026-09-08-lme-retrieval-gpu-v2.json \
+  --output reports/2026-09-08-lme-cpu-gpu-parity-v2.json
+```
+
+只有 comparator receipt 同时满足 `identity_complete=true` 与 `equivalent=true` 时，才把 CPU/GPU 结果称为 checked semantic parity。
 
 ## 指标映射
 
