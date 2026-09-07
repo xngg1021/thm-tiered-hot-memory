@@ -120,14 +120,18 @@ def run(dataset, counter, modes, budgets, *, model_path=None, model_id=None, lim
                     for budget in budgets:
                         out = index.search(scope, instance["question"], mode=mode,
                                            budget=budget, encoder=encoder, model_id=model_id)
-                        selected_order = [x["id"] for x in out["selected"] if x["complete"]]
+                        selected_rows = [x for x in out["selected"] if x["complete"]]
+                        selected_order = [x["id"] for x in selected_rows]
+                        selected_sources = [x.get("source") for x in selected_rows]
                         selected = set(selected_order)
-                        hit_sessions = set()
-                        for row in out["selected"]:
-                            if row.get("complete") and row.get("source") in gold:
-                                hit_sessions.add(row["source"])
-                        positions = [i for i, v in enumerate(selected_order, 1)
-                                     if any(r["id"] == v and r["source"] in gold for r in out["selected"])]
+                        hit_sessions = {
+                            row.get("source") for row in selected_rows
+                            if row.get("source") in gold
+                        }
+                        positions = [
+                            i for i, row in enumerate(selected_rows, 1)
+                            if row.get("source") in gold
+                        ]
                         all_rows.append({
                             "scope": scope, "split": "development" if scope in dev_ids else "held_out",
                             "mode": mode, "budget": budget,
@@ -136,6 +140,8 @@ def run(dataset, counter, modes, budgets, *, model_path=None, model_id=None, lim
                             "hits": len(hit_sessions),
                             "candidate_hits": None,
                             "selected_count": len(selected),
+                            "selected_ids": selected_order,
+                            "selected_sources": selected_sources,
                             "reciprocal_rank": 1 / positions[0] if positions else 0.0,
                             "budget_used": out["budget_used"],
                             "total_ms": out["timing_ms"]["total"],
@@ -166,6 +172,7 @@ def run(dataset, counter, modes, budgets, *, model_path=None, model_id=None, lim
             "Retrieval coverage is not answer accuracy.",
             "Gold = official answer_session_ids; a session counts as hit when any of its messages is retrieved.",
             "No question type, answer text, or gold ids enter the index.",
+            "selected_ids/source identities are emitted so CPU/GPU semantic parity can be verified on future runs.",
         ],
     }
 
