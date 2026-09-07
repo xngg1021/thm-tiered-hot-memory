@@ -96,7 +96,7 @@ Canonical LoCoMo Protocol 2 は 1,532 fully resolved non-adversarial questions �
 | Local dense | 51.11% | 40.01% | — |
 | Hybrid | **71.34%** | **57.64%** | **57.88 ms** |
 
-現在の opt-in deterministic entity projection は full-set sparse any-gold を **69.39% → 72.52%**、frozen 1,301-question holdout を **69.56% → 72.33%** に改善し、candidate coverage は変えていません。つまり追加モデルで candidate pool を広げたのではなく、**既存 candidate を 600-token slice により良く配置した**結果です。
+現在の opt-in deterministic entity projection は full-set sparse any-gold を **69.39% → 72.52%**、frozen 1,301-question holdout を **69.56% → 72.33%** に改善し、candidate coverage は変えていません。つまり追加モデルで candidate pool を広げたのではなく、**既存 candidate を 600-token slice により良く配置した** 結果です。
 
 これは final answer accuracy、user satisfaction、universal superiority の指標ではありません。[Protocol 2](reports/2026-09-06-recall-protocol2.md) と [zero-LLM frontier](docs/16-zero-llm-retrieval-frontier.md) を参照してください。
 
