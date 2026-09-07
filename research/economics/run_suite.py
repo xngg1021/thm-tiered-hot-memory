@@ -3,7 +3,7 @@
 
 The suite keeps runtime-measured retrieval evidence separate from model-proxy
 cost estimates. New runs are immutable-by-default: output names are tagged and
-an existing target is never overwritten.
+a tag is atomically consumed before any benchmark subprocess starts.
 """
 from __future__ import annotations
 
@@ -72,6 +72,38 @@ def require_new(path: Path) -> None:
         )
 
 
+def reserve_suite_receipt(path: Path, tag: str, artifact_names: list[str]) -> None:
+    """Atomically consume a tag before any long-running benchmark starts.
+
+    The reservation intentionally remains if the suite aborts. A failed or
+    interrupted tag is therefore never reused to assemble a mixed evidence set;
+    callers must choose a fresh tag for every retry.
+    """
+    payload = {
+        "kind": "thm-machine-test-suite-reservation-v1",
+        "status": "reserved",
+        "artifact_tag": tag,
+        "artifacts": artifact_names,
+        "note": "This tag is consumed even if the suite aborts; retry with a new tag.",
+    }
+    flags = os.O_WRONLY | os.O_CREAT | os.O_EXCL
+    try:
+        fd = os.open(str(path), flags, 0o600)
+    except FileExistsError as exc:
+        raise FileExistsError(
+            f"artifact tag already reserved or completed: {tag}; choose a new --artifact-tag"
+        ) from exc
+    try:
+        with os.fdopen(fd, "w", encoding="utf-8", newline="\n") as handle:
+            handle.write(json.dumps(payload, ensure_ascii=False, indent=2) + "\n")
+            handle.flush()
+            os.fsync(handle.fileno())
+    except Exception:
+        # Keep the reservation path fail-closed if creation succeeded. Reusing
+        # the tag after a partial reservation would weaken the evidence boundary.
+        raise
+
+
 def normalize_tag(value: str | None, device: str) -> str:
     tag = value if value is not None else ("-gpu-v2" if device == "cuda" else "-cpu-v2")
     if not tag:
@@ -132,6 +164,15 @@ def main():
     md_out = reports / tagged("2026-09-08-suite-report-v2", tag, ".md")
     suite_out = reports / tagged("2026-09-08-suite-report-v2", tag, ".json")
 
+    # The final suite receipt doubles as the atomic tag reservation. If this
+    # process crashes, the reservation remains and the tag is intentionally
+    # unusable for a retry, preventing mixed evidence from multiple invocations.
+    reserve_suite_receipt(
+        suite_out,
+        tag,
+        [locomo_out.name, lme_out.name, econ_out.name, md_out.name, suite_out.name],
+    )
+
     if not args.skip_locomo:
         require_new(locomo_out)
         steps.append(run_checked([
@@ -184,7 +225,6 @@ def main():
         report_cmd += ["--lme", str(lme_out)]
     steps.append(run_checked(report_cmd, "Consolidated machine-test report v2", redactions))
 
-    require_new(suite_out)
     report = {
         "generated_at": time.strftime("%Y-%m-%dT%H:%M:%S%z"),
         "device": args.device,
@@ -219,6 +259,9 @@ def main():
             "markdown_report": md_out.name,
         },
     }
+    # Finalize the receipt that atomically reserved this tag. This is the only
+    # deliberate replacement: no prior completed suite can reach this point
+    # because O_EXCL reservation would have failed at startup.
     suite_out.write_text(
         json.dumps(report, ensure_ascii=False, indent=2) + "\n", encoding="utf-8"
     )
