@@ -8,7 +8,7 @@ This note corrects the economics interpretation of commit `78f47178b688f206a68a9
 - Main-category any-gold results include hybrid@600 = 71.34% and hybrid@1200 = 80.87%.
 - The main-category benchmark executes 1,540 questions per mode@budget configuration; 1,532 are fully resolved/scorable in the primary denominator.
 - LongMemEval-S remains a separate session-level retrieval-coverage experiment. Its absolute scores must not be compared directly with LoCoMo turn-level evidence coverage.
-- The CPU/GPU run reported identical retrieval results across the 24 tested benchmark/mode/budget configurations. A new machine-readable comparator is now provided in `research/recall/hardware_parity.py`; the historical verbal parity claim should be upgraded only after comparator receipts are generated from the archived CPU/GPU artifact pairs.
+- The historical CPU/GPU runs reported identical aggregate retrieval results across the 24 tested benchmark/mode/budget configurations. Historical LoCoMo rows contain selected document identities and can be checked by the new comparator. Historical LongMemEval-S rows do not contain selected identities, so they are insufficient for a positive semantic-parity receipt; the updated runner emits those identities for future CPU/GPU reruns.
 
 ## What is superseded
 
@@ -27,17 +27,18 @@ The following statements in the original economics artifacts are not accepted as
 
 - requires an explicit Context Economics checkout via `--ce-root` or `CONTEXT_ECONOMICS_ROOT` instead of a personal Windows path;
 - records Context Economics `model.py` SHA-256 and Git commit when available;
+- requires the supplied counterfactual LoCoMo bytes to match the benchmark artifact's `dataset_sha256` before pricing;
 - uses row-weighted full-history tokens so every packed query is compared with the same query's source-conversation history;
 - separates `attempted_questions` from `scorable_questions`;
 - labels suite-wide totals as experiment-run totals rather than policy cost;
 - honors Context Economics request-rate semantics per prompt size;
 - emits only model-proxy cost figures and keeps observed billing/answer accuracy explicitly unmeasured.
 
-New outputs use `bridge-v2` / `suite-report-v2` filenames and do not overwrite the original 2026-09-08 artifacts.
+`research/economics/run_suite.py` now defaults to new `-cpu-v2` / `-gpu-v2` artifact tags, refuses to overwrite existing outputs, and redacts Python/THM/dataset/model/Context-Economics/report roots from public command/stdout/stderr receipts.
 
-## Required local regeneration
+## Required regeneration
 
-The corrected economic values depend on the local pinned LoCoMo dataset and the actual Context Economics checkout. Regenerate them from the same archived retrieval artifact:
+The corrected economic values depend on the pinned LoCoMo dataset and the exact Context Economics checkout. Regenerate them from the archived retrieval artifact:
 
 ```bash
 python research/economics/thm_ce_bridge.py \
@@ -53,18 +54,15 @@ python research/economics/report_md.py \
   --output reports/2026-09-08-suite-report-v2.md
 ```
 
-For hardware parity:
+Historical LoCoMo CPU/GPU semantic parity can be checked directly because those rows contain selection identities:
 
 ```bash
 python research/recall/hardware_parity.py \
   --cpu reports/2026-09-08-local-full-matrix.json \
   --gpu reports/2026-09-08-local-full-matrix-gpu.json \
   --output reports/2026-09-08-locomo-cpu-gpu-parity.json
-
-python research/recall/hardware_parity.py \
-  --cpu reports/2026-09-08-lme-retrieval.json \
-  --gpu reports/2026-09-08-lme-retrieval-gpu.json \
-  --output reports/2026-09-08-lme-cpu-gpu-parity.json
 ```
 
-Until those v2/parity receipts exist, the strongest accepted statement is: **the retrieval benchmarks were reproduced locally and the first economics bridge demonstrated the right measurement direction, but its aggregate cost comparison contained denominator/unit errors and is superseded by this correction.**
+Historical LongMemEval-S artifacts are intentionally rejected as insufficient for positive semantic parity because they omit `selected_ids`. Generate new CPU/GPU LME artifacts with the updated runner first, then compare those v2 files.
+
+Until corrected bridge-v2 and applicable parity receipts exist, the strongest accepted statement is: **the retrieval benchmarks were reproduced locally and the first economics bridge demonstrated the right measurement direction, but its aggregate cost comparison contained denominator/unit errors and is superseded by this correction.**
