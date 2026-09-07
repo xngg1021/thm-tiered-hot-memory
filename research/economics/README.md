@@ -15,8 +15,8 @@
 | 文件 | 职责 |
 |---|---|
 | `thm_ce_bridge.py` | 读取 LoCoMo Protocol 2 rows，验证 counterfactual dataset SHA，加载显式指定的 Context Economics `Pricing` 实现，生成同查询 cost proxy、suite execution totals 和 L6 budget-grid sensitivity |
-| `report_md.py` | 从 corrected bridge-v2 artifact 生成对外可读报告；拒绝旧 bridge schema |
-| `run_suite.py` | 编排 CPU/GPU-tagged benchmark、bridge-v2 和报告；默认 `-cpu-v2/-gpu-v2`，且拒绝覆盖任何既有产物；公开 receipt 中路径自动脱敏 |
+| `report_md.py` | 从 corrected bridge-v2 artifact 生成对外可读报告；拒绝旧 bridge schema；复现、预算 knee 等结论只在输入 artifact 实际支持时生成，不硬编码固定实验臂 |
+| `run_suite.py` | 编排 CPU/GPU-tagged benchmark、bridge-v2 和报告；默认 `-cpu-v2/-gpu-v2`；在 benchmark 启动前用最终 suite receipt 原子占用 tag，同一 tag 即使中断也不可复用；公开 receipt 中路径自动脱敏 |
 | `../recall/hardware_parity.py` | 对 CPU/GPU artifacts 做机器可验证的 retrieval-semantic parity；timing 不参与等价判定；没有 `selected_ids` 的 legacy artifact 只能判为 evidence insufficient |
 | `../recall/benchmark.py` | LoCoMo Protocol 2 retrieval-only benchmark |
 | `../recall/lme_retrieval.py` | LongMemEval-S session-level retrieval coverage runner；新运行会保存 selected IDs/source identities 供 parity 核验 |
@@ -32,7 +32,7 @@ bridge-v2 改为：
 3. suite totals 明确标为所有实验臂的运行总量，不再作为单 policy savings；
 4. L6 marginal cost 使用 `USD per +1 percentage point any-gold gain`，不再把 0–1 rate 单位误称为“一个百分点”；
 5. full-history same-query counterfactual 只证明 carry-vs-retrieval 的静态成本差，不单独证明 chronological `O(N²)`；
-6. 300/600/1200 只有三个网格点，因此 600 只能称为 `knee candidate`，不能称为已求得全局最优阈值。
+6. 默认 300/600/1200 只有三个网格点，因此 600 最多称为 `knee candidate`；自定义 budgets/modes 时，报告必须从实际 artifact 重新判断，不自动沿用该结论。
 
 ## Context Economics provenance
 
@@ -48,17 +48,17 @@ set CONTEXT_ECONOMICS_ROOT=D:\path\to\context-economics
 ## 推荐运行方式
 
 ```bash
-# CPU 全套；默认新建 -cpu-v2 产物，若文件已存在则拒绝覆盖
+# CPU 全套；默认原子占用 -cpu-v2。若该 tag 已存在或曾中断，必须换新 tag
 python research/economics/run_suite.py \
   --device cpu \
   --ce-root ../context-economics
 
-# GPU 全套；默认新建 -gpu-v2 产物
+# GPU 全套；默认原子占用 -gpu-v2
 python research/economics/run_suite.py \
   --device cuda --batch-size 64 \
   --ce-root ../context-economics
 
-# 如需重复实验，显式使用新的唯一 tag
+# 如需重复实验，显式使用新的唯一 tag；失败/中断的 tag 也不复用
 python research/economics/run_suite.py \
   --device cpu --artifact-tag cpu-v2-rerun-02 \
   --ce-root ../context-economics
@@ -110,6 +110,6 @@ python research/recall/hardware_parity.py \
 | `latency_ms` | L5 | retrieval runtime observation |
 | `builds` | L4 | derived-index build/residency overhead |
 | same-query full-history tokens | L3/L5 | full carry 与 fixed-budget retrieval 的静态 counterfactual |
-| budget 300→600→1200 | L6 | finite-grid sensitivity / budget feedback candidate |
+| tested budget grid | L6 | finite-grid sensitivity / budget feedback candidate；具体 knee 结论必须由 artifact 本身支持 |
 
 定价仍使用情景口径并明确 provenance；如果定价来源互相冲突，必须并列而不是挑选最有利 headline。
