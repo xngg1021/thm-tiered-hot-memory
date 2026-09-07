@@ -47,7 +47,7 @@ set CONTEXT_ECONOMICS_ROOT=D:\path\to\context-economics
 
 ## 推荐运行方式
 
-Standalone bridge/report/parity CLIs exclusively create outputs and refuse existing filenames, including files created during a concurrent run. Choose a fresh successor/rerun suffix each time; the sample rerun-01 names are not reusable.
+Standalone benchmark/LME/bridge/report/parity CLIs exclusively create outputs and refuse existing filenames, including files created during a concurrent run. Choose a fresh successor/rerun suffix each time; the sample rerun-01 names are not reusable.
 
 ```bash
 # CPU 全套；默认原子占用 -cpu-v2。若该 tag 已存在或曾中断，必须换新 tag

@@ -284,6 +284,32 @@ class V2R1RegressionTests(unittest.TestCase):
         cpu["rows"] = []
         self.assertFalse(PARITY.compare(cpu,cpu)["strict_semantic_equivalent"])
 
+    def test_normalized_row_and_summary_scores_must_be_in_range(self):
+        for field in ("reciprocal_rank","candidate_reciprocal_rank","ndcg"):
+            for value in (-.01, 1.01):
+                bad = HardwareParityTests().artifact("a"); bad["rows"][0][field] = value
+                self.assertFalse(PARITY.compare(bad,bad)["strict_semantic_equivalent"])
+        for value in (-.01,1.01):
+            bad = HardwareParityTests().artifact("a"); bad["summaries"] = full_locomo_summaries(bad)
+            bad["summaries"]["hybrid@600"]["main_categories_1_to_4"]["mrr"] = value
+            self.assertFalse(PARITY.compare(bad,bad)["aggregate_semantic_metrics_equivalent"])
+
+    def test_runners_preserve_output_created_after_preflight(self):
+        import sys
+        from unittest.mock import patch
+        for filename in ("benchmark.py", "lme_retrieval.py"):
+            runner = load_module("race_"+filename[:-3],"research/recall/"+filename)
+            with tempfile.TemporaryDirectory() as tmp:
+                dataset, output = Path(tmp,"data.json"), Path(tmp,"output.json")
+                dataset.write_text("[]")
+                def concurrent_output(*args,**kwargs):
+                    output.write_text("other-writer-evidence")
+                    return {"rows":[]}
+                argv = ["runner","--dataset",str(dataset),"--output",str(output),"--counter","utf8_bytes"]
+                with patch.object(sys,"argv",argv), patch.object(runner,"run",side_effect=concurrent_output):
+                    with self.assertRaises(FileExistsError): runner.main()
+                self.assertEqual(output.read_text(),"other-writer-evidence")
+
     def test_outside_grid_rows_prevent_aggregate_pass(self):
         cpu = HardwareParityTests().artifact("a")
         cpu["summaries"] = full_locomo_summaries(cpu)
@@ -366,6 +392,8 @@ class V2R1RegressionTests(unittest.TestCase):
                 ["research/economics/thm_ce_bridge.py","--results","missing"],
                 ["research/economics/report_md.py"],
                 ["research/recall/hardware_parity.py","--cpu","missing","--gpu","missing"],
+                ["research/recall/benchmark.py","--dataset","missing"],
+                ["research/recall/lme_retrieval.py","--dataset","missing"],
             ]
             for args in cases:
                 proc = subprocess.run([sys.executable,*args,"--output",str(out)],cwd=ROOT,capture_output=True,text=True)

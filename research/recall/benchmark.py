@@ -22,6 +22,7 @@ import time
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
 from thm.retrieval import SearchIndex, SentenceEncoder, TokenCounter
+from research.evidence_io import require_new_output, write_new_text
 from thm.sources import locomo_documents
 from research.recall.scoring import is_scorable
 
@@ -183,6 +184,7 @@ def main():
     parser.add_argument('--device', default='cpu')
     parser.add_argument('--batch-size', type=int, default=64)
     args = parser.parse_args()
+    require_new_output(args.output)
     raw = Path(args.dataset).read_bytes()
     dataset = json.loads(raw)
     result = run(dataset, TokenCounter(args.counter), args.modes, args.budgets,
@@ -196,7 +198,7 @@ def main():
     result['source_sha256'] = {p.name: hashlib.sha256(p.read_bytes()).hexdigest()
                               for p in [Path(__file__), *Path(__file__).resolve().parents[2].joinpath('thm').glob('*.py')]}
     output = Path(args.output); output.parent.mkdir(parents=True, exist_ok=True)
-    output.write_text(json.dumps(result, ensure_ascii=False, indent=2)+'\n', encoding='utf-8')
+    write_new_text(output, json.dumps(result, ensure_ascii=False, indent=2)+'\n')
     summary = {k: v for k, v in result.items() if k != 'rows'}
     print('THM_BENCHMARK_SUMMARY_BEGIN')
     print(json.dumps(summary, ensure_ascii=False, indent=2))

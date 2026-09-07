@@ -91,7 +91,7 @@ def strict_row_coverage_errors(data):
                 errors[f"invalid:{field}"] += 1
         for field in required & rate_fields:
             value = row.get(field)
-            if isinstance(value, bool) or not isinstance(value, (int, float)) or not math.isfinite(value):
+            if isinstance(value, bool) or not isinstance(value, (int, float)) or not math.isfinite(value) or not 0 <= value <= 1:
                 errors[f"invalid:{field}"] += 1
         for field in required & {"fully_resolved", "malformed_evidence"}:
             if type(row.get(field)) is not bool:
@@ -193,8 +193,15 @@ def summary_coverage_errors(data):
                 count_field = field in {"questions", "scorable", "no_gold_questions", "partially_or_unresolved_questions", "any_gold_hits"}
                 if value is None and (count_field or denominator != 0):
                     errors.append(f"{config}/{cohort}/{field}: missing numeric metric")
-                if value is not None and (isinstance(value, bool) or not isinstance(value, (int, float)) or not math.isfinite(value)):
-                    errors.append(f"{config}/{cohort}/{field}: invalid numeric metric")
+                if value is not None:
+                    if isinstance(value, bool) or not isinstance(value, (int, float)) or not math.isfinite(value):
+                        errors.append(f"{config}/{cohort}/{field}: invalid numeric metric")
+                    elif count_field and (type(value) is not int or not 0 <= value <= count):
+                        errors.append(f"{config}/{cohort}/{field}: invalid count range")
+                    elif not count_field and field != "mean_budget_used" and not 0 <= value <= 1:
+                        errors.append(f"{config}/{cohort}/{field}: invalid normalized range")
+                    elif field == "mean_budget_used" and value < 0:
+                        errors.append(f"{config}/{cohort}/{field}: negative budget use")
     if not data["rows"]:
         errors.append("no measured rows")
     return errors

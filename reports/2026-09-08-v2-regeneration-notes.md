@@ -55,3 +55,7 @@ LME CPU v2：pending-real-local-runtime。当前 Work 没有用户 Z6 G4 控制�
 ## 十、strict-row / grid / mixed-drift successor
 
 第三次完成的 review 返回 3 个 P2，已修复：Protocol 2 ranked IDs 必需性、aggregate grid 外行的漏检、混合语义变化误记 rank-only。新 comparator 检查协议必需行字段与有效值、每行 grid 归属，并将 mixed drift 单列 other_semantic。`2026-09-08-locomo-cpu-gpu-parity-v2r4.json` 是新 canonical receipt：row/aggregate coverage 均完整，25 entries / 22 rows / 19 rank-only / 3 selected-set / 0 other-semantic，aggregate=true / strict=false。旧 v2r1/v2r2/v2r3 保留。
+
+## 十一、normalized ranges / runner output successor
+
+第四次完成的 review 返回 2 个 P2，已修复：normalized row scores 及 aggregate rates 限制为 [0,1]；LoCoMo/LME runner 均以独占方式创建实际输出，防止预检查后的并发覆盖。竞态回归验证其他写入者的字节被保留。新 canonical `2026-09-08-locomo-cpu-gpu-parity-v2r5.json` 重算通过全部范围/覆盖检查，实测结论不变；旧 r1–r4 保留。检索、排序、embedding 算法未变，LME CPU 仍待真实本机运行。
