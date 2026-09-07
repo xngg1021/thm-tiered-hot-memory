@@ -22,11 +22,26 @@ LOCALIZED_READMES = {
     'README.zh-CN.md', 'README.zh-TW.md', 'README.ja.md', 'README.ko.md',
     'README.es.md', 'README.fr.md', 'README.de.md',
 }
-LOCALE_CODES = {
-    'README.zh-CN.md': 'zh-CN', 'README.zh-TW.md': 'zh-TW',
-    'README.ja.md': 'ja', 'README.ko.md': 'ko', 'README.es.md': 'es',
-    'README.fr.md': 'fr', 'README.de.md': 'de',
+ALL_READMES = ('README.md', *sorted(LOCALIZED_READMES))
+LANGUAGE_LINKS = {
+    'README.md', 'README.zh-CN.md', 'README.zh-TW.md', 'README.ja.md',
+    'README.ko.md', 'README.es.md', 'README.fr.md', 'README.de.md',
 }
+
+
+def _strong_closes_before_cjk(text: str) -> bool:
+    """Detect only real closing ** delimiters followed immediately by CJK.
+
+    A single regex can falsely span from one closing delimiter to the next
+    opening delimiter on the same line. Splitting alternating strong-emphasis
+    segments keeps this mechanical typography check localization-safe.
+    """
+    for line in text.splitlines():
+        parts = line.split('**')
+        for outside_after_close in parts[2::2]:
+            if outside_after_close and '\u3400' <= outside_after_close[0] <= '\u9fff':
+                return True
+    return False
 
 
 def check(root: Path) -> dict:
@@ -63,7 +78,7 @@ def check(root: Path) -> dict:
                 errors.append(f'{relative}: trailing whitespace')
             if text.count('```') % 2:
                 errors.append(f'{relative}: unpaired triple-backtick fence')
-            if relative.startswith('README') and re.search(r'\*\*[^*\n]+\*\*[\u3400-\u9fff]', text):
+            if relative.startswith('README') and _strong_closes_before_cjk(text):
                 errors.append(f'{relative}: strong emphasis closes directly before CJK text')
             for target in re.findall(r'\[[^\]\n]+\]\(([^\s)]+)\)', text):
                 try:
@@ -105,6 +120,7 @@ def check(root: Path) -> dict:
                 python_files += 1
             except (SyntaxError, ValueError) as exc:
                 errors.append(f'{relative}: invalid Python syntax: {exc}')
+
     report = texts.get(REPORT, '')
     preserved = False
     if report.count(START) != 1 or report.count(END) != 1:
@@ -116,34 +132,52 @@ def check(root: Path) -> dict:
             errors.append('Historical report bytes changed')
     if 'docs/related-work-sources.json' not in texts:
         errors.append('Source manifest missing or unreadable')
+
+    # Product-homepage parity applies only when this source tree publishes the
+    # localized README family. Isolated checker fixtures intentionally contain
+    # only the REQUIRED synthetic documents and must remain valid test inputs.
     if LOCALIZED_READMES & actual:
         missing_localized = sorted(LOCALIZED_READMES - actual)
         if missing_localized:
             errors.append('Missing localized README files: ' + ', '.join(missing_localized))
-        for localized in sorted(LOCALIZED_READMES & actual):
-            text = texts.get(localized, '')
-            for marker in ('1.4.0', 'archive/v1.4.0-stable', 'Claude Code',
-                           'Codex CLI', 'Gemini CLI', 'MCP v2', 'accepted/stable'):
-                if marker not in text:
-                    errors.append(f'{localized}: missing localized release parity marker {marker}')
-            headings = len(re.findall(r'^## ', text, re.M))
-            if headings < 5:
-                errors.append(f'{localized}: incomplete section parity ({headings} sections)')
-            code = LOCALE_CODES[localized]
-            expected_body = '\n'.join(text.splitlines()[4:]).strip()
-            homepage = texts.get('README.md', '')
-            match = re.search(
-                rf'<!-- locale:{re.escape(code)}:start -->\n(.*?)\n'
-                rf'<!-- locale:{re.escape(code)}:end -->', homepage, re.S)
-            if not match or match.group(1).strip() != expected_body:
-                errors.append(f'{localized}: homepage language panel is missing or stale')
+
         homepage = texts.get('README.md', '')
-        for marker in ('1.4.0 accepted/stable implementation milestone',
-                       'archive/v1.4.0-stable',
-                       'docs/14-residency-control-plane.md',
-                       'docs/15-hermes-warm-directory.md'):
+        if '<!-- in-page-locales:start -->' in homepage or '<!-- locale:' in homepage:
+            errors.append('README.md: embedded localized copies are not allowed; use standalone README files')
+
+        # Shared markers are identities/protocol names and measured values that
+        # intentionally remain language-neutral. Do not require English prose
+        # vocabulary such as "cost" in translated homepages.
+        common_markers = (
+            '1.4.0', 'T0', 'T1', 'T2', 'T3', '72.52%', '69.39%',
+            'Claude Code', 'Codex CLI', 'Gemini CLI', 'MCP v2', 'CHANGELOG.md',
+            'docs/12-version-history.md', 'docs/16-zero-llm-retrieval-frontier.md',
+        )
+        for name in ALL_READMES:
+            text = texts.get(name, '')
+            if not text:
+                errors.append(f'{name}: missing or unreadable')
+                continue
+            if len(text) < 4500:
+                errors.append(f'{name}: product homepage is unexpectedly short')
+            if len(re.findall(r'^## ', text, re.M)) < 8:
+                errors.append(f'{name}: incomplete product homepage section parity')
+            for marker in common_markers:
+                if marker not in text:
+                    errors.append(f'{name}: missing current product/evidence marker {marker}')
+            for link in LANGUAGE_LINKS - {name}:
+                if link not in text:
+                    errors.append(f'{name}: missing language switch link {link}')
+            for transient in ('in-page-locales:start', 'locale:zh-CN:start',
+                              'current release status —', 'Feature PR #', 'CI is running'):
+                if transient in text:
+                    errors.append(f'{name}: transient/development chronology leaked onto product homepage: {transient}')
+
+        for marker in ('Design philosophy', 'How far can agent memory go without another LLM call?',
+                       '1.4.0', '72.52%', 'Version history and recovery'):
             if marker not in homepage:
-                errors.append(f'README.md: missing current 1.4 homepage marker {marker}')
+                errors.append(f'README.md: missing productized homepage marker {marker}')
+
     return {'status': 'FAIL' if errors else 'PASS', 'markdown_files': len(markdown),
             'relative_links_checked': links, 'json_fences_parsed': fences,
             'json_files_parsed': json_files, 'python_files_parsed': python_files,

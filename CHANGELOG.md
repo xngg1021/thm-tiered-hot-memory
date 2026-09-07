@@ -2,6 +2,15 @@
 
 This changelog is reconstructed from the repository's existing Git history. It does not invent retrospective semantic versions for commits that did not carry an explicit version identity.
 
+## Unreleased — homepage and localization productization
+
+- Replaces the oversized in-page multilingual README panels with one canonical English homepage plus seven complete standalone localized homepages.
+- Reorganizes all eight homepages around THM's design philosophy, T0–T3 model, current capabilities, measured evidence, harness surfaces, invariants and evidence boundary instead of development chronology.
+- Adds a shared eight-language switcher and explicit documentation/version navigation.
+- Adds `VERSION` and `VERSIONING.md` to distinguish the accepted 1.4.0 package line from unreleased research successors and from evidence class.
+- Updates documentation checks so standalone localized homepages are the source of truth and embedded locale copies cannot return.
+- No retrieval, residency, harness or benchmark semantics change in this documentation-only productization slice.
+
 ## Unreleased — zero-LLM retrieval frontier
 
 - Reproduces the immutable Protocol 2 baseline and separates 116 candidate misses from 353 feasible packing/ranking losses.

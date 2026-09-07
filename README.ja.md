@@ -1,71 +1,172 @@
 # THM — Tiered Hot Memory
 
-[English](README.md) | [简体中文](README.zh-CN.md) | [繁體中文](README.zh-TW.md) | 日本語 | [한국어](README.ko.md) | [Español](README.es.md) | [Français](README.fr.md) | [Deutsch](README.de.md)
+**AI Agent 向けの local-first・deterministic な階層型 memory infrastructure。** THM は「何を hot に常駐させるべきか」と「何を必要時に取り戻せばよいか」を分離し、その判断を観測可能な cost と evidence で評価します。別の LLM に memory の再生成を常時依存する設計ではありません。
 
-作者: Junfu Shi (SJF, xngg1021) · ライセンス: [MIT](LICENSE)
+[English](README.md) | [简体中文](README.zh-CN.md) | [繁體中文](README.zh-TW.md) | 日本語 | [한국어](README.ko.md) | [Deutsch](README.de.md) | [Français](README.fr.md) | [Español](README.es.md)
 
-## 4つの階層
+作者: Junfu Shi (SJF, xngg1021) · License: [MIT](LICENSE)
 
-THM は agent harness 向けのローカル優先4階層メモリです。T0 はホストが注入する永続コンテキスト、T1 はオンデマンド資料、T2 は明示的な証拠予算内で検索する履歴、T3 は再参照可能な外部ソースです。活動、有効性、タスク関連性、pin を分離し、mention・retrieval・write を有用な hit と同一視しません。
+## THM が必要な理由
 
-## 実装範囲
+長時間動く Agent は、毎回の prompt に載せるには大きすぎる状態を蓄積します。すべてを常駐させれば carry cost を繰り返し払い、すべて捨てれば search / retrieval / reacquisition を繰り返すことになります。THM はこれを**residency・retrieval・bounded budget allocation** の問題として扱います。
 
-1.1.1 は堅牢な index CLI、1.2 は scope 分離 FTS5、任意のローカル embedding、RRF、予算付き packing、ゼロ重み mention observation、decay 比較、再現可能な評価を提供します。**1.3 は harness-neutral な読み取り専用 recall 層**として Hermes `MemoryProvider`、OpenAI Agents `FunctionTool`、LangChain/LangGraph `BaseRetriever`、MCP v2 stdio を追加します。OpenClaw 2026.9.x、Claude Code、Codex CLI、Gemini CLI は独立した読み取り専用 MCP compatibility bridge と固定した実 CLI で検証します。元のメモリを書き換えず、追加のモデル呼び出しも行いません。
+中心となる問いは次です。
 
-## LoCoMo 測定
+> **もう一度 LLM を呼ばずに、Agent Memory はどこまで強くできるか？**
 
-Protocol 2 は全10会話・1,986問、主分母1,532問です。600 `cl100k_base` evidence token で any-gold は **literal 56.79% / sparse 69.39% / dense 51.11% / hybrid 71.34%**、all-gold は **46.61% / 56.53% / 40.01% / 57.64%**。回答精度ではなく証拠検索の指標です。p95 retrieval+packing は **sparse 34.55 ms / hybrid 57.88 ms**。300/600/1200 token の sparse は **60.57/69.39/76.17%**、p95 は **20.39/34.55/61.78 ms**です。[報告](reports/2026-09-06-recall-protocol2.md) · [JSON](reports/2026-09-06-recall-protocol2-summary.json)。
+そのため THM は deterministic signal、local index、明示的 provenance、固定 evidence budget、replayable control rule を優先します。Generative extraction、summary、memory rewrite は core dataplane の必須条件ではありません。
 
-## 統合
+## Design philosophy
 
-| Surface | THM 1.3 |
+### 1. Source authority を守る
+
+Native memory file、session transcript、external source が authoritative source です。SQLite/FTS、local embedding、locator などは**derived index / projection** にすぎません。Retrieval のために source を暗黙に書き換えません。
+
+### 2. Residency・relevance・activity を混同しない
+
+THM は次を別々に扱います。
+
+- **tier** — どこに resident し、どう access されるか
+- **activity** — Agent が実際に使ったか
+- **validity** — まだ正しく有効か
+- **pinning** — operator による明示的 constraint
+- **retrieval evidence** — ある task で検索経路がその item を提示したか
+
+Mention は hit ではなく、retrieval は usefulness の証明ではありません。Prefetch は demand ではなく、write は activity event ではありません。
+
+### 3. Cold memory は安く保つ
+
+Hot prompt は希少です。THM は locator と bounded retrieval により、cold material を必要になるまで resident context の外に置きます。短い locator は常駐する価値があっても、full source はそうでない場合があります。
+
+### 4. Fixed budget も correctness の一部
+
+大きな candidate pool に gold が存在するだけでは不十分です。最終 evidence slice に固定 token budget 内で実際に pack されたかを測ります。Oversized source、duplicate evidence、packing waste も retrieval loss の一部です。
+
+### 5. Self-reinforcing retrieval を作らない
+
+System が自分で prefetch / retrieve した item を、それだけの理由で将来さらに重要と扱うことを禁止します。Control plane は explicit demand evidence からのみ学習し、anti-self-training boundary を維持します。
+
+### 6. Automation は evidence の後
+
+THM は residency / prefetch / budget の shadow recommendation を出せますが、automatic promote/demote と automatic budget write-back は、held-out task evidence が quality・cost・latency・reacquisition の改善を示すまで無効です。
+
+### 7. One core, multiple harness surfaces
+
+Retrieval semantics は THM core に集約します。Hermes は最も深い lifecycle integration、OpenAI Agents と LangChain は native SDK adapter、MCP は複数 CLI/harness が共有できる protocol surface です。
+
+## T0–T3 memory Tiers
+
+| Tier | 役割 | 典型例 |
+| --- | --- | --- |
+| **T0 — Hot** | Host がすでに携帯する resident memory | 繰り返し resident value を生む小さな high-value context |
+| **T1 — Warm** | 必要時に展開する locator-oriented memory | topic/file/source locator、bounded warm reference |
+| **T2 — Cold** | 検索可能な local history/archive | 固定 evidence budget 内の scoped FTS/dense retrieval |
+| **T3 — External** | 再取得可能な source location | file、URL、external system |
+
+T0–T3 は **THM の memory Tier** です。別プロジェクト Context Economics の L0–L6 Layer とは独立した taxonomy です。
+
+## 現在実装されているもの
+
+THM は現在、次を実装しています。
+
+- profile/scope isolated local index と fail-closed source/database validation
+- SQLite FTS5 sparse retrieval、optional local sentence embedding、deterministic rank fusion
+- token-budgeted evidence packing と source traceability
+- explicit activity / validity / pin semantics と reproducible decay diagnostics
+- harness-neutral read-only recall core
+- Hermes `MemoryProvider`、OpenAI Agents `FunctionTool`、LangChain/LangGraph `BaseRetriever`、MCP v2、selected CLI host 用 pinned compatibility bridge
+- resident/hard-miss、planned-retrieval telemetry
+- locator-only T1 warm directory と opt-in session-frozen Hermes locator snapshot
+- miss cost と resident carry cost に基づく shadow T0 recommendation、bounded exact 0/1 packing
+- bounded anti-self-training prefetch と shadow resident-budget feedback
+- existing sparse/hybrid candidate だけを re-rank する opt-in zero-generative-LLM entity projection
+
+Stable package line は **1.4.0** です。Zero-LLM entity projection は opt-in research successor として main にありますが、**1.5 stable とはしていません**。過去の version / PR / review / implementation chronology は [CHANGELOG.md](CHANGELOG.md) と [version history](docs/12-version-history.md) に置き、homepage には現在の設計と capability だけを置きます。
+
+## Measured retrieval evidence
+
+THM は retrieval evidence と answer-generation claim を分離します。
+
+Canonical LoCoMo Protocol 2 は 1,532 fully resolved non-adversarial questions と固定 600 `cl100k_base` evidence-token slice を使います。
+
+| Retrieval mode | Any-gold packed evidence | All-gold packed evidence | p95 retrieval + packing |
+| --- | ---: | ---: | ---: |
+| Literal | 56.79% | 46.61% | — |
+| Sparse | **69.39%** | **56.53%** | **34.55 ms** |
+| Local dense | 51.11% | 40.01% | — |
+| Hybrid | **71.34%** | **57.64%** | **57.88 ms** |
+
+現在の opt-in deterministic entity projection は full-set sparse any-gold を **69.39% → 72.52%**、frozen 1,301-question holdout を **69.56% → 72.33%** に改善し、candidate coverage は変えていません。つまり追加モデルで candidate pool を広げたのではなく、**既存 candidate を 600-token slice により良く配置した** 結果です。
+
+これは final answer accuracy、user satisfaction、universal superiority の指標ではありません。[Protocol 2](reports/2026-09-06-recall-protocol2.md) と [zero-LLM frontier](docs/16-zero-llm-retrieval-frontier.md) を参照してください。
+
+## Harness integration
+
+| Surface | Integration depth |
 | --- | --- |
-| Hermes | pip provider、setup/config、prefetch、任意 `sync_turn`、session hooks、write≠hit |
-| OpenAI Agents | 読み取り専用 `OpenAIAgentsTHM.tool` |
-| LangChain/LangGraph | `THMLangChainRetriever` |
-| MCP v2 | `thm-mcp`、型付き `thm_recall` / `thm_status` |
-| OpenClaw | `thm-mcp-legacy`、実 runtime probe |
-| Claude/Codex/Gemini | 固定した実 CLI、正確な command、discovery/call lifecycle、モデル呼び出しゼロ |
+| **Hermes Agent** | Native `MemoryProvider`; setup/config, prefetch, optional live-turn sync, session boundary hooks, memory-write refresh semantics |
+| **OpenAI Agents SDK** | Native read-only `FunctionTool` |
+| **LangChain / LangGraph / Deep Agents** | Native `BaseRetriever` surface |
+| **MCP v2** | Typed read-only `thm_recall` / `thm_status` over stdio |
+| **OpenClaw** | Legacy MCP bridge を使う pinned compatibility probe |
+| **Claude Code / Codex CLI / Gemini CLI** | Pinned real-CLI discovery/call lifecycle、同一 read-only recall core を利用 |
 
-Hermes の旧 E2E は `NousResearch/hermes-agent@77915e...` に固定され、1.3 CI はレビュー済み現行 snapshot も検査します。根拠は常に同じ commit の workflow です。
+Multi-harness support は universal memory database を意味しません。Lifecycle integration の深さは host ごとに異なり、Hermes が最も深い native integration です。
 
-## インストール
+## Quick start
 
 ```bash
 python -m pip install -e .
+python -m thm --help
 python -m thm import-files ./notes --db ./state/recall.sqlite3 --scope demo
 python -m thm search --db ./state/recall.sqlite3 --scope demo "Which database port?" --budget 600
-thm-mcp --db /absolute/path/recall.sqlite3 --scope demo --budget 600
 ```
 
-Extras は `.[tokenizer,semantic]`、`.[openai]`、`.[langchain]`、`.[mcp]`、`.[harnesses]`。互換 bridge は `thm-mcp-legacy` です。
+Optional dependencies:
 
-## Hermes lifecycle
+```bash
+python -m pip install -e '.[tokenizer,semantic]'
+python -m pip install -e '.[openai]'
+python -m pip install -e '.[langchain]'
+python -m pip install -e '.[mcp]'
+python -m pip install -e '.[harnesses]'
+```
 
-`sync_turns` は既定で無効です。明示的に有効化すると user/assistant 文だけを session 別の派生 T2 scope に同期し、system row と compression summary は除外します。`on_memory_write` は refresh 信号であり hit ではありません。派生 cache は canonical transcript owner ではないため、THM は fail-closed checkpoint-v2 durability を主張せず pre-compress API v1 を維持します。
+MCP:
 
-## Decay calibration
+```bash
+thm-mcp --db /absolute/path/recall.sqlite3 --scope demo --budget 600
+thm-mcp-legacy --db /absolute/path/recall.sqlite3 --scope demo --budget 600
+```
 
-`decay_from_index.py` は ID、unit cost、明示的 hit 日だけを出力し、本文、summary、key、confirmation evidence を除外します。`decay_replay.py` で非公開 replay が可能です。実 hit chronology がなければ個人最適な半減期を主張しません。
+## 守るべき invariants
 
-## 証拠の境界
+- read-only retrieval は native memory を mutation しない
+- retrieval/display/scan は usage activity を捏造しない
+- `planned_retrieval` は miss ではない
+- prefetch は demand / hit / renewal / promotion evidence を作らない
+- residency benefit に使えるのは explicit `avoidable=true` miss だけ
+- T1 `pinned` は automatic promotion を意味しない
+- locator projection は locator-only で scope 内に解決される
+- ordinary mid-session memory write は frozen Hermes prompt snapshot を暗黙に rebuild しない
+- held-out task evidence がない限り automatic tier movement / budget write-back は disabled
 
-実ユーザー E2E 回答精度、普遍的な最適 decay、自動 tier 移動、削除伝播、prompt-cache／体感 latency 改善は未主張です。Coverage、host plumbing、モデルによる証拠利用、最終回答品質は独立した証拠層です。Correctness CI は Linux、macOS、Windows で実行し、LoCoMo と integration job は分離します。
+## Evidence boundary
 
-[目次](docs/README.md) · [ガイド](docs/06-engine-guide.md) · [Recall](docs/09-retrieval-and-measurement.md) · [Harness](docs/11-harness-adapters.md) · [履歴](docs/12-version-history.md) · [Changelog](CHANGELOG.md)
+THM は deterministic/local retrieval と shadow-control experiment を提供しますが、universal answer-quality improvement、universal optimal decay curve、production-ready automatic T0–T3 movement、安全な automatic delete propagation、retrieval metric からの prompt-cache / user-latency 改善、retrieved evidence の model usage を主張しません。
 
-## THM 1.4 の現在の安定状態
+Unit/invariant evidence、retrieval benchmark、harness lifecycle、real task outcome は別々の evidence class です。
 
-THM 1.4 は **accepted/stable implementation milestone** として完了・凍結されています。安定コード/コンテンツのマイルストーンは `e6e4dda5835e3cb345207457d5491131c6959b2c`、復旧ポインタは `archive/v1.4.0-stable` です。T0–T3 の4層モデルは変更していません。
+## Documentation
 
-1.4 は既存の 1.3 harness-neutral recall に加えて、resident/hard miss と planned retrieval の明示 telemetry、厳密な locator-only T1 warm directory、avoidable-miss penalty と resident carry cost に基づく shadow T0 recommendation、境界付きの正確な 0/1 packing、実 demand の co-occurrence だけで学習する bounded prefetch、予算を自動変更しない resident-budget feedback を追加します。Hermes には既定で無効な session-frozen T1 locator snapshot もあります。
+- [Documentation index](docs/README.md)
+- [Engine guide](docs/06-engine-guide.md)
+- [Retrieval and measurement](docs/09-retrieval-and-measurement.md)
+- [Harness adapters](docs/11-harness-adapters.md)
+- [Version history and recovery](docs/12-version-history.md)
+- [1.4 residency control plane](docs/14-residency-control-plane.md)
+- [Hermes warm directory](docs/15-hermes-warm-directory.md)
+- [Zero-LLM retrieval frontier](docs/16-zero-llm-retrieval-frontier.md)
+- [Changelog](CHANGELOG.md)
 
-これらは 1.4 correctness、Hermes、multi-harness の受け入れ検証を通過しています。1.4 は retrieval path を変更していないため、新しい LoCoMo/Protocol 2 数値は主張しません。自動 T0–T3 移動と自動予算変更は、held-out runtime/task A/B が品質・コスト・遅延・reacquisition の改善を示すまで無効のままです。詳細は [1.4 control plane](docs/14-residency-control-plane.md)、[Hermes T1 directory](docs/15-hermes-warm-directory.md)、[1.4 closeout](reports/2026-09-07-v1.4-closeout.md) を参照してください。
-
-Version identity: **1.4.0 accepted/stable implementation milestone**.
-
-## 生成 LLM 呼び出しゼロの検索拡張（未リリース）
-
-Python API の `entity_projection=True` を明示すると、出典の正確な話者名と識別子で既存候補を並べ替えます。600 tokens の Protocol 2 全体 any-gold は 69.39% から 72.52%、留保した1301問は 69.56% から 72.33% になりました。候補カバレッジは不変です。生成モデル呼び出しも埋め込みモデル使用もなく、T0–T3 と元の記憶は変わりません。時間・分割・関連展開・サイズ順位の実験は本番経路に入りません。1.5 安定版としてはまだ登録していません。
-
-[Protocol 2 / evidence](docs/16-zero-llm-retrieval-frontier.md)
+THM は research software です。1.4.0 は accepted/stable implementation milestone、後続 retrieval frontier は明示的に unreleased です。Version identity は evidence class の代わりにはなりません。
