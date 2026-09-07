@@ -1,60 +1,136 @@
 # THM — Tiered Hot Memory
 
-[English](README.md) | 简体中文 | [繁體中文](README.zh-TW.md) | [日本語](README.ja.md) | [한국어](README.ko.md) | [Español](README.es.md) | [Français](README.fr.md) | [Deutsch](README.de.md)
+**面向 AI Agent 的本地优先、确定性分层记忆基础设施。** THM 把“什么应该保持热驻留”和“什么可以按需重新取得”分开，并用可观测的成本与证据来约束这些决策，而不是默认再调用一个 LLM 去重写记忆。
+
+[English](README.md) | 简体中文 | [繁體中文](README.zh-TW.md) | [日本語](README.ja.md) | [한국어](README.ko.md) | [Deutsch](README.de.md) | [Français](README.fr.md) | [Español](README.es.md)
 
 作者：Junfu Shi（SJF，xngg1021）· 许可证：[MIT](LICENSE)
 
-THM 是面向 agent harness 的本地优先四层记忆工具。它从 Hermes Agent 起步，现已将检索逻辑与 harness 接线分离：判断哪些内容值得进入永久上下文，在固定预算内加载较冷的证据，并在不伪造“使用”信号的前提下测量这些决策。
+## 为什么需要 THM
 
-## 四个层级
+长期运行的 Agent 会积累远多于每轮 prompt 应该携带的状态。两个最朴素的方案都很昂贵：把所有内容永久塞进上下文，会反复支付携带成本；全部丢掉，又会不断重新搜索和获取。THM 把这件事视为一个**驻留、检索和固定预算分配问题**。
 
-- **T0——热层：** 由宿主注入的原生永久上下文记忆。
-- **T1——温层：** 按需加载的主题材料。
-- **T2——冷层：** 在明确证据预算内检索的历史会话和档案。
-- **T3——外部层：** 需要时可重新访问的来源位置和引用。
+核心问题是：
 
-THM 将活跃度、有效性、任务相关性与显式固定分开。提及不等于 hit，检索不证明有用，写入也不等于使用事件。
+> **在不再调用另一个 LLM 的前提下，Agent Memory 到底能走多远？**
 
-## 已实现内容
+因此 THM 优先使用确定性信号、本地索引、显式 provenance、有界 evidence budget 和可重放的控制规则。生成式抽取、总结或记忆重写都不是核心 dataplane 的前置条件。
 
-加固后的 1.1.1 索引 CLI 维护 profile 绑定的记忆元数据、精确事件身份、迁移预览、pin/unpin 语义和故障安全写入。1.2 检索包加入按 scope 隔离的 FTS5、可选本地句向量、倒数排名融合、计入预算的上下文装载、零权重 mention observation、多种衰减策略比较及可复现实验脚本。
+## 设计理念
 
-**THM 1.3 加入 harness-neutral 只读召回层。** 它提供独立 Hermes `MemoryProvider`、OpenAI Agents SDK `FunctionTool`、LangChain/LangGraph `BaseRetriever` 和标准 MCP v2 stdio 服务。OpenClaw 2026.9.x、Claude Code、Codex CLI 与 Gemini CLI 通过独立的只读 MCP 兼容桥验证，因此不会为了旧一代客户端削弱 MCP v2 主服务契约。参见 [Harness 适配](docs/11-harness-adapters.md)。
+### 1. 原始来源始终具有权威性
 
-检索或 scan 不会改写原生来源记忆。Harness 适配器以只读方式打开派生 THM 召回数据库，除非显式启用了宿主专属 live-session cache 刷新。派生 SQLite 数据库会在创建 THM 表之前拒绝无关或原生数据库目标。
+原生 memory 文件、会话 transcript 和外部来源才是事实来源。SQLite/FTS、本地 embedding、locator 与其他 THM 结构只是**派生索引或投影**。检索系统不能为了“记住”而悄悄改写它正在检索的原始内容。
 
-## 召回测量证据
+### 2. 驻留不等于相关，检索也不等于使用
 
-完整 **Protocol 2** LoCoMo 实验覆盖全部 10 段对话和 1,986 道题。主分母包含 1,532 道证据完全解析的非对抗问题。在固定 600 个 `cl100k_base` 证据 token 下，any-gold coverage 为 **literal 56.79%、sparse 69.39%、MiniLM dense 51.11%、hybrid 71.34%**；all-gold coverage 分别为 **46.61% / 56.53% / 40.01% / 57.64%**。这些是证据检索指标，不是回答正确率，也不是竞品排行榜。
+THM 明确区分：
 
-Protocol 2 修正了 LoCoMo 类别映射，每段对话使用独立 FTS 数据库，避免 BM25/IDF 统计跨对话泄漏，并报告 MRR、nDCG 和 p99。在 600 token 下，sparse 的 p95 检索加装载延迟为 **34.55 ms**，hybrid 为 **57.88 ms**。本工作负载中 hybrid 的 any-gold 比 sparse 高 **1.96 个百分点**，这是实测权衡，不是普适默认建议。完整证据：[Protocol 2 报告](reports/2026-09-06-recall-protocol2.md) · [机器可读摘要](reports/2026-09-06-recall-protocol2-summary.json)。
+- **tier**：内容驻留在哪里、通过什么方式访问；
+- **activity**：Agent 是否真正使用了它；
+- **validity**：内容是否仍然有效、可信；
+- **pinning**：操作者的显式固定约束；
+- **retrieval evidence**：某次任务是否通过检索路径把它暴露出来。
 
-Sparse 预算扫描在 300 / 600 / 1200 证据 token 下的 any-gold coverage 为 **60.57% / 69.39% / 76.17%**，p95 检索加装载延迟为 **20.39 / 34.55 / 61.78 ms**。
+提及不等于 hit，retrieval 不证明有用，prefetch 不等于 demand，write 也不是 activity event。
 
-## Harness 集成界面
+### 3. 冷记忆应该保持便宜
 
-| 界面 | THM 1.3 集成 |
+热 prompt 是稀缺资源。THM 用 locator 与有界检索，让较冷内容留在 resident context 之外，直到任务确实需要它。一个几十 token 的 locator 可能值得常驻，而完整来源并不值得。
+
+### 4. 固定预算本身就是 correctness 的一部分
+
+THM 不只统计“gold 有没有出现在很大的候选池里”，还要求证据真正被打包进固定 token budget。candidate 已找到但没有进入最终 evidence slice，仍然算实际损失；超大 source、重复内容和 packing 浪费都必须被看见。
+
+### 5. 禁止检索系统自我强化
+
+某条内容不能因为系统自己 prefetched/retrieved 过，就自动变得“更重要”。控制面只从明确的真实 demand 证据学习，并保持 anti-self-training 边界。
+
+### 6. 自动控制必须晚于证据
+
+THM 可以先给出 residency、prefetch 和 budget 的 shadow recommendation，但自动 promote/demote 与自动 budget write-back 继续关闭，直到 held-out task evidence 能证明质量、成本、延迟和 reacquisition 的净收益。
+
+### 7. 一个记忆核心，多种 Harness 接口
+
+THM 的检索语义属于统一 core，不为每个宿主复制一套实现。Hermes 有最深的生命周期集成；OpenAI Agents 与 LangChain 使用原生 SDK adapter；MCP 提供多个 CLI/harness 可复用的标准协议面。
+
+## T0–T3 四个 Tier
+
+| Tier | 角色 | 典型用途 |
+| --- | --- | --- |
+| **T0 — Hot** | 已由宿主携带的 resident memory | 反复证明其驻留价值的高价值小上下文 |
+| **T1 — Warm** | 按需展开的 locator-oriented memory | topic/file/source locator 与有界 warm reference |
+| **T2 — Cold** | 可搜索的本地历史与档案 | 在固定 evidence budget 下做 scoped FTS/dense retrieval |
+| **T3 — External** | 可重新访问的外部来源 | 文件、URL 或需要时重新取得的外部系统 |
+
+T0–T3 是 **THM 的 memory Tier**，不是另一个独立项目 Context Economics 的 L0–L6 Layer。
+
+## 当前已经实现的能力
+
+THM 目前包括：
+
+- profile/scope 隔离的本地索引，以及 fail-closed source/database 检查；
+- SQLite FTS5 sparse retrieval、可选本地 sentence embedding 与确定性 rank fusion；
+- token-budgeted evidence packing 与完整 source traceability；
+- 显式 activity / validity / pin 语义与可复现 decay diagnostics；
+- harness-neutral 的只读 recall core；
+- Hermes `MemoryProvider`、OpenAI Agents `FunctionTool`、LangChain/LangGraph `BaseRetriever`、MCP v2，以及面向特定 CLI host 的 pinned compatibility bridge；
+- resident/hard-miss 与 planned-retrieval telemetry；
+- locator-only T1 warm directory 与默认关闭、session-frozen 的 Hermes locator snapshot；
+- 基于 miss cost 与 resident carry cost 的 shadow T0 recommendation，并使用有界 exact 0/1 packing；
+- bounded anti-self-training prefetch 与 shadow resident-budget feedback；
+- 可选的 zero-generative-LLM entity projection：只重排已有 sparse/hybrid candidate，不改变 canonical T0–T3 模型。
+
+稳定 package line 仍为 **1.4.0**。zero-LLM entity projection 已合入 main 作为 opt-in research successor，但**没有被登记为 1.5 stable**。所有历史版本、PR、review 与施工过程统一放在 [CHANGELOG.md](CHANGELOG.md) 和 [版本历史](docs/12-version-history.md)，不再堆到首页。
+
+## 已测量的检索证据
+
+THM 始终把 retrieval evidence 与 answer-generation claim 分开。
+
+Canonical LoCoMo Protocol 2 使用 1,532 道证据完全解析的非对抗问题，并固定 600 个 `cl100k_base` evidence tokens。accepted baseline 为：
+
+| 检索模式 | Any-gold packed evidence | All-gold packed evidence | p95 retrieval + packing |
+| --- | ---: | ---: | ---: |
+| Literal | 56.79% | 46.61% | — |
+| Sparse | **69.39%** | **56.53%** | **34.55 ms** |
+| Local dense | 51.11% | 40.01% | — |
+| Hybrid | **71.34%** | **57.64%** | **57.88 ms** |
+
+当前 opt-in deterministic entity projection 将全量 sparse any-gold 从 **69.39% 提高到 72.52%**，冻结的 1,301 道 holdout 从 **69.56% 提高到 72.33%**，candidate coverage 保持不变。这个结果说明收益来自把**已经存在的候选**更好地排进 600-token slice，而不是再调用模型扩大 candidate pool。
+
+这些数字只衡量**最终打包进去的检索证据**，不等于最终回答正确率、用户满意度或普适优越性。详见 [Protocol 2](reports/2026-09-06-recall-protocol2.md) 和 [zero-LLM frontier](docs/16-zero-llm-retrieval-frontier.md)。
+
+## Harness 集成
+
+| Surface | 集成深度 |
 | --- | --- |
-| Hermes Agent | 通过 pip 发现的独立 `MemoryProvider`；覆盖 setup schema/config、当前查询预取、可选派生 `sync_turn`、session boundary hooks 与 write≠hit |
-| OpenAI Agents SDK | `OpenAIAgentsTHM.tool`——单个只读 `FunctionTool` |
-| LangChain / LangGraph / Deep Agents | `THMLangChainRetriever(BaseRetriever)` |
-| MCP v2 | `thm-mcp` / `python -m thm.mcp_server`，公开有类型的 `thm_recall` 与 `thm_status` 结构化输出 |
-| OpenClaw 2026.9.x | `thm-mcp-legacy` / `python -m thm.mcp_legacy_server`；真实 OpenClaw MCP probe，使用同一只读召回核心 |
-| Claude Code / Codex CLI / Gemini CLI | 固定版本真实 CLI 配置，通过只读兼容桥完成精确命令的 tool discovery/call lifecycle；零模型调用 |
+| **Hermes Agent** | 原生 `MemoryProvider`；setup/config、prefetch、可选 live-turn sync、session boundary hooks、memory-write refresh semantics |
+| **OpenAI Agents SDK** | 原生只读 `FunctionTool` |
+| **LangChain / LangGraph / Deep Agents** | 原生 `BaseRetriever` surface |
+| **MCP v2** | 通过 stdio 提供有类型的 `thm_recall` 与 `thm_status` |
+| **OpenClaw** | 通过 legacy MCP bridge 做 pinned compatibility probe |
+| **Claude Code / Codex CLI / Gemini CLI** | 真实固定版本 CLI discovery/call lifecycle，共用同一只读 recall core |
 
-早期针对 `NousResearch/hermes-agent@77915e344cb0cd8e20661d4a7b393f987a2eef32` 的 Hermes E2E 仍作为历史证据。THM 1.3 CI 还检查经审阅的当前 Hermes 快照和新增多 harness 界面；应查看精确 commit 对应的 workflow/report，不能把旧结果转移到新代码。
+多 Harness 支持不意味着 THM 是“万能 memory database”。不同宿主的 lifecycle depth 不同，Hermes 仍是最深的 native integration。
 
-## 安装与运行
+## 快速开始
 
 ```bash
 python -m pip install -e .
 python -m thm --help
-python -m thm import-files ./notes --db ./state/recall.sqlite3 --scope demo
-python -m thm search --db ./state/recall.sqlite3 --scope demo "Which database port?" --budget 600
-python -m thm curves
+
+python -m thm import-files ./notes \
+  --db ./state/recall.sqlite3 \
+  --scope demo
+
+python -m thm search \
+  --db ./state/recall.sqlite3 \
+  --scope demo \
+  "Which database port?" \
+  --budget 600
 ```
 
-可选依赖按用途拆分：
+按需安装可选依赖：
 
 ```bash
 python -m pip install -e '.[tokenizer,semantic]'
@@ -64,44 +140,50 @@ python -m pip install -e '.[mcp]'
 python -m pip install -e '.[harnesses]'
 ```
 
-MCP 示例：
+MCP：
 
 ```bash
-# MCP v2 主服务
 thm-mcp --db /absolute/path/recall.sqlite3 --scope demo --budget 600
-
-# 固定 OpenClaw/CLI 客户端代际使用的兼容桥
 thm-mcp-legacy --db /absolute/path/recall.sqlite3 --scope demo --budget 600
 ```
 
-## Hermes 生命周期行为
+## 必须保持的系统不变量
 
-Hermes setup 可将 THM scope/mode/budget 及可选 live-turn synchronization 保存到 profile 隔离的私有配置中。`sync_turns` 默认关闭。为 primary agent 显式启用后，THM 会把 user/assistant transcript 文本协调进单独的派生 per-session T2 scope；system rows 和标记的压缩摘要不会复制。`on_memory_write` 仍只是刷新信号，绝不是 hit。THM 有意停留在 Hermes best-effort pre-compress API v1，因为派生 live cache 不是 canonical transcript owner，无法诚实承诺 fail-closed checkpoint-v2 durability。
+THM 对状态变化刻意保持保守：
 
-## 衰减标定
-
-合成 decay sweep 只用于诊断。真实用户标定可用 `research/recall/decay_from_index.py` 导出隐私最小化时间序列，其中仅含 entry ID、单位成本和显式 `hit` 日期，不包含记忆文本、摘要、key 或 confirmation evidence；随后可用 `decay_replay.py` 私下回放。没有真实按时间排序的 hit trace 时，THM 不宣称存在用户专属最优半衰期或曲线。
+- 只读 retrieval 不改写 native memory；
+- retrieval/display/scan 不伪造 usage activity；
+- `planned_retrieval` 不是 miss；
+- prefetch 不产生 demand、hit、renewal 或 promotion evidence；
+- 只有显式标记为 avoidable 的 miss 才能计入 residency benefit；
+- T1 `pinned` 不自动意味着 promotion；
+- locator projection 必须保持 locator-only，并在正确 scope 内解析；
+- 普通 mid-session memory write 不会悄悄重建 Hermes 已冻结的 prompt snapshot；
+- 没有 held-out task evidence 时，自动 tier movement 和自动 budget write-back 保持关闭。
 
 ## 证据边界
 
-THM 当前不宣称真实用户端到端回答正确率、普适最优衰减曲线、自动换层、自动删除传播或 prompt-cache／用户感知延迟改善。`scan` 记录的是活动权重为零的弱 `mention_observed` 证据。Harness 集成刻意不进行第二次模型调用：召回覆盖、宿主接线、模型是否使用证据以及最终回答质量是四个独立证据层。
+THM 当前已经支持较强的 deterministic/local retrieval 与 shadow control experiment，但不宣称：
 
-常规 correctness CI 在 Linux、macOS 和 Windows 上运行。重型 LoCoMo／模型下载与 harness 集成任务相互独立。文档：[项目目录](docs/README.md) · [引擎指南](docs/06-engine-guide.md) · [召回／scan／decay](docs/09-retrieval-and-measurement.md) · [Harness 适配](docs/11-harness-adapters.md) · [版本历史](docs/12-version-history.md) · [更新日志](CHANGELOG.md) · [benchmark protocol](research/recall/README.md)。
+- 普适提升最终回答质量；
+- 存在对所有用户最优的 decay curve；
+- 自动 T0–T3 movement 已经 production-ready；
+- 自动 delete propagation 已经安全；
+- retrieval metric 的提升必然带来 prompt-cache 或用户感知延迟收益；
+- 被检索出来的 evidence 一定被宿主模型真正使用。
 
-相关项目：[hermes-academic-skills](https://github.com/xngg1021/hermes-academic-skills)。
+unit/invariant、retrieval benchmark、harness lifecycle 和 real task outcome 是四类不同证据，不能互相冒充。
 
-## THM 1.4 当前稳定状态
+## 文档
 
-THM 1.4 已完成并冻结为 **accepted/stable implementation milestone**。稳定代码/内容里程碑为 `e6e4dda5835e3cb345207457d5491131c6959b2c`，恢复指针为 `archive/v1.4.0-stable`。T0–T3 四层模型保持不变。
+- [文档目录](docs/README.md)
+- [Engine guide](docs/06-engine-guide.md)
+- [Retrieval and measurement](docs/09-retrieval-and-measurement.md)
+- [Harness adapters](docs/11-harness-adapters.md)
+- [版本历史与恢复](docs/12-version-history.md)
+- [1.4 residency control plane](docs/14-residency-control-plane.md)
+- [Hermes warm directory](docs/15-hermes-warm-directory.md)
+- [Zero-LLM retrieval frontier](docs/16-zero-llm-retrieval-frontier.md)
+- [Changelog](CHANGELOG.md)
 
-1.4 在既有 1.3 harness-neutral 召回层之上新增：显式 resident/hard miss 与 planned retrieval telemetry、严格 locator-only 的 T1 温层目录、基于 avoidable-miss penalty 与 resident carry cost 的 shadow T0 recommendation、精确有界 0/1 packing、只由真实 demand co-occurrence 训练的 bounded prefetch、以及只给出建议而不自动改预算的 resident-budget feedback。Hermes 另提供默认关闭的 session-frozen T1 locator snapshot。
-
-这些能力已经通过 1.4 的 correctness、Hermes 与 multi-harness 验收；1.4 没有修改 retrieval path，因此没有冒充产生新的 LoCoMo/Protocol 2 数字。自动 T0–T3 换层和自动预算修改仍保持关闭，直到真实留出任务 A/B 能同时证明质量、成本、延迟和 reacquisition 改善。详见 [1.4 control plane](docs/14-residency-control-plane.md)、[Hermes T1 directory](docs/15-hermes-warm-directory.md) 与 [1.4 closeout](reports/2026-09-07-v1.4-closeout.md)。
-
-Version identity: **1.4.0 accepted/stable implementation milestone**.
-
-## 零生成式 LLM 检索扩展（未发布）
-
-显式启用 Python API 参数 `entity_projection=True`，可用来源中的精确说话人姓名和标识符调整已有候选的排序。固定 600 tokens 的 Protocol 2 全量 any-gold 从 69.39% 提高到 72.52%；1301 道留出题从 69.56% 提高到 72.33%。候选覆盖率保持不变。没有生成式模型调用，也没有使用嵌入模型；T0–T3 与原生记忆保持不变。时间、分段、关联和大小排序实验未进入生产路径。此扩展尚未登记为 1.5 稳定版本。
-
-[Protocol 2 / evidence](docs/16-zero-llm-retrieval-frontier.md)
+THM 仍是研究软件：1.4.0 是 accepted/stable implementation milestone，之后的 retrieval frontier 明确保持 unreleased。版本号永远不能替代 evidence class。
