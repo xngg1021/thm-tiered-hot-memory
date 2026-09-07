@@ -56,3 +56,46 @@ class ProjectionTests(unittest.TestCase):
 
 
 if __name__ == '__main__': unittest.main()
+
+class IsolationTests(unittest.TestCase):
+    def test_association_scope_caps_and_no_recursive_expansion(self):
+        from research.recall.frontier_association import expand
+        from thm.retrieval import Document
+        with tempfile.TemporaryDirectory() as root:
+            path = Path(root)/'index'
+            ix = SearchIndex(path)
+            ix.replace_scope('a', [Document(str(i), 'a', 'session', i, 'text') for i in range(20)])
+            ix.replace_scope('b', [Document(str(i), 'b', 'session', i, 'secret') for i in range(20)])
+            rows = ix.rows('a')
+            result = expand(ix, 'a', [rows[5]])
+            self.assertEqual({r['ord'] for r in result}, {4,5,6})
+            self.assertEqual({r['scope'] for r in result}, {'a'})
+            self.assertEqual(expand(ix, 'a', []), [])
+            self.assertEqual(ix.rows('a'), rows)
+            ix.close()
+
+    def test_readonly_seeded_budgets_and_native_bytes(self):
+        import random
+        from thm.retrieval import Document
+        from research.recall.frontier_ablation import EntityIndex, SegmentIndex, AssociationIndex
+        rng = random.Random(31)
+        with tempfile.TemporaryDirectory() as root:
+            root = Path(root)
+            native = root/'MEMORY.md';native.write_bytes(b'authoritative\n')
+            path = root/'index'
+            ix = SearchIndex(path)
+            ix.replace_scope('a', [Document(str(i), 'a', 'session', i,
+                 'Storage details ' + 'x' * rng.randrange(80, 700), 'Ann' if i % 2 else 'Bob') for i in range(15)])
+            ix.close()
+            original = path.read_bytes()
+            for cls in [EntityIndex, SegmentIndex, AssociationIndex]:
+                ix = cls(path, readonly=True)
+                for budget in [0,128,256,600,1200]:
+                    out = ix.search('a', 'Ann Storage', budget=budget)
+                    self.assertLessEqual(out['budget_used'], budget)
+                    self.assertEqual(len(out['ranked_ids']),len(set(out['ranked_ids'])))
+                    again = ix.search('a', 'Ann Storage', budget=budget)
+                    self.assertEqual(out['context'],again['context'])
+                ix.close()
+            self.assertEqual(path.read_bytes(),original)
+            self.assertEqual(native.read_bytes(),b'authoritative\n')

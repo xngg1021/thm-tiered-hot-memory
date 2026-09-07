@@ -71,8 +71,9 @@ def main():
         with patch.object(bench, 'SearchIndex', cls):
             results[name] = bench.run(data, TokenCounter('cl100k_base'), ['sparse'], args.budgets)
     out = {'schema': 1, 'split': args.split, 'dataset_sha256': bench.DATASET_SHA256,
-           'policies': results, 'temporal_weight': 0.25, 'generation_calls': 0,
+           'policies': results, 'fusion_weight': 0.25, 'generation_calls': 0,
            'parameter_search': False, 'embedding_used': False}
+    out['source_sha256'] = {str(p.relative_to(Path(__file__).resolve().parents[2])): hashlib.sha256(p.read_bytes()).hexdigest() for p in [*Path(__file__).resolve().parent.glob('*.py'), *Path(__file__).resolve().parents[2].joinpath('thm').glob('*.py')]}
     Path(args.output).write_text(json.dumps(out, separators=(',', ':'))+'\n')
     for name, r in results.items():
         print(name, json.dumps(r['summaries'][f'sparse@{args.budgets[0]}']['main_categories_1_to_4']))

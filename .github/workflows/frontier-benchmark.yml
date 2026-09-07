@@ -1,0 +1,37 @@
+name: THM deterministic frontier
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - 'thm/**'
+      - 'research/recall/**'
+      - '.github/workflows/frontier-benchmark.yml'
+permissions:
+  contents: read
+jobs:
+  protocol2:
+    if: github.event_name == 'workflow_dispatch' || contains(github.event.head_commit.message, '[frontier]')
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - run: python -m pip install tiktoken==0.11.0
+      - name: Fetch pinned research dataset
+        run: curl --fail --retry 3 --location https://raw.githubusercontent.com/snap-research/locomo/3eb6f2c585f5e1699204e3c3bdf7adc5c28cb376/data/locomo10.json --output "$RUNNER_TEMP/locomo10.json"
+      - name: Frozen strict deterministic A/B and budget curve
+        run: |
+          mkdir -p frontier-output
+          git rev-parse HEAD > frontier-output/commit.txt
+          python research/recall/frontier_ablation.py --dataset "$RUNNER_TEMP/locomo10.json" --policy entity --split full --budgets 128 256 400 600 800 1200 --output frontier-output/full.json
+          python research/recall/frontier_report.py --input frontier-output/full.json --output frontier-output/summary.json
+          python -m pip freeze > frontier-output/dependencies.txt
+          gzip frontier-output/full.json
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: thm-zero-llm-frontier-protocol2
+          path: frontier-output/
+          retention-days: 30
