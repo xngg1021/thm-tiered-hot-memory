@@ -27,16 +27,18 @@ The following statements in the original economics artifacts are not accepted as
 
 - requires an explicit Context Economics checkout via `--ce-root` or `CONTEXT_ECONOMICS_ROOT` instead of a personal Windows path;
 - records Context Economics `model.py` SHA-256 and Git commit when available;
+- records the exact source retrieval artifact SHA-256 so downstream reports cannot combine economics from one retrieval run with summaries from another;
 - requires the supplied counterfactual LoCoMo bytes to match the benchmark artifact's `dataset_sha256` before pricing;
 - uses row-weighted full-history tokens so every packed query is compared with the same query's source-conversation history;
 - separates `attempted_questions` from `scorable_questions`;
 - labels suite-wide totals as experiment-run totals rather than policy cost;
 - honors Context Economics request-rate semantics per prompt size;
-- emits only model-proxy cost figures and keeps observed billing/answer accuracy explicitly unmeasured.
+- emits only model-proxy cost figures and keeps observed billing/answer accuracy explicitly unmeasured;
+- states explicitly when no full-history counterfactual was supplied, in which case no carry-vs-retrieval claim is available.
 
 `research/economics/run_suite.py` now defaults to new `-cpu-v2` / `-gpu-v2` artifact tags, redacts Python/THM/dataset/model/Context-Economics/report roots from public command/stdout/stderr receipts, and **atomically consumes the final suite-receipt name before any benchmark subprocess starts**. The reservation uses exclusive creation, so concurrent runs with the same tag cannot both proceed. A failed or interrupted tag remains consumed by design; retries must use a new unique tag rather than reusing a partial evidence namespace.
 
-`research/economics/report_md.py` now derives report claims from the supplied artifacts. It only emits the pinned hybrid@600 reproduction statement when the artifact actually contains that arm, uses the pinned dataset/protocol/counter, and matches the pinned 71.34% reference. It enumerates the actual L6 budget intervals present and only emits a 600-token knee candidate when adjacent hybrid 300→600 and 600→1200 evidence exists with positive gains and a higher late marginal cost. Custom `--modes` / `--budgets` runs therefore cannot publish conclusions unsupported by their own tables.
+`research/economics/report_md.py` now derives report claims from the supplied artifacts. It can state that hybrid@600 is **numerically equal** to the repository's 71.34% reference when that value is actually present, but it explicitly does not upgrade numerical equality into a full protocol-reproduction claim. It verifies the exact LoCoMo retrieval artifact SHA recorded by bridge-v2 before combining retrieval and economics sections. LongMemEval-S is opt-in: omitting `--lme` produces no LME section or second-dataset generalization claim. It enumerates the actual L6 budget intervals present and only emits a 600-token knee candidate when adjacent hybrid 300→600 and 600→1200 evidence exists with positive gains and a higher late marginal cost. Custom `--modes` / `--budgets` runs therefore cannot publish conclusions unsupported by their own tables.
 
 ## Required regeneration
 
@@ -67,4 +69,4 @@ python research/recall/hardware_parity.py \
 
 Historical LongMemEval-S artifacts are intentionally rejected as insufficient for positive semantic parity because they omit `selected_ids`. Generate new CPU/GPU LME artifacts with the updated runner first, then compare those v2 files. The full `run_suite.py` path can generate fresh CPU/GPU namespaces after merge; every rerun must use a new tag if the default tag was already consumed.
 
-Until corrected bridge-v2 and applicable parity receipts exist, the strongest accepted statement is: **the retrieval benchmarks were reproduced locally and the first economics bridge demonstrated the right measurement direction, but its aggregate cost comparison contained denominator/unit errors and is superseded by this correction.**
+Until corrected bridge-v2 and applicable parity receipts exist, the strongest accepted statement is: **the recorded retrieval measurements remain runtime-measured and include a local hybrid@600 value numerically equal to 71.34%; the first economics bridge demonstrated the right measurement direction, but its aggregate cost comparison contained denominator/unit errors and is superseded by this correction.**
