@@ -143,7 +143,7 @@ def check(root: Path) -> dict:
         for marker in common_markers:
             if marker not in text:
                 errors.append(f'{name}: missing current product/evidence marker {marker}')
-        for link in LANGUAGE_LINKS:
+        for link in LANGUAGE_LINKS - {name}:
             if link not in text:
                 errors.append(f'{name}: missing language switch link {link}')
         for transient in ('in-page-locales:start', 'locale:zh-CN:start',
