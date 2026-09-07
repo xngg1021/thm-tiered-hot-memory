@@ -1,0 +1,68 @@
+{
+  "kind": "thm-economics-successor-delta-audit",
+  "per_config": {
+    "literal@300": {
+      "attempted_accounting_unchanged": true,
+      "scorable_before": 1536,
+      "scorable_after": 1532
+    },
+    "literal@600": {
+      "attempted_accounting_unchanged": true,
+      "scorable_before": 1536,
+      "scorable_after": 1532
+    },
+    "literal@1200": {
+      "attempted_accounting_unchanged": true,
+      "scorable_before": 1536,
+      "scorable_after": 1532
+    },
+    "sparse@300": {
+      "attempted_accounting_unchanged": true,
+      "scorable_before": 1536,
+      "scorable_after": 1532
+    },
+    "sparse@600": {
+      "attempted_accounting_unchanged": true,
+      "scorable_before": 1536,
+      "scorable_after": 1532
+    },
+    "sparse@1200": {
+      "attempted_accounting_unchanged": true,
+      "scorable_before": 1536,
+      "scorable_after": 1532
+    },
+    "dense@300": {
+      "attempted_accounting_unchanged": true,
+      "scorable_before": 1536,
+      "scorable_after": 1532
+    },
+    "dense@600": {
+      "attempted_accounting_unchanged": true,
+      "scorable_before": 1536,
+      "scorable_after": 1532
+    },
+    "dense@1200": {
+      "attempted_accounting_unchanged": true,
+      "scorable_before": 1536,
+      "scorable_after": 1532
+    },
+    "hybrid@300": {
+      "attempted_accounting_unchanged": true,
+      "scorable_before": 1536,
+      "scorable_after": 1532
+    },
+    "hybrid@600": {
+      "attempted_accounting_unchanged": true,
+      "scorable_before": 1536,
+      "scorable_after": 1532
+    },
+    "hybrid@1200": {
+      "attempted_accounting_unchanged": true,
+      "scorable_before": 1536,
+      "scorable_after": 1532
+    }
+  },
+  "ce_provenance_unchanged": true,
+  "suite_packed_tokens_unchanged": true,
+  "suite_pricing_unchanged": true
+}

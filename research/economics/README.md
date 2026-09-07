@@ -113,3 +113,11 @@ python research/recall/hardware_parity.py \
 | tested budget grid | L6 | finite-grid sensitivity / budget feedback candidate；具体 knee 结论必须由 artifact 本身支持 |
 
 定价仍使用情景口径并明确 provenance；如果定价来源互相冲突，必须并列而不是挑选最有利 headline。
+
+## v2r1 canonical closeout
+
+See [machine-test v2r1 closeout](../../reports/2026-09-08-machine-test-v2r1-closeout.md) for corrected denominator, immutable successor artifacts, measured aggregate/strict parity, and the pending real-local LME CPU command.
+
+`run_suite.py` requires `--datasets-root` or `THM_DATASETS_ROOT` (containing `locomo10.json` and, unless skipped, the `longmemeval_s` JSON file), `--model-path` or `THM_MODEL_PATH` for dense/hybrid, and `--ce-root` or `CONTEXT_ECONOMICS_ROOT` containing `model.py`. No parent-directory layout is assumed. Input checks precede the atomic tag reservation and all long-running subprocesses. Each retry still requires a fresh artifact tag. Use the standalone LME command in the closeout when only LME CPU is pending.
+
+Canonical scoring requires positive gold evidence and fully resolved gold. Bridge generation and report rendering bind every configuration and suite denominator to the source canonical summary. Old mixed-denominator bridge-v2 artifacts are rejected; use economics-bridge-v2r1.json.

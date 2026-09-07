@@ -13,12 +13,12 @@
 
 BUG-1(thm_ce_bridge.py):conversation_tokens 调用 `counter.count(text)`,而 thm.retrieval.TokenCounter 的接口是 `__call__`,执行即抛 AttributeError。已修复为 `counter(text)`。
 根因:test_machine_test_recovery.py 中行加权相关测试以预计算 token 字典直调 economics_for_rows,绕过了 conversation_tokens 的真实集成路径,该路径无测试覆盖。
-待办:为 conversation_tokens 补一条真实 TokenCounter + 真实数据集路径的集成测试。
+状态：fixed + regression-gated。新增真实 TokenCounter、LoCoMo-shaped synthetic dataset、conversation_tokens 与 build_report 集成测试，纳入 correctness unit discovery。
 
 ## 三、regeneration contract 与实际执行的偏差
 
 1. contract 步骤 1 按原样执行会首先撞上 BUG-1,不修复则无法继续。
-2. contract 预期 LME 用新 runner 重跑 CPU/GPU 后 comparator 可给出 equivalent=true。实测 LoCoMo 历史 artifact 即已 equivalent=false:23832 行数值指标最大差异 0.0,但 25 处 dense/hybrid 模式的 selected_ids 相邻换位。根因为 CPU/GPU 矩阵乘浮点微差改变 dense 相似度排序,hybrid 的文档 ID 次级排序键只能覆盖完全平局,覆盖不了"接近但不相等"的分数。LME parity 在相同机制下预期同样拿不到 equivalent=true,除非检索核心增加显式平局判定(分数差小于阈值时按文档 ID 决序)或 comparator 放宽为"集合相等加顺序近似"。
+2. 旧 receipt 最多保存 25 条 mismatch preview，只能据此证明至少达到 cap；其中既有 ranked-order drift，也有 selected-set substitution。v2r1 完整扫描 23832 行，测得 25 个 mismatch entries、22 个不同的行：19 行 rank-only，3 行 selection-set substitution；主类别 16 行，category 5 诊断类别 6 行。聚合语义指标一致，strict selected-document semantics 不一致。CPU/GPU 浮点微差引发 near-tie 排序变化是推断；当前没有 candidate score/delta 证据，不能作为已证明根因。LME CPU v2 未运行，strict parity 尚无结论。核心 ranking、tie-breaking 和 embedding runtime 未修改。
 
 ## 四、实测发现
 
@@ -26,17 +26,20 @@ BUG-1(thm_ce_bridge.py):conversation_tokens 调用 `counter.count(text)`,而 thm
 2. LME GPU v2(新 runner,含 selected_ids/selected_sources)与历史 LME artifact 的聚合 summary 逐项一致,差异为零。
 3. bridge-v2 修正口径后的结果:packed 与 full-history 同分母对照,倍率从 300 档约 65x 递减至 1200 档约 15.6x;hybrid 每 +1pp 边际成本 300→600 为 0.025 美元,600→1200 为 0.064 美元(2.60 倍)。
 
-## 五、纯 CPU 加速分析(指令集与管道)
+## 五、CPU 优化后续实验
 
-1. 指令集未被闲置。PyTorch CPU wheel 经 oneDNN 运行时检测并自动 dispatch AVX2/AVX-512 kernel,Xeon Gold 6254(Cascade Lake)支持 AVX-512 与 VNNI,现已在被调用。
-2. CPU 慢的根因在管道形态:文档嵌入为批量编码,查询嵌入为逐条编码(检索核心中 `encoder([query])`),batch=1 前向使宽执行单元空转,单条约 25 毫秒的主要成本即源于此。
-3. 优化路线按性价比排序:查询批量编码(先收集全部查询再批量嵌入,预期单条摊销至数毫秒,纯管道改动,不动模型);线程数与 batch-size 调优(零成本);ONNX Runtime 加 int8 量化(VNNI 指令主场,预期 2-4 倍,但量化误差会破坏 CPU/GPU 逐位一致,仅限快跑场景)。
-4. AVX-512 降频注意:Cascade Lake 在重 AVX-512 负载下触发功耗许可降频,纯 AVX-512 负载可能反而慢于 AVX2,需实测对比。
-5. FTS 索引重建与 JSON 加载是 I/O 与字符串处理,与浮点指令集无关,指令集优化无法覆盖。
-6. 原则:parity 场景需要"慢但逐位一致",加速场景需要"快但近似",两者在浮点层面互斥,须分开设计。
+源码可确认 query path 调用 `encoder([query])`，即单 query embedding。实际指令集 dispatch、batch=1 的具体耗时归因、批量后可达到的毫秒数、ONNX int8 的加速倍数、AVX2 与 AVX-512 优劣均需要独立实测。本次没有 kernel trace 或 score-level diagnostics，不把这些推测列入 accepted measured results。后续实验比较同数据、同网格、质量与 selected IDs、throughput、p50/p95、CPU utilization、batch sweep、AVX2/AVX-512；ONNX/int8 单列 approximate fast mode。速度与严格语义是否能同时保持也由实验决定。
 
-## 六、未完成事项
+## 六、denominator drift 与 successor
 
-1. LME parity 的 CPU 半边:需用新 runner 重跑一次 CPU(约 50 分钟),与 GPU v2 artifact 配对后 comparator 才能给出 LME 的 identity_complete 结论。
-2. BUG-1 的真路径集成测试(见二)。
-3. parity 顺序差异的呈现方式:当前仅存在于 receipt JSON,尚未写入任何报告正文。
+benchmark canonical 为 1532，bridge-v2 为 1536；根因是 `_scorable()` 漏掉 `evidence_count > 0`，误纳 4 条 no-gold questions。benchmark 与 bridge 现在共享轻量纯 helper，bridge 和 report 按每配置 canonical summary 验证 attempted/scorable 与 suite totals，不一致即拒绝。economics-bridge-v2.json 和 suite-report-v2.md 已被 v2r1 同名 successor 替代，原文件保留。
+
+attempted-query token/carry/pricing accounting 经逐配置 delta audit 完全不变。scorable suite executions 修正为 18384；hybrid 300→600 / 600→1200 为 12.4021pp / 9.5300pp，model-proxy 边际成本为 $0.024613 / $0.063994 每 +1pp。原旧 receipt 也保留，由 parity-v2r1.json 给出完整统计。
+
+CE commit 保持 2aef1e7043273637adff1453d22dafc83d5e0e94。该 commit 的 LF model.py SHA 为 043b5db7c0f8c52e90dcc1ecb09293867a2943f4f60dd5adb4aec1a1c8a30f55；转为原 Windows CRLF 后，精确匹配原 artifact 的 8a80417468f138268db99784420f414add0fc1c213f6511de99142da0742affd。再生使用后者，未更换 CE 源码 revision。
+
+run_suite 现在要求显式 --datasets-root/THM_DATASETS_ROOT、--model-path/THM_MODEL_PATH（dense/hybrid）、--ce-root/CONTEXT_ECONOMICS_ROOT，并在 reservation 与长跑前检查输入；保留路径脱敏和 atomic tag reservation。
+
+## 七、剩余事项
+
+LME CPU v2：pending-real-local-runtime。当前 Work 没有用户 Z6 G4 控制接口，未以云 CPU 替代。GPU v2 有 selected_ids/selected_sources；其 CPU 对应运行与 strict parity 均待本机执行。可复制命令见 canonical [v2r1 closeout](2026-09-08-machine-test-v2r1-closeout.md)。
