@@ -407,3 +407,42 @@ class RuntimeReviewRegressionTests(unittest.TestCase):
         second=execution.search_many(self.index,'s',['alpha'],mode='dense')[0]
         self.assertEqual(first['timing_ms']['amortized_total'],first['timing_ms']['total']+12.0)
         self.assertNotIn('query_preembedding_amortized',second['timing_ms']);execution.close()
+    def test_batched_queries_encode_only_exact_profile_cache_misses(self):
+        e=FakeEncoder();self.index.embed('s',e,e.model_id);e.calls.clear()
+        args={'mode':'dense','encoder':e,'model_id':e.model_id,'query_batch_size':2}
+        self.index.search_many('s',['alpha','alpha','beta'],**args)
+        self.assertEqual(e.calls,[['alpha'],['beta']]);e.calls.clear()
+        results=self.index.search_many('s',['beta','alpha'],**args)
+        self.assertEqual(e.calls,[]);self.assertTrue(all(r['query_embedding_cache_hit'] for r in results))
+        self.index.search_many('s',['alpha','gamma'],**args);self.assertEqual(e.calls,[['gamma']])
+    def test_overlap_does_not_submit_cached_query_encoding(self):
+        e=FakeEncoder();self.index.embed('s',e,e.model_id)
+        self.index.search('s','alpha',mode='hybrid',encoder=e,model_id=e.model_id);e.calls.clear()
+        with patch('concurrent.futures.ThreadPoolExecutor',side_effect=AssertionError('cached vector must not start worker')):
+            out=self.index.search_overlap('s','alpha',mode='hybrid',encoder=e,model_id=e.model_id)
+        self.assertEqual(e.calls,[]);self.assertEqual(out['overlap']['skipped'],'query-vector-cache-hit')
+    def test_batched_preencoding_is_reused_and_cost_preserved(self):
+        from thm.runtime.research import ExecutionConfig,Execution
+        e=FakeEncoder();self.index.embed('s',e,e.model_id)
+        execution=Execution(ExecutionConfig(policy='auto-throughput',query_batch_size=2),None,e.model_id);execution.encoder=e
+        execution.preencode(['alpha','beta']);e.calls.clear();execution.precompute_costs={'alpha':12.,'beta':13.}
+        rows=execution.search_many(self.index,'s',['alpha','beta'],mode='dense')
+        self.assertEqual(e.calls,[])
+        for row,cost in zip(rows,[12.,13.]):
+            self.assertEqual(row['batch_receipt']['encoded_queries'],0)
+            self.assertGreaterEqual(row['timing_ms']['amortized_total'],row['timing_ms']['total']+cost)
+            self.assertEqual(row['batch_receipt']['query_preembedding_amortized_ms'],cost)
+        execution.close()
+    def test_interactive_measurement_includes_actual_scorer(self):
+        from thm.runtime.worker import measure
+        from thm.runtime.scorers import score
+        clock=[0.0]
+        def now():clock[0]+=.001;return clock[0]
+        def slow_scorer(d,q,name):
+            clock[0]+=.1;return score(d,q,'numpy_reference')
+        config={'model_path':'test','model_id':'test-only','backend':'test-only','device':'cpu','threads':1,'document_batch_size':4,'query_batch_size':2,'scorer':'torch_cuda'}
+        with patch('thm.runtime.worker.configure'),patch('thm.runtime.backends.create',return_value=FakeEncoder()),patch('thm.runtime.worker.time.perf_counter',side_effect=now),patch('thm.runtime.scorers.score',side_effect=slow_scorer),patch('thm.runtime.autotune.retrieval_signature',return_value=[]):
+            result=measure(config)
+        self.assertGreater(result['single_query_p95_ms'],100.)
+        self.assertLess(result['single_query_embedding_p50_ms'],10.)
+        self.assertEqual(result['single_query_metric'],'encoder-plus-selected-scorer-including-transfer')

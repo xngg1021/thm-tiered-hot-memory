@@ -76,17 +76,18 @@ class Execution:
             for query in queries:
                 if query in self.precomputed:index._cache[(self.encoder.profile.id,query)]=self.precomputed[query]
         if cfg.policy!='reference' and cfg.query_batch_size>1 and len(queries)>1:
-            return index.search_many(scope,queries,query_batch_size=cfg.query_batch_size,scorer=cfg.scorer,**kwargs)
-        call=index.search_overlap if cfg.overlap else index.search
-        results=[call(scope,q,scorer=cfg.scorer,**kwargs) for q in queries]
+            results=index.search_many(scope,queries,query_batch_size=cfg.query_batch_size,scorer=cfg.scorer,**kwargs)
+        else:
+            call=index.search_overlap if cfg.overlap else index.search
+            results=[call(scope,q,scorer=cfg.scorer,**kwargs) for q in queries]
         if kwargs.get('mode') in ('dense','hybrid'):
             for q,out in zip(queries,results):
                 if q in self.precompute_costs:
                     cost=self.precompute_costs.pop(q)
                     out['timing_ms']['query_preembedding_amortized']=cost
-                    out['timing_ms']['amortized_total']=out['timing_ms']['total']+cost
+                    out['timing_ms']['amortized_total']=out['timing_ms'].get('amortized_total',out['timing_ms']['total'])+cost
                     out['timing_kind']='search plus amortized query pre-encoding; charged once per exact input'
-                    out['batch_receipt']={'query_preembedding_amortized_ms':cost}
+                    out.setdefault('batch_receipt',{})['query_preembedding_amortized_ms']=cost
         return results
     def receipt(self):
         from dataclasses import asdict

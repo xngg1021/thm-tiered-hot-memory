@@ -472,19 +472,28 @@ class SearchIndex:
                 candidate_ids={r['rowid']:r['id'] for r in self.rows(scope)}
                 for offset in range(0,len(queries),batch):
                     chunk=queries[offset:offset+batch];started=time.perf_counter()
-                    raw=encoder(chunk)
-                    if getattr(encoder,'profile',None):
-                        from .runtime.identity import validate_vectors
-                        validate_vectors(raw,encoder.profile,len(chunk))
-                    vectors=normalize_vectors(raw,len(chunk));embed_ms=(time.perf_counter()-started)*1000
+                    profile=getattr(encoder,'profile',None);identity=profile.id if profile else model_id
+                    cached={q:self._cache[(identity,q)] for q in chunk if (identity,q) in self._cache}
+                    misses=list(dict.fromkeys(q for q in chunk if q not in cached))
+                    vectors_by_query=dict(cached)
+                    if misses:
+                        raw=encoder(misses)
+                        if profile:
+                            from .runtime.identity import validate_vectors
+                            validate_vectors(raw,profile,len(misses))
+                        fresh=normalize_vectors(raw,len(misses));vectors_by_query.update(zip(misses,fresh))
+                        for q,v in zip(misses,fresh):
+                            self._cache[(identity,q)]=v
+                            if len(self._cache)>256:self._cache.popitem(last=False)
+                    vectors=[vectors_by_query[q] for q in chunk];embed_ms=(time.perf_counter()-started)*1000
                     values,timing=score(matrix,vectors,scorer);self._batch_dense={}
                     for column,q in enumerate(chunk):
                         order=np.argsort(-values[:,column],kind='stable')[:limit]
-                        self._batch_dense={q:([ids[int(i)] for i in order],embed_ms/len(chunk),False)}
+                        self._batch_dense={q:([ids[int(i)] for i in order],embed_ms/len(chunk),q in cached)}
                         result=self._search(scope,q,**kwargs)
                         result['timing_kind']='post-batch-search; embedding/scoring measured once in batch_receipt'
                         result['timing_ms']['amortized_total']=result['timing_ms']['total']+(embed_ms+timing['dense_scoring'])/len(chunk)+load_ms/len(queries)
-                        result['batch_receipt']={'query_batch_size':len(chunk),'embedding_ms':embed_ms,'dense_matrix_load':load_ms,**timing}
+                        result['batch_receipt']={'query_batch_size':len(chunk),'embedding_ms':embed_ms,'encoded_queries':len(misses),'cached_queries':len(chunk)-sum(q not in cached for q in chunk),'dense_matrix_load':load_ms,**timing}
                         result['result_cache_hit']=False;result['runtime_diagnostics']={'embedding_profile_id':getattr(getattr(encoder,'profile',None),'id',model_id),
                             'scorer':scorer,'candidate_rowids':[ids[int(i)] for i in order],'candidate_ids':[candidate_ids[ids[int(i)]] for i in order],
                             'selected_ids':[r['id'] for r in result['selected']],'budget_cutoff':result['budget'],'budget_used':result['budget_used'],
@@ -498,14 +507,21 @@ class SearchIndex:
         from concurrent.futures import ThreadPoolExecutor
         encoder=kwargs.get('encoder')
         if kwargs.get('mode')!='hybrid' or encoder is None:return self.search(scope,query,**kwargs)
-        with self._lock,ThreadPoolExecutor(max_workers=1,thread_name_prefix='thm-encoder') as pool:
-            future=pool.submit(encoder,[query]);self._query_future=future
-            try:
+        with self._lock:
+            self._refresh_caches()
+            identity=getattr(getattr(encoder,'profile',None),'id',kwargs.get('model_id'))
+            if (identity,query) in self._cache:
                 result=self.search(scope,query,**kwargs)
-                result['overlap']={'cpu':'SQLite/FTS','accelerator':'query_embedding','scoring':kwargs.get('scorer','numpy_reference'),'microbatch_delay_ms':0}
+                result['overlap']={'skipped':'query-vector-cache-hit','microbatch_delay_ms':0}
                 return result
-            finally:
-                self._query_future=None;future.cancel()
+            with ThreadPoolExecutor(max_workers=1,thread_name_prefix='thm-encoder') as pool:
+                future=pool.submit(encoder,[query]);self._query_future=future
+                try:
+                    result=self.search(scope,query,**kwargs)
+                    result['overlap']={'cpu':'SQLite/FTS','accelerator':'query_embedding','scoring':kwargs.get('scorer','numpy_reference'),'microbatch_delay_ms':0}
+                    return result
+                finally:
+                    self._query_future=None;future.cancel()
 
     def _fts(self, table, scope, tokens, limit, contextual=False):
         if not tokens:

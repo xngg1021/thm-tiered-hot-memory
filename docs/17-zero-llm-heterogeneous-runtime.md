@@ -34,7 +34,7 @@ Backend API contracts follow [SentenceTransformers local backend documentation](
 
 ## Calibration, profiles and scheduling
 
-Explicit `runtime autotune` uses a versioned, SHA-bound label-free multilingual/technical micro corpus, not LoCoMo/LME QA. Each bounded candidate spawns, loads, warms up, measures and exits. Receipts include load latency, document/query throughput, single-query p50/p95, batch latency, repeats/sample count and memory where reliable. Failures/timeouts produce failed candidates without leaking process-global thread state.
+Explicit `runtime autotune` uses a versioned, SHA-bound label-free multilingual/technical micro corpus, not LoCoMo/LME QA. Each bounded candidate spawns, loads, warms up, measures and exits. Receipts include load latency, document/query throughput, single-query encoder-plus-selected-scorer p50/p95 (including transfer), batch latency, repeats/sample count and memory where reliable. Failures/timeouts produce failed candidates without leaking process-global thread state.
 
 Admission compares finite normalized embeddings and actual canonical retrieval ranked IDs, packed selected IDs, budgets and scores against reference snapshots. The fastest eligible candidate wins; a micro-corpus pass is not full Protocol 2 acceptance. Fingerprints bind hardware/process allocation, package versions, source/derived model identities, embedding profile and THM implementation. Explicit invalidation preserves the old profile and creates a refusal marker. Changes require recalibration; no full benchmark runs at ordinary startup.
 
@@ -51,7 +51,7 @@ The scheduler separates interactive, bulk and background workloads, bounded queu
 
 Document batch size is validated and reaches the actual outer encoder calls. A bounded pipeline prepares one next CPU text batch while one encoder batch runs, then atomically publishes all vectors only if source generation is unchanged. No partial generation is marked complete.
 
-`SearchIndex.search_many` provides a production batch API: one scope/read snapshot, encode_many, `D @ Q.T`, stable row-order tie handling and ordinary fusion/packing per query. `numpy_reference` is the default scorer; Torch CPU/CUDA scorers are explicit alternatives with transfer timing. Device=CUDA for embedding does not imply CUDA scoring. No epsilon tie policy is introduced.
+Batch and overlap paths reuse the same profile/exact-query vector cache as scalar search; only misses are encoded. `SearchIndex.search_many` provides a production batch API: one scope/read snapshot, encode_many, `D @ Q.T`, stable row-order tie handling and ordinary fusion/packing per query. `numpy_reference` is the default scorer; Torch CPU/CUDA scorers are explicit alternatives with transfer timing. Device=CUDA for embedding does not imply CUDA scoring. No epsilon tie policy is introduced.
 
 `search_overlap` runs query encoding on one worker while caller-thread SQLite performs FTS; SQLite is not shared across worker threads. LME query pre-encoding can reuse exact query vectors across isolated per-instance databases without merging FTS IDF. Runtime rows retain legacy timing fields and add FTS, matrix load/scoring, fusion, materialization and expansion fields. Batched rows label post-batch search timing and report embedding/scoring once in `batch_receipt`, with an amortized total including shared matrix load. Research summaries use that amortized total and retain the raw breakdown and batch receipt; this is not interactive latency.
 

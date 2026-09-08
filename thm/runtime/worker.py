@@ -37,9 +37,14 @@ def measure(config):
         durations=[];docs=None
         for _ in range(3):
             start=time.perf_counter();docs=encoder.encode_many(DOCUMENTS);durations.append(time.perf_counter()-start)
-        single=[]
+        from .scorers import score
+        scorer=config.get('scorer','numpy_reference')
+        score(docs,[encoder.encode_one(QUERIES[0])],scorer)  # warm the selected scalar scorer too
+        single=[];single_embedding=[]
         for query in QUERIES:
-            start=time.perf_counter();encoder.encode_one(query);single.append((time.perf_counter()-start)*1000)
+            start=time.perf_counter();vector=encoder.encode_one(query)
+            single_embedding.append((time.perf_counter()-start)*1000)
+            score(docs,[vector],scorer);single.append((time.perf_counter()-start)*1000)
         start=time.perf_counter();query_vectors=[]
         for offset in range(0,len(QUERIES),config['query_batch_size']):query_vectors.extend(encoder.encode_many(QUERIES[offset:offset+config['query_batch_size']]))
         batch=time.perf_counter()-start
@@ -52,6 +57,8 @@ def measure(config):
         result={'status':'ok','identity':encoder.identity(),'corpus_sha256':CORPUS_SHA,'warmup':warmup,'repeats':3,
             'sample_count':len(QUERIES),'model_load_ms':load,'docs_per_second':len(DOCUMENTS)/statistics.median(durations),
             'queries_per_second':len(QUERIES)/batch,'single_query_p50_ms':statistics.median(single),
+            'single_query_metric':'encoder-plus-selected-scorer-including-transfer',
+            'single_query_embedding_p50_ms':statistics.median(single_embedding),
             'single_query_p95_ms':sorted(single)[max(0,__import__('math').ceil(.95*len(single))-1)],
             'batch_total_ms':batch*1000,'memory':memory,'document_vectors':docs,'query_vectors':query_vectors,
             'generation_calls':0,'observed_kernel_dispatch':None,
