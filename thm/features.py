@@ -75,15 +75,9 @@ def parse_query(query):
 
 
 def timestamp(value):
-    match=re.search(r'\b((?:19|20)\d{2})-(\d{2})-(\d{2})\b',value)
-    if match:
-        try:return date(*map(int,match.groups()))
-        except ValueError:pass
-    match=re.search(r'\b(\d{1,2})\s+('+'|'.join(MONTHS)+r'),?\s+((?:19|20)\d{2})\b',value,re.I)
-    if match:
-        try:return date(int(match.group(3)),MONTHS[match.group(2).lower()],int(match.group(1)))
-        except ValueError:pass
-    return None
+    # Source timestamps use the same explicit day-precision grammar as queries.
+    hints=parse_query(value)
+    return next((date.fromisoformat(d) for d,p in zip(hints.dates,hints.date_precisions) if p=='day'),None)
 
 
 def contains(text,term):

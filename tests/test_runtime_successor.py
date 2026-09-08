@@ -846,3 +846,27 @@ class RuntimeReviewRegressionTests(unittest.TestCase):
                 result=autotune(root,e.model_id,workload=workload,runner=runner)
                 self.assertEqual(result['status'],'calibrated');self.assertEqual(result['runtime_profile']['document_batch_size'],batch)
                 self.assertEqual(result['selection_metric'],metric)
+
+    def test_source_timestamp_uses_both_english_day_orders(self):
+        from thm.features import timestamp,reorder
+        for value in ('May 8, 2024','May 8 2024','May 8th, 2024','8th May, 2024','2024-05-08'):
+            self.assertEqual(timestamp(value).isoformat(),'2024-05-08')
+        self.assertIsNone(timestamp('May 2024'));self.assertIsNone(timestamp('February 30, 2024'))
+        rows=[{'text':'alpha','timestamp':'2024-05-01'},{'text':'alpha','timestamp':'May 8, 2024'}]
+        for query in ('latest alpha','alpha after May 7, 2024'):
+            self.assertEqual(reorder(rows,query,RetrievalFeatures(temporal=True))[0]['timestamp'],'May 8, 2024')
+
+    def test_document_calibration_exceeds_all_candidate_batch_sizes(self):
+        from thm.runtime.worker import measure
+        from thm.runtime.micro import BUILD_DOCUMENTS,BUILD_WORKLOAD_SHA
+        self.assertGreater(len(BUILD_DOCUMENTS),256);self.assertEqual(len(set(BUILD_DOCUMENTS)),len(BUILD_DOCUMENTS))
+        for batch in (16,256):
+            encoder=FakeEncoder(document_batch_size=batch)
+            config={'model_path':'test-only','model_id':encoder.model_id,'backend':'torch_fp32','device':'cpu','threads':1,'document_batch_size':batch,'query_batch_size':1}
+            with patch('thm.runtime.worker.configure'),patch('thm.runtime.backends.create',return_value=encoder),patch('thm.runtime.autotune.retrieval_signature',return_value=[]):result=measure(config)
+            self.assertEqual([len(c) for c in encoder.calls[:4]],[batch,len(BUILD_DOCUMENTS),len(BUILD_DOCUMENTS),len(BUILD_DOCUMENTS)])
+            self.assertEqual(result['document_workload_sha256'],BUILD_WORKLOAD_SHA)
+            self.assertEqual(result['document_workload_count'],len(BUILD_DOCUMENTS));self.assertEqual(len(result['document_vectors']),len(DOCUMENTS))
+            import statistics
+            self.assertEqual(result['docs_per_second'],len(BUILD_DOCUMENTS)/statistics.median(result['document_repeat_seconds']))
+            self.assertTrue(encoder.closed)

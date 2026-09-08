@@ -24,7 +24,7 @@ def configure(config):
 def measure(config):
     configure(config)
     from .backends import create
-    from .micro import DOCUMENTS,QUERIES,CORPUS_SHA
+    from .micro import DOCUMENTS,QUERIES,CORPUS_SHA,BUILD_DOCUMENTS,BUILD_WORKLOAD_SHA
     from .identity import validate_vectors
     import statistics
     cpu_start=time.process_time();overall_start=time.perf_counter()
@@ -33,10 +33,12 @@ def measure(config):
         threads=config['threads'],document_batch_size=config['document_batch_size'],query_batch_size=config['query_batch_size'],isolated=True)
     load=(time.perf_counter()-start)*1000
     try:
-        encoder.encode_many(DOCUMENTS[:2]);warmup=1
-        durations=[];docs=None
+        encoder.encode_many(BUILD_DOCUMENTS[:config['document_batch_size']]);warmup=1
+        durations=[]
         for _ in range(3):
-            start=time.perf_counter();docs=encoder.encode_many(DOCUMENTS);durations.append(time.perf_counter()-start)
+            start=time.perf_counter();encoded=encoder.encode_many(BUILD_DOCUMENTS);durations.append(time.perf_counter()-start)
+            validate_vectors(encoded,encoder.profile,len(BUILD_DOCUMENTS));del encoded
+        docs=encoder.encode_many(DOCUMENTS)
         from .scorers import score
         scorer=config.get('scorer','numpy_reference')
         score(docs,[encoder.encode_one(QUERIES[0])],scorer)  # warm the selected scalar scorer too
@@ -55,7 +57,9 @@ def measure(config):
             memory={'maxrss_native_units':resource.getrusage(resource.RUSAGE_SELF).ru_maxrss,'platform':sys.platform}
         except ImportError:pass
         result={'status':'ok','identity':encoder.identity(),'corpus_sha256':CORPUS_SHA,'warmup':warmup,'repeats':3,
-            'sample_count':len(QUERIES),'model_load_ms':load,'docs_per_second':len(DOCUMENTS)/statistics.median(durations),
+            'sample_count':len(QUERIES),'model_load_ms':load,'docs_per_second':len(BUILD_DOCUMENTS)/statistics.median(durations),
+            'document_workload_sha256':BUILD_WORKLOAD_SHA,'document_workload_count':len(BUILD_DOCUMENTS),'document_batch_size':config['document_batch_size'],
+            'document_repeat_seconds':durations,'document_metric':'encoder-only fixed build workload',
             'queries_per_second':len(QUERIES)/batch,'single_query_p50_ms':statistics.median(single),
             'single_query_metric':'encoder-plus-selected-scorer-including-transfer',
             'single_query_embedding_p50_ms':statistics.median(single_embedding),

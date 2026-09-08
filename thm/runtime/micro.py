@@ -14,3 +14,8 @@ DOCUMENTS=[
 QUERIES=['SQLite source index','ERR_CONNECTION_RESET version 2.3.1','北京会议五月','exact UTF-8 cache',
          'sequential reference 2024','mémoire locale','vector normalization','XNG-42','SQLite source index']
 CORPUS_SHA=digest({'version':CORPUS_VERSION,'documents':DOCUMENTS,'queries':QUERIES})
+
+# Independent fixed performance workload: exceeds every supported document batch size.
+BUILD_WORKLOAD_VERSION=1
+BUILD_DOCUMENTS=[DOCUMENTS[i%len(DOCUMENTS)]+f'\nCalibration document {i}.' for i in range(512)]
+BUILD_WORKLOAD_SHA=digest({'version':BUILD_WORKLOAD_VERSION,'documents':BUILD_DOCUMENTS})
