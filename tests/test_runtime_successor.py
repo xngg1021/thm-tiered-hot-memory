@@ -446,3 +446,23 @@ class RuntimeReviewRegressionTests(unittest.TestCase):
         self.assertGreater(result['single_query_p95_ms'],100.)
         self.assertLess(result['single_query_embedding_p50_ms'],10.)
         self.assertEqual(result['single_query_metric'],'encoder-plus-selected-scorer-including-transfer')
+
+    def test_preencoding_rejects_invalid_vectors_before_cache(self):
+        from thm.runtime.research import ExecutionConfig,Execution
+        for vectors in ([[float('nan')]*8],[[0.]*8],[[2.]*8],[[1.]],[]):
+            e=FakeEncoder();execution=Execution(ExecutionConfig(policy='auto-throughput'),None,e.model_id);execution.encoder=e
+            with patch.object(e,'encode_many',return_value=vectors):
+                with self.assertRaises(ValueError):execution.preencode(['alpha'])
+            self.assertEqual(execution.precomputed,{});self.assertEqual(execution.precompute_costs,{})
+            execution.close()
+    def test_isolated_wire_preserves_unicode_with_ascii_locale(self):
+        from thm.runtime.isolated import IsolatedEncoder
+        from types import SimpleNamespace
+        import io,threading
+        raw=io.BytesIO();stream=io.TextIOWrapper(raw,encoding='ascii')
+        encoder=IsolatedEncoder.__new__(IsolatedEncoder);encoder.lock=threading.RLock()
+        encoder.process=SimpleNamespace(poll=lambda:None,stdin=stream);encoder.worker_wall_ms=0;encoder.worker_cpu_ms=0
+        encoder._receive=lambda:{'vectors':[[1.]]}
+        texts=['中文查询','日本語 café 😀']
+        self.assertEqual(encoder.encode_many(texts),[[1.]])
+        self.assertEqual(json.loads(raw.getvalue().decode('ascii'))['texts'],texts);stream.close()

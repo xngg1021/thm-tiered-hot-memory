@@ -67,6 +67,10 @@ class Execution:
         start=time.perf_counter();unique=list(dict.fromkeys(queries));batch=self.config.query_batch_size
         for i in range(0,len(unique),batch):
             chunk=unique[i:i+batch];batch_start=time.perf_counter();values=self.encoder.encode_many(chunk)
+            from .identity import validate_vectors
+            from ..retrieval import normalize_vectors
+            validate_vectors(values,self.encoder.profile,len(chunk))
+            values=normalize_vectors(values,len(chunk))
             elapsed=(time.perf_counter()-batch_start)*1000
             self.precomputed.update(zip(chunk,values));self.precompute_costs.update((q,elapsed/len(chunk)) for q in chunk)
         self.query_embedding_precompute_ms+=(time.perf_counter()-start)*1000

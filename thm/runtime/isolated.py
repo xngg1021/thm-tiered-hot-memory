@@ -39,7 +39,7 @@ class IsolatedEncoder:
     def encode_many(self,texts):
         with self.lock:
             if self.process.poll() is not None:raise RuntimeError('encoder closed')
-            self.process.stdin.write(json.dumps({'texts':list(texts)},ensure_ascii=False)+'\n');self.process.stdin.flush()
+            self.process.stdin.write(json.dumps({'texts':list(texts)},ensure_ascii=True)+'\n');self.process.stdin.flush()
             result=self._receive();self.worker_wall_ms+=result.get('worker_wall_ms',0);self.worker_cpu_ms+=result.get('worker_cpu_ms',0)
             return result['vectors']
     def encode_one(self,text):return self.encode_many([text])[0]
