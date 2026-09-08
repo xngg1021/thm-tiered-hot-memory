@@ -15,10 +15,13 @@ def convert(config):
     source=Path(config['model_path']);out=Path(config['staging']);backend=config['backend']
     family='onnx' if backend.startswith('onnxruntime') else 'openvino'
     if manifest(source)['sha256']!=config['source_manifest_sha256']:raise ValueError('source model changed')
-    # Conversion writes only a private copy. Never let a backend auto-export into source.
-    shutil.copytree(source,out)
-    model=SentenceTransformer(str(out),backend=family,device='cpu',local_files_only=True,trust_remote_code=False,model_kwargs={'export':True})
-    model.save_pretrained(str(out))
+    # Load/export from a private source copy, then save only this conversion into
+    # a fresh output tree. Existing optimized variants must not become candidates.
+    if out.exists():raise FileExistsError('conversion output already exists')
+    with tempfile.TemporaryDirectory(dir=out.parent) as temp:
+        private=Path(temp)/'source';shutil.copytree(source,private)
+        model=SentenceTransformer(str(private),backend=family,device='cpu',local_files_only=True,trust_remote_code=False,model_kwargs={'export':True})
+        model.save_pretrained(str(out))
     transform='local-export-fp32'
     if family=='onnx':
         files=sorted(out.rglob('*.onnx'))

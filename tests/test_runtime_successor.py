@@ -491,3 +491,24 @@ class RuntimeReviewRegressionTests(unittest.TestCase):
             self.assertEqual(result['status'],'incomplete-local-run' if failed else 'measured-needs-acceptance')
             self.assertTrue(all(r['returncode']==0 for r in result['executions']))
             self.assertTrue((Path(args.output_dir)/'comparison.json').is_file())
+
+    def test_conversion_ignores_existing_source_backend_variants(self):
+        from thm.runtime.prepare import convert
+        from types import SimpleNamespace
+        source=self.root/'source-variants';source.mkdir()
+        for name in ('model.onnx','optimized.onnx','openvino_model.xml','quantized.xml'):(source/name).write_bytes(b'old variant')
+        before=manifest(source)['sha256'];seen=[]
+        class Model:
+            def __init__(model,path,**kwargs):
+                self.assertNotEqual(Path(path),source);self.assertTrue((Path(path)/'optimized.onnx').is_file())
+                self.assertTrue(kwargs['model_kwargs']['export']);model.family=kwargs['backend'];seen.append(path)
+            def save_pretrained(model,path):
+                root=Path(path);self.assertFalse(root.exists());target=root/model.family;target.mkdir(parents=True)
+                (target/('model.onnx' if model.family=='onnx' else 'openvino_model.xml')).write_bytes(b'fresh conversion')
+        ov=SimpleNamespace(Core=lambda:SimpleNamespace(read_model=lambda path:Path(path).read_bytes()),save_model=lambda model,path,**kw:Path(path).write_bytes(model))
+        with patch.dict(sys.modules,{'sentence_transformers':SimpleNamespace(SentenceTransformer=Model),'openvino':ov}):
+            for backend,family,file in [('onnxruntime_fp32','onnx','model.onnx'),('openvino_fp32','openvino','openvino_model.xml')]:
+                out=self.root/backend;result=convert({'model_path':str(source),'staging':str(out),'backend':backend,'source_manifest_sha256':before})
+                self.assertEqual(result['model_file'],family+'/'+file);self.assertEqual(result['status'],'prepared')
+                self.assertFalse((out/'optimized.onnx').exists());self.assertEqual((out/family/file).read_bytes(),b'fresh conversion')
+        self.assertEqual(manifest(source)['sha256'],before);self.assertTrue(all(not Path(path).exists() for path in seen))
