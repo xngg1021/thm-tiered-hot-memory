@@ -469,6 +469,7 @@ class SearchIndex:
                 self._refresh_caches();start=time.perf_counter()
                 ids,matrix=self._dense_matrix(scope,encoder,model_id)
                 load_ms=(time.perf_counter()-start)*1000;out=[]
+                candidate_ids={r['rowid']:r['id'] for r in self.rows(scope)}
                 for offset in range(0,len(queries),batch):
                     chunk=queries[offset:offset+batch];started=time.perf_counter()
                     raw=encoder(chunk)
@@ -482,10 +483,10 @@ class SearchIndex:
                         self._batch_dense={q:([ids[int(i)] for i in order],embed_ms/len(chunk),False)}
                         result=self._search(scope,q,**kwargs)
                         result['timing_kind']='post-batch-search; embedding/scoring measured once in batch_receipt'
-                        result['timing_ms']['amortized_total']=result['timing_ms']['total']+(embed_ms+timing['dense_scoring'])/len(chunk)
+                        result['timing_ms']['amortized_total']=result['timing_ms']['total']+(embed_ms+timing['dense_scoring'])/len(chunk)+load_ms/len(queries)
                         result['batch_receipt']={'query_batch_size':len(chunk),'embedding_ms':embed_ms,'dense_matrix_load':load_ms,**timing}
                         result['result_cache_hit']=False;result['runtime_diagnostics']={'embedding_profile_id':getattr(getattr(encoder,'profile',None),'id',model_id),
-                            'scorer':scorer,'candidate_rowids':[ids[int(i)] for i in order],'candidate_ids':[{r['rowid']:r['id'] for r in self.rows(scope)}[ids[int(i)]] for i in order],
+                            'scorer':scorer,'candidate_rowids':[ids[int(i)] for i in order],'candidate_ids':[candidate_ids[ids[int(i)]] for i in order],
                             'selected_ids':[r['id'] for r in result['selected']],'budget_cutoff':result['budget'],'budget_used':result['budget_used'],
                             'feature_components':result.get('features'),'scores':[float(values[int(i),column]) for i in order]}
                         out.append(result)

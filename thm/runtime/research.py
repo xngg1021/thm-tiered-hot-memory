@@ -26,6 +26,7 @@ class ExecutionConfig:
         if type(self.overlap) is not bool:raise ValueError('overlap must be boolean')
         if self.policy=='reference' and (self.backend!='torch_fp32' or self.query_batch_size!=1 or self.overlap or self.features!=RetrievalFeatures() or self.vector_storage!='json' or self.scorer!='numpy_reference'):
             raise ValueError('reference requires fixed Torch FP32 sequential semantics and default features')
+        if self.policy=='auto-safe' and self.features!=RetrievalFeatures():raise ValueError('auto-safe disables uncalibrated retrieval features')
         if self.backend.endswith('int8') and self.policy!='approximate-performance':raise ValueError('INT8 requires approximate policy')
 
 

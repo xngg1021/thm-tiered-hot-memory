@@ -37,9 +37,9 @@ class RuntimeScheduler:
 
     def search(self,scope,query,*,workload='interactive',requested_profile=None,load=None,**kwargs):
         if any(k in kwargs for k in ('encoder','model_id','scorer')):raise ValueError('scheduler owns execution settings')
-        if self.policy=='reference':
+        if self.policy in ('reference','auto-safe'):
             from ..features import RetrievalFeatures
-            if RetrievalFeatures.parse(kwargs.get('features'))!=RetrievalFeatures() or kwargs.get('entity_projection',False):raise ValueError('reference disables experimental retrieval features')
+            if RetrievalFeatures.parse(kwargs.get('features'))!=RetrievalFeatures() or kwargs.get('entity_projection',False):raise ValueError('strict policy disables uncalibrated retrieval features')
         with self.lock:
             if self.closed:raise RuntimeError('scheduler closed')
             key=requested_profile or self.choose(workload,**(load or {}))

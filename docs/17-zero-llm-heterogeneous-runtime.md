@@ -41,7 +41,7 @@ Admission compares finite normalized embeddings and actual canonical retrieval r
 | Policy | Contract |
 |---|---|
 | reference | Torch FP32, explicit fixed device/profile, sequential queries, JSON vectors, no cache/overlap/experimental retrieval |
-| auto-safe | Strict micro-corpus parity, one profile pinned for the session; explicit sparse fallback allowed |
+| auto-safe | Strict micro-corpus parity, default calibrated features only, one profile pinned for the session; explicit sparse fallback allowed |
 | auto-throughput | Route requests among registered complete profile indexes; each request internally consistent; measured drift disclosed |
 | approximate-performance | Explicit approximate precision and independent quality/parity evidence |
 
@@ -53,7 +53,7 @@ Document batch size is validated and reaches the actual outer encoder calls. A b
 
 `SearchIndex.search_many` provides a production batch API: one scope/read snapshot, encode_many, `D @ Q.T`, stable row-order tie handling and ordinary fusion/packing per query. `numpy_reference` is the default scorer; Torch CPU/CUDA scorers are explicit alternatives with transfer timing. Device=CUDA for embedding does not imply CUDA scoring. No epsilon tie policy is introduced.
 
-`search_overlap` runs query encoding on one worker while caller-thread SQLite performs FTS; SQLite is not shared across worker threads. LME query pre-encoding can reuse exact query vectors across isolated per-instance databases without merging FTS IDF. Runtime rows retain legacy timing fields and add FTS, matrix load/scoring, fusion, materialization and expansion fields. Batched rows label post-batch search timing and report embedding/scoring once in `batch_receipt`, with an amortized total; this is not interactive latency.
+`search_overlap` runs query encoding on one worker while caller-thread SQLite performs FTS; SQLite is not shared across worker threads. LME query pre-encoding can reuse exact query vectors across isolated per-instance databases without merging FTS IDF. Runtime rows retain legacy timing fields and add FTS, matrix load/scoring, fusion, materialization and expansion fields. Batched rows label post-batch search timing and report embedding/scoring once in `batch_receipt`, with an amortized total including shared matrix load. Research summaries use that amortized total and retain the raw breakdown and batch receipt; this is not interactive latency.
 
 ## Deterministic retrieval successors
 

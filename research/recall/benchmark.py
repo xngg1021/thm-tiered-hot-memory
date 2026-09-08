@@ -145,9 +145,9 @@ def run(dataset, counter, modes, budgets, *, model_path=None, model_id=None, nei
                                 'candidate_reciprocal_rank': 1/candidate_positions[0] if candidate_positions else 0.0,
                                 'ndcg': ndcg, 'result_cache_hit': out.get('result_cache_hit', False),
                                 'budget_used': out['budget_used'],
-                                'total_ms': out['timing_ms']['total'],
+                                'total_ms': out['timing_ms'].get('amortized_total',out['timing_ms']['total']),
                                 'query_embedding_ms': out['timing_ms']['query_embedding'],
-                                'runtime_diagnostics':out.get('runtime_diagnostics'),'timing_breakdown_ms':out['timing_ms'],
+                                'runtime_diagnostics':out.get('runtime_diagnostics'),'timing_breakdown_ms':out['timing_ms'],'timing_kind':out.get('timing_kind','sequential'),'batch_receipt':out.get('batch_receipt'),
                                 'parent_locator_ids':out.get('parent_locator_ids',[]),'malformed_evidence': bool(malformed)})
                 print('BENCH_SCOPE_DONE', scope, len(sample['qa']), flush=True)
         finally:

@@ -370,3 +370,30 @@ class RuntimeReviewRegressionTests(unittest.TestCase):
         (root/'model.onnx').write_bytes(b'changed')
         with contextlib.redirect_stderr(io.StringIO()):code=main(['status','--profile',str(profile),'--model-path',str(root)])
         self.assertEqual(code,1)
+
+    def test_auto_safe_rejects_uncalibrated_features_before_execution(self):
+        from thm.runtime.research import ExecutionConfig
+        e=FakeEncoder();p=self.profile(e)
+        with RuntimeScheduler(self.index,[p],{e.profile.id:e}) as scheduler:
+            for kwargs in ({'features':{'temporal':True}},{'entity_projection':True}):
+                with self.assertRaisesRegex(ValueError,'uncalibrated'):scheduler.search('s','alpha',**kwargs)
+        with self.assertRaisesRegex(ValueError,'uncalibrated'):ExecutionConfig(policy='auto-safe',features=RetrievalFeatures(segment=True))
+    def test_batch_candidate_mapping_reads_scope_once(self):
+        e=FakeEncoder();self.index.embed('s',e,e.model_id)
+        with patch.object(self.index,'rows',wraps=self.index.rows) as rows:
+            self.index.search_many('s',['alpha','beta','gamma'],mode='dense',encoder=e,model_id=e.model_id,query_batch_size=2)
+        self.assertEqual(rows.call_count,1)
+    def test_both_runner_summaries_include_amortized_batch_work(self):
+        from research.recall.benchmark import run as locomo
+        from research.recall.lme_retrieval import run as lme
+        original=SearchIndex.search
+        def timed(index,*args,**kwargs):
+            out=original(index,*args,**kwargs);out['timing_ms']['total']=2.0;out['timing_ms']['amortized_total']=17.0
+            out['timing_kind']='post-batch-search';out['batch_receipt']={'embedding_ms':30.0};return out
+        datasets=[(locomo,[{'sample_id':'a','conversation':{'session_1':[{'dia_id':'D1:1','speaker':'Alice','text':'alpha'}]},'qa':[{'question':'alpha','category':4,'evidence':['D1:1']}]}]),
+          (lme,[{'question_id':'a','question':'alpha','haystack_session_ids':['s'],'haystack_sessions':[[{'role':'user','content':'alpha'}]],'answer_session_ids':['s']}])]
+        with patch.object(SearchIndex,'search',timed):
+            for runner,data in datasets:
+                result=runner(data,TokenCounter(),['sparse'],[600]);row=result['rows'][0]
+                self.assertEqual(row['total_ms'],17.0);self.assertEqual(row['timing_breakdown_ms']['total'],2.0)
+                self.assertEqual(row['batch_receipt']['embedding_ms'],30.0)
