@@ -818,3 +818,15 @@ class RuntimeReviewRegressionTests(unittest.TestCase):
                         with self.assertRaises(OSError):runner.run(data,TokenCounter(),['sparse'],[600],execution_config=config)
             self.assertTrue(execution.encoder.closed)
             with self.assertRaises(sqlite3.ProgrammingError):execution.cache.db.execute('SELECT 1')
+
+    def test_month_first_and_ordinal_english_dates_are_day_anchors(self):
+        from thm.features import reorder
+        rows=[{'text':'alpha','timestamp':d} for d in ('2024-05-07','2024-05-09','2025-01-01')]
+        f=RetrievalFeatures(temporal=True)
+        for anchor in ('May 8, 2024','May 8 2024','May 8th, 2024','8th May, 2024','MAY 08, 2024'):
+            hints=parse_query('alpha after '+anchor)
+            self.assertEqual(hints.dates,('2024-05-08',));self.assertEqual(hints.date_precisions,('day',))
+            self.assertEqual(reorder(rows,'alpha after '+anchor,f)[0]['timestamp'],'2024-05-09')
+        self.assertEqual(parse_query('between May 8, 2024 and 2024').date_precisions,('day','year'))
+        self.assertEqual(parse_query('after February 30, 2024').dates,())
+        self.assertEqual(parse_query('after 8 May 9, 2024').dates,())

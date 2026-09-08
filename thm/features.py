@@ -54,11 +54,13 @@ def parse_query(query):
     temporal=re.search(r'\b(before|after|between|first|latest|previous|next|duration)\b',query,re.I)
     anchors=[];english_spans=[]
     months=tuple(dict.fromkeys(MONTHS[m.group(0).lower()] for m in re.finditer(r'\b('+'|'.join(MONTHS)+r')\b',query,re.I)))
-    for match in re.finditer(r'\b(?:(\d{1,2})\s+)?('+'|'.join(MONTHS)+r'),?\s+((?:19|20)\d{2})\b',query,re.I):
-        try:stamp=date(int(match.group(3)),MONTHS[match.group(2).lower()],int(match.group(1) or 1))
+    for match in re.finditer(r'\b(?:(\d{1,2})(?:st|nd|rd|th)?\s+)?('+'|'.join(MONTHS)+r')(?:\s+(\d{1,2})(?:st|nd|rd|th)?)?,?\s+((?:19|20)\d{2})\b',query,re.I):
+        if match.group(1) and match.group(3):return QueryHints()
+        day=match.group(1) or match.group(3)
+        try:stamp=date(int(match.group(4)),MONTHS[match.group(2).lower()],int(day or 1))
         except ValueError:return QueryHints()  # Invalid explicit anchors must not degrade to broader hints.
         english_spans.append(match.span())
-        anchors.append((match.start(),stamp.isoformat(),'day' if match.group(1) else 'month'))
+        anchors.append((match.start(),stamp.isoformat(),'day' if day else 'month'))
     for match in re.finditer(r'\b(?:19|20)\d{2}(?:-\d{2}(?:-\d{2})?)?\b',query):
         if any(lo<=match.start() and match.end()<=hi for lo,hi in english_spans):continue
         try:
