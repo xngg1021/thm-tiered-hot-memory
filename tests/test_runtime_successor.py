@@ -466,3 +466,28 @@ class RuntimeReviewRegressionTests(unittest.TestCase):
         texts=['中文查询','日本語 café 😀']
         self.assertEqual(encoder.encode_many(texts),[[1.]])
         self.assertEqual(json.loads(raw.getvalue().decode('ascii'))['texts'],texts);stream.close()
+
+    def test_auto_safe_requires_profile_before_optional_encoder_start(self):
+        from thm.runtime.research import ExecutionConfig,Execution
+        with patch('thm.runtime.isolated.IsolatedEncoder',side_effect=AssertionError('must fail before startup')):
+            for model in (None,'local-model'):
+                with self.assertRaisesRegex(ValueError,'calibrated runtime profile'):Execution(ExecutionConfig(policy='auto-safe'),model,'test')
+    def test_verification_requires_every_requested_calibration_winner(self):
+        from research.runtime import verify
+        from types import SimpleNamespace
+        profile={'backend':'torch_fp32','device':'cpu','document_batch_size':64,'query_batch_size':1,'threads':1,'scorer':'numpy_reference'}
+        def process(command,**kwargs):
+            if command[:2]==['git','rev-parse']:return SimpleNamespace(stdout='a'*40,returncode=0)
+            if command[:2]==['git','status']:return SimpleNamespace(stdout='',returncode=0)
+            Path(command[command.index('--output')+1]).write_text(json.dumps({'rows':[],'builds':[],'summaries':{}}))
+            return SimpleNamespace(returncode=0)
+        cases=[({'auto-safe'},False),({'auto-throughput'},False),({'auto-safe','auto-throughput'},False),({'approximate-performance'},True),(set(),False)]
+        for number,(failed,approximate) in enumerate(cases):
+            args=SimpleNamespace(output_dir=str(self.root/('verify-'+str(number))),model_path='local',model_id='test',locomo_dataset='locomo',lme_dataset='lme',include_approximate=approximate,plan_only=False,retrieval_ab=False,max_candidates=2)
+            def tune(*a,**kw):return {'status':'failed','reason':'no-candidate-passed'} if kw['policy'] in failed else {'status':'calibrated','runtime_profile':profile}
+            with patch.object(verify,'load_dataset',return_value=[]),patch.object(verify,'manifest',return_value={'sha256':'a'*64}),patch.object(verify,'backend_probe',return_value=[]),patch.object(verify,'available',return_value={}),patch.object(verify,'census',return_value={}),patch.object(verify,'TokenCounter',return_value=TokenCounter()),patch.object(verify,'autotune',side_effect=tune),patch.object(verify.subprocess,'run',side_effect=process),patch('research.recall.hardware_parity.compare',return_value={'strict_semantic_equivalent':True,'aggregate_semantic_metrics_equivalent':True}):
+                result=verify.execute(args)
+            self.assertEqual(set(result['missing_required_winners']),failed)
+            self.assertEqual(result['status'],'incomplete-local-run' if failed else 'measured-needs-acceptance')
+            self.assertTrue(all(r['returncode']==0 for r in result['executions']))
+            self.assertTrue((Path(args.output_dir)/'comparison.json').is_file())

@@ -63,10 +63,11 @@ def execute(args):
         except Exception as exc:receipt={'status':'failed','error_type':type(exc).__name__,'backend':backend}
         write_receipt(root/(backend+'-preparation.json'),receipt)
         if receipt.get('status')=='prepared':backend_paths[backend]=str((root/'derived-models'/receipt['artifact_locator']).resolve());backends.append((backend,'cpu'))
-    tunes={}
+    tunes={};calibrations={}
     for policy,workload in [('auto-safe','interactive'),('auto-throughput','bulk')]+([('approximate-performance','bulk')] if args.include_approximate else []):
         result=autotune(args.model_path,args.model_id,backends=backends,policy=policy,workload=workload,maximum=args.max_candidates,backend_paths=backend_paths)
         write_receipt(root/(policy+'-autotune.json'),result)
+        calibrations[policy]={'status':result.get('status','missing-status'),'artifact':policy+'-autotune.json','reason':result.get('reason')}
         if result.get('status')=='calibrated':tunes[policy]=result
     arms=list(planned['reference_arms'][:1])
     if cuda:arms.append(planned['reference_arms'][1])
@@ -123,7 +124,10 @@ def execute(args):
         receipt['feature_experiment']=row['feature_experiment'];name=row['arm']+'-'+row['dataset']+'-parity.json';write_receipt(root/name,receipt)
         comparisons.append({'arm':row['arm'],'dataset':row['dataset'],'parity_artifact':name,'strict':receipt['strict_semantic_equivalent'],
             'aggregate':receipt['aggregate_semantic_metrics_equivalent'],'feature_experiment':row['feature_experiment']})
-    result={'schema':1,'status':'measured-needs-acceptance' if all(r['returncode']==0 for r in rows) else 'incomplete-local-run',
+    missing_policies=[policy for policy in planned['policies'] if policy!='reference' and policy not in tunes]
+    complete=not missing_policies and bool(rows) and all(r['returncode']==0 for r in rows)
+    result={'schema':1,'status':'measured-needs-acceptance' if complete else 'incomplete-local-run',
+        'calibrations':calibrations,'missing_required_winners':missing_policies,
         'executions':rows,'comparisons':comparisons,'git_head':git,'generation_calls':0,'merge_authorized':False}
     write_receipt(root/'comparison.json',result);return result
 

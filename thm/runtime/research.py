@@ -32,6 +32,8 @@ class ExecutionConfig:
 
 class Execution:
     def __init__(self,config,model_path,model_id,cache_path=None):
+        if config.policy=='auto-safe' and (not config.runtime_profile_file or not model_path):
+            raise ValueError('auto-safe requires a calibrated runtime profile and local model')
         self.config=config;self.encoder=None;self.cache=None;self.query_embedding_precompute_ms=0;self.precomputed={};self.precompute_costs={}
         self.started=time.perf_counter()
         if cache_path and config.policy=='reference':raise ValueError('reference disables embedding cache')

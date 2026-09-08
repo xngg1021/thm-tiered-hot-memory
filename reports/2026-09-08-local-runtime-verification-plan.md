@@ -18,7 +18,7 @@ if ($LASTEXITCODE -ne 0) { throw 'Verification incomplete; inspect retained rece
 
 Optional dependencies must already be installed explicitly. Core: `pip install .`. Torch: `pip install '.[semantic-torch]'`. ORT/OpenVINO: corresponding `semantic-onnx` / `semantic-openvino` extras. The runner never installs packages or downloads models. CUDA-enabled Torch availability is verified by the explicit backend probe. Model files and private logs stay local; share JSON receipts after inspecting them, not the derived-model directory or embedding cache.
 
-Add `--plan-only` for a no-model planning run in a fresh directory. `--max-candidates 12` bounds calibration. Document candidates span 16/32/64/128/256 and query candidates 1/4/8/32; resource constraints and cap can prune them. Full matrices run reference and measured policy winners, not the full Cartesian product. The package retains failed/unsupported candidate receipts. It does not require the user to rerun a benchmark during implementation.
+Add `--plan-only` for a no-model planning run in a fresh directory. `--max-candidates 12` bounds calibration. Document candidates span 16/32/64/128/256 and query candidates 1/4/8/32; resource constraints and cap can prune them. Full matrices run reference and measured policy winners, not the full Cartesian product. The package retains failed/unsupported candidate receipts. Missing any requested calibration winner (including approximate when requested) marks comparison.json incomplete and makes the command fail, even when the executed reference arms succeeded. It does not require the user to rerun a benchmark during implementation.
 
 ## Stages and artifacts
 
