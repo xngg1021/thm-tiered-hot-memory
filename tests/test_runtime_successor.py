@@ -538,5 +538,15 @@ class RuntimeReviewRegressionTests(unittest.TestCase):
           (lme,[{'question_id':'a','question':'alpha','haystack_session_ids':['s'],'haystack_sessions':[[{'role':'user','content':'alpha launch details. '+'unrelated filler '*2000}]],'answer_session_ids':['s']}])]
         for runner,data in datasets:
             result=runner(data,TokenCounter(),['sparse'],[600],execution_config=config);row=result['rows'][0]
-            self.assertGreater(row['selected_count'],0);self.assertEqual(row['complete_selected_count'],0)
+            self.assertGreater(row['packed_selected_count'],0);self.assertEqual(row['complete_selected_count'],0)
+            from research.recall.hardware_parity import strict_row_coverage_errors
+            self.assertEqual(strict_row_coverage_errors(result),{})
+            bad=json.loads(json.dumps(result));bad['rows'][0]['packed_selected_count']+=1
+            self.assertIn('inconsistent:packed_selection_identity',strict_row_coverage_errors(bad))
+            self.assertEqual(row['selected_count'],len(row['selected_ids']))
+            self.assertEqual(row['packed_selected_count'],len(row['packed_selections']))
+            from research.recall.benchmark import aggregate
+            from research.recall.lme_retrieval import aggregate as summarize
+            summary=aggregate([row]) if runner is locomo else summarize([row])
+            self.assertEqual(summary['empty_context_rate'],0.0)
             self.assertEqual(row['hits'],0);self.assertTrue(row['parent_locator_ids'])

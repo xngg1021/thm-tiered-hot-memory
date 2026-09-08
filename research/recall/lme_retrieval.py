@@ -50,7 +50,7 @@ def aggregate(rows):
         "all_gold_hit_rate": sum(r["hits"] == r["gold_sessions"] for r in rows) / denominator,
         "macro_evidence_recall": statistics.mean(r["hits"] / r["gold_sessions"] for r in rows),
         "micro_evidence_recall": sum(r["hits"] for r in rows) / sum(r["gold_sessions"] for r in rows),
-        "empty_context_rate": statistics.mean(r["selected_count"] == 0 for r in rows),
+        "empty_context_rate": statistics.mean(r.get("packed_selected_count",r["selected_count"]) == 0 for r in rows),
         "mean_budget_used": statistics.mean(r["budget_used"] for r in rows),
         "latency_ms": {
             "p50": percentile([r["total_ms"] for r in rows], 0.5),
@@ -145,7 +145,8 @@ def run(dataset, counter, modes, budgets, *, model_path=None, model_id=None, lim
                             "resolved_gold": len(gold & known),
                             "hits": len(hit_sessions),
                             "candidate_hits": None,
-                            "selected_count": len(out["selected"]), "complete_selected_count":len(selected),
+                            "selected_count": len(selected), "complete_selected_count":len(selected),
+                            "packed_selected_count":len(out["selected"]), "packed_selections":[{k:x.get(k) for k in ("id","complete","span_start","span_end")} for x in out["selected"]],
                             "selected_ids": selected_order,
                             "selected_sources": selected_sources,
                             "reciprocal_rank": 1 / positions[0] if positions else 0.0,
