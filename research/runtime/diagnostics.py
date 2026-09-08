@@ -8,7 +8,6 @@ def score_deltas(reference,candidate):
     out=[]
     for key in sorted(set(left)&set(right),key=repr):
         a,b=left[key],right[key]
-        if all(a.get(field)==b.get(field) for field in ('selected_ids','selected_ranked_ids','budget_used')):continue
         da,db=a.get('runtime_diagnostics') or {},b.get('runtime_diagnostics') or {}
         def scores(d):
             ids,values=d.get('candidate_ids'),d.get('scores')
@@ -16,6 +15,8 @@ def score_deltas(reference,candidate):
             if len(set(ids))!=len(ids):raise ValueError('duplicate candidate score identity')
             return dict(zip(ids,values))
         sa,sb=scores(da),scores(db)
+        same_selection=all(a.get(field)==b.get(field) for field in ('selected_ids','selected_ranked_ids','budget_used','packed_selections'))
+        if same_selection and sa==sb and da.get('candidate_ids')==db.get('candidate_ids'):continue
         entries=[]
         for identifier in sorted(set(sa)|set(sb)):
             x,y=sa.get(identifier),sb.get(identifier)

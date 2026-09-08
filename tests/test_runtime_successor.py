@@ -679,3 +679,17 @@ class RuntimeReviewRegressionTests(unittest.TestCase):
                 with self.assertRaises(ValueError):self.index.search_many('s',['alpha'],mode='hybrid',encoder=e,model_id=e.model_id,overlap=True,**options)
                 with self.assertRaises(ValueError):self.index.search_overlap('s','alpha',mode='hybrid',encoder=e,model_id=e.model_id,**options)
         self.assertEqual(e.calls,[])
+
+    def test_score_deltas_retains_numeric_drift_with_identical_selection(self):
+        from research.runtime.diagnostics import score_deltas
+        row={'conversation_id':'a','qa_index':0,'mode':'hybrid','budget':600,'selected_ids':['a'],'selected_ranked_ids':['a'],'budget_used':5,
+             'runtime_diagnostics':{'candidate_ids':['a','b'],'scores':[.51,.50]}}
+        other=json.loads(json.dumps(row));other['runtime_diagnostics']['scores']=[.52,.49]
+        report=score_deltas({'rows':[row]},{'rows':[other]})
+        self.assertEqual(report['mismatching_queries'],1)
+        self.assertAlmostEqual(report['queries'][0]['scores'][0]['score_delta'],.01)
+        self.assertEqual(report['queries'][0]['reference_selected'],report['queries'][0]['candidate_selected'])
+        self.assertEqual(score_deltas({'rows':[row]},{'rows':[row]})['mismatching_queries'],0)
+        other['runtime_diagnostics']['candidate_ids']=['b','a'];other['runtime_diagnostics']['scores']=[.50,.51]
+        aligned=score_deltas({'rows':[row]},{'rows':[other]})
+        self.assertEqual([entry['score_delta'] for entry in aligned['queries'][0]['scores']],[0,0])
