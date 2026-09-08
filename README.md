@@ -187,3 +187,7 @@ The evidence ladder stays explicit: unit/invariant evidence, retrieval benchmark
 - [Changelog](CHANGELOG.md)
 
 THM is research software with an accepted 1.4.0 stable implementation milestone and an explicitly unreleased retrieval frontier. Version identity never substitutes for evidence class.
+
+## Unreleased runtime successor
+
+The optional zero-LLM hardware/profile/AutoTune runtime, identity-safe vector storage, batching and default-off deterministic retrieval experiments are implemented for local acceptance. Core installation stays model-free; no performance or feature admission is implied. See [runtime architecture](docs/17-zero-llm-heterogeneous-runtime.md) and [local verification package](reports/2026-09-08-local-runtime-verification-plan.md). Stable remains unchanged.

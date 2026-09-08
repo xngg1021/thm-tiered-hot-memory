@@ -64,3 +64,7 @@ Protocol 2 和历史 Hermes E2E 有其各自固定版本的远端运行证据。
 ## Unreleased retrieval successor
 
 The opt-in Python entity projection and its Protocol 2 evidence are documented in [the zero-LLM frontier](16-zero-llm-retrieval-frontier.md). It does not enable a harness option, change residency/activity/validity semantics, or move the 1.4 stable pointer.
+
+## Unreleased runtime successor
+
+The optional zero-LLM hardware/profile/AutoTune runtime, identity-safe vector storage, batching and default-off deterministic retrieval experiments are implemented for local acceptance. Core installation stays model-free; no performance or feature admission is implied. See [runtime architecture](17-zero-llm-heterogeneous-runtime.md) and [local verification package](../reports/2026-09-08-local-runtime-verification-plan.md). Stable remains unchanged.

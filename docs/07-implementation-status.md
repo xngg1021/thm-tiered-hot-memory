@@ -75,3 +75,7 @@ The legacy public engine, 1.1 hardening, 1.2 retrieval work and 1.3 harness inte
 ## Unreleased retrieval successor
 
 The opt-in Python entity projection and its Protocol 2 evidence are documented in [the zero-LLM frontier](16-zero-llm-retrieval-frontier.md). It does not enable a harness option, change residency/activity/validity semantics, or move the 1.4 stable pointer.
+
+## Unreleased runtime integration
+
+The canonical SearchIndex now exposes typed default-off RetrievalFeatures and bounded search_many; existing search/entity and residency behavior remain compatible. Optional runtime setup, profile/vector identity, isolated calibration and the final local experiment contract are described in [runtime architecture](17-zero-llm-heterogeneous-runtime.md). Runtime-dependent hardware performance remains pending-real-local-runtime.

@@ -33,7 +33,7 @@ SEMANTIC_FIELDS = (
     "hits", "candidate_hits",
     "selected_count", "selected_ids", "selected_sources", "selected_ranked_ids",
     "reciprocal_rank", "candidate_reciprocal_rank", "ndcg",
-    "budget_used", "malformed_evidence",
+    "budget_used", "malformed_evidence", "complete_selected_count", "packed_selected_count", "packed_selections",
 )
 
 
@@ -140,6 +140,21 @@ def strict_row_coverage_errors(data):
             continue
         if len(set(ids)) != len(ids) or type(row.get("selected_count")) is not int or row.get("selected_count") != len(ids):
             errors["inconsistent:selected_count_or_ids"] += 1
+        if "packed_selected_count" in row or "packed_selections" in row:
+            packed=row.get("packed_selections");count=row.get("packed_selected_count")
+            if type(count) is not int or count<0 or not isinstance(packed,list) or count!=len(packed):
+                errors["inconsistent:packed_selection_identity"] += 1
+            else:
+                for item in packed:
+                    if not isinstance(item,dict) or not isinstance(item.get("id"),str) or type(item.get("complete")) is not bool:
+                        errors["invalid:packed_selection_identity"] += 1
+                    elif not item["complete"] and (type(item.get("span_start")) is not int or type(item.get("span_end")) is not int or not 0<=item["span_start"]<item["span_end"]):
+                        errors["invalid:packed_selection_span"] += 1
+                if all(isinstance(item,dict) and isinstance(item.get("id"),str) and type(item.get("complete")) is bool for item in packed):
+                    complete_ids=[item["id"] for item in packed if item["complete"]]
+                    if len(complete_ids)!=len(ids) or set(complete_ids)!=set(ids):errors["inconsistent:packed_complete_ids"] += 1
+            if type(row.get("complete_selected_count")) is not int or row.get("complete_selected_count")!=row.get("selected_count"):
+                errors["inconsistent:complete_selected_count"] += 1
         if protocol == 2:
             ranks = row.get("selected_ranked_ids")
             if not isinstance(ranks, list) or not all(isinstance(value, str) for value in ranks):

@@ -91,28 +91,24 @@ class TokenCounter:
 
 
 class SentenceEncoder:
-    """User-selected on-disk sentence-transformer; no remote code or downloads."""
-    def __init__(self, path: str, model_id: str, threads: int = 2, device: str = 'cpu',
-                 batch_size: int = 64):
-        if not Path(path).is_dir() or not model_id.strip():
-            raise ValueError('an existing model directory and immutable model_id are required')
-        if device not in ('cpu', 'cuda'):
-            raise ValueError("device must be 'cpu' or 'cuda'")
-        import torch
-        from sentence_transformers import SentenceTransformer
-        if device == 'cuda' and not torch.cuda.is_available():
-            raise ValueError('device=cuda requested but torch has no CUDA support')
-        torch.set_num_threads(max(1, threads))
-        self.model = SentenceTransformer(path, device=device, local_files_only=True,
-                                         trust_remote_code=False)
-        self.model_id = model_id
-        self.device = device
-        self.batch_size = int(batch_size)
+    """Backward-compatible facade over the optional local reference backend.
 
-    def __call__(self, texts):
-        return self.model.encode(list(texts), batch_size=self.batch_size,
-                                 normalize_embeddings=True,
-                                 show_progress_bar=False).tolist()
+    Library calls inherit host thread policy. Explicit thread control belongs
+    in an isolated runtime worker, never in an agent's host process.
+    """
+    def __init__(self, path, model_id, threads=None, device='cpu', batch_size=64,
+                 *, isolated=False, backend='torch_fp32'):
+        from .runtime.backends import create
+        self._backend = create(path, model_id, backend=backend, device=device,
+                               threads=threads, document_batch_size=batch_size, isolated=isolated)
+        self.__dict__.update({k:getattr(self._backend,k) for k in
+                             ('model_id','device','batch_size','document_batch_size','query_batch_size','profile')})
+    def __call__(self,texts): return self._backend.encode_many(texts)
+    def encode_many(self,texts): return self._backend.encode_many(texts)
+    def encode_one(self,text): return self._backend.encode_one(text)
+    def identity(self): return self._backend.identity()
+    def capabilities(self): return self._backend.capabilities()
+    def close(self): self._backend.close()
 
 
 def normalize_vectors(vectors, expected: int):
@@ -141,6 +137,7 @@ class SearchIndex:
         self.readonly = readonly
         self._lock = threading.RLock()
         path = Path(path).expanduser()
+        self.path = path.resolve()
         if path.is_symlink():
             raise ValueError('symlink index refused')
         if readonly:
@@ -157,7 +154,7 @@ class SearchIndex:
             tables = {r[0] for r in self.db.execute("SELECT name FROM sqlite_master WHERE type='table'")}
             expected = {'docs', 'literal', 'lexical', 'scopes', 'vectors'}
             if tables and (not expected <= tables or any(
-                    t not in expected and not t.startswith(('literal_', 'lexical_', 'sqlite_')) for t in tables)):
+                    t not in expected | {'embedding_profiles','vector_generations','vectors_v2'} and not t.startswith(('literal_', 'lexical_', 'sqlite_')) for t in tables)):
                 raise ValueError('not a THM retrieval database; native or unrelated databases are refused')
             if readonly and not tables:
                 raise ValueError('empty read-only retrieval database')
@@ -175,6 +172,9 @@ class SearchIndex:
         CREATE TABLE IF NOT EXISTS vectors(scope TEXT,id TEXT,hash TEXT,model TEXT,vector TEXT,
           PRIMARY KEY(scope,id,model));
                 ''')
+            if not readonly:
+                from .runtime.storage import SCHEMA
+                self.db.executescript(SCHEMA)
             required_columns = {
                 'docs': {'rowid','id','scope','session','ord','text','speaker','timestamp','source','tier','hash'},
                 'scopes': {'scope','generation'}, 'vectors': {'scope','id','hash','model','vector'}}
@@ -187,6 +187,9 @@ class SearchIndex:
         self.counter = counter or TokenCounter()
         self._cache, self._dense = OrderedDict(), {}
         self._results = OrderedDict()
+        self._batch_dense = None
+        self._query_future = None
+        self._last_dense_diagnostics = {}
         self._data_version = self.db.execute('PRAGMA data_version').fetchone()[0]
 
     def _writable(self):
@@ -291,9 +294,16 @@ class SearchIndex:
     def rows(self, scope):
         return [dict(r) for r in self.db.execute('SELECT * FROM docs WHERE scope=? ORDER BY rowid', (scope,))]
 
-    def embed(self, scope, encoder, model_id):
+    def embed(self, scope, encoder, model_id, *, document_batch_size=None, vector_storage="json", embedding_cache=None):
         """Encode outside the write transaction, then verify its source generation."""
         self._writable()
+        from .runtime.identity import bounded_int
+        batch_size = bounded_int(document_batch_size if document_batch_size is not None else getattr(encoder,'document_batch_size',64),'document batch',256)
+        if vector_storage not in ('json','blob'): raise ValueError('unsupported vector storage')
+        if getattr(encoder,'profile',None) is not None:
+            return self._embed_profile(scope,encoder,model_id,batch_size,vector_storage,embedding_cache)
+        if embedding_cache is not None or vector_storage != 'json':
+            raise ValueError('cache/BLOB storage requires explicit embedding profile')
         if not isinstance(model_id, str) or not model_id.strip():
             raise ValueError('immutable model identity required')
         if getattr(encoder, 'model_id', model_id) != model_id:
@@ -312,8 +322,8 @@ class SearchIndex:
             missing = [r for r in rows if existing.get(r['id']) != r['hash']]
             start = time.perf_counter()
             vectors = []
-            for offset in range(0, len(missing), 64):
-                batch = missing[offset:offset+64]
+            for offset in range(0, len(missing), batch_size):
+                batch = missing[offset:offset+batch_size]
                 vectors.extend(normalize_vectors(encoder([f"{r['speaker']}: {r['text']}" for r in batch]), len(batch)))
             if vectors:
                 vectors = normalize_vectors(vectors, len(missing))
@@ -331,35 +341,217 @@ class SearchIndex:
                 raise
             self._clear_caches()
             return {'embedded': len(missing), 'seconds': time.perf_counter() - start,
-                    'model': model_id, 'generation': generation[0]}
+                    'model': model_id, 'generation': generation[0], 'document_batch_size':batch_size}
 
-    def _dense_search(self, scope, query, encoder, model_id, limit):
-        import numpy as np  # Optional dense execution only.
-        key = (scope, model_id, self.db.execute('SELECT generation FROM scopes WHERE scope=?', (scope,)).fetchone()[0])
+    def _embed_profile(self, scope, encoder, model_id, batch_size, storage, cache):
+        from .runtime.storage import pack
+        from .runtime.identity import validate_vectors
+        if encoder.model_id != model_id: raise ValueError('encoder identity mismatch')
+        profile=encoder.profile; started=time.perf_counter()
+        with self._lock:
+            self.db.execute('BEGIN')
+            try:
+                generation=self.db.execute('SELECT generation FROM scopes WHERE scope=?',(scope,)).fetchone()
+                if not generation: raise ValueError('scope not indexed')
+                rows=self.rows(scope)
+            finally: self.db.rollback()
+        # No SQLite lock/transaction during model execution. Publish all or none.
+        from concurrent.futures import ThreadPoolExecutor
+        vectors=[]
+        def encode_batch(texts):return cache.encode(encoder,texts) if cache else encoder.encode_many(texts)
+        with ThreadPoolExecutor(max_workers=1,thread_name_prefix='thm-build') as pool:
+            pending=None;pending_count=0
+            for offset in range(0,len(rows),batch_size):
+                batch=rows[offset:offset+batch_size]
+                # CPU prepares the next exact inputs while the previous encoder batch runs.
+                texts=[f"{r['speaker']}: {r['text']}" for r in batch]
+                if pending is not None:vectors.extend(validate_vectors(pending.result(),profile,pending_count))
+                pending=pool.submit(encode_batch,texts);pending_count=len(batch)
+            if pending is not None:vectors.extend(validate_vectors(pending.result(),profile,pending_count))
+        with self._lock:
+            self.db.execute('BEGIN IMMEDIATE')
+            try:
+                current=self.db.execute('SELECT generation FROM scopes WHERE scope=?',(scope,)).fetchone()
+                if not current or current[0]!=generation[0]: raise ValueError('source generation changed during embedding')
+                identity=json.dumps(profile.identity(),sort_keys=True)
+                previous=self.db.execute('SELECT identity FROM embedding_profiles WHERE profile=?',(profile.id,)).fetchone()
+                if previous and previous[0]!=identity: raise ValueError('embedding profile collision')
+                self.db.execute('INSERT OR IGNORE INTO embedding_profiles VALUES(?,?)',(profile.id,identity))
+                self.db.execute('DELETE FROM vectors_v2 WHERE scope=? AND profile=?',(scope,profile.id))
+                self.db.executemany('INSERT INTO vectors_v2 VALUES(?,?,?,?,?,?,?)',
+                    [(scope,r['id'],r['hash'],profile.id,profile.dimension,'f32le' if storage=='blob' else 'json',
+                      pack(v) if storage=='blob' else json.dumps(v,allow_nan=False)) for r,v in zip(rows,vectors)])
+                self.db.execute('INSERT OR REPLACE INTO vector_generations VALUES(?,?,?,?)',(scope,profile.id,generation[0],len(rows)))
+                self.db.commit();self._clear_caches()
+            except Exception: self.db.rollback();raise
+        return {'embedded':len(rows),'seconds':time.perf_counter()-started,'model':model_id,
+                'generation':generation[0],'embedding_profile':profile.identity(),'document_batch_size':batch_size,
+                'storage':storage,'pipeline':{'encoder_inflight_limit':1,'cpu_preparation_ahead':1,'atomic_publication':True},'cache':{'hits':cache.hits,'misses':cache.misses} if cache else None}
+
+    def _dense_matrix(self,scope,encoder,model_id):
+        import numpy as np
+        from .runtime.storage import unpack
+        profile=getattr(encoder,'profile',None)
+        identity=profile.id if profile else model_id
+        generation=self.db.execute('SELECT generation FROM scopes WHERE scope=?',(scope,)).fetchone()
+        if not generation: raise ValueError('scope not indexed')
+        key=(scope,identity,generation[0])
         if key not in self._dense:
-            rows = list(self.db.execute('''SELECT d.rowid,v.vector FROM docs d JOIN vectors v
-              ON v.scope=d.scope AND v.id=d.id AND v.hash=d.hash WHERE d.scope=? AND v.model=?
-              ORDER BY d.rowid''', (scope, model_id)))
-            count = self.db.execute('SELECT COUNT(*) FROM docs WHERE scope=?', (scope,)).fetchone()[0]
-            if not rows or len(rows) != count:
-                raise ValueError('embedding index missing/stale; run embed for this model and scope')
-            vectors = normalize_vectors([json.loads(r[1]) for r in rows], len(rows))
-            self._dense[key] = ([r[0] for r in rows], np.asarray(vectors, dtype=np.float32))
-        ids, matrix = self._dense[key]
-        cached = (model_id, query)
-        start = time.perf_counter()
-        was_cached = cached in self._cache
+            count=self.db.execute('SELECT COUNT(*) FROM docs WHERE scope=?',(scope,)).fetchone()[0]
+            if profile:
+                try:
+                    complete=self.db.execute('SELECT generation,count FROM vector_generations WHERE scope=? AND profile=?',(scope,identity)).fetchone()
+                    stored=self.db.execute('SELECT identity FROM embedding_profiles WHERE profile=?',(identity,)).fetchone()
+                    if not complete or tuple(complete)!=(generation[0],count) or not stored or json.loads(stored[0])!=profile.identity():
+                        raise ValueError('profile index missing/stale; embed or explicitly migrate legacy vectors')
+                    rows=list(self.db.execute('SELECT d.rowid,v.vector,v.dimension,v.dtype FROM docs d JOIN vectors_v2 v ON v.scope=d.scope AND v.id=d.id AND v.hash=d.hash WHERE d.scope=? AND v.profile=? ORDER BY d.rowid',(scope,identity)))
+                except sqlite3.OperationalError as e: raise ValueError('legacy index needs explicit embedding profile migration') from e
+                vectors=[unpack(r[1],r[2],r[3]) if r[3]=='f32le' else json.loads(r[1]) if r[3]=='json' else [] for r in rows]
+                if any(r[2]!=profile.dimension for r in rows): raise ValueError('profile dimension mismatch')
+            else:
+                rows=list(self.db.execute('SELECT d.rowid,v.vector FROM docs d JOIN vectors v ON v.scope=d.scope AND v.id=d.id AND v.hash=d.hash WHERE d.scope=? AND v.model=? ORDER BY d.rowid',(scope,model_id)))
+                vectors=[json.loads(r[1]) for r in rows]
+            if not rows or len(rows)!=count: raise ValueError('embedding index missing/stale; run embed for this model and scope')
+            if profile:
+                from .runtime.identity import validate_vectors
+                validate_vectors(vectors,profile,len(rows))
+            vectors=normalize_vectors(vectors,len(rows))
+            self._dense[key]=([r[0] for r in rows],np.asarray(vectors,dtype=np.float32))
+        return self._dense[key]
+
+    def _dense_search(self, scope, query, encoder, model_id, limit, scorer='numpy_reference'):
+        import numpy as np
+        start=time.perf_counter()
+        if self._batch_dense is not None and query in self._batch_dense:
+            return self._batch_dense[query]
+        ids,matrix=self._dense_matrix(scope,encoder,model_id)
+        load_ms=(time.perf_counter()-start)*1000
+        profile=getattr(encoder,'profile',None);identity=profile.id if profile else model_id
+        cached=(identity,query);was_cached=cached in self._cache;start=time.perf_counter()
         if not was_cached:
-            self._cache[cached] = normalize_vectors(encoder([query]), 1)[0]
-            if len(self._cache) > 256:
-                self._cache.popitem(last=False)
-        vector = np.asarray(self._cache[cached], dtype=np.float32)
-        if vector.shape[0] != matrix.shape[1]:
-            raise ValueError('query/document embedding dimension mismatch')
-        embed_ms = (time.perf_counter() - start) * 1000
-        scores = matrix @ vector
-        order = np.argsort(-scores, kind='stable')[:limit]
-        return [ids[int(i)] for i in order], embed_ms, was_cached
+            raw=self._query_future.result() if self._query_future is not None else encoder([query])
+            if profile:
+                from .runtime.identity import validate_vectors
+                validate_vectors(raw,profile,1)
+            self._cache[cached]=normalize_vectors(raw,1)[0]
+            if len(self._cache)>256:self._cache.popitem(last=False)
+        vector=np.asarray(self._cache[cached],dtype=np.float32)
+        if vector.shape[0]!=matrix.shape[1]:raise ValueError('query/document embedding dimension mismatch')
+        embed_ms=(time.perf_counter()-start)*1000;started=time.perf_counter()
+        transfer=0.0
+        if scorer=='numpy_reference':scores=matrix @ vector
+        else:
+            from .runtime.scorers import score
+            values,placement=score(matrix,[vector],scorer);scores=values[:,0];transfer=placement['transfer']
+        order=np.argsort(-scores,kind='stable')[:limit]
+        self._last_dense_diagnostics={'dense_matrix_load':load_ms,'dense_scoring':(time.perf_counter()-started)*1000,
+            'scorer':scorer,'transfer':transfer,'embedding_profile_id':identity,'candidate_rowids':[ids[int(i)] for i in order],
+            'scores':[float(scores[int(i)]) for i in order]}
+        return [ids[int(i)] for i in order],embed_ms,was_cached
+
+    def search_many(self,scope,queries,*,query_batch_size=32,scorer='numpy_reference',overlap=False,**kwargs):
+        """Production batch API: one scope snapshot, bounded encode_many and GEMM."""
+        from .runtime.identity import bounded_int
+        from .runtime.scorers import score
+        import itertools
+        if type(overlap) is not bool:raise ValueError('overlap must be boolean')
+        batch=bounded_int(query_batch_size,'query batch',256)
+        queries=list(itertools.islice(queries,4097))
+        if len(queries)>4096 or any(not isinstance(q,str) or not q.strip() or len(q)>16000 for q in queries):raise ValueError('invalid bounded query batch')
+        if not queries:return []
+        self._validate_search_options(scope,queries[0],scorer=scorer,**kwargs)
+        if kwargs.get('budget')==0 or kwargs.get('mode','sparse') not in ('dense','hybrid'):
+            return [self.search(scope,q,scorer=scorer,**kwargs) for q in queries]
+        encoder=kwargs.get('encoder');model_id=kwargs.get('model_id');limit=kwargs.get('candidate_limit',100)
+        bounded_int(limit,'candidate limit',1000)
+        if encoder is None or not model_id or getattr(encoder,'model_id',model_id)!=model_id:raise ValueError('explicit matching encoder required')
+        import numpy as np
+        with self._lock:
+            self.db.execute('BEGIN')
+            try:
+                self._refresh_caches();start=time.perf_counter()
+                ids,matrix=self._dense_matrix(scope,encoder,model_id)
+                candidate_ids={r['rowid']:r['id'] for r in self.rows(scope)} if kwargs.get('diagnostics',False) else {}
+                load_ms=(time.perf_counter()-start)*1000;out=[]
+                for offset in range(0,len(queries),batch):
+                    chunk=queries[offset:offset+batch];started=time.perf_counter()
+                    profile=getattr(encoder,'profile',None);identity=profile.id if profile else model_id
+                    cached={q:self._cache[(identity,q)] for q in chunk if (identity,q) in self._cache}
+                    misses=list(dict.fromkeys(q for q in chunk if q not in cached))
+                    vectors_by_query=dict(cached);self._batch_lexical={}
+                    overlap_active=overlap and bool(misses) and kwargs.get('mode')=='hybrid'
+                    encoder_ms=0.0;lexical_ms=0.0
+                    if misses:
+                        if overlap_active:
+                            from concurrent.futures import ThreadPoolExecutor
+                            def encode_batch():
+                                at=time.perf_counter();raw=encoder(misses)
+                                return raw,(time.perf_counter()-at)*1000
+                            with ThreadPoolExecutor(max_workers=1,thread_name_prefix='thm-batch-encoder') as pool:
+                                future=pool.submit(encode_batch);lexical_start=time.perf_counter()
+                                for query in dict.fromkeys(chunk):self._batch_lexical[query]=self._lexical_channels(scope,query,'hybrid',limit)
+                                lexical_ms=(time.perf_counter()-lexical_start)*1000
+                                raw,encoder_ms=future.result()
+                        else:
+                            at=time.perf_counter();raw=encoder(misses);encoder_ms=(time.perf_counter()-at)*1000
+                        if profile:
+                            from .runtime.identity import validate_vectors
+                            validate_vectors(raw,profile,len(misses))
+                        fresh=normalize_vectors(raw,len(misses));vectors_by_query.update(zip(misses,fresh))
+                        for q,v in zip(misses,fresh):
+                            self._cache[(identity,q)]=v
+                            if len(self._cache)>256:self._cache.popitem(last=False)
+                    vectors=[vectors_by_query[q] for q in chunk];preparation_ms=(time.perf_counter()-started)*1000;embed_ms=encoder_ms
+                    values,timing=score(matrix,vectors,scorer);self._batch_dense={}
+                    for column,q in enumerate(chunk):
+                        row_start=time.perf_counter();ranking_start=row_start
+                        order=np.argsort(-values[:,column],kind='stable')[:limit]
+                        ranking_ms=(time.perf_counter()-ranking_start)*1000
+                        self._batch_dense={q:([ids[int(i)] for i in order],embed_ms/len(chunk),q in cached)}
+                        result=self._search(scope,q,**kwargs)
+                        result['timing_kind']='post-batch-search; embedding/scoring measured once in batch_receipt'
+                        result['batch_receipt']={'query_batch_size':len(chunk),'embedding_ms':embed_ms,'batch_preparation_ms':preparation_ms,'lexical_preparation_ms':lexical_ms,'overlap_requested':overlap,'overlap_active':overlap_active,'encoded_queries':len(misses),'cached_queries':len(chunk)-sum(q not in cached for q in chunk),'dense_matrix_load':load_ms,**timing}
+                        result['result_cache_hit']=False
+                        if kwargs.get('diagnostics',False):
+                            result['runtime_diagnostics']={'embedding_profile_id':getattr(getattr(encoder,'profile',None),'id',model_id),
+                                'scorer':scorer,'candidate_rowids':[ids[int(i)] for i in order],'candidate_ids':[candidate_ids[ids[int(i)]] for i in order],
+                                'selected_ids':[r['id'] for r in result['selected']],'budget_cutoff':result['budget'],'budget_used':result['budget_used'],
+                                'feature_components':result.get('features'),'scores':[float(values[int(i),column]) for i in order]}
+                        row_ms=(time.perf_counter()-row_start)*1000
+                        result['timing_ms']['dense_ranking']=ranking_ms
+                        result['timing_ms']['batch_row_overhead']=max(0.0,row_ms-result['timing_ms']['total'])
+                        result['timing_ms']['amortized_total']=row_ms+(preparation_ms+timing['dense_scoring'])/len(chunk)+load_ms/len(queries)
+                        if overlap:result['overlap']={'requested':True,'active':overlap_active,'cpu':'caller-thread SQLite/FTS','accelerator':'batched query embedding','microbatch_delay_ms':0}
+                        out.append(result)
+                return out
+            finally:self._batch_dense=None;self._batch_lexical=None;self.db.rollback()
+
+    def search_overlap(self,scope,query,**kwargs):
+        """Encoder worker overlaps caller-thread SQLite FTS; no cross-thread DB use."""
+        from concurrent.futures import ThreadPoolExecutor
+        encoder=kwargs.get('encoder')
+        self._validate_search_options(scope,query,**kwargs)
+        if kwargs.get('budget')==0 or kwargs.get('mode')!='hybrid' or encoder is None:return self.search(scope,query,**kwargs)
+        with self._lock:
+            self._refresh_caches()
+            key=self._result_cache_key(scope,query,kwargs)
+            if key is not None and key in self._results:
+                result=self.search(scope,query,**kwargs)
+                result['overlap']={'skipped':'result-cache-hit','microbatch_delay_ms':0}
+                return result
+            identity=getattr(getattr(encoder,'profile',None),'id',kwargs.get('model_id'))
+            if (identity,query) in self._cache:
+                result=self.search(scope,query,**kwargs)
+                result['overlap']={'skipped':'query-vector-cache-hit','microbatch_delay_ms':0}
+                return result
+            with ThreadPoolExecutor(max_workers=1,thread_name_prefix='thm-encoder') as pool:
+                future=pool.submit(encoder,[query]);self._query_future=future
+                try:
+                    result=self.search(scope,query,**kwargs)
+                    result['overlap']={'cpu':'SQLite/FTS','accelerator':'query_embedding','scoring':kwargs.get('scorer','numpy_reference'),'microbatch_delay_ms':0}
+                    return result
+                finally:
+                    self._query_future=None;future.cancel()
 
     def _fts(self, table, scope, tokens, limit, contextual=False):
         if not tokens:
@@ -369,7 +561,10 @@ class SearchIndex:
         weights = '1.0,0.12,0.05' if contextual else ('1.0,0.0,0.02' if table == 'lexical' else '1.0,0.0')
         sql = f'''SELECT d.rowid FROM {table} JOIN docs d ON d.rowid={table}.rowid
           WHERE {table} MATCH ? AND d.scope=? ORDER BY bm25({table},{weights}),d.id LIMIT ?'''
-        return [r[0] for r in self.db.execute(sql, (match_query(tokens), scope, limit)).fetchall()]
+        start=time.perf_counter()
+        result=[r[0] for r in self.db.execute(sql, (match_query(tokens), scope, limit)).fetchall()]
+        self._fts_elapsed_ms=getattr(self,'_fts_elapsed_ms',0.0)+(time.perf_counter()-start)*1000
+        return result
 
     def _rank_candidates(self, scope, query, ranked):
         """Identity projection; research subclasses may ablate derived ranking."""
@@ -398,32 +593,7 @@ class SearchIndex:
             raise ValueError('counter changed while packing; final context exceeds budget')
         return context, selected, final_units
 
-    def _search(self, scope: str, query: str, *, budget=600, mode='sparse', candidate_limit=100,
-               neighbor_turns=0, encoder=None, model_id=None, entity_projection=False) -> dict:
-        start = time.perf_counter()
-        if not scope or not isinstance(query, str) or not query.strip():
-            raise ValueError('nonempty scope and query required')
-        if type(budget) is not int or not 0 <= budget <= 32768:
-            raise ValueError('budget must be an integer from 0 to 32768')
-        if (mode not in ('literal', 'sparse', 'hybrid', 'dense') or type(candidate_limit) is not int
-                or not 1 <= candidate_limit <= 1000 or type(neighbor_turns) is not int
-                or neighbor_turns not in (0, 1, 2)):
-            raise ValueError('invalid retrieval settings')
-        if type(entity_projection) is not bool or (entity_projection and mode not in ('sparse', 'hybrid')):
-            raise ValueError('entity projection requires sparse/hybrid mode and an explicit boolean')
-        if len(query) > 16000:
-            raise ValueError('query too long')
-        generation = self.db.execute('SELECT generation FROM scopes WHERE scope=?', (scope,)).fetchone()
-        if generation is None:
-            raise ValueError('scope not indexed')
-        if budget == 0:
-            return {'scope': scope, 'generation': generation[0], 'mode': mode, 'context': '',
-                    'selected': [], 'ranked_ids': [], 'candidate_count': 0,
-                    'budget': 0, 'budget_used': 0, 'counter': getattr(self.counter, 'name', 'caller_supplied'),
-                    'timing_ms': {'sparse': 0.0, 'query_embedding': 0.0, 'retrieval_total': 0.0,
-                                  'pack': 0.0, 'total': (time.perf_counter()-start)*1000},
-                    'query_embedding_cache_hit': False, 'semantic_encoder_used': False,
-                    'answer_generated': False, 'empty_reason': 'zero_budget', 'result_cache_hit': False}
+    def _lexical_channels(self,scope,query,mode,candidate_limit):
         tokens = terms(query)[:64]
         speakers = set()
         for row in self.db.execute('SELECT DISTINCT speaker FROM docs WHERE scope=?', (scope,)):
@@ -436,6 +606,55 @@ class SearchIndex:
         elif mode != 'dense':
             channels.append(self._fts('lexical', scope, focus, candidate_limit))
             channels.append(self._fts('lexical', scope, [t for t in tokens if t not in STOP], candidate_limit, True))
+        return channels
+
+    def _validate_search_options(self,scope,query,*,budget=600,mode='sparse',candidate_limit=100,
+                                 neighbor_turns=0,encoder=None,model_id=None,entity_projection=False,features=None,diagnostics=False,scorer='numpy_reference'):
+        from .features import RetrievalFeatures
+        features = RetrievalFeatures.parse(features)
+        if type(diagnostics) is not bool:raise ValueError('diagnostics must be boolean')
+        if scorer not in ('numpy_reference','torch_cpu','torch_cuda'):raise ValueError('unsupported dense scorer')
+        if type(entity_projection) is not bool:raise ValueError('entity projection requires explicit boolean')
+        entity_projection = entity_projection or features.entity
+        if not scope or not isinstance(query, str) or not query.strip():
+            raise ValueError('nonempty scope and query required')
+        if type(budget) is not int or not 0 <= budget <= 32768:
+            raise ValueError('budget must be an integer from 0 to 32768')
+        if (mode not in ('literal', 'sparse', 'hybrid', 'dense') or type(candidate_limit) is not int
+                or not 1 <= candidate_limit <= 1000 or type(neighbor_turns) is not int
+                or neighbor_turns not in (0, 1, 2)):
+            raise ValueError('invalid retrieval settings')
+        if type(entity_projection) is not bool or (entity_projection and mode not in ('sparse', 'hybrid')):
+            raise ValueError('entity projection requires sparse/hybrid mode and an explicit boolean')
+        if len(query) > 16000:
+            raise ValueError('query too long')
+        if budget and mode in ('dense','hybrid'):
+            if encoder is None or not model_id:raise ValueError('dense mode requires an explicit local encoder and model identity')
+            if getattr(encoder,'model_id',model_id)!=model_id:raise ValueError('encoder identity mismatch')
+        return features,entity_projection
+
+    def _search(self, scope: str, query: str, *, budget=600, mode='sparse', candidate_limit=100,
+               neighbor_turns=0, encoder=None, model_id=None, entity_projection=False, features=None, diagnostics=False, scorer='numpy_reference') -> dict:
+        start = time.perf_counter()
+        features,entity_projection=self._validate_search_options(scope,query,budget=budget,mode=mode,candidate_limit=candidate_limit,neighbor_turns=neighbor_turns,encoder=encoder,model_id=model_id,entity_projection=entity_projection,features=features,diagnostics=diagnostics,scorer=scorer)
+        self._last_dense_diagnostics = {}
+        self._fts_elapsed_ms = 0.0
+        generation = self.db.execute('SELECT generation FROM scopes WHERE scope=?', (scope,)).fetchone()
+        if generation is None:
+            raise ValueError('scope not indexed')
+        if budget == 0:
+            return {'scope': scope, 'generation': generation[0], 'mode': mode, 'context': '',
+                    'selected': [], 'ranked_ids': [], 'candidate_count': 0,
+                    'budget': 0, 'budget_used': 0, 'counter': getattr(self.counter, 'name', 'caller_supplied'),
+                    'timing_ms': {'sparse': 0.0, 'query_embedding': 0.0, 'retrieval_total': 0.0,
+                                  'pack': 0.0, 'total': (time.perf_counter()-start)*1000},
+                    'query_embedding_cache_hit': False, 'semantic_encoder_used': False,
+                    'answer_generated': False, 'empty_reason': 'zero_budget', 'result_cache_hit': False}
+        prepared=getattr(self,'_batch_lexical',None)
+        channels=list(prepared[query]) if prepared is not None and query in prepared else self._lexical_channels(scope,query,mode,candidate_limit)
+        if features.explicit_alias:
+            from .features import AliasIndex
+            channels.append(AliasIndex(self.rows(scope),features.aliases).lookup(query,candidate_limit))
         sparse_ms = (time.perf_counter() - start) * 1000
         embedding_ms, query_cached = 0.0, False
         if mode in ('hybrid', 'dense'):
@@ -443,13 +662,16 @@ class SearchIndex:
                 raise ValueError('dense mode requires an explicit local encoder and model identity')
             if getattr(encoder, 'model_id', model_id) != model_id:
                 raise ValueError('encoder identity mismatch')
-            dense, embedding_ms, query_cached = self._dense_search(scope, query, encoder, model_id, candidate_limit)
+            dense, embedding_ms, query_cached = self._dense_search(scope, query, encoder, model_id, candidate_limit,scorer)
             channels.append(dense)
+        fusion_start=time.perf_counter()
         scores = {}
         for channel in channels:
             for rank, rid in enumerate(dict.fromkeys(channel), 1):
                 scores[rid] = scores.get(rid, 0.0) + 1.0 / (60.0 + rank)
         ordered = sorted(scores, key=lambda rid: (-scores[rid], rid))
+        fusion_ms=(time.perf_counter()-fusion_start)*1000
+        material_start=time.perf_counter()
         by_rowid = {}
         for offset in range(0, len(ordered), 500):
             batch = ordered[offset:offset+500]
@@ -457,13 +679,22 @@ class SearchIndex:
             for row in self.db.execute(f'SELECT * FROM docs WHERE scope=? AND rowid IN ({marks})', (scope, *batch)):
                 by_rowid[row['rowid']] = dict(row)
         ranked = [by_rowid[rid] for rid in ordered]
+        material_ms=(time.perf_counter()-material_start)*1000
         ranked = self._rank_candidates(scope, query, ranked)
         if entity_projection:
             from .entities import reorder
             ranked = reorder(ranked, query)
+        if features.temporal or features.query_grammar:
+            from .features import reorder
+            ranked = reorder(ranked,query,features)
+        expansion_receipt=[]
+        if features.association:
+            from .features import expand
+            ranked,expansion_receipt=expand(ranked,self.rows(scope),features)
         ranked_ids = [r['id'] for r in ranked]
         retrieval_ms = (time.perf_counter() - start) * 1000
         # Optional adjacent context is actual text, not automatic credit for unseen IDs.
+        expansion_start=time.perf_counter()
         expanded, seen = [], set()
         for row in ranked:
             candidates = [row]
@@ -476,18 +707,39 @@ class SearchIndex:
                 if item['rowid'] not in seen:
                     seen.add(item['rowid'])
                     expanded.append(item)
-        context, selected, final_units = self._pack_candidates(expanded, budget, query)
+        neighbor_ms=(time.perf_counter()-expansion_start)*1000
+        if features.segment:
+            from .features import pack_segments
+            context,selected,final_units=pack_segments(self,expanded,budget,query)
+        else:
+            context, selected, final_units = self._pack_candidates(expanded, budget, query)
         total_ms = (time.perf_counter()-start)*1000
+        if diagnostics and self._last_dense_diagnostics:
+            by_id={r['rowid']:r['id'] for r in self.rows(scope)}
+            self._last_dense_diagnostics.update(candidate_ids=[by_id[rid] for rid in self._last_dense_diagnostics.get('candidate_rowids',[])],
+                selected_ids=[r['id'] for r in selected],budget_cutoff=budget,budget_used=final_units,feature_components=features.identity())
         return {'scope': scope, 'generation': generation[0], 'mode': mode, 'context': context,
+                'features':features.identity(),'candidate_expansion':expansion_receipt,
+                'parent_locator_ids':[r.get('parent_id',r['id']) for r in selected],
+                'complete_evidence_ids':[r['id'] for r in selected if r['complete']],
+                'runtime_diagnostics':dict(self._last_dense_diagnostics) if diagnostics else None,
                 'selected': selected, 'ranked_ids': ranked_ids, 'candidate_count': len(ranked),
                 'budget': budget, 'budget_used': final_units,
                 'counter': getattr(self.counter, 'name', 'caller_supplied'),
-                'timing_ms': {'sparse': sparse_ms, 'query_embedding': embedding_ms,
+                'timing_ms': {'fts':self._fts_elapsed_ms,'fusion':fusion_ms,'row_materialization':material_ms,'neighbor_expansion':neighbor_ms,
+                              'dense_matrix_load':self._last_dense_diagnostics.get('dense_matrix_load',0.0),'dense_scoring':self._last_dense_diagnostics.get('dense_scoring',0.0),
+                              'sparse': sparse_ms, 'query_embedding': embedding_ms,
                               'retrieval_total': retrieval_ms, 'pack': total_ms-retrieval_ms,
                               'total': total_ms},
                 'query_embedding_cache_hit': query_cached,
                 'semantic_encoder_used': mode in ('hybrid', 'dense'),
                 'answer_generated': False}
+
+    def _result_cache_key(self,scope,query,kwargs):
+        if type(self.counter) is not TokenCounter or not isinstance(scope,str) or not isinstance(query,str):return None
+        # Type tags preserve the same validation boundary for search and overlap.
+        settings=tuple(sorted((k,type(v).__name__,repr(v)) for k,v in kwargs.items() if k!='encoder'))
+        return (scope,query,settings,id(kwargs.get('encoder')),getattr(getattr(kwargs.get('encoder'),'profile',None),'id',None),id(self.counter),self.counter.name,id(self.counter.encode))
 
     def search(self, scope, query, **kwargs):
         """One read snapshot; cache only deterministic native counters and explicit inputs."""
@@ -496,11 +748,7 @@ class SearchIndex:
             self.db.execute('BEGIN')
             try:
                 self._refresh_caches()
-                key = None
-                if type(self.counter) is TokenCounter and isinstance(scope, str) and isinstance(query, str):
-                    # Type tags prevent True and 1 from sharing a validation-bypassing key.
-                    settings = tuple(sorted((k, type(v).__name__, repr(v)) for k, v in kwargs.items() if k != 'encoder'))
-                    key = (scope, query, settings, id(kwargs.get('encoder')), id(self.counter), self.counter.name, id(self.counter.encode))
+                key = self._result_cache_key(scope,query,kwargs)
                 if key is not None and key in self._results:
                     out = copy.deepcopy(self._results[key])
                     self._results.move_to_end(key)

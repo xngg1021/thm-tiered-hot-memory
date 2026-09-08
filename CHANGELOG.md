@@ -2,6 +2,14 @@
 
 This changelog is reconstructed from the repository's existing Git history. It does not invent retrospective semantic versions for commits that did not carry an explicit version identity.
 
+## Unreleased — zero-LLM heterogeneous runtime
+
+- Adds conservative hardware observations, explicit local backend preparation, content-bound embedding/runtime profiles and isolated bounded calibration.
+- Adds coexisting profile vectors, optional float32 BLOB, exact-input cache, transactional legacy migration, configurable document batching, search_many/GEMM and FTS/encoder overlap.
+- Adds bounded profile-safe scheduling, explicit sparse fallback receipts, runtime CLI, core-only ignition gate and shared harness feature configuration.
+- Adds default-off temporal/alias/grammar/segment/association successors and one-shot local verification runner. Existing entity projection is reused.
+- No accepted version bump, stable pointer movement, real hardware speedup claim or automatic retrieval-feature admission. See [runtime architecture](docs/17-zero-llm-heterogeneous-runtime.md).
+
 ## Unreleased — homepage and localization productization
 
 - Replaces the oversized in-page multilingual README panels with one canonical English homepage plus seven complete standalone localized homepages.
