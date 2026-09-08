@@ -42,7 +42,7 @@ class RuntimeScheduler:
         return min(candidates,key=lambda k:(self.pending[k]+(gpu_queue or 0 if self.profiles[k].device!='cpu' else cpu_load or 0),k not in self.warm,self.profiles[k].workload!=workload,k))
 
     def search(self,scope,query,*,workload='interactive',requested_profile=None,load=None,**kwargs):
-        if any(k in kwargs for k in ('encoder','model_id','scorer')):raise ValueError('scheduler owns execution settings')
+        if any(k in kwargs for k in ('encoder','model_id','scorer','overlap')):raise ValueError('scheduler owns execution settings')
         if self.policy in ('reference','auto-safe'):
             from ..features import RetrievalFeatures
             if RetrievalFeatures.parse(kwargs.get('features'))!=RetrievalFeatures() or kwargs.get('entity_projection',False):raise ValueError('strict policy disables uncalibrated retrieval features')
@@ -62,7 +62,7 @@ class RuntimeScheduler:
             if isinstance(query,list) and self.policy=='reference':
                 result=[self.index.search(scope,q,scorer=p.scorer,encoder=encoder,model_id=encoder.model_id,**kwargs) for q in query]
             elif isinstance(query,list):
-                result=self.index.search_many(scope,query,query_batch_size=p.query_batch_size,scorer=p.scorer,encoder=encoder,model_id=encoder.model_id,**kwargs)
+                result=self.index.search_many(scope,query,query_batch_size=p.query_batch_size,scorer=p.scorer,overlap=p.overlap,encoder=encoder,model_id=encoder.model_id,**kwargs)
             else:result=call(scope,query,scorer=p.scorer,encoder=encoder,model_id=encoder.model_id,**kwargs)
             with self.lock:self.warm.add(key)
         except Exception as exc:

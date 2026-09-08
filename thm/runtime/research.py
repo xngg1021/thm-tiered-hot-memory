@@ -82,7 +82,7 @@ class Execution:
             for query in queries:
                 if query in self.precomputed:index._cache[(self.encoder.profile.id,query)]=self.precomputed[query]
         if cfg.policy!='reference' and cfg.query_batch_size>1 and len(queries)>1:
-            results=index.search_many(scope,queries,query_batch_size=cfg.query_batch_size,scorer=cfg.scorer,**kwargs)
+            results=index.search_many(scope,queries,query_batch_size=cfg.query_batch_size,scorer=cfg.scorer,overlap=cfg.overlap,**kwargs)
         else:
             call=index.search_overlap if cfg.overlap else index.search
             results=[call(scope,q,scorer=cfg.scorer,**kwargs) for q in queries]

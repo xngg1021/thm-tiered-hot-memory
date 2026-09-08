@@ -448,11 +448,12 @@ class SearchIndex:
             'scores':[float(scores[int(i)]) for i in order]}
         return [ids[int(i)] for i in order],embed_ms,was_cached
 
-    def search_many(self,scope,queries,*,query_batch_size=32,scorer='numpy_reference',**kwargs):
+    def search_many(self,scope,queries,*,query_batch_size=32,scorer='numpy_reference',overlap=False,**kwargs):
         """Production batch API: one scope snapshot, bounded encode_many and GEMM."""
         from .runtime.identity import bounded_int
         from .runtime.scorers import score
         import itertools
+        if type(overlap) is not bool:raise ValueError('overlap must be boolean')
         batch=bounded_int(query_batch_size,'query batch',256)
         queries=list(itertools.islice(queries,4097))
         if len(queries)>4096 or any(not isinstance(q,str) or not q.strip() or len(q)>16000 for q in queries):raise ValueError('invalid bounded query batch')
@@ -475,9 +476,22 @@ class SearchIndex:
                     profile=getattr(encoder,'profile',None);identity=profile.id if profile else model_id
                     cached={q:self._cache[(identity,q)] for q in chunk if (identity,q) in self._cache}
                     misses=list(dict.fromkeys(q for q in chunk if q not in cached))
-                    vectors_by_query=dict(cached)
+                    vectors_by_query=dict(cached);self._batch_lexical={}
+                    overlap_active=overlap and bool(misses) and kwargs.get('mode')=='hybrid'
+                    encoder_ms=0.0;lexical_ms=0.0
                     if misses:
-                        raw=encoder(misses)
+                        if overlap_active:
+                            from concurrent.futures import ThreadPoolExecutor
+                            def encode_batch():
+                                at=time.perf_counter();raw=encoder(misses)
+                                return raw,(time.perf_counter()-at)*1000
+                            with ThreadPoolExecutor(max_workers=1,thread_name_prefix='thm-batch-encoder') as pool:
+                                future=pool.submit(encode_batch);lexical_start=time.perf_counter()
+                                for query in dict.fromkeys(chunk):self._batch_lexical[query]=self._lexical_channels(scope,query,'hybrid',limit)
+                                lexical_ms=(time.perf_counter()-lexical_start)*1000
+                                raw,encoder_ms=future.result()
+                        else:
+                            at=time.perf_counter();raw=encoder(misses);encoder_ms=(time.perf_counter()-at)*1000
                         if profile:
                             from .runtime.identity import validate_vectors
                             validate_vectors(raw,profile,len(misses))
@@ -485,7 +499,7 @@ class SearchIndex:
                         for q,v in zip(misses,fresh):
                             self._cache[(identity,q)]=v
                             if len(self._cache)>256:self._cache.popitem(last=False)
-                    vectors=[vectors_by_query[q] for q in chunk];embed_ms=(time.perf_counter()-started)*1000
+                    vectors=[vectors_by_query[q] for q in chunk];preparation_ms=(time.perf_counter()-started)*1000;embed_ms=encoder_ms
                     values,timing=score(matrix,vectors,scorer);self._batch_dense={}
                     for column,q in enumerate(chunk):
                         row_start=time.perf_counter();ranking_start=row_start
@@ -494,7 +508,7 @@ class SearchIndex:
                         self._batch_dense={q:([ids[int(i)] for i in order],embed_ms/len(chunk),q in cached)}
                         result=self._search(scope,q,**kwargs)
                         result['timing_kind']='post-batch-search; embedding/scoring measured once in batch_receipt'
-                        result['batch_receipt']={'query_batch_size':len(chunk),'embedding_ms':embed_ms,'encoded_queries':len(misses),'cached_queries':len(chunk)-sum(q not in cached for q in chunk),'dense_matrix_load':load_ms,**timing}
+                        result['batch_receipt']={'query_batch_size':len(chunk),'embedding_ms':embed_ms,'batch_preparation_ms':preparation_ms,'lexical_preparation_ms':lexical_ms,'overlap_requested':overlap,'overlap_active':overlap_active,'encoded_queries':len(misses),'cached_queries':len(chunk)-sum(q not in cached for q in chunk),'dense_matrix_load':load_ms,**timing}
                         result['result_cache_hit']=False;result['runtime_diagnostics']={'embedding_profile_id':getattr(getattr(encoder,'profile',None),'id',model_id),
                             'scorer':scorer,'candidate_rowids':[ids[int(i)] for i in order],'candidate_ids':[candidate_ids[ids[int(i)]] for i in order],
                             'selected_ids':[r['id'] for r in result['selected']],'budget_cutoff':result['budget'],'budget_used':result['budget_used'],
@@ -502,10 +516,11 @@ class SearchIndex:
                         row_ms=(time.perf_counter()-row_start)*1000
                         result['timing_ms']['dense_ranking']=ranking_ms
                         result['timing_ms']['batch_row_overhead']=max(0.0,row_ms-result['timing_ms']['total'])
-                        result['timing_ms']['amortized_total']=row_ms+(embed_ms+timing['dense_scoring'])/len(chunk)+load_ms/len(queries)
+                        result['timing_ms']['amortized_total']=row_ms+(preparation_ms+timing['dense_scoring'])/len(chunk)+load_ms/len(queries)
+                        if overlap:result['overlap']={'requested':True,'active':overlap_active,'cpu':'caller-thread SQLite/FTS','accelerator':'batched query embedding','microbatch_delay_ms':0}
                         out.append(result)
                 return out
-            finally:self._batch_dense=None;self.db.rollback()
+            finally:self._batch_dense=None;self._batch_lexical=None;self.db.rollback()
 
     def search_overlap(self,scope,query,**kwargs):
         """Encoder worker overlaps caller-thread SQLite FTS; no cross-thread DB use."""
@@ -568,6 +583,21 @@ class SearchIndex:
             raise ValueError('counter changed while packing; final context exceeds budget')
         return context, selected, final_units
 
+    def _lexical_channels(self,scope,query,mode,candidate_limit):
+        tokens = terms(query)[:64]
+        speakers = set()
+        for row in self.db.execute('SELECT DISTINCT speaker FROM docs WHERE scope=?', (scope,)):
+            speakers.update(terms(row[0]))
+        focus = [t for t in tokens if t not in STOP and t not in speakers]
+        focus = focus or [t for t in tokens if t not in STOP]
+        channels = []
+        if mode == 'literal':
+            channels.append(self._fts('literal', scope, tokens, candidate_limit))
+        elif mode != 'dense':
+            channels.append(self._fts('lexical', scope, focus, candidate_limit))
+            channels.append(self._fts('lexical', scope, [t for t in tokens if t not in STOP], candidate_limit, True))
+        return channels
+
     def _search(self, scope: str, query: str, *, budget=600, mode='sparse', candidate_limit=100,
                neighbor_turns=0, encoder=None, model_id=None, entity_projection=False, features=None, diagnostics=False, scorer='numpy_reference') -> dict:
         start = time.perf_counter()
@@ -602,18 +632,8 @@ class SearchIndex:
                                   'pack': 0.0, 'total': (time.perf_counter()-start)*1000},
                     'query_embedding_cache_hit': False, 'semantic_encoder_used': False,
                     'answer_generated': False, 'empty_reason': 'zero_budget', 'result_cache_hit': False}
-        tokens = terms(query)[:64]
-        speakers = set()
-        for row in self.db.execute('SELECT DISTINCT speaker FROM docs WHERE scope=?', (scope,)):
-            speakers.update(terms(row[0]))
-        focus = [t for t in tokens if t not in STOP and t not in speakers]
-        focus = focus or [t for t in tokens if t not in STOP]
-        channels = []
-        if mode == 'literal':
-            channels.append(self._fts('literal', scope, tokens, candidate_limit))
-        elif mode != 'dense':
-            channels.append(self._fts('lexical', scope, focus, candidate_limit))
-            channels.append(self._fts('lexical', scope, [t for t in tokens if t not in STOP], candidate_limit, True))
+        prepared=getattr(self,'_batch_lexical',None)
+        channels=list(prepared[query]) if prepared is not None and query in prepared else self._lexical_channels(scope,query,mode,candidate_limit)
         if features.explicit_alias:
             from .features import AliasIndex
             channels.append(AliasIndex(self.rows(scope),features.aliases).lookup(query,candidate_limit))

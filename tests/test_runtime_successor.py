@@ -610,3 +610,32 @@ class RuntimeReviewRegressionTests(unittest.TestCase):
                 row=self.index.search_overlap('s','alpha',mode=mode,budget=0,encoder=e,model_id=e.model_id)
                 self.assertFalse(row['semantic_encoder_used'])
         self.assertEqual(e.calls,[])
+
+    def test_batch_overlap_runs_fts_while_encoder_is_waiting(self):
+        from thm.runtime.research import Execution,ExecutionConfig
+        started=threading.Event();lexical=threading.Event();caller=threading.get_ident()
+        class Encoder(FakeEncoder):
+            blocking=False
+            def __call__(encoder,texts):
+                if encoder.blocking:
+                    started.set()
+                    if not lexical.wait(2):raise AssertionError('lexical work did not overlap encoding')
+                return super().__call__(texts)
+        e=Encoder();self.index.embed('s',e,e.model_id)
+        reference=self.index.search_many('s',['alpha','beta'],mode='hybrid',encoder=e,model_id=e.model_id)
+        self.index._cache.clear();e.blocking=True;original=self.index._lexical_channels
+        def prepare(*args):
+            self.assertEqual(threading.get_ident(),caller);self.assertTrue(started.wait(2));lexical.set();return original(*args)
+        execution=Execution(ExecutionConfig(policy='auto-throughput',query_batch_size=2,overlap=True),None,e.model_id);execution.encoder=e
+        with patch.object(self.index,'_lexical_channels',side_effect=prepare):rows=execution.search_many(self.index,'s',['alpha','beta'],mode='hybrid')
+        self.assertEqual([r['ranked_ids'] for r in rows],[r['ranked_ids'] for r in reference])
+        self.assertTrue(all(r['batch_receipt']['overlap_active'] for r in rows));self.assertIsNone(self.index._batch_lexical)
+        with patch('concurrent.futures.ThreadPoolExecutor',side_effect=AssertionError('cached batch must not encode')):
+            cached=execution.search_many(self.index,'s',['alpha','beta'],mode='hybrid')
+        self.assertTrue(all(not r['overlap']['active'] for r in cached));execution.close()
+    def test_scheduler_passes_calibrated_overlap_to_batch_api(self):
+        e=FakeEncoder();self.index.embed('s',e,e.model_id);p=self.profile(e,overlap=True)
+        with RuntimeScheduler(self.index,[p],{e.profile.id:e}) as scheduler:
+            with patch.object(self.index,'search_many',wraps=self.index.search_many) as call:
+                rows=scheduler.search_many('s',['alpha','beta'],mode='hybrid')
+            self.assertTrue(call.call_args.kwargs['overlap']);self.assertTrue(all(r['batch_receipt']['overlap_active'] for r in rows))
