@@ -81,6 +81,9 @@ def run(dataset, counter, modes, budgets, *, model_path=None, model_id=None, lim
         threads=None, device='cpu', batch_size=64, execution_config=None, cache_path=None):
     if not isinstance(dataset, list) or not dataset:
         raise ValueError("nonempty instance list required")
+    if not modes or len(set(modes))!=len(modes) or any(m not in ('literal','sparse','dense','hybrid') for m in modes):raise ValueError('unique supported modes required')
+    if not budgets or len(set(budgets))!=len(budgets) or any(type(b) is not int or not 0<=b<=32768 for b in budgets):raise ValueError('unique valid budgets required')
+    if limit is not None and (type(limit) is not int or limit<=0):raise ValueError('positive integer limit required')
     if limit:
         dataset = dataset[:limit]
     ids = [str(x["question_id"]) for x in dataset]

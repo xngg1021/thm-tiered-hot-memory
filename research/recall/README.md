@@ -34,3 +34,9 @@ No unverified weighted composite recall (83.5% or 92.3%) is a measured THM outco
 ## Remaining limits
 
 The basic lexical path still cannot solve arbitrary paraphrase or implicit reference. The dense path uses a chosen external encoder and introduces build time, memory and inference cost. The provider tests are not live-host integration. Synthetic decay results are not a measured aging curve of real user knowledge. Every optional capability must report whether it actually executed.
+
+## Unreleased runtime integration
+
+The canonical SearchIndex now exposes typed default-off RetrievalFeatures and bounded search_many; existing search/entity and residency behavior remain compatible. Optional runtime setup, profile/vector identity, isolated calibration and the final local experiment contract are described in [runtime architecture](../../docs/17-zero-llm-heterogeneous-runtime.md). Runtime-dependent hardware performance remains pending-real-local-runtime.
+
+Benchmark CLIs retain reference sequential mode and accept explicit `--runtime-policy`, `--backend`, `--query-batch-size`, `--batch-size`, `--vector-storage`, `--embedding-cache`, `--runtime-profile`, `--overlap`, `--scorer` and `--features-json`. Performance and feature experiments are separately identified. Use `research/runtime/verify.py` for the reserved full local package.

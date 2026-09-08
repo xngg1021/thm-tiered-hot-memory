@@ -59,7 +59,8 @@ def execute(args):
     if cuda:backends.append(('torch_fp32','cuda'))
     for backend,cap in available().items():
         if backend=='torch_fp32' or not cap['installed'] or (backend.endswith('int8') and not args.include_approximate):continue
-        receipt=prepare(args.model_path,root/'derived-models',backend)
+        try:receipt=prepare(args.model_path,root/'derived-models',backend)
+        except Exception as exc:receipt={'status':'failed','error_type':type(exc).__name__,'backend':backend}
         write_receipt(root/(backend+'-preparation.json'),receipt)
         if receipt.get('status')=='prepared':backend_paths[backend]=str((root/'derived-models'/receipt['artifact_locator']).resolve());backends.append((backend,'cpu'))
     tunes={}
@@ -92,7 +93,13 @@ def execute(args):
             result=subprocess.run(command,stdout=log,stderr=subprocess.STDOUT)
         receipt={'arm':arm['name'],'dataset':label,'returncode':result.returncode,'wall_seconds':time.perf_counter()-start,
             'artifact':output.name,'feature_experiment':features,'generation_calls':0}
-        if result.returncode==0:receipt['sha256']=hashlib.sha256(output.read_bytes()).hexdigest()
+        if result.returncode==0:
+            receipt['sha256']=hashlib.sha256(output.read_bytes()).hexdigest()
+            artifact=json.loads(output.read_text())
+            receipt['runtime']=artifact.get('runtime')
+            receipt['index_build_seconds']=sum(b['index_seconds'] for b in artifact.get('builds',[]))
+            receipt['document_embedding_seconds']=sum(b.get('embedding',{}).get('seconds',0) for b in artifact.get('builds',[]))
+            receipt['quality']={k:v.get('main_categories_1_to_4',v.get('all_instances')) for k,v in artifact.get('summaries',{}).items()}
         rows.append(receipt);write_receipt(root/(arm['name']+'-'+label+'-execution.json'),receipt)
     for arm in arms:
         for dataset,label in [(args.locomo_dataset,'locomo'),(args.lme_dataset,'lme')]:run_arm(arm,dataset,label)

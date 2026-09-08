@@ -26,6 +26,7 @@ def main(argv=None):
         if getattr(args,'output',None) and Path(args.output).exists():raise ValueError('output already exists')
         if args.command in ('doctor','probe','status'):
             h=probe();result={'schema':1,'core_only_available':True,'semantic_accelerators':available(),'hardware':h.identity(),
+                'semantic_status':'explicit-local-model-and-backend-required','reason':'core-ready; semantic setup is optional',
                 'selected_profile':None,'profile_freshness':'not-configured','generation_calls':0,'model_downloads':0}
             if args.command=='probe':
                 from .capabilities import backend_probe

@@ -1,6 +1,6 @@
 """Lazy backend registry; all implementations require local model bytes."""
 from typing import Protocol
-from ..identity import bounded_int, manifest, EmbeddingProfile
+from ..identity import bounded_int, manifest, EmbeddingProfile, digest
 from ..hardware import versions
 import json
 from pathlib import Path
@@ -24,7 +24,7 @@ REGISTRY = {'torch_fp32':('torch','torch','fp32'), 'onnxruntime_fp32':('onnxrunt
 
 def available():
     installed = versions()
-    return {name: {'installed':bool(installed.get(package) or (package == 'onnxruntime' and installed.get('onnxruntime-gpu'))),
+    return {name: {'installed':bool(installed.get('sentence-transformers') and installed.get('numpy') and (installed.get(package) or (package == 'onnxruntime' and installed.get('onnxruntime-gpu')))),
                    'precision':precision,'real_runtime_validation':'pending-real-local-runtime'}
             for name,(package,_,precision) in REGISTRY.items()}
 
@@ -50,7 +50,11 @@ class LocalEncoder:
             receipt = json.loads((Path(path)/'thm-preparation.json').read_text())
             if receipt['backend'] != backend or receipt['derived_manifest_sha256'] != source['sha256']:
                 raise ValueError('derived model identity mismatch; prepare locally again')
-            source_sha, derived_sha, transform = receipt['source_manifest_sha256'], source['sha256'], receipt['transformation']
+            source_sha, derived_sha = receipt['source_manifest_sha256'], source['sha256']
+            transform=digest({k:receipt[k] for k in ('backend','precision','source_manifest_sha256','transformation','model_file','converter_versions')})
+            if receipt['precision']!=precision:raise ValueError('derived precision contract mismatch')
+            selected=Path(receipt['model_file'])
+            if selected.is_absolute() or '..' in selected.parts or not (Path(path)/selected).is_file():raise ValueError('invalid derived model locator')
             kwargs = {'file_name':receipt['model_file'], 'export':False}
             if family == 'onnx':
                 import onnxruntime as ort

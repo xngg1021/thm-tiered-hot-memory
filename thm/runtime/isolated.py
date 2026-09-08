@@ -17,7 +17,7 @@ class IsolatedEncoder:
         self.batch_size=self.document_batch_size;self.device=config['device'];self.lock=threading.RLock()
         self.temp=tempfile.TemporaryDirectory();path=Path(self.temp.name)/'config.json';path.write_text(json.dumps(config))
         self.process=subprocess.Popen([sys.executable,'-m','thm.runtime.worker','serve',str(path)],stdin=subprocess.PIPE,stdout=subprocess.PIPE,stderr=subprocess.DEVNULL,text=True,bufsize=1)
-        self.queue=queue.Queue()
+        self.queue=queue.Queue();self.worker_wall_ms=0.0;self.worker_cpu_ms=0.0
         self.reader=threading.Thread(target=self._read,name='thm-worker-reader',daemon=True);self.reader.start()
         try:
             identity=self._receive()['identity'];self._identity=identity
@@ -40,7 +40,8 @@ class IsolatedEncoder:
         with self.lock:
             if self.process.poll() is not None:raise RuntimeError('encoder closed')
             self.process.stdin.write(json.dumps({'texts':list(texts)},ensure_ascii=False)+'\n');self.process.stdin.flush()
-            return self._receive()['vectors']
+            result=self._receive();self.worker_wall_ms+=result.get('worker_wall_ms',0);self.worker_cpu_ms+=result.get('worker_cpu_ms',0)
+            return result['vectors']
     def encode_one(self,text):return self.encode_many([text])[0]
     def __call__(self,texts):return self.encode_many(texts)
     def close(self):
@@ -49,7 +50,7 @@ class IsolatedEncoder:
                 self.process.terminate()
                 try:self.process.wait(timeout=5)
                 except subprocess.TimeoutExpired:self.process.kill();self.process.wait()
+            if threading.current_thread()!=self.reader:self.reader.join(timeout=5)
             for stream in (self.process.stdin,self.process.stdout):
                 if stream:stream.close()
-            if threading.current_thread()!=self.reader:self.reader.join(timeout=5)
             self.temp.cleanup()

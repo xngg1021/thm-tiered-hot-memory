@@ -90,7 +90,7 @@ def probe():
         raw = read('/proc/cpuinfo') or ''
         records = [dict(line.split(':',1) for line in block.splitlines() if ':' in line) for block in raw.split('\n\n') if block]
         records = [{k.strip():v.strip() for k,v in r.items()} for r in records]
-        available = [r for r in records if h.cpu_affinity is None or int(r.get('processor','-1')) in h.cpu_affinity]
+        available = [r for r in records if h.cpu_affinity is None or (r.get('processor','').isdigit() and int(r['processor']) in h.cpu_affinity)]
         first = available[0] if available else {}
         h.vendor, h.model = first.get('vendor_id'), first.get('model name') or first.get('Processor')
         reported = [set((r.get('flags') or r.get('Features')).split()) for r in available if r.get('flags') or r.get('Features')]
@@ -156,6 +156,7 @@ def probe():
                 h.cpu_affinity=[i for i in range(ctypes.sizeof(process_mask)*8) if process_mask.value & (1<<i)]
                 h.process_available_cpus=len(h.cpu_affinity)
             else:h.process_available_cpus=None
+            kernel.GetProcessGroupAffinity.argtypes=[wintypes.HANDLE,ctypes.POINTER(wintypes.USHORT),ctypes.POINTER(wintypes.USHORT)]
             count=wintypes.USHORT(64);groups=(wintypes.USHORT*64)()
             if kernel.GetProcessGroupAffinity(kernel.GetCurrentProcess(),ctypes.byref(count),groups):h.processor_groups=list(groups[:count.value])
         except (AttributeError,OSError,ValueError):h.process_available_cpus=None

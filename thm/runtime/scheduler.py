@@ -35,6 +35,9 @@ class RuntimeScheduler:
         return min(candidates,key=lambda k:(self.pending[k]+(gpu_queue or 0 if self.profiles[k].device!='cpu' else cpu_load or 0),k not in self.warm,self.profiles[k].workload!=workload,k))
 
     def search(self,scope,query,*,workload='interactive',requested_profile=None,load=None,**kwargs):
+        if self.policy=='reference':
+            from ..features import RetrievalFeatures
+            if RetrievalFeatures.parse(kwargs.get('features'))!=RetrievalFeatures() or kwargs.get('entity_projection',False):raise ValueError('reference disables experimental retrieval features')
         with self.lock:
             if self.closed:raise RuntimeError('scheduler closed')
             key=requested_profile or self.choose(workload,**(load or {}))

@@ -1,6 +1,7 @@
 """Bounded subprocess calibration; semantic admission precedes performance choice."""
 from dataclasses import asdict
 import json
+import math
 from pathlib import Path
 import subprocess
 import sys
@@ -13,6 +14,9 @@ from .profiles import RuntimeProfile,fingerprint
 
 def candidates(hardware,backends,policy='auto-safe',maximum=12):
     bounded_int(maximum,'candidate cap',32)
+    if policy=='reference':
+        if len(backends)!=1 or backends[0][0]!='torch_fp32':raise ValueError('reference requires one fixed Torch backend/device')
+        return [{'backend':'torch_fp32','device':backends[0][1],'threads':1,'document_batch_size':64,'query_batch_size':1,'affinity':[],'scorer':'numpy_reference'}]
     available=hardware.process_available_cpus or 1
     # Never occupy every available core by default; an explicit local experiment may override.
     cap=min(8,max(1,available-1))
@@ -67,6 +71,8 @@ def retrieval_signature(measured):
 def gate(reference,candidate):
     if candidate.get('status')!='ok':return {'admitted':False,'reason':'candidate-failed'}
     if reference.get('corpus_sha256')!=CORPUS_SHA or candidate.get('corpus_sha256')!=CORPUS_SHA:raise ValueError('calibration corpus identity mismatch')
+    if reference['identity']['source_manifest_sha256']!=candidate['identity']['source_manifest_sha256']:
+        return {'admitted':False,'reason':'source-model-mismatch'}
     fields=EmbeddingProfile.__dataclass_fields__
     profile=EmbeddingProfile(**{k:v for k,v in candidate['identity'].items() if k in fields})
     for name,n in [('document_vectors',len(DOCUMENTS)),('query_vectors',len(QUERIES))]:validate_vectors(candidate[name],profile,n)
@@ -95,7 +101,14 @@ def autotune(model_path,model_id,*,backends=None,policy='auto-safe',workload='in
     trials=[]
     for config in candidates(hardware,backends or [('torch_fp32','cpu')],policy,maximum):
         result=runner({**ref,**config,'model_path':str((backend_paths or {}).get(config['backend'],model_path))},timeout);result['query_batch_size']=config['query_batch_size']
-        try:semantic=gate(reference,result)
+        try:
+            if result.get('status')=='ok':
+                ident=result['identity']
+                if ident['backend']!=config['backend'] or ident['device']!=config['device']:raise ValueError('candidate execution identity mismatch')
+                for field in ('single_query_p95_ms','queries_per_second','docs_per_second'):
+                    value=result[field]
+                    if type(value) not in (int,float) or not math.isfinite(value) or value<=0:raise ValueError('invalid candidate timing')
+            semantic=gate(reference,result)
         except (ValueError,KeyError,TypeError) as exc:semantic={'admitted':False,'reason':'invalid-candidate','error_type':type(exc).__name__}
         accepted=result.get('status')=='ok' and (semantic.get('admitted') or (policy in ('auto-throughput','approximate-performance') and semantic.get('reason')=='retrieval-drift'))
         trials.append({'config':config,'result':result,'semantic_gate':semantic,'eligible':accepted})

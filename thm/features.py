@@ -42,7 +42,10 @@ class QueryHints:
     conjunction: str | None = None
     operands: tuple = ()
     identifiers: tuple = ()
+    months: tuple = ()
 
+
+MONTHS={name:i for i,name in enumerate(('january','february','march','april','may','june','july','august','september','october','november','december'),1)}
 
 def parse_query(query):
     if not isinstance(query,str) or len(query)>16000:return QueryHints()
@@ -53,16 +56,23 @@ def parse_query(query):
         try:
             parts=[int(x) for x in token.split('-')];stamp=date(*((parts+[1,1])[:3]));dates.append(stamp.isoformat())
         except ValueError:pass
+    months=tuple(dict.fromkeys(MONTHS[m.group(0).lower()] for m in re.finditer(r'\b('+'|'.join(MONTHS)+r')\b',query,re.I)))
+    for match in re.finditer(r'\b('+'|'.join(MONTHS)+r')\s+((?:19|20)\d{2})\b',query,re.I):
+        year=int(match.group(2));dates=[d for d in dates if d!=f'{year}-01-01'];dates.append(date(year,MONTHS[match.group(1).lower()],1).isoformat())
     join=re.fullmatch(r'\s*(.{1,256}?)\s+(AND|OR)\s+(.{1,256}?)\s*',query)
     ids=tuple(re.findall(r'\b[A-Za-z0-9]+(?:[-_./][A-Za-z0-9]+)+\b',query))
     return QueryHints(kind.group(1).upper() if kind else None,temporal.group(1).lower() if temporal else None,tuple(dates),
-                      join.group(2) if join else None,(join.group(1),join.group(3)) if join else (),ids)
+                      join.group(2) if join else None,(join.group(1),join.group(3)) if join else (),ids,months)
 
 
 def timestamp(value):
     match=re.search(r'\b((?:19|20)\d{2})-(\d{2})-(\d{2})\b',value)
     if match:
         try:return date(*map(int,match.groups()))
+        except ValueError:pass
+    match=re.search(r'\b(\d{1,2})\s+('+'|'.join(MONTHS)+r'),?\s+((?:19|20)\d{2})\b',value,re.I)
+    if match:
+        try:return date(int(match.group(3)),MONTHS[match.group(2).lower()],int(match.group(1)))
         except ValueError:pass
     return None
 
@@ -104,8 +114,9 @@ def reorder(rows,query,features):
             elif op in ('after','next') and len(dates)==1:temporal_score=int(stamp>dates[0])
             elif op=='between' and len(dates)==2:temporal_score=int(min(dates)<=stamp<=max(dates))
             elif dates:temporal_score=int(any(stamp.year==d.year and (f'{d.year:04d}-{d.month:02d}' not in query or stamp.month==d.month) for d in dates))
+            elif hints.months:temporal_score=int(stamp.month in hints.months)
             elif op in ('first','latest'):temporal_score=stamp.toordinal()*(1 if op=='latest' else -1)
-        active=features.temporal and (hints.temporal in ('first','latest','before','after','between','previous','next') or bool(hints.dates))
+        active=features.temporal and (hints.temporal in ('first','latest','before','after','between','previous','next') or bool(hints.dates) or bool(hints.months))
         return grammar,int(bool(active and lexical and stamp)),temporal_score
     return sorted(rows,key=score,reverse=True)
 

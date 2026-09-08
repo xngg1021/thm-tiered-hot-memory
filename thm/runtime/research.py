@@ -36,19 +36,27 @@ class Execution:
         if cache_path and config.policy=='reference':raise ValueError('reference disables embedding cache')
         if model_path:
             from .isolated import IsolatedEncoder
-            self.encoder=IsolatedEncoder({'model_path':str(model_path),'model_id':model_id,'backend':config.backend,'device':config.device,
-                'threads':config.threads,'document_batch_size':config.document_batch_size,'query_batch_size':config.query_batch_size})
+            p=None
             if config.runtime_profile_file:
-                import json
-                from pathlib import Path
-                from .profiles import load_profile,fingerprint
-                from .hardware import probe
-                p=load_profile(config.runtime_profile_file);identity=self.encoder.profile
-                p.require_fresh(fingerprint(probe(),identity.source_manifest_sha256,identity.derived_manifest_sha256,identity.id))
-                if p.embedding_profile_id!=identity.id:raise ValueError('runtime/document profile mismatch')
-            if cache_path:
-                from .storage import EmbeddingCache
-                self.cache=EmbeddingCache(cache_path)
+                from .profiles import load_profile
+                p=load_profile(config.runtime_profile_file)
+                for field in ('backend','device','threads','document_batch_size','query_batch_size','scorer','policy'):
+                    if getattr(config,field)!=getattr(p,field):raise ValueError('runtime execution settings differ from calibrated profile')
+            try:
+                self.encoder=IsolatedEncoder({'model_path':str(model_path),'model_id':model_id,'backend':config.backend,'device':config.device,
+                    'threads':config.threads,'document_batch_size':config.document_batch_size,'query_batch_size':config.query_batch_size,
+                    'affinity':list(p.affinity) if p else []})
+                if p:
+                    from .profiles import fingerprint
+                    from .hardware import probe
+                    identity=self.encoder.profile
+                    p.require_fresh(fingerprint(probe(),identity.source_manifest_sha256,identity.derived_manifest_sha256,identity.id))
+                    if p.embedding_profile_id!=identity.id:raise ValueError('runtime/document profile mismatch')
+                if cache_path:
+                    from .storage import EmbeddingCache
+                    self.cache=EmbeddingCache(cache_path)
+            except Exception:
+                self.close();raise
         self.initialization_ms=(time.perf_counter()-self.started)*1000
     def embed(self,index,scope):
         return index.embed(scope,self.encoder,self.encoder.model_id,document_batch_size=self.config.document_batch_size,
@@ -73,7 +81,8 @@ class Execution:
         from dataclasses import asdict
         config=asdict(self.config);config.pop('runtime_profile_file',None)
         return {'config':config,'embedding_profile':self.encoder.identity() if self.encoder else None,'initialization_ms':self.initialization_ms,
-            'query_preembedding_ms':self.query_embedding_precompute_ms,'wall_seconds':time.perf_counter()-self.started,
+            'encoder_worker_wall_ms':getattr(self.encoder,'worker_wall_ms',None),'encoder_worker_cpu_ms':getattr(self.encoder,'worker_cpu_ms',None),
+            'gpu_utilization_percent':None,'query_preembedding_ms':self.query_embedding_precompute_ms,'wall_seconds':time.perf_counter()-self.started,
             'cache':{'hits':self.cache.hits,'misses':self.cache.misses} if self.cache else None,'generation_calls':0,'observed_kernel_dispatch':None}
     def close(self):
         if self.cache:self.cache.close()

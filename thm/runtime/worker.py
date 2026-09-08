@@ -27,6 +27,7 @@ def measure(config):
     from .micro import DOCUMENTS,QUERIES,CORPUS_SHA
     from .identity import validate_vectors
     import statistics
+    cpu_start=time.process_time();overall_start=time.perf_counter()
     start=time.perf_counter()
     encoder=create(config['model_path'],config['model_id'],backend=config['backend'],device=config['device'],
         threads=config['threads'],document_batch_size=config['document_batch_size'],query_batch_size=config['query_batch_size'],isolated=True)
@@ -53,7 +54,9 @@ def measure(config):
             'queries_per_second':len(QUERIES)/batch,'single_query_p50_ms':statistics.median(single),
             'single_query_p95_ms':sorted(single)[max(0,__import__('math').ceil(.95*len(single))-1)],
             'batch_total_ms':batch*1000,'memory':memory,'document_vectors':docs,'query_vectors':query_vectors,
-            'generation_calls':0,'observed_kernel_dispatch':None}
+            'generation_calls':0,'observed_kernel_dispatch':None,
+            'cpu_process_seconds':time.process_time()-cpu_start,'cpu_utilization_percent':100*(time.process_time()-cpu_start)/(time.perf_counter()-overall_start),
+            'gpu_utilization_percent':None,'vram_peak':None}
     finally:encoder.close()
 
 
@@ -69,8 +72,9 @@ def serve(config):
         for line in sys.stdin:
             request=json.loads(line)
             if request.get('close'):break
+            start=time.perf_counter();cpu=time.process_time()
             with redirect_stdout(sys.stderr):vectors=encoder.encode_many(request['texts'])
-            print(json.dumps({'vectors':vectors},allow_nan=False),flush=True)
+            print(json.dumps({'vectors':vectors,'worker_wall_ms':(time.perf_counter()-start)*1000,'worker_cpu_ms':(time.process_time()-cpu)*1000},allow_nan=False),flush=True)
     finally:encoder.close()
 
 

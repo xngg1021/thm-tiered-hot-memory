@@ -478,9 +478,13 @@ class SearchIndex:
                         self._batch_dense[q]=([ids[int(i)] for i in order],embed_ms/len(chunk),False)
                     for column,q in enumerate(chunk):
                         result=self._search(scope,q,**kwargs)
+                        result['timing_kind']='post-batch-search; embedding/scoring measured once in batch_receipt'
+                        result['timing_ms']['amortized_total']=result['timing_ms']['total']+(embed_ms+timing['dense_scoring'])/len(chunk)
                         result['batch_receipt']={'query_batch_size':len(chunk),'embedding_ms':embed_ms,'dense_matrix_load':load_ms,**timing}
                         result['result_cache_hit']=False;result['runtime_diagnostics']={'embedding_profile_id':getattr(getattr(encoder,'profile',None),'id',model_id),
-                            'scorer':scorer,'candidate_rowids':ids,'scores':values[:,column].tolist()}
+                            'scorer':scorer,'candidate_rowids':ids,'candidate_ids':[r['id'] for r in self.rows(scope)],
+                            'selected_ids':[r['id'] for r in result['selected']],'budget_cutoff':result['budget'],'budget_used':result['budget_used'],
+                            'feature_components':result.get('features'),'scores':values[:,column].tolist()}
                         out.append(result)
                 return out
             finally:self._batch_dense=None;self.db.rollback()
@@ -507,7 +511,10 @@ class SearchIndex:
         weights = '1.0,0.12,0.05' if contextual else ('1.0,0.0,0.02' if table == 'lexical' else '1.0,0.0')
         sql = f'''SELECT d.rowid FROM {table} JOIN docs d ON d.rowid={table}.rowid
           WHERE {table} MATCH ? AND d.scope=? ORDER BY bm25({table},{weights}),d.id LIMIT ?'''
-        return [r[0] for r in self.db.execute(sql, (match_query(tokens), scope, limit)).fetchall()]
+        start=time.perf_counter()
+        result=[r[0] for r in self.db.execute(sql, (match_query(tokens), scope, limit)).fetchall()]
+        self._fts_elapsed_ms=getattr(self,'_fts_elapsed_ms',0.0)+(time.perf_counter()-start)*1000
+        return result
 
     def _rank_candidates(self, scope, query, ranked):
         """Identity projection; research subclasses may ablate derived ranking."""
@@ -545,6 +552,7 @@ class SearchIndex:
         if type(entity_projection) is not bool:raise ValueError('entity projection requires explicit boolean')
         entity_projection = entity_projection or features.entity
         self._last_dense_diagnostics = {}
+        self._fts_elapsed_ms = 0.0
         if not scope or not isinstance(query, str) or not query.strip():
             raise ValueError('nonempty scope and query required')
         if type(budget) is not int or not 0 <= budget <= 32768:
@@ -592,11 +600,14 @@ class SearchIndex:
                 raise ValueError('encoder identity mismatch')
             dense, embedding_ms, query_cached = self._dense_search(scope, query, encoder, model_id, candidate_limit)
             channels.append(dense)
+        fusion_start=time.perf_counter()
         scores = {}
         for channel in channels:
             for rank, rid in enumerate(dict.fromkeys(channel), 1):
                 scores[rid] = scores.get(rid, 0.0) + 1.0 / (60.0 + rank)
         ordered = sorted(scores, key=lambda rid: (-scores[rid], rid))
+        fusion_ms=(time.perf_counter()-fusion_start)*1000
+        material_start=time.perf_counter()
         by_rowid = {}
         for offset in range(0, len(ordered), 500):
             batch = ordered[offset:offset+500]
@@ -604,6 +615,7 @@ class SearchIndex:
             for row in self.db.execute(f'SELECT * FROM docs WHERE scope=? AND rowid IN ({marks})', (scope, *batch)):
                 by_rowid[row['rowid']] = dict(row)
         ranked = [by_rowid[rid] for rid in ordered]
+        material_ms=(time.perf_counter()-material_start)*1000
         ranked = self._rank_candidates(scope, query, ranked)
         if entity_projection:
             from .entities import reorder
@@ -618,6 +630,7 @@ class SearchIndex:
         ranked_ids = [r['id'] for r in ranked]
         retrieval_ms = (time.perf_counter() - start) * 1000
         # Optional adjacent context is actual text, not automatic credit for unseen IDs.
+        expansion_start=time.perf_counter()
         expanded, seen = [], set()
         for row in ranked:
             candidates = [row]
@@ -630,12 +643,17 @@ class SearchIndex:
                 if item['rowid'] not in seen:
                     seen.add(item['rowid'])
                     expanded.append(item)
+        neighbor_ms=(time.perf_counter()-expansion_start)*1000
         if features.segment:
             from .features import pack_segments
             context,selected,final_units=pack_segments(self,expanded,budget,query)
         else:
             context, selected, final_units = self._pack_candidates(expanded, budget, query)
         total_ms = (time.perf_counter()-start)*1000
+        if diagnostics and self._last_dense_diagnostics:
+            by_id={r['rowid']:r['id'] for r in self.rows(scope)}
+            self._last_dense_diagnostics.update(candidate_ids=[by_id[rid] for rid in self._last_dense_diagnostics.get('candidate_rowids',[])],
+                selected_ids=[r['id'] for r in selected],budget_cutoff=budget,budget_used=final_units,feature_components=features.identity())
         return {'scope': scope, 'generation': generation[0], 'mode': mode, 'context': context,
                 'features':features.identity(),'candidate_expansion':expansion_receipt,
                 'parent_locator_ids':[r.get('parent_id',r['id']) for r in selected],
@@ -644,7 +662,9 @@ class SearchIndex:
                 'selected': selected, 'ranked_ids': ranked_ids, 'candidate_count': len(ranked),
                 'budget': budget, 'budget_used': final_units,
                 'counter': getattr(self.counter, 'name', 'caller_supplied'),
-                'timing_ms': {'sparse': sparse_ms, 'query_embedding': embedding_ms,
+                'timing_ms': {'fts':self._fts_elapsed_ms,'fusion':fusion_ms,'row_materialization':material_ms,'neighbor_expansion':neighbor_ms,
+                              'dense_matrix_load':self._last_dense_diagnostics.get('dense_matrix_load',0.0),'dense_scoring':self._last_dense_diagnostics.get('dense_scoring',0.0),
+                              'sparse': sparse_ms, 'query_embedding': embedding_ms,
                               'retrieval_total': retrieval_ms, 'pack': total_ms-retrieval_ms,
                               'total': total_ms},
                 'query_embedding_cache_hit': query_cached,
