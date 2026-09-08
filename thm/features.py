@@ -63,7 +63,7 @@ def parse_query(query):
         retained=[(d,p) for d,p in zip(dates,precisions) if not (p=='year' and d==f'{year}-01-01')]
         dates=[d for d,p in retained];precisions=[p for d,p in retained]
         try:stamp=date(year,MONTHS[match.group(2).lower()],int(match.group(1) or 1))
-        except ValueError:continue
+        except ValueError:return QueryHints()  # Invalid explicit anchors must not degrade to month/year hints.
         dates.append(stamp.isoformat());precisions.append('day' if match.group(1) else 'month')
     join=re.fullmatch(r'\s*(.{1,256}?)\s+(AND|OR)\s+(.{1,256}?)\s*',query)
     ids=tuple(re.findall(r'\b[A-Za-z0-9]+(?:[-_./][A-Za-z0-9]+)+\b',query))

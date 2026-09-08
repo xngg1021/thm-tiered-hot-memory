@@ -783,4 +783,6 @@ class RuntimeReviewRegressionTests(unittest.TestCase):
         hints=parse_query('alpha between 8 May, 2024 and 10 May 2024')
         self.assertEqual(hints.dates,('2024-05-08','2024-05-10'));self.assertEqual(hints.date_precisions,('day','day'))
         self.assertEqual(parse_query('alpha May, 2024').date_precisions,('month',))
-        self.assertEqual(parse_query('alpha after 31 February, 2024').dates,())
+        invalid=parse_query('alpha after 31 February, 2024')
+        self.assertEqual(invalid.dates,());self.assertEqual(invalid.months,());self.assertIsNone(invalid.temporal)
+        self.assertEqual(reorder(rows,'alpha after 31 February, 2024',f),rows)
