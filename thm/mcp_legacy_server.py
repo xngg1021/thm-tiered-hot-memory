@@ -272,6 +272,7 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--neighbors", type=int, choices=[0, 1, 2], default=0)
     parser.add_argument("--model-path")
     parser.add_argument("--model-id")
+    parser.add_argument("--features-json",default="{}")
     args = parser.parse_args(argv)
     server = LegacyMCPServer(
         HarnessConfig(
@@ -282,7 +283,7 @@ def main(argv: list[str] | None = None) -> int:
             mode=args.mode,
             neighbors=args.neighbors,
             model_path=args.model_path,
-            model_id=args.model_id,
+            model_id=args.model_id, features=json.loads(args.features_json),
         )
     )
     return server.serve()

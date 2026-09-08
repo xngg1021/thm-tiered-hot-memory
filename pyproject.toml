@@ -11,6 +11,10 @@ license = {text = "MIT"}
 
 [project.optional-dependencies]
 tokenizer = ["tiktoken>=0.7,<1"]
+semantic-torch = ["sentence-transformers>=3,<6", "numpy>=1.26,<3"]
+semantic-onnx = ["sentence-transformers[onnx]>=3,<6", "numpy>=1.26,<3"]
+semantic-openvino = ["sentence-transformers[openvino]>=3,<6", "nncf>=2,<3", "numpy>=1.26,<3"]
+cuda = ["sentence-transformers>=3,<6", "numpy>=1.26,<3"]
 semantic = ["sentence-transformers>=3,<6", "numpy>=1.26,<3"]
 openai = ["openai-agents>=0.22,<0.23"]
 langchain = ["langchain-core>=1.6,<1.7"]
@@ -18,6 +22,7 @@ mcp = ["mcp>=2,<3"]
 harnesses = ["openai-agents>=0.22,<0.23", "langchain-core>=1.6,<1.7", "mcp>=2,<3"]
 
 [project.scripts]
+thm-runtime = "thm.runtime.cli:main"
 thm-recall = "thm.__main__:main"
 thm-mcp = "thm.mcp_server:main"
 thm-mcp-legacy = "thm.mcp_legacy_server:main"

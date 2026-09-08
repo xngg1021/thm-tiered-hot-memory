@@ -10,6 +10,7 @@ from dataclasses import dataclass
 from pathlib import Path
 import threading
 
+from .features import RetrievalFeatures
 from .retrieval import SearchIndex, SentenceEncoder, TokenCounter
 
 
@@ -23,8 +24,10 @@ class HarnessConfig:
     neighbors: int = 0
     model_path: str | None = None
     model_id: str | None = None
+    features: RetrievalFeatures | dict | None = None
 
     def validate(self) -> None:
+        RetrievalFeatures.parse(self.features)
         if not isinstance(self.db, str) or not self.db.strip():
             raise ValueError("db is required")
         if not isinstance(self.scope, str) or not self.scope.strip():
@@ -76,6 +79,7 @@ class THMHarnessAdapter:
                 neighbor_turns=self.config.neighbors,
                 encoder=self._encoder,
                 model_id=self.config.model_id,
+                features=RetrievalFeatures.parse(self.config.features),
             )
             return {
                 "context": out["context"],
@@ -85,6 +89,7 @@ class THMHarnessAdapter:
                         "source": row["source"],
                         "hash": row["hash"],
                         "text": row["text"],
+                        "complete":row["complete"],
                     }
                     for row in out["selected"]
                 ],
@@ -97,6 +102,8 @@ class THMHarnessAdapter:
                 "timing_ms": out["timing_ms"],
                 "usefulness": "unverified",
                 "answer_generated": False,
+                "generation_calls":0,
+                "features":out.get("features"),
             }
 
     def close(self) -> None:
