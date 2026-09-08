@@ -884,5 +884,26 @@ class RuntimeReviewRegressionTests(unittest.TestCase):
             calls=[c for c in encoder.calls if c and 'Calibration query ' in c[0]]
             self.assertEqual([len(c) for c in calls],[batch]*(1+3*len(BULK_QUERIES)//batch))
             self.assertEqual(result['query_workload_sha256'],QUERY_WORKLOAD_SHA);self.assertEqual(result['query_workload_count'],len(BULK_QUERIES))
-            self.assertEqual(shapes[-4:],[(len(BUILD_DOCUMENTS),len(BULK_QUERIES))]*4)
+            calls_per_repeat=len(BULK_QUERIES)//batch
+            self.assertEqual(shapes[-4*calls_per_repeat:],[(len(BUILD_DOCUMENTS),batch)]*(4*calls_per_repeat))
+            self.assertEqual(result['scoring']['scorer_calls'],calls_per_repeat)
+            self.assertEqual(result['scoring']['operation'],'GEMV' if batch==1 else 'GEMM')
             self.assertEqual(len(result['query_vectors']),len(QUERIES));self.assertEqual(len(result['scoring_samples']),3)
+
+    def test_source_iso_datetimes_preserve_temporal_ranking(self):
+        from thm.features import timestamp,reorder
+        for value in ('2026-09-02T12:00:00+00:00','2026-09-02T12:00:00Z','2026-09-02T12:00:00.123456-05:00','2026-09-02 12:00:00'):
+            self.assertEqual(timestamp(value).isoformat(),'2026-09-02')
+        rows=[{'text':'alpha','timestamp':'2026-09-01'},{'text':'alpha','timestamp':'2026-09-02T12:00:00+00:00'}]
+        self.assertEqual(reorder(rows,'latest alpha',RetrievalFeatures(temporal=True))[0],rows[1])
+        self.assertEqual(reorder(rows,'alpha after 2026-09-01',RetrievalFeatures(temporal=True))[0],rows[1])
+
+    def test_calibration_aggregates_every_configured_scorer_chunk(self):
+        from thm.runtime.worker import measure
+        from thm.runtime.micro import BULK_QUERIES
+        config={'model_path':'test','model_id':'test-only','backend':'torch_fp32','device':'cpu','threads':1,'document_batch_size':64,'query_batch_size':32}
+        def measured(d,q,name):return None,{'dense_scoring':2.,'transfer':.5,'scorer':name,'operation':'GEMM' if len(q)>1 else 'GEMV'}
+        with patch('thm.runtime.worker.configure'),patch('thm.runtime.backends.create',return_value=FakeEncoder()),patch('thm.runtime.scorers.score',side_effect=measured),patch('thm.runtime.autotune.retrieval_signature',return_value=[]):result=measure(config)
+        chunks=len(BULK_QUERIES)//32
+        self.assertEqual(result['scoring']['dense_scoring'],2*chunks);self.assertEqual(result['scoring']['transfer'],.5*chunks)
+        self.assertEqual(result['queries_per_second'],len(BULK_QUERIES)/(result['batch_total_ms']/1000+2*chunks/1000))

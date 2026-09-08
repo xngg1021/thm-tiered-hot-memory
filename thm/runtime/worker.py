@@ -71,8 +71,11 @@ def measure(config):
             'generation_calls':0,'observed_kernel_dispatch':None,
             'gpu_utilization_percent':None,'vram_peak':None,'scorer':config.get('scorer','numpy_reference'),'query_batch_size':config['query_batch_size']}
         from .scorers import score
-        score(build_vectors,bulk_vectors,result['scorer'])  # warm the batch scorer shape
-        scoring_samples=[score(build_vectors,bulk_vectors,result['scorer'])[1] for _ in range(3)]
+        def score_chunks():
+            samples=[score(build_vectors,bulk_vectors[offset:offset+config['query_batch_size']],result['scorer'])[1] for offset in range(0,len(bulk_vectors),config['query_batch_size'])]
+            return {**samples[-1],**{k:sum(sample[k] for sample in samples) for k in ('dense_scoring','transfer')},'scorer_calls':len(samples),'query_batch_size':config['query_batch_size']}
+        score_chunks()  # warm every configured scorer chunk before recording repeats
+        scoring_samples=[score_chunks() for _ in range(3)]
         scoring={**scoring_samples[-1],**{k:statistics.median(sample[k] for sample in scoring_samples) for k in ('dense_scoring','transfer')}}
         result['scoring_samples']=scoring_samples
         result['scoring']=scoring;result['query_embedding_per_second']=result['queries_per_second']

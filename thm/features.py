@@ -75,7 +75,11 @@ def parse_query(query):
 
 
 def timestamp(value):
-    # Source timestamps use the same explicit day-precision grammar as queries.
+    # Adapters emit ISO datetimes; preserve their explicit calendar date.
+    from datetime import datetime
+    if isinstance(value,str):
+        try:return datetime.fromisoformat(value.strip().removesuffix('Z')+('+00:00' if value.strip().endswith('Z') else '')).date()
+        except ValueError:pass
     hints=parse_query(value)
     return next((date.fromisoformat(d) for d,p in zip(hints.dates,hints.date_precisions) if p=='day'),None)
 
