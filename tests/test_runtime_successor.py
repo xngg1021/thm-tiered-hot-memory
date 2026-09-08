@@ -770,3 +770,17 @@ class RuntimeReviewRegressionTests(unittest.TestCase):
                ('between 2023 and 2024',['2025-01-01','2024-12-31'],'2024-12-31'),
                ('after 2024-05-02',['2024-05-02','2024-05-03'],'2024-05-03')]
         for query,stamps,expected in cases:self.assertEqual(winner(query,stamps),expected)
+
+    def test_english_day_month_year_hints_preserve_day_and_comma(self):
+        from thm.features import reorder
+        f=RetrievalFeatures(temporal=True)
+        rows=[{'text':'alpha','timestamp':d} for d in ('2024-05-07','2024-05-09','2024-06-01')]
+        for anchor in ('8 May 2024','8 May, 2024','08 MAY, 2024'):
+            hints=parse_query('alpha after '+anchor)
+            self.assertEqual(hints.dates,('2024-05-08',));self.assertEqual(hints.date_precisions,('day',))
+            self.assertEqual(reorder(rows,'alpha after '+anchor,f)[0]['timestamp'],'2024-05-09')
+            self.assertEqual(reorder(rows,'alpha before '+anchor,f)[0]['timestamp'],'2024-05-07')
+        hints=parse_query('alpha between 8 May, 2024 and 10 May 2024')
+        self.assertEqual(hints.dates,('2024-05-08','2024-05-10'));self.assertEqual(hints.date_precisions,('day','day'))
+        self.assertEqual(parse_query('alpha May, 2024').date_precisions,('month',))
+        self.assertEqual(parse_query('alpha after 31 February, 2024').dates,())

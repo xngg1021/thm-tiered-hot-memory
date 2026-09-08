@@ -58,11 +58,13 @@ def parse_query(query):
             parts=[int(x) for x in token.split('-')];stamp=date(*((parts+[1,1])[:3]));dates.append(stamp.isoformat());precisions.append(('year','month','day')[len(parts)-1])
         except ValueError:pass
     months=tuple(dict.fromkeys(MONTHS[m.group(0).lower()] for m in re.finditer(r'\b('+'|'.join(MONTHS)+r')\b',query,re.I)))
-    for match in re.finditer(r'\b('+'|'.join(MONTHS)+r')\s+((?:19|20)\d{2})\b',query,re.I):
-        year=int(match.group(2))
+    for match in re.finditer(r'\b(?:(\d{1,2})\s+)?('+'|'.join(MONTHS)+r'),?\s+((?:19|20)\d{2})\b',query,re.I):
+        year=int(match.group(3))
         retained=[(d,p) for d,p in zip(dates,precisions) if not (p=='year' and d==f'{year}-01-01')]
         dates=[d for d,p in retained];precisions=[p for d,p in retained]
-        dates.append(date(year,MONTHS[match.group(1).lower()],1).isoformat());precisions.append('month')
+        try:stamp=date(year,MONTHS[match.group(2).lower()],int(match.group(1) or 1))
+        except ValueError:continue
+        dates.append(stamp.isoformat());precisions.append('day' if match.group(1) else 'month')
     join=re.fullmatch(r'\s*(.{1,256}?)\s+(AND|OR)\s+(.{1,256}?)\s*',query)
     ids=tuple(re.findall(r'\b[A-Za-z0-9]+(?:[-_./][A-Za-z0-9]+)+\b',query))
     return QueryHints(kind.group(1).upper() if kind else None,temporal.group(1).lower() if temporal else None,tuple(dates),
