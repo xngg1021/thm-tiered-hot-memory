@@ -113,10 +113,12 @@ def reorder(rows,query,features):
         temporal_score=0;stamp=timestamp(row['timestamp'])
         if features.temporal and lexical and stamp:
             dates=[date.fromisoformat(d) for d in hints.dates]
+            from calendar import monthrange
+            intervals=[(d,date(d.year,12,31) if precision=='year' else date(d.year,d.month,monthrange(d.year,d.month)[1]) if precision=='month' else d) for d,precision in zip(dates,hints.date_precisions)]
             op=hints.temporal
-            if op in ('before','previous') and len(dates)==1:temporal_score=int(stamp<dates[0])
-            elif op in ('after','next') and len(dates)==1:temporal_score=int(stamp>dates[0])
-            elif op=='between' and len(dates)==2:temporal_score=int(min(dates)<=stamp<=max(dates))
+            if op in ('before','previous') and len(dates)==1:temporal_score=int(stamp<intervals[0][0])
+            elif op in ('after','next') and len(dates)==1:temporal_score=int(stamp>intervals[0][1])
+            elif op=='between' and len(dates)==2:temporal_score=int(min(lo for lo,hi in intervals)<=stamp<=max(hi for lo,hi in intervals))
             elif dates:temporal_score=int(any(stamp.year==d.year and (precision=='year' or stamp.month==d.month) and (precision!='day' or stamp.day==d.day) for d,precision in zip(dates,hints.date_precisions)))
             elif hints.months:temporal_score=int(stamp.month in hints.months)
             elif op in ('first','latest'):temporal_score=stamp.toordinal()*(1 if op=='latest' else -1)

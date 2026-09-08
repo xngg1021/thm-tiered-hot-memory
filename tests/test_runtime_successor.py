@@ -742,3 +742,31 @@ class RuntimeReviewRegressionTests(unittest.TestCase):
         for reader in readers:
             with self.assertRaises(sqlite3.ProgrammingError):reader.db.execute('SELECT 1')
         self.assertTrue(self.index.search('s','alpha')['selected'])
+
+    def test_scheduler_fallback_does_not_mask_invalid_requests(self):
+        e=FakeEncoder();self.index.embed('s',e,e.model_id);p=self.profile(e)
+        with RuntimeScheduler(self.index,[p],{e.profile.id:e},fallback_to_sparse=True) as scheduler:
+            reader=scheduler.indexes[p.id];e.calls.clear()
+            with patch.object(reader,'search',side_effect=AssertionError('invalid caller must not execute')):
+                for query in ('alpha',['alpha'],[]):
+                    for options in ({'mode':'hybird'},{'budget':-1},{'neighbor_turns':3},{'diagnostics':1},{'features':{'temporal':'yes'}},{'workload':'unknown'}):
+                        with self.assertRaises(ValueError):scheduler.search('s',query,**options)
+                with self.assertRaises(ValueError):scheduler.search('s',['alpha',''])
+            self.assertEqual(e.calls,[]);self.assertEqual(scheduler.pending[p.id],0)
+            e.kind='out-of-memory'
+            self.assertEqual(scheduler.search('s','alpha',mode='hybrid')['runtime_receipt']['fallback_mode'],'fallback-to-sparse')
+
+    def test_temporal_ranges_use_whole_month_and_year_intervals(self):
+        from thm.features import reorder
+        f=RetrievalFeatures(temporal=True)
+        def winner(query,stamps):
+            rows=[{'text':'alpha','timestamp':stamp} for stamp in stamps]
+            return reorder(rows,'alpha '+query,f)[0]['timestamp']
+        cases=[('between May 2024 and June 2024',['2024-07-01','2024-06-15'],'2024-06-15'),
+               ('after May 2024',['2024-05-02','2024-06-01'],'2024-06-01'),
+               ('next February 2024',['2024-02-29','2024-03-01'],'2024-03-01'),
+               ('before May 2024',['2024-05-01','2024-04-30'],'2024-04-30'),
+               ('after 2024',['2024-12-31','2025-01-01'],'2025-01-01'),
+               ('between 2023 and 2024',['2025-01-01','2024-12-31'],'2024-12-31'),
+               ('after 2024-05-02',['2024-05-02','2024-05-03'],'2024-05-03')]
+        for query,stamps,expected in cases:self.assertEqual(winner(query,stamps),expected)

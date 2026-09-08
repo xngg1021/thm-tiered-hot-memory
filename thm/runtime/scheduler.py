@@ -51,6 +51,8 @@ class RuntimeScheduler:
         return min(candidates,key=lambda k:(self.pending[k]+(gpu_queue or 0 if self.profiles[k].device!='cpu' else cpu_load or 0),k not in self.warm,self.profiles[k].workload!=workload,k))
 
     def search(self,scope,query,*,workload='interactive',requested_profile=None,load=None,**kwargs):
+        if workload not in WORKLOADS:raise ValueError('invalid workload')
+        if isinstance(query,list) and len(query)>4096:raise ValueError('invalid bounded query batch')
         if any(k in kwargs for k in ('encoder','model_id','scorer','overlap')):raise ValueError('scheduler owns execution settings')
         if self.policy in ('reference','auto-safe'):
             from ..features import RetrievalFeatures
@@ -59,8 +61,12 @@ class RuntimeScheduler:
             if self.closed:raise RuntimeError('scheduler closed')
             key=requested_profile or self.choose(workload,**(load or {}))
             if key not in self.profiles or (self.policy!='auto-throughput' and key!=self.pinned):raise ValueError('session profile pinned')
+            index=self.indexes[key];p=self.profiles[key];encoder=self.encoders[p.embedding_profile_id]
+            # Caller validation must never be converted into an execution fallback.
+            queries=(query or ['empty batch validation']) if isinstance(query,list) else [query]
+            for q in queries:index._validate_search_options(scope,q,scorer=p.scorer,encoder=encoder,model_id=encoder.model_id,**kwargs)
             self.pending[key]+=1
-        index=self.indexes[key];p=self.profiles[key];encoder=self.encoders[p.embedding_profile_id];start=time.perf_counter()
+        start=time.perf_counter()
         receipt={'requested_profile':key,'actual_profile':key,'embedding_profile_id':p.embedding_profile_id,'semantic_policy':self.policy,
             'workload':workload,'fallback_mode':None,'reason':'session-pinned' if self.policy!='auto-throughput' else 'bounded-queue-routing',
             'device':p.device,'precision':p.precision,'threads':p.threads,'document_batch_size':p.document_batch_size,'query_batch_size':p.query_batch_size,
