@@ -139,7 +139,7 @@ def run(dataset, counter, modes, budgets, *, model_path=None, model_id=None, nei
                                 'evidence_count': len(gold), 'resolved_count': len(gold & known),
                                 'fully_resolved': not malformed and gold <= known,
                                 'hits': len(gold & selected),'parent_locator_hits':len(gold & set(out.get('parent_locator_ids',selected))), 'candidate_hits': len(gold & set(out['ranked_ids'])),
-                                'selected_count': len(selected), 'selected_ids': sorted(selected),
+                                'selected_count': len(out['selected']), 'complete_selected_count':len(selected), 'selected_ids': sorted(selected),
                                 'selected_ranked_ids': selected_order,
                                 'reciprocal_rank': 1/positions[0] if positions else 0.0,
                                 'candidate_reciprocal_rank': 1/candidate_positions[0] if candidate_positions else 0.0,

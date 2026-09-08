@@ -178,7 +178,8 @@ with tempfile.TemporaryDirectory() as tmp:
             r=scheduler.search('s','alpha',mode='hybrid');self.assertEqual(r['mode'],'sparse')
             self.assertEqual(r['runtime_receipt']['fallback_mode'],'fallback-to-sparse');self.assertIsNone(r['runtime_receipt']['actual_profile'])
     def test_reference_scheduler_fails_closed(self):
-        e=FakeEncoder('fails');p=self.profile(e,'reference')
+        from dataclasses import replace
+        e=FakeEncoder('fails');e.profile=replace(e.profile,backend='torch_fp32');p=self.profile(e,'reference')
         with RuntimeScheduler(self.index,[p],{e.profile.id:e},policy='reference') as scheduler:
             with self.assertRaises(ValueError):scheduler.search('s','alpha',mode='hybrid')
     def test_scheduler_pinning_and_shutdown(self):
@@ -333,6 +334,8 @@ class RuntimeReviewRegressionTests(unittest.TestCase):
     def test_reference_rejects_other_policy_and_stays_sequential(self):
         e=FakeEncoder();p=self.profile(e,query_batch_size=8)
         with self.assertRaises(ValueError):RuntimeScheduler(self.index,[p],{e.profile.id:e},policy='reference')
+        from dataclasses import replace
+        e.profile=replace(e.profile,backend='torch_fp32')
         self.index.embed('s',e,e.model_id);reference=self.profile(e,'reference')
         with RuntimeScheduler(self.index,[reference],{e.profile.id:e},policy='reference') as scheduler:
             with patch.object(self.index,'search_many',side_effect=AssertionError('reference must be scalar')):
@@ -512,3 +515,28 @@ class RuntimeReviewRegressionTests(unittest.TestCase):
                 self.assertEqual(result['model_file'],family+'/'+file);self.assertEqual(result['status'],'prepared')
                 self.assertFalse((out/'optimized.onnx').exists());self.assertEqual((out/family/file).read_bytes(),b'fresh conversion')
         self.assertEqual(manifest(source)['sha256'],before);self.assertTrue(all(not Path(path).exists() for path in seen))
+
+    def test_reference_profile_rejects_non_torch_backend(self):
+        for backend in ('onnxruntime_fp32','openvino_fp32','test-only'):
+            with self.assertRaises(ValueError):RuntimeProfile('ep','fingerprint',backend=backend,policy='reference',semantic_gate='reference')
+    def test_batch_latency_includes_ranking_and_row_overhead(self):
+        import numpy as np
+        e=FakeEncoder();self.index.embed('s',e,e.model_id);clock=[0.0];original=np.argsort
+        def now():clock[0]+=.001;return clock[0]
+        def rank(*a,**kw):clock[0]+=.1;return original(*a,**kw)
+        with patch('thm.retrieval.time.perf_counter',side_effect=now),patch('numpy.argsort',side_effect=rank):
+            rows=self.index.search_many('s',['alpha','beta'],mode='dense',encoder=e,model_id=e.model_id)
+        for row in rows:
+            timing=row['timing_ms'];self.assertGreaterEqual(timing['dense_ranking'],100.)
+            self.assertGreaterEqual(timing['amortized_total'],timing['total']+timing['dense_ranking'])
+    def test_segment_context_is_nonempty_without_complete_evidence_credit(self):
+        from research.recall.benchmark import run as locomo
+        from research.recall.lme_retrieval import run as lme
+        from thm.runtime.research import ExecutionConfig
+        config=ExecutionConfig(policy='auto-throughput',features=RetrievalFeatures(segment=True))
+        datasets=[(locomo,[{'sample_id':'a','conversation':{'session_1':[{'dia_id':'D1:1','speaker':'Alice','text':'alpha launch details. '+'unrelated filler '*2000}]},'qa':[{'question':'alpha','category':4,'evidence':['D1:1']}]}]),
+          (lme,[{'question_id':'a','question':'alpha','haystack_session_ids':['s'],'haystack_sessions':[[{'role':'user','content':'alpha launch details. '+'unrelated filler '*2000}]],'answer_session_ids':['s']}])]
+        for runner,data in datasets:
+            result=runner(data,TokenCounter(),['sparse'],[600],execution_config=config);row=result['rows'][0]
+            self.assertGreater(row['selected_count'],0);self.assertEqual(row['complete_selected_count'],0)
+            self.assertEqual(row['hits'],0);self.assertTrue(row['parent_locator_ids'])

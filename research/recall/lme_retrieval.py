@@ -145,7 +145,7 @@ def run(dataset, counter, modes, budgets, *, model_path=None, model_id=None, lim
                             "resolved_gold": len(gold & known),
                             "hits": len(hit_sessions),
                             "candidate_hits": None,
-                            "selected_count": len(selected),
+                            "selected_count": len(out["selected"]), "complete_selected_count":len(selected),
                             "selected_ids": selected_order,
                             "selected_sources": selected_sources,
                             "reciprocal_rank": 1 / positions[0] if positions else 0.0,
