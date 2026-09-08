@@ -144,3 +144,9 @@ Harness support does not change THM into a universal memory database. Native mem
 ## Unreleased retrieval successor
 
 The opt-in Python entity projection and its Protocol 2 evidence are documented in [the zero-LLM frontier](16-zero-llm-retrieval-frontier.md). It does not enable a harness option, change residency/activity/validity semantics, or move the 1.4 stable pointer.
+
+## Unreleased runtime integration
+
+The canonical SearchIndex now exposes typed default-off RetrievalFeatures and bounded search_many; existing search/entity and residency behavior remain compatible. Optional runtime setup, profile/vector identity, isolated calibration and the final local experiment contract are described in [runtime architecture](17-zero-llm-heterogeneous-runtime.md). Runtime-dependent hardware performance remains pending-real-local-runtime.
+
+HarnessConfig accepts `features={"entity": true}` or an explicit typed configuration. MCP CLI accepts `--features-json`. OpenAI/LangChain adapters continue to delegate to the same harness object. A deterministic caller can invoke recall directly on an error signature, branch/file locator or user query; no model query generation is required. Core-only MCP stdio remains available through `thm-mcp-legacy`.
