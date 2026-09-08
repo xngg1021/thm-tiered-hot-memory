@@ -92,70 +92,72 @@ def run(dataset, counter, modes, budgets, *, model_path=None, model_id=None, nei
     if not budgets or any(type(b) is not int or not 0 <= b <= 32768 for b in budgets) or len(set(budgets)) != len(budgets):
         raise ValueError('unique valid budgets required')
     from thm.runtime.research import Execution
-    execution=Execution(execution_config,model_path,model_id,cache_path) if execution_config else None
-    encoder = execution.encoder if execution else SentenceEncoder(model_path, model_id, device=device,batch_size=batch_size) if model_path else None
-    if any(m in ('dense','hybrid') for m in modes) and not encoder:
-        raise ValueError('local model required for requested dense run')
-    all_rows, builds, generations = [], [], {}
-    ids = sorted(str(s['sample_id']) for s in dataset)
-    dev_ids = set(ids[:2])  # No parameter is selected using QA outcomes in this script.
-    with tempfile.TemporaryDirectory() as temp:
-        index = SearchIndex(Path(temp)/'recall.sqlite', counter)
-        try:
-            for sample_number, sample in enumerate(dataset):
-                # FTS5 IDF statistics are table-wide. Separate databases keep
-                # unrelated conversations and dataset iteration order out of ranking.
-                index.close()
-                index = SearchIndex(Path(temp)/f'conversation-{sample_number}.sqlite', counter)
-                scope = str(sample['sample_id'])
-                documents = list(locomo_documents(sample))
-                start = time.perf_counter()
-                metadata = index.replace_scope(scope, documents)
-                generations[scope] = metadata['generation']
-                build = {'scope': scope, 'documents': len(documents), 'index_seconds': time.perf_counter()-start}
-                if encoder and any(m in ('dense','hybrid') for m in modes) and any(b>0 for b in budgets):
-                    build['embedding'] = execution.embed(index,scope) if execution else index.embed(scope, encoder, model_id)
-                builds.append(build)
-                known = {d.id for d in documents}
-                for mode in modes:
-                    for budget in budgets:
-                        batch_results=execution.search_many(index,scope,[qa['question'] for qa in sample['qa']],mode=mode,budget=budget,neighbor_turns=neighbors) if execution else None
-                        for position, qa in enumerate(sample['qa']):
-                            if type(qa.get('category')) is not int or qa['category'] not in CATEGORY:
-                                raise ValueError('unsupported question category')
-                            gold, malformed = evidence_ids(qa.get('evidence', []))
-                            # Only the question is passed. No gold/answer/category information enters search.
-                            out = batch_results[position] if batch_results is not None else index.search(scope, qa['question'], mode=mode, budget=budget,
-                                               neighbor_turns=neighbors, encoder=encoder, model_id=model_id)
-                            selected_order = [x['id'] for x in out['selected'] if x['complete']]
-                            selected = set(selected_order)
-                            positions = [i for i, value in enumerate(selected_order, 1) if value in gold]
-                            candidate_positions = [i for i, value in enumerate(out['ranked_ids'], 1) if value in gold]
-                            ideal = sum(1/math.log2(i+1) for i in range(1, min(len(gold), len(selected_order))+1))
-                            ndcg = sum(1/math.log2(i+1) for i in positions)/ideal if ideal else 0.0
-                            all_rows.append({'scope': scope, 'question_index': position,
-                                'split': 'development' if scope in dev_ids else 'held_out',
-                                'mode': mode, 'budget': budget, 'category': int(qa['category']),
-                                'evidence_count': len(gold), 'resolved_count': len(gold & known),
-                                'fully_resolved': not malformed and gold <= known,
-                                'hits': len(gold & selected),'parent_locator_hits':len(gold & set(out.get('parent_locator_ids',selected))), 'candidate_hits': len(gold & set(out['ranked_ids'])),
-                                'selected_count': len(selected), 'complete_selected_count':len(selected),
-                                'packed_selected_count':len(out['selected']), 'packed_selections':[{k:x.get(k) for k in ('id','complete','span_start','span_end')} for x in out['selected']], 'selected_ids': sorted(selected),
-                                'selected_ranked_ids': selected_order,
-                                'reciprocal_rank': 1/positions[0] if positions else 0.0,
-                                'candidate_reciprocal_rank': 1/candidate_positions[0] if candidate_positions else 0.0,
-                                'ndcg': ndcg, 'result_cache_hit': out.get('result_cache_hit', False),
-                                'budget_used': out['budget_used'],
-                                'total_ms': out['timing_ms'].get('amortized_total',out['timing_ms']['total']),
-                                'query_embedding_ms': out['timing_ms']['query_embedding'],
-                                'runtime_diagnostics':out.get('runtime_diagnostics'),'timing_breakdown_ms':out['timing_ms'],'timing_kind':out.get('timing_kind','sequential'),'batch_receipt':out.get('batch_receipt'),
-                                'parent_locator_ids':out.get('parent_locator_ids',[]),'malformed_evidence': bool(malformed)})
-                print('BENCH_SCOPE_DONE', scope, len(sample['qa']), flush=True)
-        finally:
-            runtime_receipt=execution.receipt() if execution else None
-            index.close()
-            if execution:execution.close()
-            elif encoder and hasattr(encoder,'close'):encoder.close()
+    from contextlib import ExitStack
+    with ExitStack() as resources:
+        execution=Execution(execution_config,model_path,model_id,cache_path) if execution_config else None
+        if execution:resources.callback(execution.close)
+        encoder = execution.encoder if execution else SentenceEncoder(model_path, model_id, device=device,batch_size=batch_size) if model_path else None
+        if not execution and encoder and hasattr(encoder,'close'):resources.callback(encoder.close)
+        if any(m in ('dense','hybrid') for m in modes) and not encoder:
+            raise ValueError('local model required for requested dense run')
+        all_rows, builds, generations = [], [], {}
+        ids = sorted(str(s['sample_id']) for s in dataset)
+        dev_ids = set(ids[:2])  # No parameter is selected using QA outcomes in this script.
+        with tempfile.TemporaryDirectory() as temp:
+            index = SearchIndex(Path(temp)/'recall.sqlite', counter)
+            try:
+                for sample_number, sample in enumerate(dataset):
+                    # FTS5 IDF statistics are table-wide. Separate databases keep
+                    # unrelated conversations and dataset iteration order out of ranking.
+                    index.close()
+                    index = SearchIndex(Path(temp)/f'conversation-{sample_number}.sqlite', counter)
+                    scope = str(sample['sample_id'])
+                    documents = list(locomo_documents(sample))
+                    start = time.perf_counter()
+                    metadata = index.replace_scope(scope, documents)
+                    generations[scope] = metadata['generation']
+                    build = {'scope': scope, 'documents': len(documents), 'index_seconds': time.perf_counter()-start}
+                    if encoder and any(m in ('dense','hybrid') for m in modes) and any(b>0 for b in budgets):
+                        build['embedding'] = execution.embed(index,scope) if execution else index.embed(scope, encoder, model_id)
+                    builds.append(build)
+                    known = {d.id for d in documents}
+                    for mode in modes:
+                        for budget in budgets:
+                            batch_results=execution.search_many(index,scope,[qa['question'] for qa in sample['qa']],mode=mode,budget=budget,neighbor_turns=neighbors) if execution else None
+                            for position, qa in enumerate(sample['qa']):
+                                if type(qa.get('category')) is not int or qa['category'] not in CATEGORY:
+                                    raise ValueError('unsupported question category')
+                                gold, malformed = evidence_ids(qa.get('evidence', []))
+                                # Only the question is passed. No gold/answer/category information enters search.
+                                out = batch_results[position] if batch_results is not None else index.search(scope, qa['question'], mode=mode, budget=budget,
+                                                   neighbor_turns=neighbors, encoder=encoder, model_id=model_id)
+                                selected_order = [x['id'] for x in out['selected'] if x['complete']]
+                                selected = set(selected_order)
+                                positions = [i for i, value in enumerate(selected_order, 1) if value in gold]
+                                candidate_positions = [i for i, value in enumerate(out['ranked_ids'], 1) if value in gold]
+                                ideal = sum(1/math.log2(i+1) for i in range(1, min(len(gold), len(selected_order))+1))
+                                ndcg = sum(1/math.log2(i+1) for i in positions)/ideal if ideal else 0.0
+                                all_rows.append({'scope': scope, 'question_index': position,
+                                    'split': 'development' if scope in dev_ids else 'held_out',
+                                    'mode': mode, 'budget': budget, 'category': int(qa['category']),
+                                    'evidence_count': len(gold), 'resolved_count': len(gold & known),
+                                    'fully_resolved': not malformed and gold <= known,
+                                    'hits': len(gold & selected),'parent_locator_hits':len(gold & set(out.get('parent_locator_ids',selected))), 'candidate_hits': len(gold & set(out['ranked_ids'])),
+                                    'selected_count': len(selected), 'complete_selected_count':len(selected),
+                                    'packed_selected_count':len(out['selected']), 'packed_selections':[{k:x.get(k) for k in ('id','complete','span_start','span_end')} for x in out['selected']], 'selected_ids': sorted(selected),
+                                    'selected_ranked_ids': selected_order,
+                                    'reciprocal_rank': 1/positions[0] if positions else 0.0,
+                                    'candidate_reciprocal_rank': 1/candidate_positions[0] if candidate_positions else 0.0,
+                                    'ndcg': ndcg, 'result_cache_hit': out.get('result_cache_hit', False),
+                                    'budget_used': out['budget_used'],
+                                    'total_ms': out['timing_ms'].get('amortized_total',out['timing_ms']['total']),
+                                    'query_embedding_ms': out['timing_ms']['query_embedding'],
+                                    'runtime_diagnostics':out.get('runtime_diagnostics'),'timing_breakdown_ms':out['timing_ms'],'timing_kind':out.get('timing_kind','sequential'),'batch_receipt':out.get('batch_receipt'),
+                                    'parent_locator_ids':out.get('parent_locator_ids',[]),'malformed_evidence': bool(malformed)})
+                    print('BENCH_SCOPE_DONE', scope, len(sample['qa']), flush=True)
+            finally:
+                try:runtime_receipt=execution.receipt() if execution else None
+                finally:index.close()
     summaries = {}
     for mode in modes:
         for budget in budgets:

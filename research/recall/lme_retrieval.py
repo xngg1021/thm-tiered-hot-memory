@@ -90,77 +90,79 @@ def run(dataset, counter, modes, budgets, *, model_path=None, model_id=None, lim
     if len(ids) != len(set(ids)):
         raise ValueError("duplicate question ids")
     from thm.runtime.research import Execution
-    execution=Execution(execution_config,model_path,model_id,cache_path) if execution_config else None
-    encoder=execution.encoder if execution else SentenceEncoder(model_path,model_id,threads=threads,device=device,batch_size=batch_size) if model_path else None
-    if execution and any(b>0 for b in budgets) and any(m in ('dense','hybrid') for m in modes):execution.preencode([instance['question'] for instance in dataset])
-    if any(m in ("dense", "hybrid") for m in modes) and not encoder:
-        raise ValueError("local model required for dense/hybrid")
+    from contextlib import ExitStack
+    with ExitStack() as resources:
+        execution=Execution(execution_config,model_path,model_id,cache_path) if execution_config else None
+        if execution:resources.callback(execution.close)
+        encoder=execution.encoder if execution else SentenceEncoder(model_path,model_id,threads=threads,device=device,batch_size=batch_size) if model_path else None
+        if not execution and encoder and hasattr(encoder,'close'):resources.callback(encoder.close)
+        if execution and any(b>0 for b in budgets) and any(m in ('dense','hybrid') for m in modes):execution.preencode([instance['question'] for instance in dataset])
+        if any(m in ("dense", "hybrid") for m in modes) and not encoder:
+            raise ValueError("local model required for dense/hybrid")
 
-    all_rows, builds, generations = [], [], {}
-    dev_ids = set(sorted(ids)[:3])
-    with tempfile.TemporaryDirectory() as temp:
-        index = SearchIndex(Path(temp) / "lme.sqlite", counter)
-        try:
-            for number, instance in enumerate(dataset):
-                index.close()
-                index = SearchIndex(Path(temp) / f"lme-{number}.sqlite", counter)
-                scope = str(instance["question_id"])
-                docs = []
-                for doc_id, text, session_id, role in messages_of(instance):
-                    docs.append(Document(doc_id, scope, doc_id, 0, text,
-                                         speaker=role, timestamp='', source=session_id))
-                gold = set(instance["answer_session_ids"])
-                known = {d.source for d in docs}
-                start = time.perf_counter()
-                metadata = index.replace_scope(scope, docs)
-                generations[scope] = metadata["generation"]
-                build = {"scope": scope, "documents": len(docs),
-                         "haystack_sessions": len(instance["haystack_session_ids"]),
-                         "gold_sessions": len(gold),
-                         "index_seconds": time.perf_counter() - start}
-                if encoder and any(m in ('dense','hybrid') for m in modes) and any(b>0 for b in budgets):
-                    build["embedding"] = execution.embed(index,scope) if execution else index.embed(scope, encoder, model_id)
-                builds.append(build)
+        all_rows, builds, generations = [], [], {}
+        dev_ids = set(sorted(ids)[:3])
+        with tempfile.TemporaryDirectory() as temp:
+            index = SearchIndex(Path(temp) / "lme.sqlite", counter)
+            try:
+                for number, instance in enumerate(dataset):
+                    index.close()
+                    index = SearchIndex(Path(temp) / f"lme-{number}.sqlite", counter)
+                    scope = str(instance["question_id"])
+                    docs = []
+                    for doc_id, text, session_id, role in messages_of(instance):
+                        docs.append(Document(doc_id, scope, doc_id, 0, text,
+                                             speaker=role, timestamp='', source=session_id))
+                    gold = set(instance["answer_session_ids"])
+                    known = {d.source for d in docs}
+                    start = time.perf_counter()
+                    metadata = index.replace_scope(scope, docs)
+                    generations[scope] = metadata["generation"]
+                    build = {"scope": scope, "documents": len(docs),
+                             "haystack_sessions": len(instance["haystack_session_ids"]),
+                             "gold_sessions": len(gold),
+                             "index_seconds": time.perf_counter() - start}
+                    if encoder and any(m in ('dense','hybrid') for m in modes) and any(b>0 for b in budgets):
+                        build["embedding"] = execution.embed(index,scope) if execution else index.embed(scope, encoder, model_id)
+                    builds.append(build)
 
-                for mode in modes:
-                    for budget in budgets:
-                        out = execution.search_many(index,scope,[instance["question"]],mode=mode,budget=budget)[0] if execution else index.search(scope, instance["question"], mode=mode,
-                                           budget=budget, encoder=encoder, model_id=model_id)
-                        selected_rows = [x for x in out["selected"] if x["complete"]]
-                        selected_order = [x["id"] for x in selected_rows]
-                        selected_sources = [x.get("source") for x in selected_rows]
-                        selected = set(selected_order)
-                        hit_sessions = {
-                            row.get("source") for row in selected_rows
-                            if row.get("source") in gold
-                        }
-                        positions = [
-                            i for i, row in enumerate(selected_rows, 1)
-                            if row.get("source") in gold
-                        ]
-                        all_rows.append({
-                            "scope": scope, "split": "development" if scope in dev_ids else "held_out",
-                            "mode": mode, "budget": budget,
-                            "gold_sessions": len(gold),
-                            "resolved_gold": len(gold & known),
-                            "hits": len(hit_sessions),
-                            "candidate_hits": None,
-                            "selected_count": len(selected), "complete_selected_count":len(selected),
-                            "packed_selected_count":len(out["selected"]), "packed_selections":[{k:x.get(k) for k in ("id","complete","span_start","span_end")} for x in out["selected"]],
-                            "selected_ids": selected_order,
-                            "selected_sources": selected_sources,
-                            "reciprocal_rank": 1 / positions[0] if positions else 0.0,
-                            "runtime_diagnostics":out.get("runtime_diagnostics"),"timing_breakdown_ms":out["timing_ms"],'timing_kind':out.get('timing_kind','sequential'),'batch_receipt':out.get('batch_receipt'),
-                            "parent_locator_ids":out.get("parent_locator_ids",[]),"budget_used": out["budget_used"],
-                            "total_ms": out["timing_ms"].get("amortized_total",out["timing_ms"]["total"]),
-                            "query_embedding_ms": out["timing_ms"]["query_embedding"],
-                        })
-                print("LME_SCOPE_DONE", scope, len(instance["haystack_session_ids"]), flush=True)
-        finally:
-            runtime_receipt=execution.receipt() if execution else None
-            index.close()
-            if execution:execution.close()
-            elif encoder and hasattr(encoder,'close'):encoder.close()
+                    for mode in modes:
+                        for budget in budgets:
+                            out = execution.search_many(index,scope,[instance["question"]],mode=mode,budget=budget)[0] if execution else index.search(scope, instance["question"], mode=mode,
+                                               budget=budget, encoder=encoder, model_id=model_id)
+                            selected_rows = [x for x in out["selected"] if x["complete"]]
+                            selected_order = [x["id"] for x in selected_rows]
+                            selected_sources = [x.get("source") for x in selected_rows]
+                            selected = set(selected_order)
+                            hit_sessions = {
+                                row.get("source") for row in selected_rows
+                                if row.get("source") in gold
+                            }
+                            positions = [
+                                i for i, row in enumerate(selected_rows, 1)
+                                if row.get("source") in gold
+                            ]
+                            all_rows.append({
+                                "scope": scope, "split": "development" if scope in dev_ids else "held_out",
+                                "mode": mode, "budget": budget,
+                                "gold_sessions": len(gold),
+                                "resolved_gold": len(gold & known),
+                                "hits": len(hit_sessions),
+                                "candidate_hits": None,
+                                "selected_count": len(selected), "complete_selected_count":len(selected),
+                                "packed_selected_count":len(out["selected"]), "packed_selections":[{k:x.get(k) for k in ("id","complete","span_start","span_end")} for x in out["selected"]],
+                                "selected_ids": selected_order,
+                                "selected_sources": selected_sources,
+                                "reciprocal_rank": 1 / positions[0] if positions else 0.0,
+                                "runtime_diagnostics":out.get("runtime_diagnostics"),"timing_breakdown_ms":out["timing_ms"],'timing_kind':out.get('timing_kind','sequential'),'batch_receipt':out.get('batch_receipt'),
+                                "parent_locator_ids":out.get("parent_locator_ids",[]),"budget_used": out["budget_used"],
+                                "total_ms": out["timing_ms"].get("amortized_total",out["timing_ms"]["total"]),
+                                "query_embedding_ms": out["timing_ms"]["query_embedding"],
+                            })
+                    print("LME_SCOPE_DONE", scope, len(instance["haystack_session_ids"]), flush=True)
+            finally:
+                try:runtime_receipt=execution.receipt() if execution else None
+                finally:index.close()
 
     summaries = {}
     for mode in modes:

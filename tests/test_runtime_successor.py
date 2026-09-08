@@ -786,3 +786,35 @@ class RuntimeReviewRegressionTests(unittest.TestCase):
         invalid=parse_query('alpha after 31 February, 2024')
         self.assertEqual(invalid.dates,());self.assertEqual(invalid.months,());self.assertIsNone(invalid.temporal)
         self.assertEqual(reorder(rows,'alpha after 31 February, 2024',f),rows)
+
+    def test_same_year_mixed_endpoints_retain_source_identity_and_order(self):
+        from thm.features import reorder
+        hints=parse_query('alpha between 2024 and May 2024')
+        self.assertEqual(hints.dates,('2024-01-01','2024-05-01'));self.assertEqual(hints.date_precisions,('year','month'))
+        hints=parse_query('alpha between 8 May, 2024 and 2024-06-01')
+        self.assertEqual(hints.dates,('2024-05-08','2024-06-01'))
+        f=RetrievalFeatures(temporal=True)
+        rows=[{'text':'alpha','timestamp':d} for d in ('2024-06-01','2024-01-15','2024-05-15')]
+        self.assertEqual(reorder(rows,'alpha between 2024 and May 2024',f)[0]['timestamp'],'2024-01-15')
+        self.assertEqual(reorder(rows,'alpha between May 2024 and 2024',f)[0]['timestamp'],'2024-06-01')
+
+    def test_runner_resources_close_on_preencoding_and_index_setup_failures(self):
+        from thm.runtime.research import Execution,ExecutionConfig
+        from research.recall import lme_retrieval,benchmark
+        config=ExecutionConfig(policy='auto-throughput')
+        for runner,data,kind in ((lme_retrieval,[{'question_id':'x','question':'alpha'}],'preencode'),
+                                 (lme_retrieval,[{'question_id':'x'}],'missing-question'),
+                                 (benchmark,[{'sample_id':'x','qa':[]}],'index')):
+            execution=Execution(config,None,'test-only');execution.encoder=FakeEncoder()
+            execution.cache=EmbeddingCache(self.root/('cache-'+kind+'.sqlite'))
+            with patch('thm.runtime.research.Execution',return_value=execution):
+                if kind=='preencode':
+                    with patch.object(execution,'preencode',side_effect=ValueError('invalid vectors')):
+                        with self.assertRaises(ValueError):runner.run(data,TokenCounter(),['dense'],[600],execution_config=config)
+                elif kind=='missing-question':
+                    with self.assertRaises(KeyError):runner.run(data,TokenCounter(),['dense'],[600],execution_config=config)
+                else:
+                    with patch.object(runner,'SearchIndex',side_effect=OSError('index setup failed')):
+                        with self.assertRaises(OSError):runner.run(data,TokenCounter(),['sparse'],[600],execution_config=config)
+            self.assertTrue(execution.encoder.closed)
+            with self.assertRaises(sqlite3.ProgrammingError):execution.cache.db.execute('SELECT 1')

@@ -52,19 +52,20 @@ def parse_query(query):
     if not isinstance(query,str) or len(query)>16000:return QueryHints()
     kind=re.match(r'^\s*(who|when|where|version)\b',query,re.I)
     temporal=re.search(r'\b(before|after|between|first|latest|previous|next|duration)\b',query,re.I)
-    dates=[];precisions=[]
-    for token in re.findall(r'\b(?:19|20)\d{2}(?:-\d{2}(?:-\d{2})?)?\b',query):
-        try:
-            parts=[int(x) for x in token.split('-')];stamp=date(*((parts+[1,1])[:3]));dates.append(stamp.isoformat());precisions.append(('year','month','day')[len(parts)-1])
-        except ValueError:pass
+    anchors=[];english_spans=[]
     months=tuple(dict.fromkeys(MONTHS[m.group(0).lower()] for m in re.finditer(r'\b('+'|'.join(MONTHS)+r')\b',query,re.I)))
     for match in re.finditer(r'\b(?:(\d{1,2})\s+)?('+'|'.join(MONTHS)+r'),?\s+((?:19|20)\d{2})\b',query,re.I):
-        year=int(match.group(3))
-        retained=[(d,p) for d,p in zip(dates,precisions) if not (p=='year' and d==f'{year}-01-01')]
-        dates=[d for d,p in retained];precisions=[p for d,p in retained]
-        try:stamp=date(year,MONTHS[match.group(2).lower()],int(match.group(1) or 1))
-        except ValueError:return QueryHints()  # Invalid explicit anchors must not degrade to month/year hints.
-        dates.append(stamp.isoformat());precisions.append('day' if match.group(1) else 'month')
+        try:stamp=date(int(match.group(3)),MONTHS[match.group(2).lower()],int(match.group(1) or 1))
+        except ValueError:return QueryHints()  # Invalid explicit anchors must not degrade to broader hints.
+        english_spans.append(match.span())
+        anchors.append((match.start(),stamp.isoformat(),'day' if match.group(1) else 'month'))
+    for match in re.finditer(r'\b(?:19|20)\d{2}(?:-\d{2}(?:-\d{2})?)?\b',query):
+        if any(lo<=match.start() and match.end()<=hi for lo,hi in english_spans):continue
+        try:
+            parts=[int(x) for x in match.group().split('-')];stamp=date(*((parts+[1,1])[:3]))
+            anchors.append((match.start(),stamp.isoformat(),('year','month','day')[len(parts)-1]))
+        except ValueError:pass
+    anchors.sort();dates=[d for _,d,p in anchors];precisions=[p for _,d,p in anchors]
     join=re.fullmatch(r'\s*(.{1,256}?)\s+(AND|OR)\s+(.{1,256}?)\s*',query)
     ids=tuple(re.findall(r'\b[A-Za-z0-9]+(?:[-_./][A-Za-z0-9]+)+\b',query))
     return QueryHints(kind.group(1).upper() if kind else None,temporal.group(1).lower() if temporal else None,tuple(dates),
@@ -120,7 +121,10 @@ def reorder(rows,query,features):
             op=hints.temporal
             if op in ('before','previous') and len(dates)==1:temporal_score=int(stamp<intervals[0][0])
             elif op in ('after','next') and len(dates)==1:temporal_score=int(stamp>intervals[0][1])
-            elif op=='between' and len(dates)==2:temporal_score=int(min(lo for lo,hi in intervals)<=stamp<=max(hi for lo,hi in intervals))
+            elif op=='between' and len(dates)==2:
+                lo,hi=intervals[0][0],intervals[1][1]
+                if lo>hi:lo,hi=intervals[1][0],intervals[0][1]
+                temporal_score=int(lo<=stamp<=hi)
             elif dates:temporal_score=int(any(stamp.year==d.year and (precision=='year' or stamp.month==d.month) and (precision!='day' or stamp.day==d.day) for d,precision in zip(dates,hints.date_precisions)))
             elif hints.months:temporal_score=int(stamp.month in hints.months)
             elif op in ('first','latest'):temporal_score=stamp.toordinal()*(1 if op=='latest' else -1)
