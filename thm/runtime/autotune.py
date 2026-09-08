@@ -47,6 +47,11 @@ def candidates(hardware,backends,policy='auto-safe',maximum=12):
         for offset,mask in enumerate(m for m in masks if m and set(m)!=allowed):
             if offset>=min(2,len(selected)//3):break
             selected[-1-offset]={**selected[-1-offset],'affinity':mask,'threads':min(selected[-1-offset]['threads'],len(mask))}
+    if len(selected)>=4:
+        gpu=next((i for i in range(len(selected)-1,-1,-1) if selected[i]['device']=='cuda' and selected[i]['backend']=='torch_fp32'),None)
+        if gpu is not None:selected[gpu]={**selected[gpu],'scorer':'torch_cuda'}
+        cpu=next((i for i in range(len(selected)-1,-1,-1) if selected[i]['device']=='cpu' and selected[i]['backend']=='torch_fp32'),None)
+        if cpu is not None:selected[cpu]={**selected[cpu],'scorer':'torch_cpu'}
     return selected
 
 
@@ -62,7 +67,7 @@ def retrieval_signature(measured):
         try:
             index.replace_scope('calibration',[Document(str(i),'calibration','session',i,t) for i,t in enumerate(DOCUMENTS)])
             enc=Encoder();index.embed('calibration',enc,enc.model_id)
-            out=index.search_many('calibration',QUERIES,mode='hybrid',budget=512,encoder=enc,model_id=enc.model_id,query_batch_size=measured.get('query_batch_size',1))
+            out=index.search_many('calibration',QUERIES,mode='hybrid',budget=512,encoder=enc,model_id=enc.model_id,query_batch_size=measured.get('query_batch_size',1),scorer=measured.get('scorer','numpy_reference'))
             return [{'ranked_ids':r['ranked_ids'],'selected_ids':[x['id'] for x in r['selected']],'budget_used':r['budget_used'],
                      'scores':r['runtime_diagnostics']['scores']} for r in out]
         finally:index.close()
@@ -77,7 +82,7 @@ def gate(reference,candidate):
     profile=EmbeddingProfile(**{k:v for k,v in candidate['identity'].items() if k in fields})
     for name,n in [('document_vectors',len(DOCUMENTS)),('query_vectors',len(QUERIES))]:validate_vectors(candidate[name],profile,n)
     if reference['identity']['dimension']!=profile.dimension:return {'admitted':False,'reason':'dimension-drift'}
-    left=retrieval_signature(reference);right=retrieval_signature(candidate)
+    left=reference.get('retrieval_signature') or retrieval_signature(reference);right=candidate.get('retrieval_signature') or retrieval_signature(candidate)
     strict=all({k:v for k,v in a.items() if k!='scores'}=={k:v for k,v in b.items() if k!='scores'} for a,b in zip(left,right))
     delta=max(abs(x-y) for name in ('document_vectors','query_vectors') for a,b in zip(reference[name],candidate[name]) for x,y in zip(a,b))
     return {'admitted':strict,'strict_retrieval_parity':strict,'max_embedding_abs_diff':delta,
@@ -120,7 +125,7 @@ def autotune(model_path,model_id,*,backends=None,policy='auto-safe',workload='in
     p=RuntimeProfile(ident['embedding_profile_id'],fingerprint(hardware,source,ident.get('derived_manifest_sha256'),ident['embedding_profile_id']),
         backend=config['backend'],device=config['device'],precision=ident['precision'],threads=config['threads'],
         document_batch_size=config['document_batch_size'],query_batch_size=1 if policy=='reference' else config['query_batch_size'],
-        policy=policy,workload=workload,affinity=tuple(config['affinity']),semantic_gate='strict' if winner['semantic_gate']['admitted'] else 'measured-drift')
+        scorer=config['scorer'],policy=policy,workload=workload,affinity=tuple(config['affinity']),semantic_gate='strict' if winner['semantic_gate']['admitted'] else 'measured-drift')
     if manifest(model_path)['sha256']!=source:raise ValueError('model changed during calibration')
     return {'schema':1,'status':'calibrated','hardware':hardware.identity(),'source_manifest_sha256':source,'corpus_sha256':CORPUS_SHA,
             'runtime_profile':p.identity(),'trials':trials,'reference':reference,'generation_calls':0,

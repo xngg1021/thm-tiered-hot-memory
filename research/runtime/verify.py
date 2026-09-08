@@ -73,7 +73,7 @@ def execute(args):
     # Full matrices only for reference + measured winners, never every calibration point.
     for policy,tune in tunes.items():
         p=tune['runtime_profile'];arms.append({'name':policy,'backend':p['backend'],'device':p['device'],'policy':policy,
-            'batch':p['document_batch_size'],'query_batch':p['query_batch_size'],'threads':p['threads'],'profile_file':str(root/(policy+'-autotune.json'))})
+            'batch':p['document_batch_size'],'query_batch':p['query_batch_size'],'threads':p['threads'],'scorer':p['scorer'],'profile_file':str(root/(policy+'-autotune.json'))})
     if cuda:
         arms.append({'name':'cuda-batched-overlap','backend':'torch_fp32','device':'cuda','policy':'auto-throughput','batch':64,'query_batch':32,'overlap':True})
     rows=[]
@@ -82,7 +82,7 @@ def execute(args):
         command=[sys.executable,'research/recall/'+('benchmark.py' if label=='locomo' else 'lme_retrieval.py'),'--dataset',str(dataset),'--output',str(output),
             '--model-path',backend_paths[arm['backend']],'--model-id',args.model_id,'--counter','cl100k_base','--modes','literal','sparse','dense','hybrid',
             '--budgets','300','600','1200','--device',arm['device'],'--runtime-policy',arm['policy'],'--backend',arm['backend'],
-            '--batch-size',str(arm['batch']),'--query-batch-size',str(arm['query_batch']),'--threads',str(arm.get('threads',1))]
+            '--scorer',arm.get('scorer','numpy_reference'),'--batch-size',str(arm['batch']),'--query-batch-size',str(arm['query_batch']),'--threads',str(arm.get('threads',1))]
         if arm['policy']!='reference':command+=['--vector-storage','blob','--embedding-cache',str(root/'embedding-cache.sqlite')]
         if arm.get('profile_file'):command+=['--runtime-profile',arm['profile_file']]
         if arm.get('overlap'):command+=['--overlap']

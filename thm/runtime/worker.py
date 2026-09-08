@@ -49,14 +49,21 @@ def measure(config):
             import resource
             memory={'maxrss_native_units':resource.getrusage(resource.RUSAGE_SELF).ru_maxrss,'platform':sys.platform}
         except ImportError:pass
-        return {'status':'ok','identity':encoder.identity(),'corpus_sha256':CORPUS_SHA,'warmup':warmup,'repeats':3,
+        result={'status':'ok','identity':encoder.identity(),'corpus_sha256':CORPUS_SHA,'warmup':warmup,'repeats':3,
             'sample_count':len(QUERIES),'model_load_ms':load,'docs_per_second':len(DOCUMENTS)/statistics.median(durations),
             'queries_per_second':len(QUERIES)/batch,'single_query_p50_ms':statistics.median(single),
             'single_query_p95_ms':sorted(single)[max(0,__import__('math').ceil(.95*len(single))-1)],
             'batch_total_ms':batch*1000,'memory':memory,'document_vectors':docs,'query_vectors':query_vectors,
             'generation_calls':0,'observed_kernel_dispatch':None,
             'cpu_process_seconds':time.process_time()-cpu_start,'cpu_utilization_percent':100*(time.process_time()-cpu_start)/(time.perf_counter()-overall_start),
-            'gpu_utilization_percent':None,'vram_peak':None}
+            'gpu_utilization_percent':None,'vram_peak':None,'scorer':config.get('scorer','numpy_reference'),'query_batch_size':config['query_batch_size']}
+        from .scorers import score
+        _,scoring=score(docs,query_vectors,result['scorer'])
+        result['scoring']=scoring;result['query_embedding_per_second']=result['queries_per_second']
+        result['queries_per_second']=len(QUERIES)/(batch+scoring['dense_scoring']/1000)
+        from .autotune import retrieval_signature
+        result['retrieval_signature']=retrieval_signature(result)
+        return result
     finally:encoder.close()
 
 
