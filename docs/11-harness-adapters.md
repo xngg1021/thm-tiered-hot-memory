@@ -150,3 +150,5 @@ The opt-in Python entity projection and its Protocol 2 evidence are documented i
 The canonical SearchIndex now exposes typed default-off RetrievalFeatures and bounded search_many; existing search/entity and residency behavior remain compatible. Optional runtime setup, profile/vector identity, isolated calibration and the final local experiment contract are described in [runtime architecture](17-zero-llm-heterogeneous-runtime.md). Runtime-dependent hardware performance remains pending-real-local-runtime.
 
 HarnessConfig accepts `features={"entity": true}` or an explicit typed configuration. MCP CLI accepts `--features-json`. OpenAI/LangChain adapters continue to delegate to the same harness object. A deterministic caller can invoke recall directly on an error signature, branch/file locator or user query; no model query generation is required. Core-only MCP stdio remains available through `thm-mcp-legacy`.
+
+MCP source records retain `complete`, `parent_id`, `span_start`, `span_end`, and `locator_kind` alongside the parent source hash. Full-source offsets remain null when not supplied; partial segments never become complete evidence at the transport boundary.

@@ -17,7 +17,7 @@ import sys
 from importlib.metadata import PackageNotFoundError, version as package_version
 from typing import Any, Mapping
 
-from .harness import HarnessConfig, THMHarnessAdapter
+from .harness import HarnessConfig, THMHarnessAdapter, mcp_source
 
 LEGACY_PROTOCOL = "2025-06-18"
 SUPPORTED_LEGACY_PROTOCOLS = {"2025-06-18", "2025-03-26", "2024-11-05"}
@@ -49,8 +49,11 @@ RECALL_OUTPUT_SCHEMA: dict[str, Any] = {
                     "id": _json_schema_string(),
                     "source": _json_schema_string(),
                     "sha256": _json_schema_string(),
+                    "complete":{"type":"boolean"},"parent_id":_json_schema_string(),
+                    "span_start":{"type":["integer","null"]},"span_end":{"type":["integer","null"]},
+                    "locator_kind":_json_schema_string(),
                 },
-                "required": ["id", "source", "sha256"],
+                "required": ["id", "source", "sha256", "complete", "parent_id", "span_start", "span_end", "locator_kind"],
                 "additionalProperties": False,
             },
         },
@@ -154,7 +157,7 @@ class LegacyMCPServer:
             payload = {
                 "context": result["context"],
                 "sources": [
-                    {"id": row["id"], "source": row["source"], "sha256": row["hash"]}
+                    mcp_source(row)
                     for row in result["sources"]
                 ],
                 "budget": result["budget"],

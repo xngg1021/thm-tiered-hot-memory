@@ -7,7 +7,7 @@ import atexit
 
 from typing_extensions import TypedDict
 
-from .harness import HarnessConfig, THMHarnessAdapter
+from .harness import HarnessConfig, THMHarnessAdapter, mcp_source
 
 
 class MCPSource(TypedDict):
@@ -16,6 +16,11 @@ class MCPSource(TypedDict):
     id: str
     source: str
     sha256: str
+    complete: bool
+    parent_id: str
+    span_start: int | None
+    span_end: int | None
+    locator_kind: str
 
 
 class MCPRecallResult(TypedDict):
@@ -52,7 +57,7 @@ def build_server(config: HarnessConfig | dict):
         """Recall budget-limited evidence from a local THM index."""
         result = adapter.recall(query)
         sources: list[MCPSource] = [
-            {"id": row["id"], "source": row["source"], "sha256": row["hash"]}
+            mcp_source(row)
             for row in result["sources"]
         ]
         return {

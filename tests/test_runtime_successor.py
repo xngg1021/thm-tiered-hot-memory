@@ -550,3 +550,38 @@ class RuntimeReviewRegressionTests(unittest.TestCase):
             summary=aggregate([row]) if runner is locomo else summarize([row])
             self.assertEqual(summary['empty_context_rate'],0.0)
             self.assertEqual(row['hits'],0);self.assertTrue(row['parent_locator_ids'])
+
+    def test_lexical_only_lme_does_not_preencode_questions(self):
+        from research.recall.lme_retrieval import run
+        from thm.runtime.research import ExecutionConfig,Execution
+        data=[{'question_id':'a','question':'query only','haystack_session_ids':['s'],'haystack_sessions':[[{'role':'user','content':'query source'}]],'answer_session_ids':['s']}]
+        with patch('thm.runtime.isolated.IsolatedEncoder',return_value=FakeEncoder()),patch.object(Execution,'preencode',side_effect=AssertionError('lexical queries must not encode')):
+            result=run(data,TokenCounter(),['literal','sparse'],[600],model_path='local',model_id='test-only',execution_config=ExecutionConfig(policy='auto-throughput'))
+        self.assertEqual(result['runtime']['query_preembedding_ms'],0)
+    def test_both_mcp_bridges_preserve_segment_identity(self):
+        from thm.harness import HarnessConfig
+        from thm.mcp_legacy_server import LegacyMCPServer,RECALL_OUTPUT_SCHEMA
+        from types import SimpleNamespace
+        import atexit
+        text='alpha launch details. '+'unrelated filler '*2000
+        self.index.replace_scope('s',[Document('parent','s','session',0,text,source='local')])
+        config=HarnessConfig(db=str(self.root/'index.sqlite'),scope='s',budget=300,features=RetrievalFeatures(segment=True))
+        legacy=LegacyMCPServer(config)
+        try:old=legacy._call_tool('thm_recall',{'query':'alpha'})['structuredContent']
+        finally:legacy.close()
+        class Server:
+            def __init__(server,*args):server.tools={}
+            def tool(server):
+                def register(fn):server.tools[fn.__name__]=fn;return fn
+                return register
+        from typing import TypedDict
+        with patch.dict(sys.modules,{'mcp.server':SimpleNamespace(MCPServer=Server),'typing_extensions':SimpleNamespace(TypedDict=TypedDict)}):
+            from thm.mcp_server import build_server
+            server,adapter=build_server(config)
+            try:new=server.tools['thm_recall']('alpha')
+            finally:adapter.close();atexit.unregister(adapter.close)
+        self.assertEqual(old['sources'],new['sources']);row=new['sources'][0]
+        self.assertFalse(row['complete']);self.assertEqual(row['parent_id'],'parent');self.assertEqual(row['locator_kind'],'segment-v2')
+        self.assertIn(text[row['span_start']:row['span_end']],new['context'])
+        schema=RECALL_OUTPUT_SCHEMA['properties']['sources']['items']
+        self.assertEqual(set(row),set(schema['required']))

@@ -90,6 +90,9 @@ class THMHarnessAdapter:
                         "hash": row["hash"],
                         "text": row["text"],
                         "complete":row["complete"],
+                        "parent_id":row.get("parent_id",row["id"]),
+                        "span_start":row.get("span_start"),"span_end":row.get("span_end"),
+                        "locator_kind":row.get("locator_kind","whole-source" if row["complete"] else "partial-source"),
                     }
                     for row in out["selected"]
                 ],
@@ -119,3 +122,10 @@ class THMHarnessAdapter:
     def __exit__(self, exc_type, exc, tb):
         self.close()
         return False
+
+
+def mcp_source(row):
+    """Keep parent hash and partial-source identity together across MCP bridges."""
+    return {"id":row["id"],"source":row["source"],"sha256":row["hash"],
+            "complete":row["complete"],"parent_id":row["parent_id"],
+            "span_start":row["span_start"],"span_end":row["span_end"],"locator_kind":row["locator_kind"]}
