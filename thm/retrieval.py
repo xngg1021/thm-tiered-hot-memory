@@ -470,7 +470,7 @@ class SearchIndex:
             try:
                 self._refresh_caches();start=time.perf_counter()
                 ids,matrix=self._dense_matrix(scope,encoder,model_id)
-                candidate_ids={r['rowid']:r['id'] for r in self.rows(scope)}
+                candidate_ids={r['rowid']:r['id'] for r in self.rows(scope)} if kwargs.get('diagnostics',False) else {}
                 load_ms=(time.perf_counter()-start)*1000;out=[]
                 for offset in range(0,len(queries),batch):
                     chunk=queries[offset:offset+batch];started=time.perf_counter()
@@ -510,10 +510,12 @@ class SearchIndex:
                         result=self._search(scope,q,**kwargs)
                         result['timing_kind']='post-batch-search; embedding/scoring measured once in batch_receipt'
                         result['batch_receipt']={'query_batch_size':len(chunk),'embedding_ms':embed_ms,'batch_preparation_ms':preparation_ms,'lexical_preparation_ms':lexical_ms,'overlap_requested':overlap,'overlap_active':overlap_active,'encoded_queries':len(misses),'cached_queries':len(chunk)-sum(q not in cached for q in chunk),'dense_matrix_load':load_ms,**timing}
-                        result['result_cache_hit']=False;result['runtime_diagnostics']={'embedding_profile_id':getattr(getattr(encoder,'profile',None),'id',model_id),
-                            'scorer':scorer,'candidate_rowids':[ids[int(i)] for i in order],'candidate_ids':[candidate_ids[ids[int(i)]] for i in order],
-                            'selected_ids':[r['id'] for r in result['selected']],'budget_cutoff':result['budget'],'budget_used':result['budget_used'],
-                            'feature_components':result.get('features'),'scores':[float(values[int(i),column]) for i in order]}
+                        result['result_cache_hit']=False
+                        if kwargs.get('diagnostics',False):
+                            result['runtime_diagnostics']={'embedding_profile_id':getattr(getattr(encoder,'profile',None),'id',model_id),
+                                'scorer':scorer,'candidate_rowids':[ids[int(i)] for i in order],'candidate_ids':[candidate_ids[ids[int(i)]] for i in order],
+                                'selected_ids':[r['id'] for r in result['selected']],'budget_cutoff':result['budget'],'budget_used':result['budget_used'],
+                                'feature_components':result.get('features'),'scores':[float(values[int(i),column]) for i in order]}
                         row_ms=(time.perf_counter()-row_start)*1000
                         result['timing_ms']['dense_ranking']=ranking_ms
                         result['timing_ms']['batch_row_overhead']=max(0.0,row_ms-result['timing_ms']['total'])

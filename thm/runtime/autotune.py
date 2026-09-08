@@ -67,7 +67,7 @@ def retrieval_signature(measured):
         try:
             index.replace_scope('calibration',[Document(str(i),'calibration','session',i,t) for i,t in enumerate(DOCUMENTS)])
             enc=Encoder();index.embed('calibration',enc,enc.model_id)
-            out=index.search_many('calibration',QUERIES,mode='hybrid',budget=512,encoder=enc,model_id=enc.model_id,query_batch_size=measured.get('query_batch_size',1),scorer=measured.get('scorer','numpy_reference'))
+            out=index.search_many('calibration',QUERIES,mode='hybrid',budget=512,diagnostics=True,encoder=enc,model_id=enc.model_id,query_batch_size=measured.get('query_batch_size',1),scorer=measured.get('scorer','numpy_reference'))
             return [{'ranked_ids':r['ranked_ids'],'selected_ids':[x['id'] for x in r['selected']],'budget_used':r['budget_used'],
                      'scores':r['runtime_diagnostics']['scores']} for r in out]
         finally:index.close()

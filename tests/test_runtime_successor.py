@@ -345,7 +345,7 @@ class RuntimeReviewRegressionTests(unittest.TestCase):
             self.assertEqual(len(result),2)
     def test_batched_diagnostics_match_limited_candidates(self):
         e=FakeEncoder();self.index.embed('s',e,e.model_id)
-        result=self.index.search_many('s',['alpha','beta'],mode='dense',encoder=e,model_id=e.model_id,candidate_limit=2)
+        result=self.index.search_many('s',['alpha','beta'],mode='dense',encoder=e,model_id=e.model_id,candidate_limit=2,diagnostics=True)
         for row in result:
             d=row['runtime_diagnostics'];self.assertEqual(len(d['candidate_ids']),2);self.assertEqual(len(d['scores']),2)
             self.assertEqual(d['candidate_ids'],row['ranked_ids'])
@@ -386,7 +386,7 @@ class RuntimeReviewRegressionTests(unittest.TestCase):
     def test_batch_candidate_mapping_reads_scope_once(self):
         e=FakeEncoder();self.index.embed('s',e,e.model_id)
         with patch.object(self.index,'rows',wraps=self.index.rows) as rows:
-            self.index.search_many('s',['alpha','beta','gamma'],mode='dense',encoder=e,model_id=e.model_id,query_batch_size=2)
+            self.index.search_many('s',['alpha','beta','gamma'],mode='dense',encoder=e,model_id=e.model_id,query_batch_size=2,diagnostics=True)
         self.assertEqual(rows.call_count,1)
     def test_both_runner_summaries_include_amortized_batch_work(self):
         from research.recall.benchmark import run as locomo
@@ -693,3 +693,16 @@ class RuntimeReviewRegressionTests(unittest.TestCase):
         other['runtime_diagnostics']['candidate_ids']=['b','a'];other['runtime_diagnostics']['scores']=[.50,.51]
         aligned=score_deltas({'rows':[row]},{'rows':[other]})
         self.assertEqual([entry['score_delta'] for entry in aligned['queries'][0]['scores']],[0,0])
+
+    def test_batch_diagnostics_are_explicit_and_disabled_by_default(self):
+        e=FakeEncoder();self.index.embed('s',e,e.model_id)
+        for mode in ('dense','hybrid'):
+            for options in ({},{'diagnostics':False},{'diagnostics':True}):
+                with patch.object(self.index,'rows',wraps=self.index.rows) as rows:
+                    results=self.index.search_many('s',['alpha','beta'],mode=mode,encoder=e,model_id=e.model_id,overlap=True,**options)
+                self.assertEqual(rows.call_count,1 if options.get('diagnostics') else 0)
+                for result in results:
+                    if options.get('diagnostics'):
+                        self.assertTrue(result['runtime_diagnostics']['candidate_ids'])
+                        self.assertTrue(result['runtime_diagnostics']['scores'])
+                    else:self.assertIsNone(result['runtime_diagnostics'])
