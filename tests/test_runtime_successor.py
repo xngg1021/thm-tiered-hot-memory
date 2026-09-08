@@ -423,7 +423,7 @@ class RuntimeReviewRegressionTests(unittest.TestCase):
         self.index.search('s','alpha',mode='hybrid',encoder=e,model_id=e.model_id);e.calls.clear()
         with patch('concurrent.futures.ThreadPoolExecutor',side_effect=AssertionError('cached vector must not start worker')):
             out=self.index.search_overlap('s','alpha',mode='hybrid',encoder=e,model_id=e.model_id)
-        self.assertEqual(e.calls,[]);self.assertEqual(out['overlap']['skipped'],'query-vector-cache-hit')
+        self.assertEqual(e.calls,[]);self.assertIn(out['overlap']['skipped'],('query-vector-cache-hit','result-cache-hit'))
     def test_batched_preencoding_is_reused_and_cost_preserved(self):
         from thm.runtime.research import ExecutionConfig,Execution
         e=FakeEncoder();self.index.embed('s',e,e.model_id)
@@ -639,3 +639,14 @@ class RuntimeReviewRegressionTests(unittest.TestCase):
             with patch.object(self.index,'search_many',wraps=self.index.search_many) as call:
                 rows=scheduler.search_many('s',['alpha','beta'],mode='hybrid')
             self.assertTrue(call.call_args.kwargs['overlap']);self.assertTrue(all(r['batch_receipt']['overlap_active'] for r in rows))
+
+    def test_overlap_skips_cached_result_after_query_vector_eviction(self):
+        e=FakeEncoder();self.index.embed('s',e,e.model_id)
+        kwargs={'mode':'hybrid','encoder':e,'model_id':e.model_id}
+        first=self.index.search('s','alpha',**kwargs)
+        self.index.search_many('s',['distinct '+str(i) for i in range(256)],query_batch_size=256,**kwargs)
+        self.assertNotIn((e.profile.id,'alpha'),self.index._cache);e.calls.clear()
+        with patch('concurrent.futures.ThreadPoolExecutor',side_effect=AssertionError('cached result must not encode')):
+            result=self.index.search_overlap('s','alpha',**kwargs)
+        self.assertTrue(result['result_cache_hit']);self.assertEqual(result['overlap']['skipped'],'result-cache-hit')
+        self.assertEqual(result['selected'],first['selected']);self.assertEqual(e.calls,[])

@@ -529,6 +529,11 @@ class SearchIndex:
         if kwargs.get('budget')==0 or kwargs.get('mode')!='hybrid' or encoder is None:return self.search(scope,query,**kwargs)
         with self._lock:
             self._refresh_caches()
+            key=self._result_cache_key(scope,query,kwargs)
+            if key is not None and key in self._results:
+                result=self.search(scope,query,**kwargs)
+                result['overlap']={'skipped':'result-cache-hit','microbatch_delay_ms':0}
+                return result
             identity=getattr(getattr(encoder,'profile',None),'id',kwargs.get('model_id'))
             if (identity,query) in self._cache:
                 result=self.search(scope,query,**kwargs)
@@ -717,6 +722,12 @@ class SearchIndex:
                 'semantic_encoder_used': mode in ('hybrid', 'dense'),
                 'answer_generated': False}
 
+    def _result_cache_key(self,scope,query,kwargs):
+        if type(self.counter) is not TokenCounter or not isinstance(scope,str) or not isinstance(query,str):return None
+        # Type tags preserve the same validation boundary for search and overlap.
+        settings=tuple(sorted((k,type(v).__name__,repr(v)) for k,v in kwargs.items() if k!='encoder'))
+        return (scope,query,settings,id(kwargs.get('encoder')),getattr(getattr(kwargs.get('encoder'),'profile',None),'id',None),id(self.counter),self.counter.name,id(self.counter.encode))
+
     def search(self, scope, query, **kwargs):
         """One read snapshot; cache only deterministic native counters and explicit inputs."""
         started = time.perf_counter()
@@ -724,11 +735,7 @@ class SearchIndex:
             self.db.execute('BEGIN')
             try:
                 self._refresh_caches()
-                key = None
-                if type(self.counter) is TokenCounter and isinstance(scope, str) and isinstance(query, str):
-                    # Type tags prevent True and 1 from sharing a validation-bypassing key.
-                    settings = tuple(sorted((k, type(v).__name__, repr(v)) for k, v in kwargs.items() if k != 'encoder'))
-                    key = (scope, query, settings, id(kwargs.get('encoder')), getattr(getattr(kwargs.get('encoder'),'profile',None),'id',None), id(self.counter), self.counter.name, id(self.counter.encode))
+                key = self._result_cache_key(scope,query,kwargs)
                 if key is not None and key in self._results:
                     out = copy.deepcopy(self._results[key])
                     self._results.move_to_end(key)
