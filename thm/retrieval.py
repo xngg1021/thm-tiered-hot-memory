@@ -137,6 +137,7 @@ class SearchIndex:
         self.readonly = readonly
         self._lock = threading.RLock()
         path = Path(path).expanduser()
+        self.path = path.resolve()
         if path.is_symlink():
             raise ValueError('symlink index refused')
         if readonly:

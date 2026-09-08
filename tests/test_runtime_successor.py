@@ -340,7 +340,7 @@ class RuntimeReviewRegressionTests(unittest.TestCase):
         e.profile=replace(e.profile,backend='torch_fp32')
         self.index.embed('s',e,e.model_id);reference=self.profile(e,'reference')
         with RuntimeScheduler(self.index,[reference],{e.profile.id:e},policy='reference') as scheduler:
-            with patch.object(self.index,'search_many',side_effect=AssertionError('reference must be scalar')):
+            with patch.object(scheduler.indexes[reference.id],'search_many',side_effect=AssertionError('reference must be scalar')):
                 result=scheduler.search_many('s',['alpha','beta'],mode='hybrid')
             self.assertEqual(len(result),2)
     def test_batched_diagnostics_match_limited_candidates(self):
@@ -638,7 +638,7 @@ class RuntimeReviewRegressionTests(unittest.TestCase):
     def test_scheduler_passes_calibrated_overlap_to_batch_api(self):
         e=FakeEncoder();self.index.embed('s',e,e.model_id);p=self.profile(e,overlap=True)
         with RuntimeScheduler(self.index,[p],{e.profile.id:e}) as scheduler:
-            with patch.object(self.index,'search_many',wraps=self.index.search_many) as call:
+            with patch.object(scheduler.indexes[p.id],'search_many',wraps=scheduler.indexes[p.id].search_many) as call:
                 rows=scheduler.search_many('s',['alpha','beta'],mode='hybrid')
             self.assertTrue(call.call_args.kwargs['overlap']);self.assertTrue(all(r['batch_receipt']['overlap_active'] for r in rows))
 
@@ -706,3 +706,39 @@ class RuntimeReviewRegressionTests(unittest.TestCase):
                         self.assertTrue(result['runtime_diagnostics']['candidate_ids'])
                         self.assertTrue(result['runtime_diagnostics']['scores'])
                     else:self.assertIsNone(result['runtime_diagnostics'])
+
+    def test_temporal_hints_preserve_english_and_iso_date_precision(self):
+        from thm.features import reorder
+        rows=[{'id':str(i),'text':'alpha','timestamp':stamp} for i,stamp in enumerate(('2024-01-01','2024-05-01','2024-05-15','2025-05-01'))]
+        f=RetrievalFeatures(temporal=True)
+        for query in ('alpha May 2024','alpha 2024-05'):
+            self.assertEqual(reorder(rows,query,f)[0]['id'],'1')
+            self.assertEqual(parse_query(query).date_precisions,('month',))
+        self.assertEqual(reorder(rows,'alpha 2024-05-15',f)[0]['id'],'2')
+        self.assertEqual(reorder(rows,'alpha 2024',f)[0]['id'],'0')
+        hints=parse_query('alpha 2024-01-01 and May 2024')
+        self.assertEqual(hints.date_precisions,('day','month'))
+
+    def test_scheduler_profiles_encode_concurrently_on_independent_readers(self):
+        barrier=threading.Barrier(2)
+        class ConcurrentEncoder(FakeEncoder):
+            armed=False
+            def encode_many(self,texts):
+                if self.armed:barrier.wait(timeout=5)
+                return super().encode_many(texts)
+        cpu=ConcurrentEncoder();gpu=ConcurrentEncoder(device='cuda',salt='different-profile')
+        for e in (cpu,gpu):self.index.embed('s',e,e.model_id)
+        profiles=[self.profile(e,'auto-throughput') for e in (cpu,gpu)]
+        before=self.index.db.total_changes
+        with RuntimeScheduler(self.index,profiles,{e.profile.id:e for e in (cpu,gpu)},policy='auto-throughput') as scheduler:
+            readers=list(scheduler.indexes.values())
+            self.assertIsNot(readers[0].db,readers[1].db)
+            for e in (cpu,gpu):e.armed=True
+            futures=[scheduler.submit('s','alpha',mode='hybrid',requested_profile=p.id) for p in profiles]
+            results=[future.result(timeout=10) for future in futures]
+            self.assertEqual([r['runtime_receipt']['actual_profile'] for r in results],[p.id for p in profiles])
+            self.assertTrue(all(r.readonly for r in readers));self.assertEqual(self.index.db.total_changes,before)
+            self.assertTrue(all(not n for n in scheduler.pending.values()))
+        for reader in readers:
+            with self.assertRaises(sqlite3.ProgrammingError):reader.db.execute('SELECT 1')
+        self.assertTrue(self.index.search('s','alpha')['selected'])

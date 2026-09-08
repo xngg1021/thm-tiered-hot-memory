@@ -30,6 +30,15 @@ class RuntimeScheduler:
             if policy in ('reference','auto-safe') and (p.precision!='fp32' or p.semantic_gate not in ('strict','reference')):raise ValueError('semantic gate not satisfied')
         self.pinned=next(iter(self.profiles));self.fallback=fallback_to_sparse
         self.lock=threading.Lock();self.pending={k:0 for k in self.profiles};self.warm=set();self.closed=False
+        self.idle=threading.Condition(self.lock)
+        # One read-only connection/cache/lock per profile permits independent CPU/GPU reads.
+        from ..retrieval import SearchIndex
+        self.indexes={}
+        try:
+            for key in self.profiles:self.indexes[key]=SearchIndex(index.path,index.counter,readonly=True)
+        except Exception:
+            for reader in self.indexes.values():reader.close()
+            raise
         self.slots=threading.BoundedSemaphore(max_pending);self.pool=ThreadPoolExecutor(max_workers=min(4,len(profiles)),thread_name_prefix='thm-runtime')
 
     def choose(self,workload,*,cpu_load=None,gpu_queue=None,vram_available=None):
@@ -51,27 +60,28 @@ class RuntimeScheduler:
             key=requested_profile or self.choose(workload,**(load or {}))
             if key not in self.profiles or (self.policy!='auto-throughput' and key!=self.pinned):raise ValueError('session profile pinned')
             self.pending[key]+=1
-        p=self.profiles[key];encoder=self.encoders[p.embedding_profile_id];start=time.perf_counter()
+        index=self.indexes[key];p=self.profiles[key];encoder=self.encoders[p.embedding_profile_id];start=time.perf_counter()
         receipt={'requested_profile':key,'actual_profile':key,'embedding_profile_id':p.embedding_profile_id,'semantic_policy':self.policy,
             'workload':workload,'fallback_mode':None,'reason':'session-pinned' if self.policy!='auto-throughput' else 'bounded-queue-routing',
             'device':p.device,'precision':p.precision,'threads':p.threads,'document_batch_size':p.document_batch_size,'query_batch_size':p.query_batch_size,
             'scorer':p.scorer,'warm':key in self.warm,'observed_kernel_dispatch':None}
         try:
             if 'encoder' in kwargs or 'model_id' in kwargs:raise ValueError('scheduler owns encoder identity')
-            call=self.index.search_overlap if p.overlap and self.policy!='reference' else self.index.search
+            call=index.search_overlap if p.overlap and self.policy!='reference' else index.search
             if isinstance(query,list) and self.policy=='reference':
-                result=[self.index.search(scope,q,scorer=p.scorer,encoder=encoder,model_id=encoder.model_id,**kwargs) for q in query]
+                result=[index.search(scope,q,scorer=p.scorer,encoder=encoder,model_id=encoder.model_id,**kwargs) for q in query]
             elif isinstance(query,list):
-                result=self.index.search_many(scope,query,query_batch_size=p.query_batch_size,scorer=p.scorer,overlap=p.overlap,encoder=encoder,model_id=encoder.model_id,**kwargs)
+                result=index.search_many(scope,query,query_batch_size=p.query_batch_size,scorer=p.scorer,overlap=p.overlap,encoder=encoder,model_id=encoder.model_id,**kwargs)
             else:result=call(scope,query,scorer=p.scorer,encoder=encoder,model_id=encoder.model_id,**kwargs)
             with self.lock:self.warm.add(key)
         except Exception as exc:
             if not self.fallback:raise
             clean={k:v for k,v in kwargs.items() if k not in ('encoder','model_id','mode')}
-            result=self.index.search_many(scope,query,mode='sparse',**clean) if isinstance(query,list) else self.index.search(scope,query,mode='sparse',**clean)
+            result=index.search_many(scope,query,mode='sparse',**clean) if isinstance(query,list) else index.search(scope,query,mode='sparse',**clean)
             receipt.update(actual_profile=None,embedding_profile_id=None,fallback_mode='fallback-to-sparse',reason=type(exc).__name__)
         finally:
-            with self.lock:self.pending[key]-=1
+            with self.idle:
+                self.pending[key]-=1;self.idle.notify_all()
         receipt['total_latency_ms']=(time.perf_counter()-start)*1000
         for item in result if isinstance(result,list) else [result]:item['runtime_receipt']=dict(receipt)
         return result
@@ -91,6 +101,8 @@ class RuntimeScheduler:
     def close(self,*,cancel_pending=True):
         with self.lock:self.closed=True
         self.pool.shutdown(wait=True,cancel_futures=cancel_pending)
+        with self.idle:self.idle.wait_for(lambda:not any(self.pending.values()))
+        for reader in self.indexes.values():reader.close()
         for encoder in self.encoders.values():encoder.close()
     def __enter__(self):return self
     def __exit__(self,*args):self.close()

@@ -43,6 +43,7 @@ class QueryHints:
     operands: tuple = ()
     identifiers: tuple = ()
     months: tuple = ()
+    date_precisions: tuple = ()
 
 
 MONTHS={name:i for i,name in enumerate(('january','february','march','april','may','june','july','august','september','october','november','december'),1)}
@@ -51,18 +52,21 @@ def parse_query(query):
     if not isinstance(query,str) or len(query)>16000:return QueryHints()
     kind=re.match(r'^\s*(who|when|where|version)\b',query,re.I)
     temporal=re.search(r'\b(before|after|between|first|latest|previous|next|duration)\b',query,re.I)
-    dates=[]
+    dates=[];precisions=[]
     for token in re.findall(r'\b(?:19|20)\d{2}(?:-\d{2}(?:-\d{2})?)?\b',query):
         try:
-            parts=[int(x) for x in token.split('-')];stamp=date(*((parts+[1,1])[:3]));dates.append(stamp.isoformat())
+            parts=[int(x) for x in token.split('-')];stamp=date(*((parts+[1,1])[:3]));dates.append(stamp.isoformat());precisions.append(('year','month','day')[len(parts)-1])
         except ValueError:pass
     months=tuple(dict.fromkeys(MONTHS[m.group(0).lower()] for m in re.finditer(r'\b('+'|'.join(MONTHS)+r')\b',query,re.I)))
     for match in re.finditer(r'\b('+'|'.join(MONTHS)+r')\s+((?:19|20)\d{2})\b',query,re.I):
-        year=int(match.group(2));dates=[d for d in dates if d!=f'{year}-01-01'];dates.append(date(year,MONTHS[match.group(1).lower()],1).isoformat())
+        year=int(match.group(2))
+        retained=[(d,p) for d,p in zip(dates,precisions) if not (p=='year' and d==f'{year}-01-01')]
+        dates=[d for d,p in retained];precisions=[p for d,p in retained]
+        dates.append(date(year,MONTHS[match.group(1).lower()],1).isoformat());precisions.append('month')
     join=re.fullmatch(r'\s*(.{1,256}?)\s+(AND|OR)\s+(.{1,256}?)\s*',query)
     ids=tuple(re.findall(r'\b[A-Za-z0-9]+(?:[-_./][A-Za-z0-9]+)+\b',query))
     return QueryHints(kind.group(1).upper() if kind else None,temporal.group(1).lower() if temporal else None,tuple(dates),
-                      join.group(2) if join else None,(join.group(1),join.group(3)) if join else (),ids,months)
+                      join.group(2) if join else None,(join.group(1),join.group(3)) if join else (),ids,months,tuple(precisions))
 
 
 def timestamp(value):
@@ -113,7 +117,7 @@ def reorder(rows,query,features):
             if op in ('before','previous') and len(dates)==1:temporal_score=int(stamp<dates[0])
             elif op in ('after','next') and len(dates)==1:temporal_score=int(stamp>dates[0])
             elif op=='between' and len(dates)==2:temporal_score=int(min(dates)<=stamp<=max(dates))
-            elif dates:temporal_score=int(any(stamp.year==d.year and (f'{d.year:04d}-{d.month:02d}' not in query or stamp.month==d.month) for d in dates))
+            elif dates:temporal_score=int(any(stamp.year==d.year and (precision=='year' or stamp.month==d.month) and (precision!='day' or stamp.day==d.day) for d,precision in zip(dates,hints.date_precisions)))
             elif hints.months:temporal_score=int(stamp.month in hints.months)
             elif op in ('first','latest'):temporal_score=stamp.toordinal()*(1 if op=='latest' else -1)
         active=features.temporal and (hints.temporal in ('first','latest','before','after','between','previous','next') or bool(hints.dates) or bool(hints.months))
