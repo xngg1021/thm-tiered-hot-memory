@@ -113,7 +113,7 @@ def run(dataset, counter, modes, budgets, *, model_path=None, model_id=None, nei
                 metadata = index.replace_scope(scope, documents)
                 generations[scope] = metadata['generation']
                 build = {'scope': scope, 'documents': len(documents), 'index_seconds': time.perf_counter()-start}
-                if encoder:
+                if encoder and any(m in ('dense','hybrid') for m in modes) and any(b>0 for b in budgets):
                     build['embedding'] = execution.embed(index,scope) if execution else index.embed(scope, encoder, model_id)
                 builds.append(build)
                 known = {d.id for d in documents}

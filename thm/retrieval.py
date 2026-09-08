@@ -458,6 +458,7 @@ class SearchIndex:
         queries=list(itertools.islice(queries,4097))
         if len(queries)>4096 or any(not isinstance(q,str) or not q.strip() or len(q)>16000 for q in queries):raise ValueError('invalid bounded query batch')
         if not queries:return []
+        self._validate_search_options(scope,queries[0],scorer=scorer,**kwargs)
         if kwargs.get('budget')==0 or kwargs.get('mode','sparse') not in ('dense','hybrid'):
             return [self.search(scope,q,scorer=scorer,**kwargs) for q in queries]
         encoder=kwargs.get('encoder');model_id=kwargs.get('model_id');limit=kwargs.get('candidate_limit',100)
@@ -526,6 +527,7 @@ class SearchIndex:
         """Encoder worker overlaps caller-thread SQLite FTS; no cross-thread DB use."""
         from concurrent.futures import ThreadPoolExecutor
         encoder=kwargs.get('encoder')
+        self._validate_search_options(scope,query,**kwargs)
         if kwargs.get('budget')==0 or kwargs.get('mode')!='hybrid' or encoder is None:return self.search(scope,query,**kwargs)
         with self._lock:
             self._refresh_caches()
@@ -603,17 +605,14 @@ class SearchIndex:
             channels.append(self._fts('lexical', scope, [t for t in tokens if t not in STOP], candidate_limit, True))
         return channels
 
-    def _search(self, scope: str, query: str, *, budget=600, mode='sparse', candidate_limit=100,
-               neighbor_turns=0, encoder=None, model_id=None, entity_projection=False, features=None, diagnostics=False, scorer='numpy_reference') -> dict:
-        start = time.perf_counter()
+    def _validate_search_options(self,scope,query,*,budget=600,mode='sparse',candidate_limit=100,
+                                 neighbor_turns=0,encoder=None,model_id=None,entity_projection=False,features=None,diagnostics=False,scorer='numpy_reference'):
         from .features import RetrievalFeatures
         features = RetrievalFeatures.parse(features)
         if type(diagnostics) is not bool:raise ValueError('diagnostics must be boolean')
         if scorer not in ('numpy_reference','torch_cpu','torch_cuda'):raise ValueError('unsupported dense scorer')
         if type(entity_projection) is not bool:raise ValueError('entity projection requires explicit boolean')
         entity_projection = entity_projection or features.entity
-        self._last_dense_diagnostics = {}
-        self._fts_elapsed_ms = 0.0
         if not scope or not isinstance(query, str) or not query.strip():
             raise ValueError('nonempty scope and query required')
         if type(budget) is not int or not 0 <= budget <= 32768:
@@ -626,6 +625,17 @@ class SearchIndex:
             raise ValueError('entity projection requires sparse/hybrid mode and an explicit boolean')
         if len(query) > 16000:
             raise ValueError('query too long')
+        if budget and mode in ('dense','hybrid'):
+            if encoder is None or not model_id:raise ValueError('dense mode requires an explicit local encoder and model identity')
+            if getattr(encoder,'model_id',model_id)!=model_id:raise ValueError('encoder identity mismatch')
+        return features,entity_projection
+
+    def _search(self, scope: str, query: str, *, budget=600, mode='sparse', candidate_limit=100,
+               neighbor_turns=0, encoder=None, model_id=None, entity_projection=False, features=None, diagnostics=False, scorer='numpy_reference') -> dict:
+        start = time.perf_counter()
+        features,entity_projection=self._validate_search_options(scope,query,budget=budget,mode=mode,candidate_limit=candidate_limit,neighbor_turns=neighbor_turns,encoder=encoder,model_id=model_id,entity_projection=entity_projection,features=features,diagnostics=diagnostics,scorer=scorer)
+        self._last_dense_diagnostics = {}
+        self._fts_elapsed_ms = 0.0
         generation = self.db.execute('SELECT generation FROM scopes WHERE scope=?', (scope,)).fetchone()
         if generation is None:
             raise ValueError('scope not indexed')

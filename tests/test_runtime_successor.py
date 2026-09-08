@@ -280,7 +280,9 @@ class RuntimeIntegrationTests(unittest.TestCase):
         e=FakeEncoder()
         def runner(config,timeout):
             if config['device']=='cuda':return {'status':'failed','error_type':'MemoryError'}
-            return {'status':'ok','identity':e.identity(),'corpus_sha256':CORPUS_SHA,'document_vectors':e(DOCUMENTS),'query_vectors':e(QUERIES),
+            # Binary unit vectors keep this winner-selection fixture exactly invariant across GEMV/GEMM.
+            vectors=lambda texts:[[float(j==i%8) for j in range(8)] for i,_ in enumerate(texts)]
+            return {'status':'ok','identity':e.identity(),'corpus_sha256':CORPUS_SHA,'document_vectors':vectors(DOCUMENTS),'query_vectors':vectors(QUERIES),
                 'single_query_p95_ms':10/config['threads'],'queries_per_second':config['query_batch_size']*10,'docs_per_second':100}
         with tempfile.TemporaryDirectory() as temp:
             Path(temp,'weights').write_bytes(b'fixture')
@@ -650,3 +652,30 @@ class RuntimeReviewRegressionTests(unittest.TestCase):
             result=self.index.search_overlap('s','alpha',**kwargs)
         self.assertTrue(result['result_cache_hit']);self.assertEqual(result['overlap']['skipped'],'result-cache-hit')
         self.assertEqual(result['selected'],first['selected']);self.assertEqual(e.calls,[])
+
+    def test_strict_gate_rejects_score_drift_and_signature_truncation(self):
+        from thm.runtime.autotune import retrieval_signature
+        e=FakeEncoder();measured={'status':'ok','identity':e.identity(),'corpus_sha256':CORPUS_SHA,'document_vectors':e(DOCUMENTS),'query_vectors':e(QUERIES)}
+        measured['retrieval_signature']=retrieval_signature(measured)
+        candidate=json.loads(json.dumps(measured));candidate['retrieval_signature'][0]['scores'][0]+=.001
+        result=gate(measured,candidate);self.assertFalse(result['admitted']);self.assertEqual(result['score_absolute_tolerance'],0.0)
+        self.assertGreater(result['max_score_abs_diff'],0)
+        candidate['retrieval_signature'].pop();self.assertEqual(gate(measured,candidate)['reason'],'invalid-signature-length')
+    def test_lexical_runners_never_embed_documents(self):
+        from research.recall.benchmark import run as locomo
+        from research.recall.lme_retrieval import run as lme
+        from thm.runtime.research import ExecutionConfig
+        datasets=[(locomo,[{'sample_id':'a','conversation':{'session_1':[{'dia_id':'D1:1','speaker':'Alice','text':'alpha'}]},'qa':[{'question':'alpha','category':4,'evidence':['D1:1']}]}]),
+          (lme,[{'question_id':'a','question':'alpha','haystack_session_ids':['s'],'haystack_sessions':[[{'role':'user','content':'alpha'}]],'answer_session_ids':['s']}])]
+        for runner,data in datasets:
+            e=FakeEncoder('fails')
+            with patch('thm.runtime.isolated.IsolatedEncoder',return_value=e):
+                result=runner(data,TokenCounter(),['literal','sparse'],[600],model_path='local',model_id=e.model_id,execution_config=ExecutionConfig(policy='auto-throughput'))
+            self.assertEqual(e.calls,[]);self.assertTrue(all('embedding' not in b for b in result['builds']))
+    def test_invalid_batch_and_overlap_options_fail_before_semantic_work(self):
+        e=FakeEncoder('fails')
+        for options in ({'budget':-1},{'neighbor_turns':3},{'features':{'segment':'yes'}},{'diagnostics':1},{'candidate_limit':0}):
+            with patch.object(self.index,'_dense_matrix',side_effect=AssertionError('validation must precede matrix load')),patch('concurrent.futures.ThreadPoolExecutor',side_effect=AssertionError('validation must precede worker')):
+                with self.assertRaises(ValueError):self.index.search_many('s',['alpha'],mode='hybrid',encoder=e,model_id=e.model_id,overlap=True,**options)
+                with self.assertRaises(ValueError):self.index.search_overlap('s','alpha',mode='hybrid',encoder=e,model_id=e.model_id,**options)
+        self.assertEqual(e.calls,[])

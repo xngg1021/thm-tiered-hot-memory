@@ -82,10 +82,19 @@ def gate(reference,candidate):
     profile=EmbeddingProfile(**{k:v for k,v in candidate['identity'].items() if k in fields})
     for name,n in [('document_vectors',len(DOCUMENTS)),('query_vectors',len(QUERIES))]:validate_vectors(candidate[name],profile,n)
     if reference['identity']['dimension']!=profile.dimension:return {'admitted':False,'reason':'dimension-drift'}
-    left=reference.get('retrieval_signature') or retrieval_signature(reference);right=candidate.get('retrieval_signature') or retrieval_signature(candidate)
-    strict=all({k:v for k,v in a.items() if k!='scores'}=={k:v for k,v in b.items() if k!='scores'} for a,b in zip(left,right))
+    left=reference['retrieval_signature'] if 'retrieval_signature' in reference else retrieval_signature(reference)
+    right=candidate['retrieval_signature'] if 'retrieval_signature' in candidate else retrieval_signature(candidate)
+    score_tolerance=0.0  # Strict admission changes no ranking tie policy or numeric threshold.
+    for signature in (left,right):
+        if not isinstance(signature,list) or len(signature)!=len(QUERIES):return {'admitted':False,'reason':'invalid-signature-length'}
+        for row in signature:
+            scores=row.get('scores') if isinstance(row,dict) else None
+            if not isinstance(scores,list) or len(scores)!=len(DOCUMENTS) or any(type(v) not in (int,float) or not math.isfinite(v) for v in scores):
+                return {'admitted':False,'reason':'invalid-signature-scores'}
+    score_delta=max(abs(x-y) for a,b in zip(left,right) for x,y in zip(a['scores'],b['scores']))
+    strict=score_delta<=score_tolerance and all({k:v for k,v in a.items() if k!='scores'}=={k:v for k,v in b.items() if k!='scores'} for a,b in zip(left,right))
     delta=max(abs(x-y) for name in ('document_vectors','query_vectors') for a,b in zip(reference[name],candidate[name]) for x,y in zip(a,b))
-    return {'admitted':strict,'strict_retrieval_parity':strict,'max_embedding_abs_diff':delta,
+    return {'admitted':strict,'strict_retrieval_parity':strict,'max_embedding_abs_diff':delta,'max_score_abs_diff':score_delta,'score_absolute_tolerance':score_tolerance,
             'reference_results':left,'candidate_results':right,'reason':'strict' if strict else 'retrieval-drift'}
 
 
