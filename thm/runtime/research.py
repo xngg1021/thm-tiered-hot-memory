@@ -32,7 +32,7 @@ class ExecutionConfig:
 
 class Execution:
     def __init__(self,config,model_path,model_id,cache_path=None):
-        self.config=config;self.encoder=None;self.cache=None;self.query_embedding_precompute_ms=0;self.precomputed={}
+        self.config=config;self.encoder=None;self.cache=None;self.query_embedding_precompute_ms=0;self.precomputed={};self.precompute_costs={}
         self.started=time.perf_counter()
         if cache_path and config.policy=='reference':raise ValueError('reference disables embedding cache')
         if model_path:
@@ -66,8 +66,9 @@ class Execution:
         if self.encoder is None or self.config.policy=='reference':return
         start=time.perf_counter();unique=list(dict.fromkeys(queries));batch=self.config.query_batch_size
         for i in range(0,len(unique),batch):
-            chunk=unique[i:i+batch];values=self.encoder.encode_many(chunk)
-            self.precomputed.update(zip(chunk,values))
+            chunk=unique[i:i+batch];batch_start=time.perf_counter();values=self.encoder.encode_many(chunk)
+            elapsed=(time.perf_counter()-batch_start)*1000
+            self.precomputed.update(zip(chunk,values));self.precompute_costs.update((q,elapsed/len(chunk)) for q in chunk)
         self.query_embedding_precompute_ms+=(time.perf_counter()-start)*1000
     def search_many(self,index,scope,queries,**kwargs):
         cfg=self.config;kwargs.update(encoder=self.encoder,model_id=self.encoder.model_id if self.encoder else None,features=cfg.features,diagnostics=True)
@@ -77,7 +78,16 @@ class Execution:
         if cfg.policy!='reference' and cfg.query_batch_size>1 and len(queries)>1:
             return index.search_many(scope,queries,query_batch_size=cfg.query_batch_size,scorer=cfg.scorer,**kwargs)
         call=index.search_overlap if cfg.overlap else index.search
-        return [call(scope,q,scorer=cfg.scorer,**kwargs) for q in queries]
+        results=[call(scope,q,scorer=cfg.scorer,**kwargs) for q in queries]
+        if kwargs.get('mode') in ('dense','hybrid'):
+            for q,out in zip(queries,results):
+                if q in self.precompute_costs:
+                    cost=self.precompute_costs.pop(q)
+                    out['timing_ms']['query_preembedding_amortized']=cost
+                    out['timing_ms']['amortized_total']=out['timing_ms']['total']+cost
+                    out['timing_kind']='search plus amortized query pre-encoding; charged once per exact input'
+                    out['batch_receipt']={'query_preembedding_amortized_ms':cost}
+        return results
     def receipt(self):
         from dataclasses import asdict
         config=asdict(self.config);config.pop('runtime_profile_file',None)

@@ -397,3 +397,13 @@ class RuntimeReviewRegressionTests(unittest.TestCase):
                 result=runner(data,TokenCounter(),['sparse'],[600]);row=result['rows'][0]
                 self.assertEqual(row['total_ms'],17.0);self.assertEqual(row['timing_breakdown_ms']['total'],2.0)
                 self.assertEqual(row['batch_receipt']['embedding_ms'],30.0)
+
+    def test_preencoded_lme_query_cost_is_charged_once(self):
+        from thm.runtime.research import ExecutionConfig,Execution
+        e=FakeEncoder();self.index.embed('s',e,e.model_id)
+        execution=Execution(ExecutionConfig(policy='auto-throughput'),None,e.model_id);execution.encoder=e
+        execution.preencode(['alpha']);execution.precompute_costs['alpha']=12.0
+        first=execution.search_many(self.index,'s',['alpha'],mode='dense')[0]
+        second=execution.search_many(self.index,'s',['alpha'],mode='dense')[0]
+        self.assertEqual(first['timing_ms']['amortized_total'],first['timing_ms']['total']+12.0)
+        self.assertNotIn('query_preembedding_amortized',second['timing_ms']);execution.close()
