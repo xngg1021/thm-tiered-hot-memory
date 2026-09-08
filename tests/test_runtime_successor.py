@@ -870,3 +870,19 @@ class RuntimeReviewRegressionTests(unittest.TestCase):
             import statistics
             self.assertEqual(result['docs_per_second'],len(BUILD_DOCUMENTS)/statistics.median(result['document_repeat_seconds']))
             self.assertTrue(encoder.closed)
+
+    def test_query_calibration_exercises_large_batches_and_scoring_matrix(self):
+        from thm.runtime.worker import measure
+        from thm.runtime.micro import BULK_QUERIES,QUERY_WORKLOAD_SHA,BUILD_DOCUMENTS
+        from thm.runtime.scorers import score
+        self.assertGreater(len(BULK_QUERIES),32);self.assertEqual(len(set(BULK_QUERIES)),len(BULK_QUERIES))
+        for batch in (1,32):
+            encoder=FakeEncoder();shapes=[]
+            def measured(d,q,name):shapes.append((len(d),len(q)));return score(d,q,name)
+            config={'model_path':'test-only','model_id':encoder.model_id,'backend':'torch_fp32','device':'cpu','threads':1,'document_batch_size':64,'query_batch_size':batch}
+            with patch('thm.runtime.worker.configure'),patch('thm.runtime.backends.create',return_value=encoder),patch('thm.runtime.scorers.score',side_effect=measured),patch('thm.runtime.autotune.retrieval_signature',return_value=[]):result=measure(config)
+            calls=[c for c in encoder.calls if c and 'Calibration query ' in c[0]]
+            self.assertEqual([len(c) for c in calls],[batch]*(1+3*len(BULK_QUERIES)//batch))
+            self.assertEqual(result['query_workload_sha256'],QUERY_WORKLOAD_SHA);self.assertEqual(result['query_workload_count'],len(BULK_QUERIES))
+            self.assertEqual(shapes[-4:],[(len(BUILD_DOCUMENTS),len(BULK_QUERIES))]*4)
+            self.assertEqual(len(result['query_vectors']),len(QUERIES));self.assertEqual(len(result['scoring_samples']),3)

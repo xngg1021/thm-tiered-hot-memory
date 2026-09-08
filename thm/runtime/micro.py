@@ -19,3 +19,7 @@ CORPUS_SHA=digest({'version':CORPUS_VERSION,'documents':DOCUMENTS,'queries':QUER
 BUILD_WORKLOAD_VERSION=1
 BUILD_DOCUMENTS=[DOCUMENTS[i%len(DOCUMENTS)]+f'\nCalibration document {i}.' for i in range(512)]
 BUILD_WORKLOAD_SHA=digest({'version':BUILD_WORKLOAD_VERSION,'documents':BUILD_DOCUMENTS})
+
+QUERY_WORKLOAD_VERSION=1
+BULK_QUERIES=[QUERIES[i%len(QUERIES)]+f'\nCalibration query {i}.' for i in range(128)]
+QUERY_WORKLOAD_SHA=digest({'version':QUERY_WORKLOAD_VERSION,'queries':BULK_QUERIES})

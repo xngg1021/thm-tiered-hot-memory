@@ -24,7 +24,7 @@ def configure(config):
 def measure(config):
     configure(config)
     from .backends import create
-    from .micro import DOCUMENTS,QUERIES,CORPUS_SHA,BUILD_DOCUMENTS,BUILD_WORKLOAD_SHA
+    from .micro import DOCUMENTS,QUERIES,CORPUS_SHA,BUILD_DOCUMENTS,BUILD_WORKLOAD_SHA,BULK_QUERIES,QUERY_WORKLOAD_SHA
     from .identity import validate_vectors
     import statistics
     cpu_start=time.process_time();overall_start=time.perf_counter()
@@ -37,43 +37,54 @@ def measure(config):
         durations=[]
         for _ in range(3):
             start=time.perf_counter();encoded=encoder.encode_many(BUILD_DOCUMENTS);durations.append(time.perf_counter()-start)
-            validate_vectors(encoded,encoder.profile,len(BUILD_DOCUMENTS));del encoded
+            validate_vectors(encoded,encoder.profile,len(BUILD_DOCUMENTS))
+        build_vectors=encoded
         docs=encoder.encode_many(DOCUMENTS)
         from .scorers import score
         scorer=config.get('scorer','numpy_reference')
-        score(docs,[encoder.encode_one(QUERIES[0])],scorer)  # warm the selected scalar scorer too
+        score(build_vectors,[encoder.encode_one(QUERIES[0])],scorer)  # warm the selected scalar scorer too
         single=[];single_embedding=[]
         for query in QUERIES:
             start=time.perf_counter();vector=encoder.encode_one(query)
             single_embedding.append((time.perf_counter()-start)*1000)
-            score(docs,[vector],scorer);single.append((time.perf_counter()-start)*1000)
-        start=time.perf_counter();query_vectors=[]
+            score(build_vectors,[vector],scorer);single.append((time.perf_counter()-start)*1000)
+        encoder.encode_many(BULK_QUERIES[:config['query_batch_size']])
+        query_durations=[]
+        for _ in range(3):
+            start=time.perf_counter();bulk_vectors=[]
+            for offset in range(0,len(BULK_QUERIES),config['query_batch_size']):bulk_vectors.extend(encoder.encode_many(BULK_QUERIES[offset:offset+config['query_batch_size']]))
+            query_durations.append(time.perf_counter()-start)
+            validate_vectors(bulk_vectors,encoder.profile,len(BULK_QUERIES))
+        batch=statistics.median(query_durations);query_vectors=[]
         for offset in range(0,len(QUERIES),config['query_batch_size']):query_vectors.extend(encoder.encode_many(QUERIES[offset:offset+config['query_batch_size']]))
-        batch=time.perf_counter()-start
         validate_vectors(docs,encoder.profile,len(DOCUMENTS));validate_vectors(query_vectors,encoder.profile,len(QUERIES))
-        memory=None
-        try:
-            import resource
-            memory={'maxrss_native_units':resource.getrusage(resource.RUSAGE_SELF).ru_maxrss,'platform':sys.platform}
-        except ImportError:pass
         result={'status':'ok','identity':encoder.identity(),'corpus_sha256':CORPUS_SHA,'warmup':warmup,'repeats':3,
             'sample_count':len(QUERIES),'model_load_ms':load,'docs_per_second':len(BUILD_DOCUMENTS)/statistics.median(durations),
             'document_workload_sha256':BUILD_WORKLOAD_SHA,'document_workload_count':len(BUILD_DOCUMENTS),'document_batch_size':config['document_batch_size'],
             'document_repeat_seconds':durations,'document_metric':'encoder-only fixed build workload',
-            'queries_per_second':len(QUERIES)/batch,'single_query_p50_ms':statistics.median(single),
+            'query_workload_sha256':QUERY_WORKLOAD_SHA,'query_workload_count':len(BULK_QUERIES),'query_repeat_seconds':query_durations,
+            'scoring_document_count':len(BUILD_DOCUMENTS),'queries_per_second':len(BULK_QUERIES)/batch,'single_query_p50_ms':statistics.median(single),
             'single_query_metric':'encoder-plus-selected-scorer-including-transfer',
             'single_query_embedding_p50_ms':statistics.median(single_embedding),
             'single_query_p95_ms':sorted(single)[max(0,__import__('math').ceil(.95*len(single))-1)],
-            'batch_total_ms':batch*1000,'memory':memory,'document_vectors':docs,'query_vectors':query_vectors,
+            'batch_total_ms':batch*1000,'memory':None,'document_vectors':docs,'query_vectors':query_vectors,
             'generation_calls':0,'observed_kernel_dispatch':None,
-            'cpu_process_seconds':time.process_time()-cpu_start,'cpu_utilization_percent':100*(time.process_time()-cpu_start)/(time.perf_counter()-overall_start),
             'gpu_utilization_percent':None,'vram_peak':None,'scorer':config.get('scorer','numpy_reference'),'query_batch_size':config['query_batch_size']}
         from .scorers import score
-        _,scoring=score(docs,query_vectors,result['scorer'])
+        score(build_vectors,bulk_vectors,result['scorer'])  # warm the batch scorer shape
+        scoring_samples=[score(build_vectors,bulk_vectors,result['scorer'])[1] for _ in range(3)]
+        scoring={**scoring_samples[-1],**{k:statistics.median(sample[k] for sample in scoring_samples) for k in ('dense_scoring','transfer')}}
+        result['scoring_samples']=scoring_samples
         result['scoring']=scoring;result['query_embedding_per_second']=result['queries_per_second']
-        result['queries_per_second']=len(QUERIES)/(batch+scoring['dense_scoring']/1000)
+        result['queries_per_second']=len(BULK_QUERIES)/(batch+scoring['dense_scoring']/1000)
         from .autotune import retrieval_signature
         result['retrieval_signature']=retrieval_signature(result)
+        cpu_elapsed=time.process_time()-cpu_start;wall_elapsed=time.perf_counter()-overall_start
+        result.update(cpu_process_seconds=cpu_elapsed,worker_wall_seconds=wall_elapsed,cpu_utilization_percent=100*cpu_elapsed/wall_elapsed)
+        try:
+            import resource
+            result['memory']={'maxrss_native_units':resource.getrusage(resource.RUSAGE_SELF).ru_maxrss,'platform':sys.platform}
+        except ImportError:pass
         return result
     finally:encoder.close()
 
