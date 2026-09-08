@@ -79,7 +79,7 @@ def aggregate(rows):
 
 
 def run(dataset, counter, modes, budgets, *, model_path=None, model_id=None, neighbors=0,
-        device='cpu', batch_size=64):
+        device='cpu', batch_size=64, execution_config=None, cache_path=None):
     if not isinstance(dataset, list) or not dataset:
         raise ValueError('nonempty conversation list required')
     sample_ids = [str(s['sample_id']) for s in dataset]
@@ -89,8 +89,9 @@ def run(dataset, counter, modes, budgets, *, model_path=None, model_id=None, nei
         raise ValueError('unique supported modes required')
     if not budgets or any(type(b) is not int or not 0 <= b <= 32768 for b in budgets) or len(set(budgets)) != len(budgets):
         raise ValueError('unique valid budgets required')
-    encoder = SentenceEncoder(model_path, model_id, device=device,
-                              batch_size=batch_size) if model_path else None
+    from thm.runtime.research import Execution
+    execution=Execution(execution_config,model_path,model_id,cache_path) if execution_config else None
+    encoder = execution.encoder if execution else SentenceEncoder(model_path, model_id, device=device,batch_size=batch_size) if model_path else None
     if any(m in ('dense','hybrid') for m in modes) and not encoder:
         raise ValueError('local model required for requested dense run')
     all_rows, builds, generations = [], [], {}
@@ -111,17 +112,18 @@ def run(dataset, counter, modes, budgets, *, model_path=None, model_id=None, nei
                 generations[scope] = metadata['generation']
                 build = {'scope': scope, 'documents': len(documents), 'index_seconds': time.perf_counter()-start}
                 if encoder:
-                    build['embedding'] = index.embed(scope, encoder, model_id)
+                    build['embedding'] = execution.embed(index,scope) if execution else index.embed(scope, encoder, model_id)
                 builds.append(build)
                 known = {d.id for d in documents}
                 for mode in modes:
                     for budget in budgets:
+                        batch_results=execution.search_many(index,scope,[qa['question'] for qa in sample['qa']],mode=mode,budget=budget,neighbor_turns=neighbors) if execution else None
                         for position, qa in enumerate(sample['qa']):
                             if type(qa.get('category')) is not int or qa['category'] not in CATEGORY:
                                 raise ValueError('unsupported question category')
                             gold, malformed = evidence_ids(qa.get('evidence', []))
                             # Only the question is passed. No gold/answer/category information enters search.
-                            out = index.search(scope, qa['question'], mode=mode, budget=budget,
+                            out = batch_results[position] if batch_results is not None else index.search(scope, qa['question'], mode=mode, budget=budget,
                                                neighbor_turns=neighbors, encoder=encoder, model_id=model_id)
                             selected_order = [x['id'] for x in out['selected'] if x['complete']]
                             selected = set(selected_order)
@@ -143,10 +145,14 @@ def run(dataset, counter, modes, budgets, *, model_path=None, model_id=None, nei
                                 'budget_used': out['budget_used'],
                                 'total_ms': out['timing_ms']['total'],
                                 'query_embedding_ms': out['timing_ms']['query_embedding'],
-                                'malformed_evidence': bool(malformed)})
+                                'runtime_diagnostics':out.get('runtime_diagnostics'),'timing_breakdown_ms':out['timing_ms'],
+                                'parent_locator_ids':out.get('parent_locator_ids',[]),'malformed_evidence': bool(malformed)})
                 print('BENCH_SCOPE_DONE', scope, len(sample['qa']), flush=True)
         finally:
+            runtime_receipt=execution.receipt() if execution else None
             index.close()
+            if execution:execution.close()
+            elif encoder and hasattr(encoder,'close'):encoder.close()
     summaries = {}
     for mode in modes:
         for budget in budgets:
@@ -158,7 +164,7 @@ def run(dataset, counter, modes, budgets, *, model_path=None, model_id=None, nei
                 'development': aggregate([r for r in rows if r['split']=='development' and r['category']!=5]),
                 'held_out': aggregate([r for r in rows if r['split']=='held_out' and r['category']!=5]),
                 'by_category': {CATEGORY[c]: aggregate([r for r in rows if r['category']==c]) for c in CATEGORY}}
-    return {'protocol': 2, 'counter': counter.name, 'modes': modes, 'budgets': budgets,
+    return {'protocol': 2, 'runtime':runtime_receipt, 'counter': counter.name, 'modes': modes, 'budgets': budgets,
             'neighbor_turns': neighbors, 'idf_scope': 'one_database_per_conversation', 'summaries': summaries, 'builds': builds,
             'corpus_fingerprints': generations, 'rows': all_rows,
             'generation_calls': 0, 'judge_calls': 0,
@@ -183,13 +189,16 @@ def main():
     parser.add_argument('--neighbors', type=int, default=0)
     parser.add_argument('--device', default='cpu')
     parser.add_argument('--batch-size', type=int, default=64)
+    parser.add_argument('--threads',type=int,default=1)
+    from thm.runtime.research import add_arguments,config_from_args
+    add_arguments(parser)
     args = parser.parse_args()
     require_new_output(args.output)
     raw = Path(args.dataset).read_bytes()
     dataset = json.loads(raw)
     result = run(dataset, TokenCounter(args.counter), args.modes, args.budgets,
                  model_path=args.model_path, model_id=args.model_id, neighbors=args.neighbors,
-                 device=args.device, batch_size=args.batch_size)
+                 device=args.device, batch_size=args.batch_size,execution_config=config_from_args(args),cache_path=args.embedding_cache)
     result['dataset_sha256'] = hashlib.sha256(raw).hexdigest()
     result['dataset_upstream_commit'] = DATASET_COMMIT if result['dataset_sha256'] == DATASET_SHA256 else None
     result['dataset_matches_pinned_reference'] = result['dataset_sha256'] == DATASET_SHA256
