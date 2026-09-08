@@ -13,6 +13,7 @@ class RuntimeScheduler:
         self.index=index;self.profiles={p.id:p for p in profiles};self.encoders=encoders;self.policy=policy
         if not self.profiles:raise ValueError('at least one explicit profile required')
         for p in profiles:
+            if p.policy!=policy:raise ValueError("scheduler/profile semantic policy mismatch")
             encoder=encoders.get(p.embedding_profile_id)
             if encoder is None or encoder.profile.id!=p.embedding_profile_id:raise ValueError('missing compatible profile encoder')
             if (p.backend,p.device,p.precision)!=(encoder.profile.backend,encoder.profile.device,encoder.profile.precision):raise ValueError('runtime backend identity mismatch')
@@ -35,6 +36,7 @@ class RuntimeScheduler:
         return min(candidates,key=lambda k:(self.pending[k]+(gpu_queue or 0 if self.profiles[k].device!='cpu' else cpu_load or 0),k not in self.warm,self.profiles[k].workload!=workload,k))
 
     def search(self,scope,query,*,workload='interactive',requested_profile=None,load=None,**kwargs):
+        if any(k in kwargs for k in ('encoder','model_id','scorer')):raise ValueError('scheduler owns execution settings')
         if self.policy=='reference':
             from ..features import RetrievalFeatures
             if RetrievalFeatures.parse(kwargs.get('features'))!=RetrievalFeatures() or kwargs.get('entity_projection',False):raise ValueError('reference disables experimental retrieval features')
@@ -51,9 +53,11 @@ class RuntimeScheduler:
         try:
             if 'encoder' in kwargs or 'model_id' in kwargs:raise ValueError('scheduler owns encoder identity')
             call=self.index.search_overlap if p.overlap and self.policy!='reference' else self.index.search
-            if isinstance(query,list):
+            if isinstance(query,list) and self.policy=='reference':
+                result=[self.index.search(scope,q,scorer=p.scorer,encoder=encoder,model_id=encoder.model_id,**kwargs) for q in query]
+            elif isinstance(query,list):
                 result=self.index.search_many(scope,query,query_batch_size=p.query_batch_size,scorer=p.scorer,encoder=encoder,model_id=encoder.model_id,**kwargs)
-            else:result=call(scope,query,encoder=encoder,model_id=encoder.model_id,**kwargs)
+            else:result=call(scope,query,scorer=p.scorer,encoder=encoder,model_id=encoder.model_id,**kwargs)
             with self.lock:self.warm.add(key)
         except Exception as exc:
             if not self.fallback:raise

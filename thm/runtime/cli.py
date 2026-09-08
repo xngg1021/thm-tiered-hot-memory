@@ -37,7 +37,21 @@ def main(argv=None):
                 p=load_profile(args.profile);result['selected_profile']=p.identity()
                 result['profile_freshness']='unknown-model-path-required'
                 if args.model_path:
-                    source=manifest(args.model_path)['sha256'];p.require_fresh(fingerprint(h,source,embedding_profile=p.embedding_profile_id));result['profile_freshness']='fresh'
+                    from .identity import EmbeddingProfile,digest
+                    current=manifest(args.model_path)['sha256'];source=current;derived=None
+                    data=json.loads(Path(args.profile).read_text())
+                    identity=next((t.get('result',{}).get('identity') for t in data.get('trials',[]) if t.get('result',{}).get('identity',{}).get('embedding_profile_id')==p.embedding_profile_id),None)
+                    if p.backend!='torch_fp32':
+                        prep=json.loads((Path(args.model_path)/'thm-preparation.json').read_text())
+                        if prep['derived_manifest_sha256']!=current or prep['backend']!=p.backend:raise ValueError('derived model identity changed')
+                        source=prep['source_manifest_sha256'];derived=current
+                        if identity is None:raise ValueError('derived freshness requires calibration embedding identity')
+                        fields={k:v for k,v in identity.items() if k in EmbeddingProfile.__dataclass_fields__}
+                        fields.update(source_manifest_sha256=source,derived_manifest_sha256=derived,
+                            transformation=digest({k:prep[k] for k in ('backend','precision','source_manifest_sha256','transformation','model_file','converter_versions')}))
+                        if EmbeddingProfile(**fields).id!=p.embedding_profile_id:raise ValueError('derived embedding profile changed')
+                    p.require_fresh(fingerprint(h,source,derived,p.embedding_profile_id));result['profile_freshness']='fresh'
+
         elif args.command=='autotune':
             from .autotune import autotune
             result=autotune(args.model_path,args.model_id,backends=[('torch_fp32',d) for d in (args.device or ['cpu'])],

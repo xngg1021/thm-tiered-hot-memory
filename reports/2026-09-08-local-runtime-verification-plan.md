@@ -35,6 +35,7 @@ Add `--plan-only` for a no-model planning run in a fresh directory. `--max-candi
 | Overlap/GPU batch | `cuda-batched-overlap-*.json` on actual CUDA |
 | Algorithm A/B | `feature-{entity,explicit_alias,temporal,query_grammar,segment,association}-locomo.json`; separate from speed comparison |
 | Runtime execution | `*-execution.json`: return code, wall time, artifact SHA, feature identity |
+| Score diagnostics | `*-score-deltas.json`: per-candidate reference/candidate scores and deltas, selected order/cutoff/profile; missing observations remain unknown |
 | Comparison | `*-parity.json` plus `comparison.json`: strict and aggregate results; no automatic acceptance/merge |
 
 Both datasets must match the prior pinned bytes. LoCoMo SHA256: `79fa87e90f04081343b8c8debecb80a9a6842b76a7aa537dc9fdf651ea698ff4`. LME SHA256: `08d8dad4be43ee2049a22ff5674eb86725d0ce5ff434cde2627e5e8e7e117894`. FTS remains one database per conversation/instance. Source model manifest and package versions are collected locally, not inferred from model_id.

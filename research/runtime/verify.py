@@ -109,13 +109,17 @@ def execute(args):
             arm={**arms[0],'name':'feature-'+feature,'policy':'auto-throughput'}
             run_arm(arm,args.locomo_dataset,'locomo',{feature:True})
     from research.recall.hardware_parity import compare
+    from research.evidence_io import read_json_bound
+    from research.runtime.diagnostics import score_deltas
     comparisons=[]
     for row in rows:
         if row['returncode'] or row['arm']=='cpu-reference':continue
         source=root/('cpu-reference-'+row['dataset']+'.json');target=root/row['artifact']
         if not source.is_file():continue
-        a=json.loads(source.read_text());b=json.loads(target.read_text());receipt=compare(a,b)
-        receipt['source_artifacts']={k:{'file':p.name,'sha256':hashlib.sha256(p.read_bytes()).hexdigest()} for k,p in [('cpu',source),('candidate',target)]}
+        a,source_sha=read_json_bound(source);b,target_sha=read_json_bound(target);receipt=compare(a,b)
+        receipt['source_artifacts']={'cpu':{'file':source.name,'sha256':source_sha},'candidate':{'file':target.name,'sha256':target_sha}}
+        diagnostics=score_deltas(a,b);diagnostics['source_artifacts']=receipt['source_artifacts']
+        write_receipt(root/(row['arm']+'-'+row['dataset']+'-score-deltas.json'),diagnostics)
         receipt['feature_experiment']=row['feature_experiment'];name=row['arm']+'-'+row['dataset']+'-parity.json';write_receipt(root/name,receipt)
         comparisons.append({'arm':row['arm'],'dataset':row['dataset'],'parity_artifact':name,'strict':receipt['strict_semantic_equivalent'],
             'aggregate':receipt['aggregate_semantic_metrics_equivalent'],'feature_experiment':row['feature_experiment']})

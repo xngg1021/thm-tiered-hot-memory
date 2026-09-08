@@ -40,7 +40,7 @@ class RuntimeProfile:
         if self.precision!='fp32' and self.policy!='approximate-performance':raise ValueError('approximate precision requires explicit policy')
         if self.policy in ('auto-safe','reference') and self.semantic_gate not in ('strict','reference'):
             raise ValueError('safe profile requires strict calibration')
-        if self.policy=='reference' and (self.overlap or self.query_batch_size!=1):raise ValueError('reference is sequential and fixed')
+        if self.policy=='reference' and (self.overlap or self.query_batch_size!=1 or self.scorer!='numpy_reference'):raise ValueError('reference is sequential and fixed')
         if any(type(cpu) is not int or cpu<0 for cpu in self.affinity):raise ValueError('invalid affinity')
 
     @property

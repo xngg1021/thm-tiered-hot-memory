@@ -40,7 +40,7 @@ class Execution:
             if config.runtime_profile_file:
                 from .profiles import load_profile
                 p=load_profile(config.runtime_profile_file)
-                for field in ('backend','device','threads','document_batch_size','query_batch_size','scorer','policy'):
+                for field in ('backend','device','threads','document_batch_size','query_batch_size','scorer','policy','overlap'):
                     if getattr(config,field)!=getattr(p,field):raise ValueError('runtime execution settings differ from calibrated profile')
             try:
                 self.encoder=IsolatedEncoder({'model_path':str(model_path),'model_id':model_id,'backend':config.backend,'device':config.device,
@@ -69,14 +69,14 @@ class Execution:
             self.precomputed.update(zip(chunk,values))
         self.query_embedding_precompute_ms+=(time.perf_counter()-start)*1000
     def search_many(self,index,scope,queries,**kwargs):
-        cfg=self.config;kwargs.update(encoder=self.encoder,model_id=self.encoder.model_id if self.encoder else None,features=cfg.features,diagnostics=cfg.policy!='reference')
+        cfg=self.config;kwargs.update(encoder=self.encoder,model_id=self.encoder.model_id if self.encoder else None,features=cfg.features,diagnostics=True)
         if self.precomputed and self.encoder:
             for query in queries:
                 if query in self.precomputed:index._cache[(self.encoder.profile.id,query)]=self.precomputed[query]
         if cfg.policy!='reference' and cfg.query_batch_size>1 and len(queries)>1:
             return index.search_many(scope,queries,query_batch_size=cfg.query_batch_size,scorer=cfg.scorer,**kwargs)
         call=index.search_overlap if cfg.overlap else index.search
-        return [call(scope,q,**kwargs) for q in queries]
+        return [call(scope,q,scorer=cfg.scorer,**kwargs) for q in queries]
     def receipt(self):
         from dataclasses import asdict
         config=asdict(self.config);config.pop('runtime_profile_file',None)

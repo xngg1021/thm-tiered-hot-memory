@@ -302,3 +302,71 @@ class RuntimeIntegrationTests(unittest.TestCase):
         rows=[{'text':'unrelated material','timestamp':'2025-01-01'},{'text':'alpha launch','timestamp':'8 May, 2020'}]
         self.assertEqual(reorder(rows,'first alpha launch',RetrievalFeatures(temporal=True))[0]['text'],'alpha launch')
         self.assertEqual(timestamp('8 May, 2020').month,5);self.assertEqual(parse_query('before May 2024').dates,('2024-05-01',))
+
+
+class ScoreDiagnosticsTests(unittest.TestCase):
+    def test_measured_delta_and_unknown_are_separate(self):
+        from research.runtime.diagnostics import score_deltas
+        row={'scope':'s','question_index':0,'split':'held_out','mode':'dense','budget':600,'category':4,'budget_used':100,'selected_ids':['a'],
+             'runtime_diagnostics':{'candidate_ids':['a','b'],'scores':[.51,.50]}}
+        other=json.loads(json.dumps(row));other['selected_ids']=['b'];other['runtime_diagnostics']['scores']=[.49,.52]
+        r=score_deltas({'rows':[row]},{'rows':[other]})
+        self.assertEqual(r['mismatching_queries'],1);self.assertAlmostEqual(r['queries'][0]['scores'][0]['score_delta'],-.02)
+        other.pop('runtime_diagnostics');r=score_deltas({'rows':[row]},{'rows':[other]})
+        self.assertEqual(r['queries'][0]['status'],'missing-score-evidence')
+        self.assertIsNone(r['queries'][0]['scores'][0]['score_delta'])
+
+class RuntimeReviewRegressionTests(unittest.TestCase):
+    setUp=RuntimeTests.setUp
+    tearDown=RuntimeTests.tearDown
+    profile=RuntimeTests.profile
+    def test_scalar_scheduler_executes_selected_scorer(self):
+        import numpy as np
+        e=FakeEncoder();self.index.embed('s',e,e.model_id);p=self.profile(e,scorer='torch_cpu')
+        def measured(d,q,name):
+            self.assertEqual(name,'torch_cpu')
+            return np.asarray(d,dtype=np.float32) @ np.asarray(q,dtype=np.float32).T,{'transfer':0.0,'dense_scoring':1.0}
+        with patch('thm.runtime.scorers.score',side_effect=measured) as scorer:
+            with RuntimeScheduler(self.index,[p],{e.profile.id:e}) as scheduler:
+                result=scheduler.search('s','alpha',mode='hybrid',diagnostics=True)
+                self.assertEqual(result['runtime_diagnostics']['scorer'],'torch_cpu');self.assertEqual(scorer.call_count,1)
+    def test_reference_rejects_other_policy_and_stays_sequential(self):
+        e=FakeEncoder();p=self.profile(e,query_batch_size=8)
+        with self.assertRaises(ValueError):RuntimeScheduler(self.index,[p],{e.profile.id:e},policy='reference')
+        self.index.embed('s',e,e.model_id);reference=self.profile(e,'reference')
+        with RuntimeScheduler(self.index,[reference],{e.profile.id:e},policy='reference') as scheduler:
+            with patch.object(self.index,'search_many',side_effect=AssertionError('reference must be scalar')):
+                result=scheduler.search_many('s',['alpha','beta'],mode='hybrid')
+            self.assertEqual(len(result),2)
+    def test_batched_diagnostics_match_limited_candidates(self):
+        e=FakeEncoder();self.index.embed('s',e,e.model_id)
+        result=self.index.search_many('s',['alpha','beta'],mode='dense',encoder=e,model_id=e.model_id,candidate_limit=2)
+        for row in result:
+            d=row['runtime_diagnostics'];self.assertEqual(len(d['candidate_ids']),2);self.assertEqual(len(d['scores']),2)
+            self.assertEqual(d['candidate_ids'],row['ranked_ids'])
+    def test_overlap_cannot_override_calibrated_profile(self):
+        from thm.runtime.research import ExecutionConfig,Execution
+        e=FakeEncoder();p=self.profile(e)
+        path=self.root/'runtime.json';write_receipt(path,p.identity())
+        config=ExecutionConfig(policy='auto-safe',backend=p.backend,overlap=True,runtime_profile_file=str(path))
+        with patch('thm.runtime.isolated.IsolatedEncoder',side_effect=AssertionError('must reject before load')):
+            with self.assertRaisesRegex(ValueError,'execution settings'):Execution(config,'local-model','test-only')
+    def test_prepared_backend_status_checks_both_manifests(self):
+        from thm.runtime.cli import main
+        from thm.runtime.identity import digest
+        import contextlib,io
+        root=self.root/'derived';root.mkdir();(root/'model.onnx').write_bytes(b'local fixture')
+        derived=manifest(root)['sha256'];source='a'*64
+        prep={'backend':'onnxruntime_fp32','precision':'fp32','source_manifest_sha256':source,'derived_manifest_sha256':derived,
+              'transformation':'test-export','model_file':'model.onnx','converter_versions':{'test':'1'}}
+        write_receipt(root/'thm-preparation.json',prep)
+        transform=digest({k:prep[k] for k in ('backend','precision','source_manifest_sha256','transformation','model_file','converter_versions')})
+        e=EmbeddingProfile(source,'onnxruntime_fp32','1','fp32',8,transformation=transform,derived_manifest_sha256=derived)
+        p=RuntimeProfile(e.id,fingerprint(probe(),source,derived,e.id),backend=e.backend,policy='auto-safe',semantic_gate='strict')
+        profile=self.root/'tune.json';write_receipt(profile,{'runtime_profile':p.identity(),'trials':[{'result':{'identity':e.identity()}}]})
+        output=io.StringIO()
+        with contextlib.redirect_stdout(output):code=main(['status','--profile',str(profile),'--model-path',str(root)])
+        self.assertEqual(code,0);self.assertEqual(json.loads(output.getvalue())['profile_freshness'],'fresh')
+        (root/'model.onnx').write_bytes(b'changed')
+        with contextlib.redirect_stderr(io.StringIO()):code=main(['status','--profile',str(profile),'--model-path',str(root)])
+        self.assertEqual(code,1)

@@ -418,7 +418,7 @@ class SearchIndex:
             self._dense[key]=([r[0] for r in rows],np.asarray(vectors,dtype=np.float32))
         return self._dense[key]
 
-    def _dense_search(self, scope, query, encoder, model_id, limit):
+    def _dense_search(self, scope, query, encoder, model_id, limit, scorer='numpy_reference'):
         import numpy as np
         start=time.perf_counter()
         if self._batch_dense is not None and query in self._batch_dense:
@@ -437,10 +437,14 @@ class SearchIndex:
         vector=np.asarray(self._cache[cached],dtype=np.float32)
         if vector.shape[0]!=matrix.shape[1]:raise ValueError('query/document embedding dimension mismatch')
         embed_ms=(time.perf_counter()-start)*1000;started=time.perf_counter()
-        scores=matrix @ vector
+        transfer=0.0
+        if scorer=='numpy_reference':scores=matrix @ vector
+        else:
+            from .runtime.scorers import score
+            values,placement=score(matrix,[vector],scorer);scores=values[:,0];transfer=placement['transfer']
         order=np.argsort(-scores,kind='stable')[:limit]
         self._last_dense_diagnostics={'dense_matrix_load':load_ms,'dense_scoring':(time.perf_counter()-started)*1000,
-            'scorer':'numpy_reference','embedding_profile_id':identity,'candidate_rowids':[ids[int(i)] for i in order],
+            'scorer':scorer,'transfer':transfer,'embedding_profile_id':identity,'candidate_rowids':[ids[int(i)] for i in order],
             'scores':[float(scores[int(i)]) for i in order]}
         return [ids[int(i)] for i in order],embed_ms,was_cached
 
@@ -475,16 +479,15 @@ class SearchIndex:
                     values,timing=score(matrix,vectors,scorer);self._batch_dense={}
                     for column,q in enumerate(chunk):
                         order=np.argsort(-values[:,column],kind='stable')[:limit]
-                        self._batch_dense[q]=([ids[int(i)] for i in order],embed_ms/len(chunk),False)
-                    for column,q in enumerate(chunk):
+                        self._batch_dense={q:([ids[int(i)] for i in order],embed_ms/len(chunk),False)}
                         result=self._search(scope,q,**kwargs)
                         result['timing_kind']='post-batch-search; embedding/scoring measured once in batch_receipt'
                         result['timing_ms']['amortized_total']=result['timing_ms']['total']+(embed_ms+timing['dense_scoring'])/len(chunk)
                         result['batch_receipt']={'query_batch_size':len(chunk),'embedding_ms':embed_ms,'dense_matrix_load':load_ms,**timing}
                         result['result_cache_hit']=False;result['runtime_diagnostics']={'embedding_profile_id':getattr(getattr(encoder,'profile',None),'id',model_id),
-                            'scorer':scorer,'candidate_rowids':ids,'candidate_ids':[r['id'] for r in self.rows(scope)],
+                            'scorer':scorer,'candidate_rowids':[ids[int(i)] for i in order],'candidate_ids':[{r['rowid']:r['id'] for r in self.rows(scope)}[ids[int(i)]] for i in order],
                             'selected_ids':[r['id'] for r in result['selected']],'budget_cutoff':result['budget'],'budget_used':result['budget_used'],
-                            'feature_components':result.get('features'),'scores':values[:,column].tolist()}
+                            'feature_components':result.get('features'),'scores':[float(values[int(i),column]) for i in order]}
                         out.append(result)
                 return out
             finally:self._batch_dense=None;self.db.rollback()
@@ -498,7 +501,7 @@ class SearchIndex:
             future=pool.submit(encoder,[query]);self._query_future=future
             try:
                 result=self.search(scope,query,**kwargs)
-                result['overlap']={'cpu':'SQLite/FTS','accelerator':'query_embedding','scoring':'numpy_reference','microbatch_delay_ms':0}
+                result['overlap']={'cpu':'SQLite/FTS','accelerator':'query_embedding','scoring':kwargs.get('scorer','numpy_reference'),'microbatch_delay_ms':0}
                 return result
             finally:
                 self._query_future=None;future.cancel()
@@ -544,11 +547,12 @@ class SearchIndex:
         return context, selected, final_units
 
     def _search(self, scope: str, query: str, *, budget=600, mode='sparse', candidate_limit=100,
-               neighbor_turns=0, encoder=None, model_id=None, entity_projection=False, features=None, diagnostics=False) -> dict:
+               neighbor_turns=0, encoder=None, model_id=None, entity_projection=False, features=None, diagnostics=False, scorer='numpy_reference') -> dict:
         start = time.perf_counter()
         from .features import RetrievalFeatures
         features = RetrievalFeatures.parse(features)
         if type(diagnostics) is not bool:raise ValueError('diagnostics must be boolean')
+        if scorer not in ('numpy_reference','torch_cpu','torch_cuda'):raise ValueError('unsupported dense scorer')
         if type(entity_projection) is not bool:raise ValueError('entity projection requires explicit boolean')
         entity_projection = entity_projection or features.entity
         self._last_dense_diagnostics = {}
@@ -598,7 +602,7 @@ class SearchIndex:
                 raise ValueError('dense mode requires an explicit local encoder and model identity')
             if getattr(encoder, 'model_id', model_id) != model_id:
                 raise ValueError('encoder identity mismatch')
-            dense, embedding_ms, query_cached = self._dense_search(scope, query, encoder, model_id, candidate_limit)
+            dense, embedding_ms, query_cached = self._dense_search(scope, query, encoder, model_id, candidate_limit,scorer)
             channels.append(dense)
         fusion_start=time.perf_counter()
         scores = {}
