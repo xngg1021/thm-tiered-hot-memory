@@ -108,6 +108,8 @@ def run_candidate(config,timeout=180):
 
 
 def autotune(model_path,model_id,*,backends=None,policy='auto-safe',workload='interactive',maximum=12,timeout=180,runner=run_candidate,backend_paths=None):
+    metrics={'interactive':'single_query_p95_ms','bulk':'queries_per_second','background':'docs_per_second'}
+    if workload not in metrics:raise ValueError('invalid workload')
     hardware=probe();source=manifest(model_path)['sha256']
     ref={'model_path':str(Path(model_path).resolve()),'model_id':model_id,'backend':'torch_fp32','device':'cpu','threads':1,'document_batch_size':64,'query_batch_size':1,'affinity':[]}
     reference=runner(ref,timeout)
@@ -128,7 +130,7 @@ def autotune(model_path,model_id,*,backends=None,policy='auto-safe',workload='in
         trials.append({'config':config,'result':result,'semantic_gate':semantic,'eligible':accepted})
     eligible=[t for t in trials if t['eligible']]
     if not eligible:return {'status':'failed','reason':'no-candidate-passed','trials':trials,'hardware':hardware.identity(),'generation_calls':0}
-    metric='single_query_p95_ms' if workload=='interactive' else 'queries_per_second'
+    metric=metrics[workload]
     winner=min(eligible,key=lambda t:t['result'][metric] if workload=='interactive' else -t['result'][metric])
     ident=winner['result']['identity'];config=winner['config']
     p=RuntimeProfile(ident['embedding_profile_id'],fingerprint(hardware,source,ident.get('derived_manifest_sha256'),ident['embedding_profile_id']),
@@ -137,5 +139,5 @@ def autotune(model_path,model_id,*,backends=None,policy='auto-safe',workload='in
         scorer=config['scorer'],policy=policy,workload=workload,affinity=tuple(config['affinity']),semantic_gate='strict' if winner['semantic_gate']['admitted'] else 'measured-drift')
     if manifest(model_path)['sha256']!=source:raise ValueError('model changed during calibration')
     return {'schema':1,'status':'calibrated','hardware':hardware.identity(),'source_manifest_sha256':source,'corpus_sha256':CORPUS_SHA,
-            'runtime_profile':p.identity(),'trials':trials,'reference':reference,'generation_calls':0,
+            'runtime_profile':p.identity(),'selection_metric':metric,'trials':trials,'reference':reference,'generation_calls':0,
             'admission':'micro-corpus-only; real Protocol 2 acceptance pending','observed_kernel_dispatch':None}

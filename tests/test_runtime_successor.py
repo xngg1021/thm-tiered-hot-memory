@@ -830,3 +830,19 @@ class RuntimeReviewRegressionTests(unittest.TestCase):
         self.assertEqual(parse_query('between May 8, 2024 and 2024').date_precisions,('day','year'))
         self.assertEqual(parse_query('after February 30, 2024').dates,())
         self.assertEqual(parse_query('after 8 May 9, 2024').dates,())
+
+    def test_autotune_background_selects_document_throughput(self):
+        from thm.runtime.autotune import autotune
+        root=self.root/'tune-model';root.mkdir();(root/'weights').write_bytes(b'fixture')
+        e=FakeEncoder();e.profile=dataclasses.replace(e.profile,backend='torch_fp32',source_manifest_sha256=manifest(root)['sha256'])
+        configs=[{'backend':'torch_fp32','device':'cpu','threads':1,'document_batch_size':batch,'query_batch_size':1,'affinity':[],'scorer':'numpy_reference'} for batch in (16,64)]
+        def runner(config,timeout):
+            small=config['document_batch_size']==16
+            vectors=lambda texts:[[float(j==i%8) for j in range(8)] for i,_ in enumerate(texts)]
+            return {'status':'ok','identity':e.identity(),'corpus_sha256':CORPUS_SHA,'document_vectors':vectors(DOCUMENTS),'query_vectors':vectors(QUERIES),
+                    'single_query_p95_ms':1 if small else 2,'queries_per_second':100 if small else 20,'docs_per_second':100 if small else 1000}
+        with patch('thm.runtime.autotune.candidates',return_value=configs):
+            for workload,batch,metric in (('interactive',16,'single_query_p95_ms'),('bulk',16,'queries_per_second'),('background',64,'docs_per_second')):
+                result=autotune(root,e.model_id,workload=workload,runner=runner)
+                self.assertEqual(result['status'],'calibrated');self.assertEqual(result['runtime_profile']['document_batch_size'],batch)
+                self.assertEqual(result['selection_metric'],metric)
