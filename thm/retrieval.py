@@ -454,11 +454,11 @@ class SearchIndex:
         from .runtime.scorers import score
         import itertools
         batch=bounded_int(query_batch_size,'query batch',256)
-        queries=list(queries)
+        queries=list(itertools.islice(queries,4097))
         if len(queries)>4096 or any(not isinstance(q,str) or not q.strip() or len(q)>16000 for q in queries):raise ValueError('invalid bounded query batch')
         if not queries:return []
-        if kwargs.get('mode','sparse') not in ('dense','hybrid'):
-            return [self.search(scope,q,**kwargs) for q in queries]
+        if kwargs.get('budget')==0 or kwargs.get('mode','sparse') not in ('dense','hybrid'):
+            return [self.search(scope,q,scorer=scorer,**kwargs) for q in queries]
         encoder=kwargs.get('encoder');model_id=kwargs.get('model_id');limit=kwargs.get('candidate_limit',100)
         bounded_int(limit,'candidate limit',1000)
         if encoder is None or not model_id or getattr(encoder,'model_id',model_id)!=model_id:raise ValueError('explicit matching encoder required')
@@ -511,7 +511,7 @@ class SearchIndex:
         """Encoder worker overlaps caller-thread SQLite FTS; no cross-thread DB use."""
         from concurrent.futures import ThreadPoolExecutor
         encoder=kwargs.get('encoder')
-        if kwargs.get('mode')!='hybrid' or encoder is None:return self.search(scope,query,**kwargs)
+        if kwargs.get('budget')==0 or kwargs.get('mode')!='hybrid' or encoder is None:return self.search(scope,query,**kwargs)
         with self._lock:
             self._refresh_caches()
             identity=getattr(getattr(encoder,'profile',None),'id',kwargs.get('model_id'))

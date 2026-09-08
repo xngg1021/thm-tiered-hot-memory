@@ -585,3 +585,28 @@ class RuntimeReviewRegressionTests(unittest.TestCase):
         self.assertIn(text[row['span_start']:row['span_end']],new['context'])
         schema=RECALL_OUTPUT_SCHEMA['properties']['sources']['items']
         self.assertEqual(set(row),set(schema['required']))
+
+    def test_scheduler_rejects_execution_settings_that_share_embedding_identity(self):
+        e=FakeEncoder()
+        for settings in ({'threads':2},{'document_batch_size':32},{'query_batch_size':8},{'affinity':(0,)}):
+            p=self.profile(e,**settings)
+            with self.assertRaisesRegex(ValueError,'execution settings mismatch'):RuntimeScheduler(self.index,[p],{e.profile.id:e})
+        e.runtime_identity=None
+        with self.assertRaisesRegex(ValueError,'identity unavailable'):RuntimeScheduler(self.index,[self.profile(e)],{e.profile.id:e})
+    def test_query_iterables_are_consumed_only_to_the_overflow_sentinel(self):
+        e=FakeEncoder();p=self.profile(e)
+        def source():
+            for i in range(4097):yield 'alpha'
+            raise AssertionError('must not consume beyond bound')
+        with self.assertRaises(ValueError):self.index.search_many('s',source())
+        with RuntimeScheduler(self.index,[p],{e.profile.id:e}) as scheduler:
+            with self.assertRaises(ValueError):scheduler.search_many('s',source())
+    def test_zero_budget_batch_and_overlap_do_no_semantic_work(self):
+        e=FakeEncoder('fails')
+        with patch.object(self.index,'_dense_matrix',side_effect=AssertionError('no dense setup')):
+            for mode in ('dense','hybrid'):
+                rows=self.index.search_many('s',['alpha','beta'],mode=mode,budget=0)
+                self.assertTrue(all(r['empty_reason']=='zero_budget' and not r['semantic_encoder_used'] for r in rows))
+                row=self.index.search_overlap('s','alpha',mode=mode,budget=0,encoder=e,model_id=e.model_id)
+                self.assertFalse(row['semantic_encoder_used'])
+        self.assertEqual(e.calls,[])

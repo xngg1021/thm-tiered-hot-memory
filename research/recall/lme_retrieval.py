@@ -92,7 +92,7 @@ def run(dataset, counter, modes, budgets, *, model_path=None, model_id=None, lim
     from thm.runtime.research import Execution
     execution=Execution(execution_config,model_path,model_id,cache_path) if execution_config else None
     encoder=execution.encoder if execution else SentenceEncoder(model_path,model_id,threads=threads,device=device,batch_size=batch_size) if model_path else None
-    if execution and any(m in ('dense','hybrid') for m in modes):execution.preencode([instance['question'] for instance in dataset])
+    if execution and any(b>0 for b in budgets) and any(m in ('dense','hybrid') for m in modes):execution.preencode([instance['question'] for instance in dataset])
     if any(m in ("dense", "hybrid") for m in modes) and not encoder:
         raise ValueError("local model required for dense/hybrid")
 

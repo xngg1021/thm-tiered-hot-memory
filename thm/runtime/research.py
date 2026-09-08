@@ -86,7 +86,7 @@ class Execution:
         else:
             call=index.search_overlap if cfg.overlap else index.search
             results=[call(scope,q,scorer=cfg.scorer,**kwargs) for q in queries]
-        if kwargs.get('mode') in ('dense','hybrid'):
+        if kwargs.get('budget')!=0 and kwargs.get('mode') in ('dense','hybrid'):
             for q,out in zip(queries,results):
                 if q in self.precompute_costs:
                     cost=self.precompute_costs.pop(q)

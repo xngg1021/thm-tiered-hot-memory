@@ -81,7 +81,7 @@ def serve(config):
     with redirect_stdout(sys.stderr):
         encoder=create(config['model_path'],config['model_id'],backend=config['backend'],device=config['device'],threads=config['threads'],
             document_batch_size=config['document_batch_size'],query_batch_size=config.get('query_batch_size',32),isolated=True)
-    print(json.dumps({'identity':encoder.identity()}),flush=True)
+    print(json.dumps({'identity':encoder.identity(),'runtime_execution':{**encoder.runtime_identity(),'affinity':config.get('affinity',[])}}),flush=True)
     try:
         for line in sys.stdin:
             request=json.loads(line)

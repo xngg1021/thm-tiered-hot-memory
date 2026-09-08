@@ -45,7 +45,7 @@ Admission compares finite normalized embeddings and actual canonical retrieval r
 | auto-throughput | Route requests among registered complete profile indexes; each request internally consistent; measured drift disclosed |
 | approximate-performance | Explicit approximate precision and independent quality/parity evidence |
 
-The scheduler separates interactive, bulk and background workloads, bounded queue capacity, warm/cold state and observed caller-supplied load/VRAM hints. No unmeasured batching delay is inserted. Its fallback receipt identifies requested/actual profile, policy and reason; it does not silently replace a failed encoder with another semantic profile. Source/index validation still applies. Shutdown cancels pending work and closes workers. Encoder timeout terminates the child.
+Scheduler registration verifies worker-reported threads, document/query batching and affinity against the runtime profile as well as embedding identity. The scheduler separates interactive, bulk and background workloads, bounded queue capacity, warm/cold state and observed caller-supplied load/VRAM hints. No unmeasured batching delay is inserted. Its fallback receipt identifies requested/actual profile, policy and reason; it does not silently replace a failed encoder with another semantic profile. Source/index validation still applies. Shutdown cancels pending work and closes workers. Encoder timeout terminates the child.
 
 ## Batching, overlap and timing
 

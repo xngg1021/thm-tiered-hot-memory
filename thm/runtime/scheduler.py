@@ -17,6 +17,12 @@ class RuntimeScheduler:
             encoder=encoders.get(p.embedding_profile_id)
             if encoder is None or encoder.profile.id!=p.embedding_profile_id:raise ValueError('missing compatible profile encoder')
             if (p.backend,p.device,p.precision)!=(encoder.profile.backend,encoder.profile.device,encoder.profile.precision):raise ValueError('runtime backend identity mismatch')
+            runtime=getattr(encoder,'runtime_identity',None)
+            if not callable(runtime):raise ValueError('encoder runtime execution identity unavailable')
+            actual=runtime()
+            for field in ('threads','document_batch_size','query_batch_size','affinity'):
+                value=tuple(actual.get(field,())) if field=='affinity' else actual.get(field)
+                if value!=getattr(p,field):raise ValueError('encoder runtime execution settings mismatch: '+field)
             if verify_fresh:
                 from .profiles import fingerprint
                 from .hardware import probe
@@ -71,7 +77,10 @@ class RuntimeScheduler:
         return result
 
     def search_many(self,scope,queries,**kwargs):
-        return self.search(scope,list(queries),**kwargs)
+        import itertools
+        batch=list(itertools.islice(queries,4097))
+        if len(batch)>4096:raise ValueError('invalid bounded query batch')
+        return self.search(scope,batch,**kwargs)
 
     def submit(self,*args,**kwargs):
         if not self.slots.acquire(blocking=False):raise RuntimeError('scheduler queue full')

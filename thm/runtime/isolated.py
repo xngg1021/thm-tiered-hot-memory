@@ -20,7 +20,8 @@ class IsolatedEncoder:
         self.queue=queue.Queue();self.worker_wall_ms=0.0;self.worker_cpu_ms=0.0
         self.reader=threading.Thread(target=self._read,name='thm-worker-reader',daemon=True);self.reader.start()
         try:
-            identity=self._receive()['identity'];self._identity=identity
+            handshake=self._receive();identity=handshake['identity'];self._identity=identity
+            self._runtime_execution=handshake['runtime_execution']
             fields={k:v for k,v in identity.items() if k in EmbeddingProfile.__dataclass_fields__}
             self.profile=EmbeddingProfile(**fields)
             if self.profile.id!=identity['embedding_profile_id']:raise ValueError('worker identity mismatch')
@@ -35,6 +36,7 @@ class IsolatedEncoder:
         if line is None:raise RuntimeError('encoder worker exited')
         return json.loads(line)
     def identity(self):return self._identity
+    def runtime_identity(self):return dict(self._runtime_execution)
     def capabilities(self):return {'isolated':True,'encode_many':True,'observed_kernel_dispatch':None}
     def encode_many(self,texts):
         with self.lock:

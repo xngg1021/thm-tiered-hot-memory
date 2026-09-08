@@ -7,7 +7,7 @@ from .identity import EmbeddingProfile
 class FakeEncoder:
     def __init__(self,kind='fast',*,device='cpu',salt='',document_batch_size=64):
         self.kind=kind;self.salt=salt;self.model_id='test-only';self.document_batch_size=document_batch_size
-        self.query_batch_size=32;self.batch_size=document_batch_size;self.device=device;self.calls=[];self.closed=False
+        self.query_batch_size=1;self.threads=1;self.affinity=[];self.batch_size=document_batch_size;self.device=device;self.calls=[];self.closed=False
         self.profile=EmbeddingProfile(hashlib.sha256(b'test fixture').hexdigest(),'test-only','1','fp32',8,device=device,transformation=salt or 'none')
     def encode_many(self,texts):
         if self.closed:raise RuntimeError('closed')
@@ -22,5 +22,6 @@ class FakeEncoder:
     def __call__(self,texts):return self.encode_many(texts)
     def encode_one(self,text):return self.encode_many([text])[0]
     def identity(self):return self.profile.identity()
+    def runtime_identity(self):return {'threads':self.threads,'document_batch_size':self.document_batch_size,'query_batch_size':self.query_batch_size,'affinity':self.affinity}
     def capabilities(self):return {'test_only':True,'nominal_latency':10 if self.kind=='slow' else 1,'warm':bool(self.calls)}
     def close(self):self.closed=True
