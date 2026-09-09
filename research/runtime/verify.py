@@ -8,6 +8,7 @@ import subprocess
 import sys
 import time
 sys.path.insert(0,str(Path(__file__).resolve().parents[2]))
+from research.runtime.bounds import campaign, estimate, ReferenceArtifactKey, semantic_identity, reuse
 from thm.runtime.hardware import probe,versions
 from thm.runtime.capabilities import backend_probe
 from thm.runtime.identity import manifest,implementation_identity
@@ -42,8 +43,13 @@ def plan(model_path,locomo,lme,root,model_id,*,include_approximate=False):
 
 
 def execute(args):
+    limits=campaign(getattr(args,'mode','acceptance'), full_campaign=getattr(args,'full_campaign',False),
+        acknowledge=getattr(args,'acknowledge_multi_hour_run',False), wall_seconds=getattr(args,'wall_seconds',3600),
+        approximate=args.include_approximate, retrieval_ab=args.retrieval_ab)
+    deadline=time.monotonic()+limits['wall_seconds']
     root=Path(args.output_dir);root.mkdir(parents=True,exist_ok=False)
     planned=plan(args.model_path,args.locomo_dataset,args.lme_dataset,root,args.model_id,include_approximate=args.include_approximate)
+    planned.update(limits)
     write_receipt(root/'plan.json',planned)
     if args.plan_only:return planned
     locomo=load_dataset(args.locomo_dataset,LOCOMO_SHA);lme=load_dataset(args.lme_dataset,LME_SHA)
@@ -78,6 +84,8 @@ def execute(args):
     if cuda:
         arms.append({'name':'cuda-batched-overlap','backend':'torch_fp32','device':'cuda','policy':'auto-throughput','batch':64,'query_batch':32,'overlap':True})
     rows=[]
+    current_limit=limits['sample_instances']
+    sampling=True
     def run_arm(arm,dataset,label,features=None):
         output=root/(arm['name']+'-'+label+'.json')
         command=[sys.executable,'research/recall/'+('benchmark.py' if label=='locomo' else 'lme_retrieval.py'),'--dataset',str(dataset),'--output',str(output),
@@ -87,13 +95,32 @@ def execute(args):
         if arm['policy']!='reference':command+=['--vector-storage','blob','--embedding-cache',str(root/'embedding-cache.sqlite')]
         if arm.get('profile_file'):command+=['--runtime-profile',arm['profile_file']]
         if arm.get('overlap'):command+=['--overlap']
+        if label=='lme' and current_limit is not None:command+=['--limit',str(current_limit)]
+        if limits['mode']=='smoke':
+            i=command.index('--budgets');j=command.index('--device');command[i:j]=['--budgets','600']
         if features:command+=['--features-json',json.dumps(features)]
+        reference_key=ReferenceArtifactKey(
+            dataset_sha256=hashlib.sha256(Path(dataset).read_bytes()).hexdigest(),
+            source_manifest=source['sha256'],
+            embedding_profile={'backend':arm['backend'],'device':arm['device'],'model_id':args.model_id,
+                'precision':'fp32','packages':versions()},
+            reference_policy={'command':command[command.index('--counter'):],
+                'limit':current_limit if label=='lme' else None},
+            semantic_implementation=semantic_identity(),
+            counter_identity={'name':'cl100k_base','packages':versions()}) if arm['policy']=='reference' else None
+        reused=None
+        reference_dir=getattr(args,'reference_dir',None)
+        if reference_key and reference_dir and not sampling:
+            candidate=Path(reference_dir)/output.name
+            if candidate.exists():
+                raw,reused=reuse(candidate,reference_key)
+                with output.open('xb') as f:f.write(raw)
         start=time.perf_counter()
         # stdout has source scope IDs; retain locally rather than publish private paths.
         with (root/(arm['name']+'-'+label+'.log')).open('x') as log:
-            result=subprocess.run(command,stdout=log,stderr=subprocess.STDOUT)
+            result=subprocess.CompletedProcess(command,0) if reused else subprocess.run(command,stdout=log,stderr=subprocess.STDOUT,timeout=max(.01,deadline-time.monotonic()))
         receipt={'arm':arm['name'],'dataset':label,'returncode':result.returncode,'wall_seconds':time.perf_counter()-start,
-            'artifact':output.name,'feature_experiment':features,'generation_calls':0}
+            'artifact':output.name,'verification_mode':limits['mode'],'lme_limit':current_limit if label=='lme' else None,'reused':False,'feature_experiment':features,'generation_calls':0}
         if result.returncode==0:
             receipt['sha256']=hashlib.sha256(output.read_bytes()).hexdigest()
             artifact=json.loads(output.read_text())
@@ -101,7 +128,23 @@ def execute(args):
             receipt['index_build_seconds']=sum(b['index_seconds'] for b in artifact.get('builds',[]))
             receipt['document_embedding_seconds']=sum(b.get('embedding',{}).get('seconds',0) for b in artifact.get('builds',[]))
             receipt['quality']={k:v.get('main_categories_1_to_4',v.get('all_instances')) for k,v in artifact.get('summaries',{}).items()}
+        if reused:receipt.update(reused)
+        if reference_key and result.returncode==0:
+            write_receipt(output.with_suffix('.reference.json'),{'key':asdict(reference_key),'key_id':reference_key.id,
+                'artifact_sha256':receipt['sha256'],'returncode':0,'provenance':{'git_head':git,'mode':limits['mode'],
+                'reused':bool(reused),'source':reused}})
         rows.append(receipt);write_receipt(root/(arm['name']+'-'+label+'-execution.json'),receipt)
+    # The fixed LME pilot is retained separately and cannot pass as a full matrix.
+    pilot={**arms[0],'name':'estimate-reference'}
+    run_arm(pilot,args.lme_dataset,'lme')
+    sample=rows.pop()
+    if sample['returncode']:raise ValueError('estimator sample failed')
+    projection=estimate(sample['wall_seconds'],min(current_limit,len(lme)),
+        len(lme) if limits['lme_limit'] is None else min(limits['lme_limit'],len(lme)),
+        len(arms),max(0,deadline-time.monotonic()))
+    write_receipt(root/'runtime-estimate.json',projection)
+    if not projection['within_budget']:raise ValueError('projected campaign exceeds wall-time budget')
+    current_limit=limits['lme_limit'];sampling=False
     for arm in arms:
         for dataset,label in [(args.locomo_dataset,'locomo'),(args.lme_dataset,'lme')]:run_arm(arm,dataset,label)
     if args.retrieval_ab:
@@ -128,6 +171,7 @@ def execute(args):
     complete=not missing_policies and bool(rows) and all(r['returncode']==0 for r in rows)
     result={'schema':1,'status':'measured-needs-acceptance' if complete else 'incomplete-local-run',
         'calibrations':calibrations,'missing_required_winners':missing_policies,
+        'verification_mode':limits['mode'],'full_dataset_acceptance':False,'lme_limit':limits['lme_limit'],
         'executions':rows,'comparisons':comparisons,'git_head':git,'generation_calls':0,'merge_authorized':False}
     write_receipt(root/'comparison.json',result);return result
 
@@ -136,7 +180,18 @@ def main():
     p=argparse.ArgumentParser(description=__doc__)
     for name in ('model-path','model-id','locomo-dataset','lme-dataset','output-dir'):p.add_argument('--'+name,required=True)
     p.add_argument('--plan-only',action='store_true');p.add_argument('--include-approximate',action='store_true');p.add_argument('--retrieval-ab',action='store_true')
+    p.add_argument('--mode',choices=['smoke','acceptance','full-research'],default='acceptance')
+    p.add_argument('--full-campaign',action='store_true')
+    p.add_argument('--acknowledge-multi-hour-run',action='store_true')
+    p.add_argument('--wall-seconds',type=float,default=3600)
+    p.add_argument('--reference-dir',help='Exact-key reference artifact directory')
     p.add_argument('--max-candidates',type=int,default=12);args=p.parse_args()
-    result=execute(args);print(json.dumps(result,indent=2));return 1 if result.get('status')=='incomplete-local-run' else 0
+    try:result=execute(args)
+    except (Exception,KeyboardInterrupt) as exc:
+        root=Path(args.output_dir)
+        if root.is_dir() and not (root/'interrupted.json').exists():
+            write_receipt(root/'interrupted.json',{'status':'interrupted-or-refused','error_type':type(exc).__name__})
+        raise
+    print(json.dumps(result,indent=2));return 1 if result.get('status')=='incomplete-local-run' else 0
 
 if __name__=='__main__':sys.exit(main())
