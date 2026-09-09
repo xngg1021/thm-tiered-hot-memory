@@ -451,6 +451,17 @@ class SearchIndex:
         if vector.shape[0]!=matrix.shape[1]:raise ValueError('query/document embedding dimension mismatch')
         embed_ms=(time.perf_counter()-start)*1000;started=time.perf_counter()
         transfer=0.0
+        executor = getattr(self, '_vector_executor', None)
+        if executor is not None:
+            generation = self.db.execute('SELECT generation FROM scopes WHERE scope=?', (scope,)).fetchone()[0]
+            results, receipt = executor.search(scope=scope, generation=generation, embedding_profile=identity,
+                                               ids=ids, matrix=matrix, queries=[vector], top_k=limit)
+            ranked, values = results[0]
+            self._last_dense_diagnostics = {'dense_matrix_load': load_ms,
+                'dense_scoring': receipt['search_ms'], 'scorer': receipt['index_identity']['provider'],
+                'transfer': receipt.get('transfer_ms'), 'embedding_profile_id': identity,
+                'candidate_rowids': ranked, 'scores': values, 'resident_receipt': receipt}
+            return ranked, embed_ms, was_cached
         if scorer=='numpy_reference':scores=matrix @ vector
         else:
             from .runtime.scorers import score
@@ -751,7 +762,7 @@ class SearchIndex:
         if type(self.counter) is not TokenCounter or not isinstance(scope,str) or not isinstance(query,str):return None
         # Type tags preserve the same validation boundary for search and overlap.
         settings=tuple(sorted((k,type(v).__name__,repr(v)) for k,v in kwargs.items() if k!='encoder'))
-        return (scope,query,settings,id(kwargs.get('encoder')),getattr(getattr(kwargs.get('encoder'),'profile',None),'id',None),id(self.counter),self.counter.name,id(self.counter.encode))
+        return (scope,query,settings,id(getattr(self, '_vector_executor', None)),id(kwargs.get('encoder')),getattr(getattr(kwargs.get('encoder'),'profile',None),'id',None),id(self.counter),self.counter.name,id(self.counter.encode))
 
     def search(self, scope, query, **kwargs):
         """One read snapshot; cache only deterministic native counters and explicit inputs."""
