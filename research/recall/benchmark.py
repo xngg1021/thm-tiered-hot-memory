@@ -23,6 +23,9 @@ import time
 sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
 from thm.retrieval import SearchIndex, SentenceEncoder, TokenCounter
 from research.evidence_io import require_new_output, write_new_text
+
+# Capture the source loaded by this native runner, independently of THM package code.
+NATIVE_IMPLEMENTATION_SHA256 = hashlib.sha256(Path(__file__).read_bytes()).hexdigest()
 from thm.sources import locomo_documents
 from research.recall.scoring import is_scorable
 
@@ -157,7 +160,7 @@ def run(dataset, counter, modes, budgets, *, model_path=None, model_id=None, nei
                 'held_out': aggregate([r for r in rows if r['split']=='held_out' and r['category']!=5]),
                 'by_category': {CATEGORY[c]: aggregate([r for r in rows if r['category']==c]) for c in CATEGORY}}
     from thm.evaluation.legacy import project
-    return {'evaluation_fabric': project('locomo', all_rows, dataset), 'protocol': 2, 'runtime':runtime_receipt, 'counter': counter.name, 'modes': modes, 'budgets': budgets,
+    return {'evaluation_fabric': project('locomo', all_rows, dataset, native_source_sha256=NATIVE_IMPLEMENTATION_SHA256), 'protocol': 2, 'runtime':runtime_receipt, 'counter': counter.name, 'modes': modes, 'budgets': budgets,
             'neighbor_turns': neighbors, 'idf_scope': 'one_database_per_conversation', 'summaries': summaries, 'builds': builds,
             'corpus_fingerprints': generations, 'rows': all_rows,
             'generation_calls': 0, 'judge_calls': 0,

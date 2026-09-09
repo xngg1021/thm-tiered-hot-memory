@@ -29,6 +29,9 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
 from thm.retrieval import Document, SearchIndex, SentenceEncoder, TokenCounter
 from research.evidence_io import require_new_output, write_new_text
 
+# Capture the source loaded by this native runner, independently of THM package code.
+NATIVE_IMPLEMENTATION_SHA256 = hashlib.sha256(Path(__file__).read_bytes()).hexdigest()
+
 
 def percentile(values, q):
     if not values:
@@ -177,7 +180,7 @@ def run(dataset, counter, modes, budgets, *, model_path=None, model_id=None, lim
             }
     from thm.evaluation.legacy import project
     return {
-        "evaluation_fabric": project("longmemeval-s", all_rows, dataset),
+        "evaluation_fabric": project("longmemeval-s", all_rows, dataset, native_source_sha256=NATIVE_IMPLEMENTATION_SHA256),
         "benchmark": "LongMemEval-S retrieval coverage (session-level evidence)",
         "protocol": 1,"runtime":runtime_receipt, "counter": counter.name, "modes": modes, "budgets": budgets,
         "idf_scope": "one_database_per_instance",

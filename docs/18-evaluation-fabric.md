@@ -4,7 +4,7 @@ Evaluation Fabric is the measurement layer across THM's logical memory, compute 
 
 ## Contracts and ownership
 
-The installed `thm.evaluation` package defines schema `thm-evaluation/1` through typed `Adapter`, `Task`, `GroundTruth`, `Result`, `Receipt` and `Taxonomy` contracts. Dataclasses serialize to JSON; receipt SHA256 covers the complete public payload excluding its own hash. Source SHA binds canonical input JSON, while implementation SHA binds THM Python sources. Canonical JSON hashes are distinct from upstream file-byte hashes. Existing native reports retain their original byte identities.
+The installed `thm.evaluation` package defines schema `thm-evaluation/1` through typed `Adapter`, `Task`, `GroundTruth`, `Result`, `Receipt` and `Taxonomy` contracts. Dataclasses serialize to JSON; receipt SHA256 covers the complete public payload excluding its own hash. Source SHA binds canonical input JSON, while implementation SHA binds THM Python sources. Native projections additionally bind the applicable runner source SHA captured at module import, so changes outside the installed thm package invalidate their implementation identity. Canonical JSON hashes are distinct from upstream file-byte hashes. Existing native reports retain their original byte identities.
 
 `Task` contains only source documents, query, scope, sequence and optional image identity. `GroundTruth` is evaluator-only and contains evidence IDs, unit, resolution, diagnostic status, answer and rubric. Only source documents enter SearchIndex. Result publication omits answers, rubrics, original queries and source text. Document/scope duplicates fail. Native source projections allowlist fields rather than indexing entire JSON records.
 

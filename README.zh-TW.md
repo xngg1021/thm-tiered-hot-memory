@@ -94,7 +94,7 @@ Fixture 只驗證介面與確定性檢索。V2 目前採用純文字配置，拒
 
 | 證據層 | 回執契約 |
 | --- | --- |
-| memory-dataplane | any/all-gold、宏觀/微觀召回率、父定位覆蓋、預算、延遲 |
+| memory-dataplane | any/all-gold、宏平均/微平均召回率、父定位覆蓋、預算、延遲 |
 | systems-runtime | 計算配置、StorageProfile、placement、I/O 遙測 |
 | LLM-agent-outcome | 生成與評分呼叫、答案準確率、環境成功率；預設 not-run |
 

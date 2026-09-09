@@ -76,8 +76,8 @@ def check(root: Path) -> dict:
         if path.suffix == '.md':
             if any(line != line.rstrip() for line in text.splitlines()):
                 errors.append(f'{relative}: trailing whitespace')
-            for command in re.findall(r'^python(?:3)? research/(?:recall/(?:benchmark|lme_retrieval)|economics/run_suite)\.py[^\n]*', text, re.M):
-                if '--full-research' not in command:
+            for command in re.findall(r'^[ \t]*(?:(?:[$%>]|PS(?:[ \t]+[^>\n]*)?>)[ \t]+)?python(?:3)?[ \t]+research/(?:recall/(?:benchmark|lme_retrieval)|economics/run_suite)\.py[^\n]*', text, re.M):
+                if not re.search(r'''(?<!\S)(?:--full-research|"--full-research"|'--full-research')(?!\S)''', command):
                     errors.append(f'{relative}: native dataset command requires explicit --full-research')
             if text.count('```') % 2:
                 errors.append(f'{relative}: unpaired triple-backtick fence')

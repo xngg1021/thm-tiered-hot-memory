@@ -203,3 +203,21 @@ class FabricTests(unittest.TestCase):
         metrics = result['evaluation_fabric']['layers']['memory-dataplane']['operating_points']['sparse@180']
         self.assertEqual(metrics['parent_locator_coverage'], 1)
         self.assertEqual(metrics['any_gold_hit_rate'], 0)
+
+    def test_native_runner_source_changes_invalidate_receipt_implementation(self):
+        import importlib.util
+        from unittest.mock import patch
+        from thm.retrieval import TokenCounter
+        root = Path(__file__).resolve().parents[1]
+        source = (root/'research/recall/lme_retrieval.py').read_text()
+        identities = []
+        with tempfile.TemporaryDirectory() as temp, patch.object(sys, 'path', list(sys.path)):
+            for i in range(2):
+                path = Path(temp)/f'native_{i}.py'
+                path.write_text(source + f'\n# Native implementation revision {i}\n')
+                spec = importlib.util.spec_from_file_location(f'native_identity_{i}', path)
+                module = importlib.util.module_from_spec(spec)
+                spec.loader.exec_module(module)
+                result = module.run(FIXTURES['longmemeval-s'], TokenCounter('utf8_bytes'), ['sparse'], [600])
+                identities.append(result['evaluation_fabric']['implementation_sha256'])
+        self.assertNotEqual(*identities)
