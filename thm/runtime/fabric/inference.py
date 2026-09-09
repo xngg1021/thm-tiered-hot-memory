@@ -112,7 +112,9 @@ class TorchInference(LocalInferenceBase):
         available = device == 'cpu' or bool(api and api.is_available())
         if self.options.get('require_hip') and not getattr(torch.version, 'hip', None):
             available = False
-        if self.options.get('require_cuda') and getattr(torch.version, 'hip', None):
+        if self.options.get('require_cuda') and (getattr(torch.version, 'hip', None) or 'metax' in torch.__version__.lower()):
+            available = False
+        if self.options.get('require_maca') and not ('metax' in torch.__version__.lower() or getattr(torch.version, 'maca', None)):
             available = False
         return {'provider': self.spec.provider_id, 'availability': 'available' if available else 'device-unavailable',
                 'devices': [device] if available else [], 'version': torch.__version__,

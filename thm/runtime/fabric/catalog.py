@@ -53,7 +53,7 @@ for algorithm in ('brute_force', 'cagra', 'ivf_flat', 'ivf_pq', 'vamana'):
                          options=(('algorithm', algorithm),), maturity=2 if algorithm == 'vamana' else 4))
 BUILTINS.extend([
     spec('metax.mcfaiss', 'metax', 'MXMACA-mcFaiss', 'native:McFaissProvider', devices=('gpu',), os=('Linux',), operations=('vector-search',), resident=True),
-    spec('windows.catalog', 'microsoft', 'WindowsML', 'native:WindowsMLCatalog', os=('Windows',), devices=('gpu', 'npu', 'cpu'), operations=('device', 'inference'), maturity=1),
+    spec('windows.catalog', 'microsoft', 'WindowsML', 'native:WindowsMLCatalog', os=('Windows',), devices=('gpu', 'npu', 'cpu'), operations=('device', 'inference'), maturity=4),
 ])
 
 # Public C/ObjC extension seams have explicit maturity, never masquerade as executable adapters.

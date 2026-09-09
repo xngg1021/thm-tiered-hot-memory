@@ -118,6 +118,7 @@ class ExactHost:
         handle = VectorIndexHandle(identity, tuple(ids), values, values.nbytes,
                                    load_ms=(time.perf_counter()-start)*1000)
         self.handles[identity.key] = handle
+        handle.close_callback = lambda: self.handles.pop(identity.key, None) if self.handles.get(identity.key) is handle else None
         return handle
 
     def load_handle(self, identity):
@@ -157,7 +158,7 @@ class ExactHost:
         return dict(self.last)
 
     def close(self):
-        for handle in self.handles.values():
+        for handle in list(self.handles.values()):
             handle.close()
         self.handles.clear()
 
@@ -173,12 +174,14 @@ class ExactAccelerator(ExactHost):
 
     def probe(self):
         torch, device = self._runtime()
-        api = getattr(torch, device)
+        api = torch.backends.mps if device == 'mps' else getattr(torch, device)
         available = api.is_available()
         options = dict(self.spec.options) if self.spec else {}
         if options.get('require_hip') and not getattr(torch.version, 'hip', None):
             available = False
-        if options.get('require_cuda') and getattr(torch.version, 'hip', None):
+        if options.get('require_cuda') and (getattr(torch.version, 'hip', None) or 'metax' in torch.__version__.lower()):
+            available = False
+        if options.get('require_maca') and not ('metax' in torch.__version__.lower() or getattr(torch.version, 'maca', None)):
             available = False
         return {'availability': 'available' if available else 'device-unavailable',
                 'devices': [device] if available else [], 'version': torch.__version__, 'observed_kernel_dispatch': None}

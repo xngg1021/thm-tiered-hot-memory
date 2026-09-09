@@ -16,10 +16,11 @@ class ResidentExecutor:
     def __init__(self, registry, provider='host.exact', device='cpu', memory_budget=256*1024**2):
         self.registry = registry; self.provider_id = provider; self.device = device
         self.manager = ResidentHandleManager({device: memory_budget}); self.last = {}
+        self.description = registry.describe(provider)
 
     def search(self, *, scope, generation, embedding_profile, ids, matrix, queries, top_k, placement='dram'):
         provider = self.registry.get(self.provider_id)
-        description = self.registry.describe(self.provider_id)
+        description = self.description
         key = IndexIdentity(scope, generation, embedding_profile, self.provider_id,
                             identity(description['versions']), identity({'metric': 'inner_product'}),
                             device=self.device, placement=placement, runtime=identity(description))
@@ -64,12 +65,18 @@ class RuntimeService:
         self.graph = HostDeviceProvider().discover()
         from ..identity import implementation_identity
         self.implementation = implementation_identity()
-        self.store = ProfileStore(store_path or index.path.parent / ('runtime-'+identity(str(index.path))[:16]+'.sqlite'))
+        self.store_state = 'persistent'
+        try:
+            self.store = ProfileStore(store_path or index.path.parent / ('runtime-'+identity(str(index.path))[:16]+'.sqlite'))
+        except (OSError, __import__('sqlite3').DatabaseError):
+            self.store = ProfileStore(':memory:')
+            self.store_state = 'volatile-safe-fallback'
         self.telemetry = PassiveTelemetry(); self.gate = MaterialGainGate()
         self.explorer = explorer or BoundedShadowExplorer(memory_bytes=memory_budget)
         self.background = background and policy != 'reference'; self.lock = threading.RLock()
         self.pinned = {}; self.executors = {}; self.decisions = []; self.closed = False
-        self.candidates = [Candidate('host.exact')]
+        self.candidates = [Candidate('host.exact', workload=w) for w in ('interactive', 'bulk', 'background')]
+        self.provider_versions = identity(self.registry.describe('host.exact')['versions'])
 
     def _key(self, scope, workload, settings):
         p = getattr(self.encoder, 'profile', None)
@@ -83,7 +90,7 @@ class RuntimeService:
         settings = dict(settings)
         if 'features' in settings:
             settings['features'] = RetrievalFeatures.parse(settings['features']).identity()
-        versions = [self.registry.describe(c.provider)['versions'] for c in self.candidates]
+        versions = self.provider_versions
         key = ProfileKey(self.graph.fingerprint, self.graph.os+':'+self.graph.build, identity('cpu-no-driver'),
                          identity(versions), getattr(p, 'source_manifest_sha256', 'none'),
                          getattr(p, 'derived_manifest_sha256', None) or 'none', getattr(p, 'dimension', 0),
@@ -219,7 +226,7 @@ class RuntimeService:
 
     def explain(self):
         return {'mode': 'zero-touch', 'semantic_policy': self.policy, 'bootstrap': 'sparse-or-explicit-fp32-reference',
-                'session_profile_pinning': True, 'providers': self.registry.list(), 'profiles': self.store.summary(),
+                'session_profile_pinning': True, 'providers': self.registry.list(), 'profiles': self.store.summary(), 'profile_store_state': self.store_state,
                 'decisions': list(self.decisions), 'shadow': dict(self.explorer.last_receipt),
                 'generation_calls': 0, 'user_benchmark_required': False}
 
