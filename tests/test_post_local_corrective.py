@@ -176,4 +176,16 @@ class CorrectiveTests(unittest.TestCase):
         self.assertEqual(r['queries'][0]['query_identity'],{'_position':1})
         self.assertTrue(r['rows_truncated'])
 
+    def test_reference_policy_never_tunes_device_or_scorer(self):
+        with tempfile.TemporaryDirectory() as d:
+            Path(d,'weights').write_bytes(b'x');a=self.measured(manifest(d)['sha256']);calls=[]
+            a['identity']['device']='cuda'
+            def runner(config,timeout):
+                calls.append(config);return copy.deepcopy(a)
+            r=autotune(d,'test',backends=[('torch_fp32','cuda')],policy='reference',runner=runner)
+            self.assertEqual(r['status'],'calibrated');self.assertEqual(len(calls),1)
+            self.assertEqual(r['runtime_profile']['device'],'cuda')
+            self.assertEqual(r['runtime_profile']['scorer'],'numpy_reference')
+            self.assertEqual(r['selection'],'fixed-reference');self.assertFalse(r['accelerated_candidate_found'])
+
 if __name__=='__main__':unittest.main()

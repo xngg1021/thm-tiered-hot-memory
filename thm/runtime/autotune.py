@@ -35,8 +35,7 @@ def candidates(hardware,backends,policy='auto-safe',maximum=12):
     # Round-robin backends, then spread batch/thread choices, avoiding Cartesian expansion.
     grouped={b:[x for x in out if (x['backend'],x['device'])==b] for b in backends}
     selected=[]
-    # Ensure thread diversity early, then batch diversity; optional NUMA/P-core candidates
-    # are restricted to the process's actual CPU mask and executed only in the child.
+    # Ensure thread diversity early, then batch diversity without cap-dependent edits.
     for b,values in grouped.items():
         values.sort(key=lambda c:(c['document_batch_size']!=64,c['threads'],c['document_batch_size']))
     for i in range(max((len(v) for v in grouped.values()),default=0)):
@@ -48,6 +47,9 @@ def candidates(hardware,backends,policy='auto-safe',maximum=12):
 def candidate_plan(hardware, backends, policy, maximum):
     """A cap selects a stable prefix; scorer variants never replace that prefix."""
     configs = candidates(hardware, backends, policy, 32)
+    if policy=='reference':
+        return [{'ordinal':0,'config':configs[0],'capability_family':'reference',
+                 'execution_reason':'explicit-fixed-reference','skip_reason':None}]
     # Keep baseline independent of the accelerated trial cap.
     baseline = {'backend':'torch_fp32','device':'cpu','threads':1,
                 'document_batch_size':64,'query_batch_size':1,'affinity':[],
@@ -159,6 +161,7 @@ def autotune(model_path,model_id,*,backends=None,policy='auto-safe',workload='in
     hardware=probe();source=manifest(model_path)['sha256']
     ref={'model_path':str(Path(model_path).resolve()),'model_id':model_id,'backend':'torch_fp32','device':'cpu','threads':1,'document_batch_size':64,'query_batch_size':1,'affinity':[]}
     plan=candidate_plan(hardware,backends or [('torch_fp32','cpu')],policy,maximum)
+    ref.update(plan[0]['config'])
     if baseline_only:
         for entry in plan[1:]:entry.update(skip_reason='baseline-only-budget',execution_reason=None)
     if plan_callback:plan_callback(plan)
@@ -181,7 +184,7 @@ def autotune(model_path,model_id,*,backends=None,policy='auto-safe',workload='in
     if reference.get('status')!='ok':return {'status':'failed','reason':'reference-unavailable','reference':reference,'generation_calls':0}
     try:
         if reference['identity']['source_manifest_sha256']!=source:raise ValueError('reference source identity')
-        if any(reference['identity'].get(k)!=v for k,v in {'backend':'torch_fp32','device':'cpu','precision':'fp32'}.items()):
+        if any(reference['identity'].get(k)!=v for k,v in {'backend':'torch_fp32','device':ref['device'],'precision':'fp32'}.items()):
             raise ValueError('reference execution identity')
         reference_gate=gate(reference,reference)
         if not reference_gate['admitted']:raise ValueError('reference self-validation')
@@ -223,8 +226,8 @@ def autotune(model_path,model_id,*,backends=None,policy='auto-safe',workload='in
     if manifest(model_path)['sha256']!=source:raise ValueError('model changed during calibration')
     return {'schema':1,'status':'calibrated','hardware':hardware.identity(),'source_manifest_sha256':source,'corpus_sha256':CORPUS_SHA,
             'runtime_profile':p.identity(),'selection_metric':metric,
-            'selection':'reference-fallback' if fallback else 'calibrated-candidate',
-            'reason':'no-faster-safe-candidate' if fallback else 'measured-winner',
+            'selection':'fixed-reference' if policy=='reference' else ('reference-fallback' if fallback else 'calibrated-candidate'),
+            'reason':'explicit-reference-policy' if policy=='reference' else ('no-faster-safe-candidate' if fallback else 'measured-winner'),
             'accelerated_candidate_found':not fallback,
             'optimized_auto_safe':policy=='auto-safe' and not fallback,
             'semantic_gate':'strict/reference' if fallback else p.semantic_gate,
