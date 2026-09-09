@@ -20,7 +20,8 @@ class ProbeTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as d:
             s=Path(d);node=s/'devices/system/node/node0';node.mkdir(parents=True)
             (node/'distance').write_text('10');(node/'cpulist').write_text('0-3')
-            fields,g=linux(d,sysroot=s,mountinfo='1 0 0:1 / / rw - nfs server:/private rw')
+            mount=s.as_posix().replace(' ',r'\040')
+            fields,g=linux(d,sysroot=s,mountinfo=f'1 0 0:1 / {mount} rw - nfs server:/private rw')
             self.assertTrue(fields['remote']);self.assertIsNone(fields.get('numa_node'))
             self.assertTrue(any(e.numa_distance==10 for e in g.edges))
             self.assertNotIn('private',str(g))
