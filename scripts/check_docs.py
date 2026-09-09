@@ -11,6 +11,33 @@ import sys
 from urllib.parse import unquote, urlsplit
 
 ROOT = Path(__file__).resolve().parents[1]
+
+
+def _without_shell_comment(command):
+    """A shell hash starts a comment at a word boundary, outside quotes."""
+    quote = None
+    escaped = False
+    in_word = False
+    for index, char in enumerate(command):
+        if escaped:
+            escaped = False
+            in_word = True
+        elif char in ('\\', '`') and quote != "'":
+            escaped = True
+            in_word = True
+        elif quote:
+            if char == quote:
+                quote = None
+        elif char in ('"', "'"):
+            quote = char
+            in_word = True
+        elif char == '#' and not in_word:
+            return command[:index]
+        else:
+            in_word = not (char.isspace() or char in ';|&()<>')
+    return command
+
+
 REPORT = 'reports/2026-09-06-学术工具复审.md'
 ORIGINAL_BLOB = 'a5cb344275050c16d12f5c3b42db9e0203c60cdd'
 START = '<!-- original-report:start -->\n'
@@ -78,8 +105,9 @@ def check(root: Path) -> dict:
             if any(line != line.rstrip() for line in text.splitlines()):
                 errors.append(f'{relative}: trailing whitespace')
             for command in re.findall(r'^[ \t]*(?:(?:[$%>]|PS(?:[ \t]+[^>\n]*)?>)[ \t]+)?python(?:3)?[ \t]+research/(?:recall/(?:benchmark|lme_retrieval)|economics/run_suite)\.py[^\n]*', text, re.M):
-                lexer = shlex.shlex(command, posix=False)
+                lexer = shlex.shlex(_without_shell_comment(command), posix=False)
                 lexer.whitespace_split = True
+                lexer.commenters = ''
                 try:
                     arguments = list(lexer)
                 except ValueError:
