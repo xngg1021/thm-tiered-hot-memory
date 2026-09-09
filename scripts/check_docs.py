@@ -13,7 +13,7 @@ from urllib.parse import unquote, urlsplit
 ROOT = Path(__file__).resolve().parents[1]
 
 
-def _without_shell_comment(command, *, mask_substitutions=False):
+def _without_shell_comment(command, *, shell='bash', mask_substitutions=False):
     """Return the first command, excluding comments and outer separators."""
     quote = None
     escaped = False
@@ -37,9 +37,21 @@ def _without_shell_comment(command, *, mask_substitutions=False):
         if escaped:
             escaped = False
             in_word = True
-        elif char in ('\\', '`') and quote != "'":
+        elif char == ('`' if shell == 'powershell' else '\\') and quote != "'":
             escaped = True
             in_word = True
+        elif char == '`' and shell == 'bash' and quote != "'":
+            if substitutions and substitutions[-1][1] is None:
+                quote, _ = substitutions.pop()
+                in_word = True
+                if not substitutions:
+                    ranges.append((substitution_start, index + 1))
+            else:
+                if not substitutions:
+                    substitution_start = index
+                substitutions.append([quote, None])
+                quote = None
+                in_word = False
         elif ((command.startswith('$(', index) and quote != "'") or
               (command.startswith(('<(', '>('), index) and quote is None)):
             if not substitutions:
@@ -58,7 +70,7 @@ def _without_shell_comment(command, *, mask_substitutions=False):
             return finish(index)
         elif not substitutions and char in ';|&':
             return finish(index)
-        elif substitutions and char in '()':
+        elif substitutions and substitutions[-1][1] is not None and char in '()':
             substitutions[-1][1] += 1 if char == '(' else -1
             if substitutions[-1][1] == 0:
                 quote, _ = substitutions.pop()
@@ -88,8 +100,9 @@ def _native_commands(text):
         shell = fence
         if shell not in ('powershell', 'pwsh', 'ps1', 'bash', 'sh', 'zsh', 'shell'):
             shell = 'powershell' if re.match(r'^\s*PS(?:[ \t]+[^>\n]*)?>[ \t]+', line) else 'bash'
-        marker = '`' if shell in ('powershell', 'pwsh', 'ps1') else '\\'
-        while command.endswith(marker) and _without_shell_comment(command) == command:
+        shell = 'powershell' if shell in ('powershell', 'pwsh', 'ps1') else 'bash'
+        marker = '`' if shell == 'powershell' else '\\'
+        while command.endswith(marker) and _without_shell_comment(command, shell=shell) == command:
             count = len(command) - len(command.rstrip(marker))
             if count % 2 == 0:
                 break
@@ -97,7 +110,7 @@ def _native_commands(text):
             if following is None:
                 break
             command = command[:-1] + following
-        yield command
+        yield command, shell
 
 
 REPORT = 'reports/2026-09-06-学术工具复审.md'
@@ -166,8 +179,8 @@ def check(root: Path) -> dict:
         if path.suffix == '.md':
             if any(line != line.rstrip() for line in text.splitlines()):
                 errors.append(f'{relative}: trailing whitespace')
-            for command in _native_commands(text):
-                lexer = shlex.shlex(_without_shell_comment(command, mask_substitutions=True), posix=False)
+            for command, shell in _native_commands(text):
+                lexer = shlex.shlex(_without_shell_comment(command, shell=shell, mask_substitutions=True), posix=False)
                 lexer.whitespace_split = True
                 lexer.commenters = ''
                 try:

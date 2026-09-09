@@ -128,10 +128,11 @@ class DocumentTests(unittest.TestCase):
 
     def test_research_commands_preserve_embedded_and_escaped_hashes(self):
         for path in ('path#hash.json', r'path\#hash.json', r'\#hash.json', 'path`#hash.json'):
+            fence = 'powershell' if '`' in path else 'bash'
             command = 'python research/recall/benchmark.py --dataset ' + path
-            self.write('docs/campaign.md', '```shell\n' + command + ' --full-research\n```\n')
+            self.write('docs/campaign.md', '```' + fence + '\n' + command + ' --full-research\n```\n')
             self.assertEqual(checker.check(self.root)['status'], 'PASS', path)
-            self.write('docs/campaign.md', '```shell\n' + command + ' # --full-research\n```\n')
+            self.write('docs/campaign.md', '```' + fence + '\n' + command + ' # --full-research\n```\n')
             self.assertTrue(any('requires explicit --full-research' in e for e in checker.check(self.root)['errors']), path)
 
     def test_research_commands_keep_substitution_suffix_in_same_word(self):
@@ -188,6 +189,17 @@ class DocumentTests(unittest.TestCase):
                 self.assertEqual(checker.check(self.root)['status'], 'PASS', prompt)
                 self.write('docs/campaign.md', opening + command + '\\\n --full-research\n' + closing)
                 self.assertTrue(any('requires explicit --full-research' in e for e in checker.check(self.root)['errors']), prompt)
+
+    def test_research_backtick_substitutions_do_not_supply_outer_flags(self):
+        for path in ('`producer --full-research value`', 'prefix`producer --full-research value`#hash.json',
+                     '$(producer `nested --full-research value`)'):
+            command = 'python research/recall/benchmark.py --dataset ' + path
+            self.write('docs/campaign.md', '```bash\n' + command + '\n```\n')
+            self.assertTrue(any('requires explicit --full-research' in e for e in checker.check(self.root)['errors']), path)
+            self.write('docs/campaign.md', '```bash\n' + command + ' --full-research\n```\n')
+            self.assertEqual(checker.check(self.root)['status'], 'PASS', path)
+        self.write('docs/campaign.md', '```powershell\npython research/recall/benchmark.py --dataset path`#hash.json --full-research\n```\n')
+        self.assertEqual(checker.check(self.root)['status'], 'PASS')
 
     def test_indented_and_prompt_prefixed_research_commands_require_opt_in(self):
         for prefix in ('    ', '\t', '$ ', '  $ ', '> ', 'PS> ', 'PS C:\\work> '):
