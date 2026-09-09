@@ -87,7 +87,7 @@ class ModelFabricTests(unittest.TestCase):
             self.assertEqual(result['runtime_receipt']['inference_provider'],'nvidia.inference')
             self.assertEqual(result['runtime_receipt']['embedding_profile'],profile['embedding_profile_id'])
             self.assertEqual(result['runtime_receipt']['authority_embedding_profile'],self.encoder.profile.id)
-            self.assertEqual(result['runtime_receipt']['semantic_class'],'observed-request')
+            self.assertEqual(result['runtime_receipt']['quality_evidence_scope'],'observed-request-only')
             self.assertEqual(result['execution_plan']['source_representation'],'private-profile-replica')
             worker.search.side_effect = RuntimeError('fixture device loss')
             result = service.search('scope','Beijing next',mode='dense')
