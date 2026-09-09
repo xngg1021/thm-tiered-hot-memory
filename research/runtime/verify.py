@@ -42,6 +42,21 @@ def plan(model_path,locomo,lme,root,model_id,*,include_approximate=False):
         'performance_acceptance':'pending-real-local-runtime','generation_calls':0}
 
 
+def acceptance_result(policies,tunes,rows,comparisons):
+    """Correctness and acceleration are separate evidence axes."""
+    required=[p for p in policies if p=='auto-safe']
+    missing=[p for p in required if p not in tunes]
+    safe_parity=all(c['strict'] for c in comparisons if c['arm']=='auto-safe')
+    complete=not missing and bool(rows) and all(r['returncode']==0 for r in rows) and safe_parity
+    return {'status':'measured-needs-acceptance' if complete else 'incomplete-local-run',
+        'correctness_acceptance':complete,'missing_required_winners':missing,
+        'optimized_auto_safe':bool(tunes.get('auto-safe',{}).get('optimized_auto_safe',False)),
+        'runtime_acceleration_evidence':{p:{'calibrated':p in tunes,
+            'accelerated_candidate_found':tunes.get(p,{}).get('accelerated_candidate_found',False)} for p in policies if p!='reference'},
+        'approximate_mode_evidence':{'calibrated':'approximate-performance' in tunes},
+        'full_dataset_acceptance':False}
+
+
 def execute(args):
     limits=campaign(getattr(args,'mode','acceptance'), full_campaign=getattr(args,'full_campaign',False),
         acknowledge=getattr(args,'acknowledge_multi_hour_run',False), wall_seconds=getattr(args,'wall_seconds',3600),
@@ -76,15 +91,16 @@ def execute(args):
     cuda=any(x.get('cuda_available') is True for x in accelerators)
     if cuda:backends.append(('torch_fp32','cuda'))
     for backend,cap in available().items():
-        if backend=='torch_fp32' or not cap['installed'] or (backend.endswith('int8') and not args.include_approximate):continue
-        try:receipt=prepare(args.model_path,root/'derived-models',backend)
+        if limits['mode']=='smoke' or backend=='torch_fp32' or not cap['installed'] or (backend.endswith('int8') and not args.include_approximate):continue
+        try:receipt=prepare(args.model_path,root/'derived-models',backend,timeout=max(.01,deadline-time.monotonic()))
         except Exception as exc:receipt={'status':'failed','error_type':type(exc).__name__,'backend':backend}
         write_receipt(root/(backend+'-preparation.json'),receipt)
         if receipt.get('status')=='prepared':backend_paths[backend]=str((root/'derived-models'/receipt['artifact_locator']).resolve());backends.append((backend,'cpu'))
-    tunes={};calibrations={}
+    tunes={};calibrations={};reference_session={}
     policies=[('auto-safe','interactive')] if limits['mode']=='smoke' else [('auto-safe','interactive'),('auto-throughput','bulk')]+([('approximate-performance','bulk')] if args.include_approximate else [])
     for policy,workload in policies:
-        result=autotune(args.model_path,args.model_id,backends=backends,policy=policy,workload=workload,maximum=min(args.max_candidates,2 if limits['mode']=='smoke' else 6) if limits['mode']!='full-research' else args.max_candidates,backend_paths=backend_paths)
+        result=autotune(args.model_path,args.model_id,backends=backends,policy=policy,workload=workload,maximum=min(args.max_candidates,2 if limits['mode']=='smoke' else 6) if limits['mode']!='full-research' else args.max_candidates,backend_paths=backend_paths,reference_session=reference_session,deadline=deadline,baseline_only=limits['mode']=='smoke',
+            plan_callback=lambda entries,policy=policy:write_receipt(root/(policy+'-candidate-plan.json'),{'entries':entries,'phase':'before-execution'}))
         write_receipt(root/(policy+'-autotune.json'),result)
         calibrations[policy]={'status':result.get('status','missing-status'),'artifact':policy+'-autotune.json','reason':result.get('reason')}
         if result.get('status')=='calibrated':tunes[policy]=result
@@ -92,6 +108,7 @@ def execute(args):
     if cuda and limits['mode']!='smoke':arms.append(planned['reference_arms'][1])
     # Full matrices only for reference + measured winners, never every calibration point.
     for policy,tune in tunes.items():
+        if tune.get('selection')=='reference-fallback':continue
         p=tune['runtime_profile'];arms.append({'name':policy,'backend':p['backend'],'device':p['device'],'policy':policy,
             'batch':p['document_batch_size'],'query_batch':p['query_batch_size'],'threads':p['threads'],'scorer':p['scorer'],'profile_file':str(root/(policy+'-autotune.json'))})
     if cuda and limits['mode']=='full-research':
@@ -138,6 +155,8 @@ def execute(args):
             receipt['sha256']=hashlib.sha256(output.read_bytes()).hexdigest()
             artifact=json.loads(output.read_text())
             receipt['runtime']=artifact.get('runtime')
+            from research.runtime.performance import decomposition
+            receipt['performance_decomposition']=decomposition(artifact)
             receipt['index_build_seconds']=sum(b['index_seconds'] for b in artifact.get('builds',[]))
             receipt['document_embedding_seconds']=sum(b.get('embedding',{}).get('seconds',0) for b in artifact.get('builds',[]))
             receipt['quality']={k:v.get('main_categories_1_to_4',v.get('all_instances')) for k,v in artifact.get('summaries',{}).items()}
@@ -163,6 +182,10 @@ def execute(args):
     projection=estimate(sample['wall_seconds'],min(current_limit,len(lme)),
         len(lme) if limits['lme_limit'] is None else min(limits['lme_limit'],len(lme)),
         len(arms),max(0,deadline-time.monotonic()),extra_seconds=extra_seconds)
+    if limits['mode']=='smoke':
+        # Pilot is exactly the required reference workload; promote its bytes, no second model load.
+        projection.update(projected_total_seconds=0,projected_reference_seconds=0,within_budget=time.monotonic()<deadline,
+            pilot_reused=True,reuse_class='within-run-exact-workload')
     projection['projected_locomo_seconds']=extra_seconds
     projection['expected_matrix_artifacts']=len(arms)*(1 if limits['mode']=='smoke' else 2)+(len(planned['features']) if args.retrieval_ab else 0)
     matrix_count=projection['expected_matrix_artifacts']
@@ -174,7 +197,14 @@ def execute(args):
     if projection['projected_total_seconds']>3600 and not getattr(args,'acknowledge_multi_hour_run',False):raise ValueError('multi-hour projection requires acknowledgement')
     if not projection['within_budget']:raise ValueError('projected campaign exceeds wall-time budget')
     current_limit=limits['lme_limit'];sampling=False
-    for arm in arms:
+    if limits['mode']=='smoke':
+        raw=(root/sample['artifact']).read_bytes();name='cpu-reference-lme.json'
+        (root/name).write_bytes(raw)
+        receipt={**sample,'arm':'cpu-reference','artifact':name,'reused':True,
+            'source_receipt_sha256':hashlib.sha256((root/'estimate-reference-lme-execution.json').read_bytes()).hexdigest(),
+            'identity_key':hashlib.sha256(raw).hexdigest(),'reuse_class':'within-run-exact-pilot'}
+        rows.append(receipt);write_receipt(root/'cpu-reference-lme-execution.json',receipt)
+    for arm in ([] if limits['mode']=='smoke' else arms):
         for dataset,label in ([(args.lme_dataset,'lme')] if limits['mode']=='smoke' else [(args.locomo_dataset,'locomo'),(args.lme_dataset,'lme')]):run_arm(arm,dataset,label)
     if args.retrieval_ab:
         for feature in planned['features']:
@@ -191,16 +221,14 @@ def execute(args):
         if not source.is_file():continue
         a,source_sha=read_json_bound(source);b,target_sha=read_json_bound(target);receipt=compare(a,b)
         receipt['source_artifacts']={'cpu':{'file':source.name,'sha256':source_sha},'candidate':{'file':target.name,'sha256':target_sha}}
-        if limits['extended_diagnostics']:
+        if not receipt['strict_semantic_equivalent'] or limits['extended_diagnostics']:
             diagnostics=score_deltas(a,b);diagnostics['source_artifacts']=receipt['source_artifacts']
             write_receipt(root/(row['arm']+'-'+row['dataset']+'-score-deltas.json'),diagnostics)
         receipt['feature_experiment']=row['feature_experiment'];name=row['arm']+'-'+row['dataset']+'-parity.json';write_receipt(root/name,receipt)
         comparisons.append({'arm':row['arm'],'dataset':row['dataset'],'parity_artifact':name,'strict':receipt['strict_semantic_equivalent'],
             'aggregate':receipt['aggregate_semantic_metrics_equivalent'],'feature_experiment':row['feature_experiment']})
-    missing_policies=[policy for policy in planned['policies'] if policy!='reference' and policy not in tunes]
-    complete=not missing_policies and bool(rows) and all(r['returncode']==0 for r in rows)
-    result={'schema':1,'status':'measured-needs-acceptance' if complete else 'incomplete-local-run',
-        'calibrations':calibrations,'missing_required_winners':missing_policies,
+    result={'schema':1,**acceptance_result(planned['policies'],tunes,rows,comparisons),
+        'calibrations':calibrations,
         'verification_mode':limits['mode'],'full_dataset_acceptance':False,'lme_limit':limits['lme_limit'],
         'executions':rows,'comparisons':comparisons,'git_head':git,'generation_calls':0,'merge_authorized':False}
     write_receipt(root/'comparison.json',result);return result

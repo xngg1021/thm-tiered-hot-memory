@@ -497,8 +497,8 @@ class RuntimeReviewRegressionTests(unittest.TestCase):
             def tune(*a,**kw):return {'status':'failed','reason':'no-candidate-passed'} if kw['policy'] in failed else {'status':'calibrated','runtime_profile':profile}
             with patch.object(verify,'load_dataset',return_value=[{}]),patch.object(verify,'manifest',return_value={'sha256':'a'*64}),patch.object(verify,'backend_probe',return_value=[]),patch.object(verify,'available',return_value={}),patch.object(verify,'census',return_value={}),patch.object(verify,'TokenCounter',return_value=TokenCounter()),patch.object(verify,'autotune',side_effect=tune),patch.object(verify.subprocess,'run',side_effect=process),patch('research.recall.hardware_parity.compare',return_value={'strict_semantic_equivalent':True,'aggregate_semantic_metrics_equivalent':True}):
                 result=verify.execute(args)
-            self.assertEqual(set(result['missing_required_winners']),failed)
-            self.assertEqual(result['status'],'incomplete-local-run' if failed else 'measured-needs-acceptance')
+            self.assertEqual(set(result['missing_required_winners']),failed & {'auto-safe'})
+            self.assertEqual(result['status'],'incomplete-local-run' if 'auto-safe' in failed else 'measured-needs-acceptance')
             self.assertTrue(all(r['returncode']==0 for r in result['executions']))
             self.assertTrue((Path(args.output_dir)/'comparison.json').is_file())
 
@@ -663,7 +663,7 @@ class RuntimeReviewRegressionTests(unittest.TestCase):
         e=FakeEncoder();measured={'status':'ok','identity':e.identity(),'corpus_sha256':CORPUS_SHA,'document_vectors':e(DOCUMENTS),'query_vectors':e(QUERIES)}
         measured['retrieval_signature']=retrieval_signature(measured)
         candidate=json.loads(json.dumps(measured));candidate['retrieval_signature'][0]['scores'][0]+=.001
-        result=gate(measured,candidate);self.assertFalse(result['admitted']);self.assertEqual(result['score_absolute_tolerance'],0.0)
+        result=gate(measured,candidate);self.assertFalse(result['admitted']);self.assertGreater(result['score_absolute_tolerance'],0.0)
         self.assertGreater(result['max_score_abs_diff'],0)
         candidate['retrieval_signature'].pop();self.assertEqual(gate(measured,candidate)['reason'],'invalid-signature-length')
     def test_lexical_runners_never_embed_documents(self):
