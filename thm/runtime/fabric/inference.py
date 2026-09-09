@@ -89,7 +89,7 @@ class LocalInferenceBase:
             raise RuntimeError('provider model not loaded')
         start = time.perf_counter(); cpu = time.process_time()
         result = function(inputs)
-        self.last = {'encode_ms': (time.perf_counter()-start)*1000,
+        self.last = {**self.last, 'encode_ms': (time.perf_counter()-start)*1000,
                      'cpu_seconds': time.process_time()-cpu, 'requested_threads': None,
                      'provider_threads': None, 'semantic_status': 'unvalidated'}
         return result

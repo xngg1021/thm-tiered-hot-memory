@@ -149,4 +149,3 @@ class HostDeviceProvider:
 
     def close(self):
         pass
-

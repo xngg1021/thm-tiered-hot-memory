@@ -42,6 +42,10 @@ class HostTransfer:
 
 
 class TorchTransfer(HostTransfer):
+    def probe(self):
+        from .indexes import ExactAccelerator
+        return ExactAccelerator(self.spec).probe()
+
     def _runtime(self):
         import importlib
         options = dict(self.spec.options) if self.spec else {}

@@ -116,4 +116,3 @@ def builtin_registry(*, extensions=True):
     if extensions:
         registry.register_entry_points()
     return registry
-
