@@ -109,7 +109,10 @@ class ChildBudget:
             limits = self.extended()
             if not self.kernel.QueryInformationJobObject(self.job, 9, c.byref(limits), c.sizeof(limits), None):
                 raise OSError('job accounting unavailable')
-            limits.basic.job_time = int(cpu*10_000_000)
+            # JOB_OBJECT_LIMIT_JOB_TIME is cumulative for the lifetime of the job.
+            # Renew to the newly computed cumulative ceiling, not a fresh per-call
+            # allowance that would prematurely terminate a retained warm worker.
+            limits.basic.job_time = int(self.cpu*10_000_000)
             if not self.kernel.SetInformationJobObject(self.job, 9, c.byref(limits), c.sizeof(limits)):
                 raise OSError('job request limits unavailable')
 
