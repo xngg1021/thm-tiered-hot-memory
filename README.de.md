@@ -74,9 +74,9 @@ T0–T3 sind **THM Memory Tiers**. Sie sind nicht die L0–L6 Layers des separat
 <!-- section:compute -->
 ## Rechenausführung
 
-RuntimeProfile bindet Encoder/Backend, Präzision, Gerät, Scorer, Batchgrößen und Threads. Optionaler Scheduler und begrenztes AutoTune wählen explizite Betriebspunkte. CPU/CUDA-Beschreibungen benötigen eigene Laufzeitevidenz; erfolgreiche Fixtures belegen weder Dispatch noch Beschleunigung.
+Die Zero-Touch-Laufzeit startet mit einem sicheren verfügbaren Pfad, beobachtet echte Anfragen und untersucht installierte Provider innerhalb begrenzter Hintergrundressourcen. Provider Fabric trennt Inferenz, residente Vektorindizes und Transfer auf CPU, GPU und NPU. Semantische Übereinstimmung, ein wesentlicher Vorteil, aktuelle Profile und Sitzungsgrenzen steuern die Übernahme; ein eigener Benchmark ist keine Voraussetzung. Profile und Belege zeigen die tatsächliche Ausführung und Rückfälle. Optionale SDKs und Modelle werden nie automatisch heruntergeladen; Implementierungsreife und Hardwareabnahme bleiben getrennt.
 
-[Runtime](docs/17-zero-llm-heterogeneous-runtime.md)
+[Zero-touch runtime](docs/20-zero-touch-runtime.md) · [Provider Fabric](docs/21-provider-fabric.md) · [Runtime](docs/17-zero-llm-heterogeneous-runtime.md)
 
 <!-- section:physical -->
 ## Physische Speicherebene

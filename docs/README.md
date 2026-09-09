@@ -1,5 +1,9 @@
 # THM 项目文档总目录
 
+## Zero-touch Provider Fabric — Unreleased
+
+The current product path is [zero-touch runtime](20-zero-touch-runtime.md): safe execution, passive observation, bounded background exploration and session-boundary admission. Read [Provider Fabric](21-provider-fabric.md), [optimizer](22-runtime-optimizer.md), [resident vector indexes](23-vector-index-providers.md), [support matrix](provider-matrix.md) and [source/license audit](provider-sources.json). Explicit research preparation/calibration remains available. No user benchmark, automatic SDK download or new stable release is required.
+
 ## Current architecture and evaluation
 
 Start with the [Evaluation Fabric](18-evaluation-fabric.md): logical memory, compute execution and physical storage are independent planes. The fabric binds all three to typed tasks, ground truth, results and receipts. Read [runtime](17-zero-llm-heterogeneous-runtime.md) and [physical storage](physical-storage-fabric.md) for execution details. Default acceptance is bounded and offline; full datasets require explicit full-research. Package/stable remains 1.4.0.
@@ -79,4 +83,4 @@ The optional zero-LLM hardware/profile/AutoTune runtime, identity-safe vector st
 
 ## Post-local corrective evidence
 
-See the [current corrective contract and short retest](19-post-local-corrective.md). Z6 CPU/CUDA/auto-throughput and local NTFS/NVMe are machine-observed at b1f8119. Aggregate parity, strict parity, calibrated policy and post-fix acceptance remain separate claims. Auto-safe now allows a measured reference fallback; lack of acceleration does not itself fail correctness. No version/stable promotion or full-dataset acceptance is implied.
+See the [current corrective contract and short retest](19-post-local-corrective.md). Z6 CPU/CUDA/auto-throughput and local NTFS/NVMe are machine-observed at b1f8119. The later [bb16760 retest](../reports/2026-09-09-post-fix-retest-bb16760.md) completed strict auto-safe admission, reference fallback, reuse and CPU batch 1/4/8/32 validation. Aggregate parity, strict parity and calibrated policy remain separate claims. Auto-safe now allows a measured reference fallback; lack of acceleration does not itself fail correctness. No version/stable promotion or full-dataset acceptance is implied.

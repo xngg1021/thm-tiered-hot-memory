@@ -74,9 +74,9 @@ T0–T3 son **Memory Tiers de THM**. Son independientes de las L0–L6 Layers de
 <!-- section:compute -->
 ## Plano de ejecución de cómputo
 
-RuntimeProfile vincula encoder/backend, precisión, dispositivo, scorer, tamaños de lote e hilos. El scheduler opcional y AutoTune acotado eligen configuraciones explícitas. Las descripciones CPU/CUDA requieren evidencia runtime propia; pasar fixtures no demuestra dispatch ni aceleración.
+El runtime sin ajustes iniciales comienza con una ruta segura disponible, observa solicitudes reales y explora proveedores instalados dentro de límites de recursos en segundo plano. Provider Fabric separa inferencia, índices vectoriales residentes y transferencias en CPU, GPU y NPU. La paridad semántica, una mejora sustancial, la vigencia de los perfiles y los límites de sesión controlan la adopción; el usuario no necesita ejecutar antes un benchmark. Los perfiles y comprobantes muestran la ejecución real y las rutas de respaldo. Los SDK y modelos opcionales nunca se descargan automáticamente; la madurez de implementación se distingue de la validación del hardware.
 
-[Runtime](docs/17-zero-llm-heterogeneous-runtime.md)
+[Zero-touch runtime](docs/20-zero-touch-runtime.md) · [Provider Fabric](docs/21-provider-fabric.md) · [Runtime](docs/17-zero-llm-heterogeneous-runtime.md)
 
 <!-- section:physical -->
 ## Plano de almacenamiento físico

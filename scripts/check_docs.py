@@ -234,6 +234,34 @@ def check(root: Path) -> dict:
             except (SyntaxError, ValueError) as exc:
                 errors.append(f'{relative}: invalid Python syntax: {exc}')
 
+    if 'thm/runtime/fabric/catalog.py' in texts:
+        required_fabric = {'docs/20-zero-touch-runtime.md','docs/21-provider-fabric.md',
+                           'docs/22-runtime-optimizer.md','docs/23-vector-index-providers.md',
+                           'docs/provider-matrix.md','docs/provider-sources.json'}
+        for name in sorted(required_fabric - texts.keys()):
+            errors.append('Provider Fabric documentation missing: '+name)
+        try:
+            provenance = json.loads(texts['docs/provider-sources.json'])
+            rows = provenance['providers']
+            sys.path.insert(0, str(root))
+            try:
+                from thm.runtime.fabric.catalog import BUILTINS
+            finally:
+                sys.path.pop(0)
+            catalog = {s.provider_id:s for s in BUILTINS}
+            if len(rows) != len(catalog) or {r['provider_id'] for r in rows} != set(catalog):
+                raise ValueError('provider audit and catalog identities differ')
+            for row in rows:
+                spec = catalog[row['provider_id']]
+                if row['factory'] != spec.factory or row['maturity'] != 'L'+str(spec.maturity):
+                    raise ValueError('provider audit maturity/factory differs from executable catalog')
+                if urlsplit(row['official_url']).scheme != 'https' or not row['license_audit']:
+                    raise ValueError('provider source URL or license audit missing')
+                if row['hardware_validation'] != 'unvalidated' and spec.maturity < 5:
+                    raise ValueError('provider audit overstates hardware evidence')
+        except (KeyError, ValueError, TypeError, ImportError) as exc:
+            errors.append('Provider Fabric source audit: '+str(exc))
+
     report = texts.get(REPORT, '')
     preserved = False
     if report.count(START) != 1 or report.count(END) != 1:

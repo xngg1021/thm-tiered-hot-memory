@@ -1,5 +1,9 @@
 # THM implementation validation contract
 
+## Provider Fabric acceptance contract
+
+The [provider matrix](provider-matrix.md) separates documented, discoverable, preparable, executable, receipt-complete and hardware-accepted levels. [Optimizer evidence](22-runtime-optimizer.md) separately records structural/numeric parity, material gain, resource tradeoffs and workload scope. Every paired replay must pass; unknown constrained resources cannot become free. No new hardware speed or agent-quality claim follows from SDK fixtures, smoke or CI. Exact-head review and normal expected-head merge remain required.
+
 ## Evaluation Fabric contract
 
 The [Evaluation Fabric](18-evaluation-fabric.md) defines schema thm-evaluation/1 and separates memory-dataplane, systems-runtime and LLM-agent-outcome. No-gold, unresolved and diagnostic tasks are excluded from main recall denominators. Missing native locators produce null recall. Fixture success, live retrieval, hardware performance and agent outcome must never be substituted for one another. A failed/timeout run cannot publish passed acceptance; source/implementation SHA, scope and truncation remain explicit.

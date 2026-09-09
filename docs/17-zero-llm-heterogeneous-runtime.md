@@ -1,5 +1,9 @@
 # Zero-LLM heterogeneous runtime — Unreleased successor
 
+## Current product successor
+
+The [zero-touch runtime](20-zero-touch-runtime.md) now supplies the normal harness path. [Provider Fabric](21-provider-fabric.md) adds native/framework inference, resident indexes, explicit transfers, process-bounded discovery and private model-profile replicas. [Optimizer](22-runtime-optimizer.md) performs passive observation, bounded idle exploration and material-gain/session admission. The explicit calibration workflow below remains a research/diagnostic interface. Earlier machine acceptance was completed by the [bb16760 post-fix retest](../reports/2026-09-09-post-fix-retest-bb16760.md); its results do not establish native provider performance for this successor.
+
 ## Evaluation across three planes
 
 The [Evaluation Fabric](18-evaluation-fabric.md) separates logical T0–T3, compute profile and physical placement. Runtime receipts are systems-runtime evidence; retrieval recall belongs to memory-dataplane, and actual reader/environment results belong to LLM-agent-outcome. The new offline fixture acceptance does not require an encoder and does not certify CPU/GPU dispatch, model parity or user hardware performance. Existing model-based runtime verification remains a separate explicitly bounded path.
@@ -34,7 +38,7 @@ The lazy registry implements Torch FP32, ORT FP32/INT8 and OpenVINO FP32/INT8 vi
 
 `thm-runtime prepare` copies a local source model into private staging, exports locally, verifies the original source hash, then publishes to a fresh content-addressed directory. It disables remote code/downloads in its isolated worker, does not overwrite the original model, and records converter versions and exact derived bytes. ORT INT8 uses dynamic QInt8; OpenVINO INT8 uses NNCF weight-only compression, explicitly distinct from activation PTQ/VNNI execution. Unsupported model exports fail closed. Partial or existing output namespaces are consumed, never silently replaced.
 
-Backend API contracts follow [SentenceTransformers local backend documentation](https://sbert.net/docs/package_reference/sentence_transformer/model.html) and [ORT execution-provider documentation](https://onnxruntime.ai/docs/execution-providers/). Real Torch CPU/CUDA execution is recorded at b1f8119; ORT/OpenVINO success and post-corrective acceptance remain pending; deterministic test doubles validate orchestration, not model quality or hardware speed.
+Backend API contracts follow [SentenceTransformers local backend documentation](https://sbert.net/docs/package_reference/sentence_transformer/model.html) and [ORT execution-provider documentation](https://onnxruntime.ai/docs/execution-providers/). Real Torch CPU/CUDA execution is recorded at b1f8119; post-corrective auto-safe acceptance is recorded at bb16760, while successful ORT/OpenVINO hardware execution remains unaccepted; deterministic test doubles validate orchestration, not model quality or hardware speed.
 
 ## Calibration, profiles and scheduling
 

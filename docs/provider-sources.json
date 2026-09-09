@@ -1,0 +1,1683 @@
+{
+  "schema": 1,
+  "checked_on": "2026-09-09",
+  "providers": [
+    {
+      "provider_id": "nvidia.cublaslt",
+      "vendor": "nvidia",
+      "runtime_family": "cuBLASLt-nvmath",
+      "official_url": "https://docs.nvidia.com/cuda/nvmath-python/latest/host-apis/linalg/generated/nvmath.linalg.advanced.Matmul-class.html",
+      "documentation_version_or_date": "nvmath-python 1.0.0 release 2026-07-14; Matmul APIs checked 2026-09-09",
+      "verified_on": "2026-09-09",
+      "supported_os": [
+        "Linux",
+        "Windows"
+      ],
+      "public_sdk_status": "public API/SDK; local installation required",
+      "public_interface_used": "nvmath.linalg.advanced.Matmul.plan/execute; COMPUTE_32F_PEDANTIC; one heuristic candidate",
+      "license_audit": "Apache-2.0 nvmath-python; CUDA libraries separately licensed",
+      "factory": "thm.runtime.fabric.nvidia:CublasLtExact",
+      "maturity": "L4",
+      "hardware_validation": "unvalidated",
+      "optional_dependencies": [
+        "nvmath-python"
+      ],
+      "installed_sdk_version": null,
+      "binary_redistribution": "none",
+      "validation_boundary": "SDK-shaped fixtures and lifecycle tests do not establish hardware performance or actual operator placement"
+    },
+    {
+      "provider_id": "nvidia.cuda-graph",
+      "vendor": "nvidia",
+      "runtime_family": "CUDA-Graph",
+      "official_url": "https://docs.pytorch.org/docs/stable/generated/torch.cuda.CUDAGraph.html",
+      "documentation_version_or_date": "Public Torch CUDA Graph API checked 2026-09-09",
+      "verified_on": "2026-09-09",
+      "supported_os": [
+        "Linux",
+        "Windows"
+      ],
+      "public_sdk_status": "public API/SDK; local installation required",
+      "public_interface_used": "torch.cuda.graph / CUDAGraph.replay; fixed prepared operation only",
+      "license_audit": "BSD-style PyTorch; CUDA runtime terms",
+      "factory": "thm.runtime.fabric.nvidia:StableCudaGraph",
+      "maturity": "L4",
+      "hardware_validation": "unvalidated",
+      "optional_dependencies": [
+        "torch"
+      ],
+      "installed_sdk_version": null,
+      "binary_redistribution": "none",
+      "validation_boundary": "SDK-shaped fixtures and lifecycle tests do not establish hardware performance or actual operator placement"
+    },
+    {
+      "provider_id": "nvidia.nvml",
+      "vendor": "nvidia",
+      "runtime_family": "NVML",
+      "official_url": "https://docs.nvidia.com/deploy/nvml-api/group__nvmlDeviceQueries.html",
+      "documentation_version_or_date": "NVML device-query API documentation 2026-05-26",
+      "verified_on": "2026-09-09",
+      "supported_os": [
+        "Linux",
+        "Windows",
+        "Darwin"
+      ],
+      "public_sdk_status": "public API/SDK; local installation required",
+      "public_interface_used": "NVML utilization/memory/power/board energy counter",
+      "license_audit": "Python wrapper and NVIDIA driver SDK terms separate",
+      "factory": "thm.runtime.fabric.telemetry:NVMLTelemetry",
+      "maturity": "L4",
+      "hardware_validation": "unvalidated",
+      "optional_dependencies": [
+        "nvidia-ml-py"
+      ],
+      "installed_sdk_version": null,
+      "binary_redistribution": "none",
+      "validation_boundary": "SDK-shaped fixtures and lifecycle tests do not establish hardware performance or actual operator placement"
+    },
+    {
+      "provider_id": "amd.smi",
+      "vendor": "amd",
+      "runtime_family": "AMD-SMI",
+      "official_url": "https://github.com/ROCm/rocm-systems/tree/develop/projects/amdsmi",
+      "documentation_version_or_date": "MIGraphX 2.15 API / checked 2026-09-09",
+      "verified_on": "2026-09-09",
+      "supported_os": [
+        "Linux",
+        "Windows"
+      ],
+      "public_sdk_status": "public API/SDK; local installation required",
+      "public_interface_used": "amdsmi_init/get_processor_handles/get_gpu_activity/shut_down",
+      "license_audit": "MIT AMD SMI source; driver components separate",
+      "factory": "thm.runtime.fabric.telemetry:AMDSystemTelemetry",
+      "maturity": "L4",
+      "hardware_validation": "unvalidated",
+      "optional_dependencies": [
+        "amdsmi"
+      ],
+      "installed_sdk_version": null,
+      "binary_redistribution": "none",
+      "validation_boundary": "SDK-shaped fixtures and lifecycle tests do not establish hardware performance or actual operator placement"
+    },
+    {
+      "provider_id": "host.device",
+      "vendor": "generic",
+      "runtime_family": "os",
+      "official_url": "https://docs.python.org/3/library/index.html",
+      "documentation_version_or_date": "Python public standard library / checked 2026-09-09",
+      "verified_on": "2026-09-09",
+      "supported_os": [
+        "Linux",
+        "Windows",
+        "Darwin"
+      ],
+      "public_sdk_status": "public API/SDK; local installation required",
+      "public_interface_used": "HostDeviceProvider",
+      "license_audit": "THM MIT; Python PSF; optional packages separately licensed",
+      "factory": "thm.runtime.fabric.hardware:HostDeviceProvider",
+      "maturity": "L4",
+      "hardware_validation": "unvalidated",
+      "optional_dependencies": [],
+      "installed_sdk_version": null,
+      "binary_redistribution": "none",
+      "validation_boundary": "SDK-shaped fixtures and lifecycle tests do not establish hardware performance or actual operator placement"
+    },
+    {
+      "provider_id": "host.exact",
+      "vendor": "generic",
+      "runtime_family": "numpy",
+      "official_url": "https://numpy.org/doc/stable/reference/generated/numpy.matmul.html",
+      "documentation_version_or_date": "Python public standard library / checked 2026-09-09",
+      "verified_on": "2026-09-09",
+      "supported_os": [
+        "Linux",
+        "Windows",
+        "Darwin"
+      ],
+      "public_sdk_status": "public API/SDK; local installation required",
+      "public_interface_used": "NumPy matmul; stable argsort",
+      "license_audit": "BSD-3-Clause NumPy",
+      "factory": "thm.runtime.fabric.indexes:ExactHost",
+      "maturity": "L4",
+      "hardware_validation": "unvalidated",
+      "optional_dependencies": [
+        "numpy"
+      ],
+      "installed_sdk_version": null,
+      "binary_redistribution": "none",
+      "validation_boundary": "SDK-shaped fixtures and lifecycle tests do not establish hardware performance or actual operator placement"
+    },
+    {
+      "provider_id": "host.hnsw",
+      "vendor": "generic",
+      "runtime_family": "hnswlib",
+      "official_url": "https://github.com/nmslib/hnswlib",
+      "documentation_version_or_date": "Python public standard library / checked 2026-09-09",
+      "verified_on": "2026-09-09",
+      "supported_os": [
+        "Linux",
+        "Windows",
+        "Darwin"
+      ],
+      "public_sdk_status": "public API/SDK; local installation required",
+      "public_interface_used": "hnswlib.Index.init_index/add_items/knn_query",
+      "license_audit": "Apache-2.0 hnswlib",
+      "factory": "thm.runtime.fabric.indexes:HNSWGeneric",
+      "maturity": "L4",
+      "hardware_validation": "unvalidated",
+      "optional_dependencies": [
+        "hnswlib"
+      ],
+      "installed_sdk_version": null,
+      "binary_redistribution": "none",
+      "validation_boundary": "SDK-shaped fixtures and lifecycle tests do not establish hardware performance or actual operator placement"
+    },
+    {
+      "provider_id": "host.transfer",
+      "vendor": "generic",
+      "runtime_family": "memory",
+      "official_url": "https://docs.python.org/3/library/index.html",
+      "documentation_version_or_date": "Python public standard library / checked 2026-09-09",
+      "verified_on": "2026-09-09",
+      "supported_os": [
+        "Linux",
+        "Windows",
+        "Darwin"
+      ],
+      "public_sdk_status": "public API/SDK; local installation required",
+      "public_interface_used": "HostTransfer",
+      "license_audit": "THM MIT; Python PSF; optional packages separately licensed",
+      "factory": "thm.runtime.fabric.transfer:HostTransfer",
+      "maturity": "L4",
+      "hardware_validation": "unvalidated",
+      "optional_dependencies": [],
+      "installed_sdk_version": null,
+      "binary_redistribution": "none",
+      "validation_boundary": "SDK-shaped fixtures and lifecycle tests do not establish hardware performance or actual operator placement"
+    },
+    {
+      "provider_id": "cpu.onnxruntime",
+      "vendor": "generic",
+      "runtime_family": "ONNX-Runtime-CPU",
+      "official_url": "https://onnxruntime.ai/docs/api/python/api_summary.html",
+      "documentation_version_or_date": "ONNX Runtime current Python API checked 2026-09-09",
+      "verified_on": "2026-09-09",
+      "supported_os": [
+        "Linux",
+        "Windows",
+        "Darwin"
+      ],
+      "public_sdk_status": "public API/SDK; local installation required",
+      "public_interface_used": "InferenceSession/SessionOptions/CPUExecutionProvider",
+      "license_audit": "MIT ONNX Runtime",
+      "factory": "thm.runtime.fabric.inference:OrtInference",
+      "maturity": "L4",
+      "hardware_validation": "unvalidated",
+      "optional_dependencies": [
+        "onnxruntime"
+      ],
+      "installed_sdk_version": null,
+      "binary_redistribution": "none",
+      "validation_boundary": "SDK-shaped fixtures and lifecycle tests do not establish hardware performance or actual operator placement"
+    },
+    {
+      "provider_id": "intel.openvino-cpu",
+      "vendor": "intel",
+      "runtime_family": "OpenVINO-CPU",
+      "official_url": "https://docs.openvino.ai/2026/openvino-workflow.html",
+      "documentation_version_or_date": "OpenVINO 2026 documentation",
+      "verified_on": "2026-09-09",
+      "supported_os": [
+        "Linux",
+        "Windows",
+        "Darwin"
+      ],
+      "public_sdk_status": "public API/SDK; local installation required",
+      "public_interface_used": "OpenVINOInference",
+      "license_audit": "Apache-2.0 for OpenVINO; other Intel SDKs have separate terms",
+      "factory": "thm.runtime.fabric.inference:OpenVINOInference",
+      "maturity": "L4",
+      "hardware_validation": "unvalidated",
+      "optional_dependencies": [
+        "openvino"
+      ],
+      "installed_sdk_version": null,
+      "binary_redistribution": "none",
+      "validation_boundary": "SDK-shaped fixtures and lifecycle tests do not establish hardware performance or actual operator placement"
+    },
+    {
+      "provider_id": "cpu.inference",
+      "vendor": "generic",
+      "runtime_family": "torch",
+      "official_url": "https://sbert.net/docs/package_reference/sentence_transformer/SentenceTransformer.html",
+      "documentation_version_or_date": "SentenceTransformers 3–5 supported package range; installed Torch/device extension observed at probe",
+      "verified_on": "2026-09-09",
+      "supported_os": [
+        "Linux",
+        "Windows",
+        "Darwin"
+      ],
+      "public_sdk_status": "public API/SDK; local installation required",
+      "public_interface_used": "SentenceTransformer(local_files_only=True, trust_remote_code=False); Torch device tensor/argsort/synchronize APIs",
+      "license_audit": "Apache-2.0 SentenceTransformers; BSD-style PyTorch/extension source; device runtime terms separate",
+      "factory": "thm.runtime.fabric.inference:TorchInference",
+      "maturity": "L4",
+      "hardware_validation": "unvalidated",
+      "optional_dependencies": [
+        "torch",
+        "sentence-transformers"
+      ],
+      "installed_sdk_version": null,
+      "binary_redistribution": "none",
+      "validation_boundary": "SDK-shaped fixtures and lifecycle tests do not establish hardware performance or actual operator placement"
+    },
+    {
+      "provider_id": "nvidia.inference",
+      "vendor": "nvidia",
+      "runtime_family": "CUDA",
+      "official_url": "https://sbert.net/docs/package_reference/sentence_transformer/SentenceTransformer.html",
+      "documentation_version_or_date": "SentenceTransformers 3–5 supported package range; installed Torch/device extension observed at probe",
+      "verified_on": "2026-09-09",
+      "supported_os": [
+        "Linux",
+        "Windows"
+      ],
+      "public_sdk_status": "public API/SDK; local installation required",
+      "public_interface_used": "SentenceTransformer(local_files_only=True, trust_remote_code=False); Torch device tensor/argsort/synchronize APIs",
+      "license_audit": "Apache-2.0 SentenceTransformers; BSD-style PyTorch/extension source; device runtime terms separate",
+      "factory": "thm.runtime.fabric.inference:TorchInference",
+      "maturity": "L4",
+      "hardware_validation": "unvalidated",
+      "optional_dependencies": [
+        "torch",
+        "sentence-transformers"
+      ],
+      "installed_sdk_version": null,
+      "binary_redistribution": "none",
+      "validation_boundary": "SDK-shaped fixtures and lifecycle tests do not establish hardware performance or actual operator placement"
+    },
+    {
+      "provider_id": "nvidia.exact",
+      "vendor": "nvidia",
+      "runtime_family": "CUDA",
+      "official_url": "https://docs.pytorch.org/docs/stable/notes/cuda.html",
+      "documentation_version_or_date": "Public Torch device APIs checked 2026-09-09; extension/runtime versions observed locally",
+      "verified_on": "2026-09-09",
+      "supported_os": [
+        "Linux",
+        "Windows"
+      ],
+      "public_sdk_status": "public API/SDK; local installation required",
+      "public_interface_used": "Torch device tensor allocation, matmul, stable argsort, host/device copy and synchronize; vendor extension imported explicitly",
+      "license_audit": "Apache-2.0 SentenceTransformers; BSD-style PyTorch/extension source; device runtime terms separate",
+      "factory": "thm.runtime.fabric.indexes:ExactAccelerator",
+      "maturity": "L4",
+      "hardware_validation": "unvalidated",
+      "optional_dependencies": [
+        "torch"
+      ],
+      "installed_sdk_version": null,
+      "binary_redistribution": "none",
+      "validation_boundary": "SDK-shaped fixtures and lifecycle tests do not establish hardware performance or actual operator placement"
+    },
+    {
+      "provider_id": "nvidia.transfer",
+      "vendor": "nvidia",
+      "runtime_family": "CUDA",
+      "official_url": "https://docs.pytorch.org/docs/stable/notes/cuda.html",
+      "documentation_version_or_date": "Public Torch device APIs checked 2026-09-09; extension/runtime versions observed locally",
+      "verified_on": "2026-09-09",
+      "supported_os": [
+        "Linux",
+        "Windows"
+      ],
+      "public_sdk_status": "public API/SDK; local installation required",
+      "public_interface_used": "Torch device tensor allocation, matmul, stable argsort, host/device copy and synchronize; vendor extension imported explicitly",
+      "license_audit": "Apache-2.0 SentenceTransformers; BSD-style PyTorch/extension source; device runtime terms separate",
+      "factory": "thm.runtime.fabric.transfer:TorchTransfer",
+      "maturity": "L4",
+      "hardware_validation": "unvalidated",
+      "optional_dependencies": [
+        "torch"
+      ],
+      "installed_sdk_version": null,
+      "binary_redistribution": "none",
+      "validation_boundary": "SDK-shaped fixtures and lifecycle tests do not establish hardware performance or actual operator placement"
+    },
+    {
+      "provider_id": "amd.inference",
+      "vendor": "amd",
+      "runtime_family": "ROCm-HIP",
+      "official_url": "https://sbert.net/docs/package_reference/sentence_transformer/SentenceTransformer.html",
+      "documentation_version_or_date": "SentenceTransformers 3–5 supported package range; installed Torch/device extension observed at probe",
+      "verified_on": "2026-09-09",
+      "supported_os": [
+        "Linux",
+        "Windows"
+      ],
+      "public_sdk_status": "public API/SDK; local installation required",
+      "public_interface_used": "SentenceTransformer(local_files_only=True, trust_remote_code=False); Torch device tensor/argsort/synchronize APIs",
+      "license_audit": "Apache-2.0 SentenceTransformers; BSD-style PyTorch/extension source; device runtime terms separate",
+      "factory": "thm.runtime.fabric.inference:TorchInference",
+      "maturity": "L4",
+      "hardware_validation": "unvalidated",
+      "optional_dependencies": [
+        "torch",
+        "sentence-transformers"
+      ],
+      "installed_sdk_version": null,
+      "binary_redistribution": "none",
+      "validation_boundary": "SDK-shaped fixtures and lifecycle tests do not establish hardware performance or actual operator placement"
+    },
+    {
+      "provider_id": "amd.exact",
+      "vendor": "amd",
+      "runtime_family": "ROCm-HIP",
+      "official_url": "https://docs.pytorch.org/docs/stable/notes/cuda.html",
+      "documentation_version_or_date": "Public Torch device APIs checked 2026-09-09; extension/runtime versions observed locally",
+      "verified_on": "2026-09-09",
+      "supported_os": [
+        "Linux",
+        "Windows"
+      ],
+      "public_sdk_status": "public API/SDK; local installation required",
+      "public_interface_used": "Torch device tensor allocation, matmul, stable argsort, host/device copy and synchronize; vendor extension imported explicitly",
+      "license_audit": "Apache-2.0 SentenceTransformers; BSD-style PyTorch/extension source; device runtime terms separate",
+      "factory": "thm.runtime.fabric.indexes:ExactAccelerator",
+      "maturity": "L4",
+      "hardware_validation": "unvalidated",
+      "optional_dependencies": [
+        "torch"
+      ],
+      "installed_sdk_version": null,
+      "binary_redistribution": "none",
+      "validation_boundary": "SDK-shaped fixtures and lifecycle tests do not establish hardware performance or actual operator placement"
+    },
+    {
+      "provider_id": "amd.transfer",
+      "vendor": "amd",
+      "runtime_family": "ROCm-HIP",
+      "official_url": "https://docs.pytorch.org/docs/stable/notes/cuda.html",
+      "documentation_version_or_date": "Public Torch device APIs checked 2026-09-09; extension/runtime versions observed locally",
+      "verified_on": "2026-09-09",
+      "supported_os": [
+        "Linux",
+        "Windows"
+      ],
+      "public_sdk_status": "public API/SDK; local installation required",
+      "public_interface_used": "Torch device tensor allocation, matmul, stable argsort, host/device copy and synchronize; vendor extension imported explicitly",
+      "license_audit": "Apache-2.0 SentenceTransformers; BSD-style PyTorch/extension source; device runtime terms separate",
+      "factory": "thm.runtime.fabric.transfer:TorchTransfer",
+      "maturity": "L4",
+      "hardware_validation": "unvalidated",
+      "optional_dependencies": [
+        "torch"
+      ],
+      "installed_sdk_version": null,
+      "binary_redistribution": "none",
+      "validation_boundary": "SDK-shaped fixtures and lifecycle tests do not establish hardware performance or actual operator placement"
+    },
+    {
+      "provider_id": "intel.inference",
+      "vendor": "intel",
+      "runtime_family": "XPU",
+      "official_url": "https://sbert.net/docs/package_reference/sentence_transformer/SentenceTransformer.html",
+      "documentation_version_or_date": "SentenceTransformers 3–5 supported package range; installed Torch/device extension observed at probe",
+      "verified_on": "2026-09-09",
+      "supported_os": [
+        "Linux",
+        "Windows"
+      ],
+      "public_sdk_status": "public API/SDK; local installation required",
+      "public_interface_used": "SentenceTransformer(local_files_only=True, trust_remote_code=False); Torch device tensor/argsort/synchronize APIs",
+      "license_audit": "Apache-2.0 SentenceTransformers; BSD-style PyTorch/extension source; device runtime terms separate",
+      "factory": "thm.runtime.fabric.inference:TorchInference",
+      "maturity": "L4",
+      "hardware_validation": "unvalidated",
+      "optional_dependencies": [
+        "torch",
+        "sentence-transformers"
+      ],
+      "installed_sdk_version": null,
+      "binary_redistribution": "none",
+      "validation_boundary": "SDK-shaped fixtures and lifecycle tests do not establish hardware performance or actual operator placement"
+    },
+    {
+      "provider_id": "intel.exact",
+      "vendor": "intel",
+      "runtime_family": "XPU",
+      "official_url": "https://docs.pytorch.org/docs/stable/notes/cuda.html",
+      "documentation_version_or_date": "Public Torch device APIs checked 2026-09-09; extension/runtime versions observed locally",
+      "verified_on": "2026-09-09",
+      "supported_os": [
+        "Linux",
+        "Windows"
+      ],
+      "public_sdk_status": "public API/SDK; local installation required",
+      "public_interface_used": "Torch device tensor allocation, matmul, stable argsort, host/device copy and synchronize; vendor extension imported explicitly",
+      "license_audit": "Apache-2.0 SentenceTransformers; BSD-style PyTorch/extension source; device runtime terms separate",
+      "factory": "thm.runtime.fabric.indexes:ExactAccelerator",
+      "maturity": "L4",
+      "hardware_validation": "unvalidated",
+      "optional_dependencies": [
+        "torch"
+      ],
+      "installed_sdk_version": null,
+      "binary_redistribution": "none",
+      "validation_boundary": "SDK-shaped fixtures and lifecycle tests do not establish hardware performance or actual operator placement"
+    },
+    {
+      "provider_id": "intel.transfer",
+      "vendor": "intel",
+      "runtime_family": "XPU",
+      "official_url": "https://docs.pytorch.org/docs/stable/notes/cuda.html",
+      "documentation_version_or_date": "Public Torch device APIs checked 2026-09-09; extension/runtime versions observed locally",
+      "verified_on": "2026-09-09",
+      "supported_os": [
+        "Linux",
+        "Windows"
+      ],
+      "public_sdk_status": "public API/SDK; local installation required",
+      "public_interface_used": "Torch device tensor allocation, matmul, stable argsort, host/device copy and synchronize; vendor extension imported explicitly",
+      "license_audit": "Apache-2.0 SentenceTransformers; BSD-style PyTorch/extension source; device runtime terms separate",
+      "factory": "thm.runtime.fabric.transfer:TorchTransfer",
+      "maturity": "L4",
+      "hardware_validation": "unvalidated",
+      "optional_dependencies": [
+        "torch"
+      ],
+      "installed_sdk_version": null,
+      "binary_redistribution": "none",
+      "validation_boundary": "SDK-shaped fixtures and lifecycle tests do not establish hardware performance or actual operator placement"
+    },
+    {
+      "provider_id": "apple.inference",
+      "vendor": "apple",
+      "runtime_family": "MPS",
+      "official_url": "https://sbert.net/docs/package_reference/sentence_transformer/SentenceTransformer.html",
+      "documentation_version_or_date": "SentenceTransformers 3–5 supported package range; installed Torch/device extension observed at probe",
+      "verified_on": "2026-09-09",
+      "supported_os": [
+        "Darwin"
+      ],
+      "public_sdk_status": "public API/SDK; local installation required",
+      "public_interface_used": "SentenceTransformer(local_files_only=True, trust_remote_code=False); Torch device tensor/argsort/synchronize APIs",
+      "license_audit": "Apache-2.0 SentenceTransformers; BSD-style PyTorch/extension source; device runtime terms separate",
+      "factory": "thm.runtime.fabric.inference:TorchInference",
+      "maturity": "L4",
+      "hardware_validation": "unvalidated",
+      "optional_dependencies": [
+        "torch",
+        "sentence-transformers"
+      ],
+      "installed_sdk_version": null,
+      "binary_redistribution": "none",
+      "validation_boundary": "SDK-shaped fixtures and lifecycle tests do not establish hardware performance or actual operator placement"
+    },
+    {
+      "provider_id": "apple.exact",
+      "vendor": "apple",
+      "runtime_family": "MPS",
+      "official_url": "https://docs.pytorch.org/docs/stable/notes/cuda.html",
+      "documentation_version_or_date": "Public Torch device APIs checked 2026-09-09; extension/runtime versions observed locally",
+      "verified_on": "2026-09-09",
+      "supported_os": [
+        "Darwin"
+      ],
+      "public_sdk_status": "public API/SDK; local installation required",
+      "public_interface_used": "Torch device tensor allocation, matmul, stable argsort, host/device copy and synchronize; vendor extension imported explicitly",
+      "license_audit": "Apache-2.0 SentenceTransformers; BSD-style PyTorch/extension source; device runtime terms separate",
+      "factory": "thm.runtime.fabric.indexes:ExactAccelerator",
+      "maturity": "L4",
+      "hardware_validation": "unvalidated",
+      "optional_dependencies": [
+        "torch"
+      ],
+      "installed_sdk_version": null,
+      "binary_redistribution": "none",
+      "validation_boundary": "SDK-shaped fixtures and lifecycle tests do not establish hardware performance or actual operator placement"
+    },
+    {
+      "provider_id": "apple.transfer",
+      "vendor": "apple",
+      "runtime_family": "MPS",
+      "official_url": "https://docs.pytorch.org/docs/stable/notes/cuda.html",
+      "documentation_version_or_date": "Public Torch device APIs checked 2026-09-09; extension/runtime versions observed locally",
+      "verified_on": "2026-09-09",
+      "supported_os": [
+        "Darwin"
+      ],
+      "public_sdk_status": "public API/SDK; local installation required",
+      "public_interface_used": "Torch device tensor allocation, matmul, stable argsort, host/device copy and synchronize; vendor extension imported explicitly",
+      "license_audit": "Apache-2.0 SentenceTransformers; BSD-style PyTorch/extension source; device runtime terms separate",
+      "factory": "thm.runtime.fabric.transfer:TorchTransfer",
+      "maturity": "L4",
+      "hardware_validation": "unvalidated",
+      "optional_dependencies": [
+        "torch"
+      ],
+      "installed_sdk_version": null,
+      "binary_redistribution": "none",
+      "validation_boundary": "SDK-shaped fixtures and lifecycle tests do not establish hardware performance or actual operator placement"
+    },
+    {
+      "provider_id": "ascend.inference",
+      "vendor": "ascend",
+      "runtime_family": "CANN-TorchNPU",
+      "official_url": "https://github.com/Ascend/pytorch",
+      "documentation_version_or_date": "SentenceTransformers 3–5 supported package range; installed Torch/device extension observed at probe",
+      "verified_on": "2026-09-09",
+      "supported_os": [
+        "Linux"
+      ],
+      "public_sdk_status": "public API/SDK; local installation required",
+      "public_interface_used": "SentenceTransformer(local_files_only=True, trust_remote_code=False); Torch device tensor/argsort/synchronize APIs",
+      "license_audit": "Apache-2.0 SentenceTransformers; BSD-style PyTorch/extension source; device runtime terms separate",
+      "factory": "thm.runtime.fabric.inference:TorchInference",
+      "maturity": "L4",
+      "hardware_validation": "unvalidated",
+      "optional_dependencies": [
+        "torch",
+        "torch-npu",
+        "sentence-transformers"
+      ],
+      "installed_sdk_version": null,
+      "binary_redistribution": "none",
+      "validation_boundary": "SDK-shaped fixtures and lifecycle tests do not establish hardware performance or actual operator placement"
+    },
+    {
+      "provider_id": "ascend.exact",
+      "vendor": "ascend",
+      "runtime_family": "CANN-TorchNPU",
+      "official_url": "https://docs.pytorch.org/docs/stable/notes/cuda.html",
+      "documentation_version_or_date": "Public Torch device APIs checked 2026-09-09; extension/runtime versions observed locally",
+      "verified_on": "2026-09-09",
+      "supported_os": [
+        "Linux"
+      ],
+      "public_sdk_status": "public API/SDK; local installation required",
+      "public_interface_used": "Torch device tensor allocation, matmul, stable argsort, host/device copy and synchronize; vendor extension imported explicitly",
+      "license_audit": "Apache-2.0 SentenceTransformers; BSD-style PyTorch/extension source; device runtime terms separate",
+      "factory": "thm.runtime.fabric.indexes:ExactAccelerator",
+      "maturity": "L4",
+      "hardware_validation": "unvalidated",
+      "optional_dependencies": [
+        "torch",
+        "torch-npu"
+      ],
+      "installed_sdk_version": null,
+      "binary_redistribution": "none",
+      "validation_boundary": "SDK-shaped fixtures and lifecycle tests do not establish hardware performance or actual operator placement"
+    },
+    {
+      "provider_id": "ascend.transfer",
+      "vendor": "ascend",
+      "runtime_family": "CANN-TorchNPU",
+      "official_url": "https://docs.pytorch.org/docs/stable/notes/cuda.html",
+      "documentation_version_or_date": "Public Torch device APIs checked 2026-09-09; extension/runtime versions observed locally",
+      "verified_on": "2026-09-09",
+      "supported_os": [
+        "Linux"
+      ],
+      "public_sdk_status": "public API/SDK; local installation required",
+      "public_interface_used": "Torch device tensor allocation, matmul, stable argsort, host/device copy and synchronize; vendor extension imported explicitly",
+      "license_audit": "Apache-2.0 SentenceTransformers; BSD-style PyTorch/extension source; device runtime terms separate",
+      "factory": "thm.runtime.fabric.transfer:TorchTransfer",
+      "maturity": "L4",
+      "hardware_validation": "unvalidated",
+      "optional_dependencies": [
+        "torch",
+        "torch-npu"
+      ],
+      "installed_sdk_version": null,
+      "binary_redistribution": "none",
+      "validation_boundary": "SDK-shaped fixtures and lifecycle tests do not establish hardware performance or actual operator placement"
+    },
+    {
+      "provider_id": "musa.inference",
+      "vendor": "musa",
+      "runtime_family": "MUSA",
+      "official_url": "https://docs.mthreads.com/musa-sdk/version-5.2.0/introduction/",
+      "documentation_version_or_date": "SentenceTransformers 3–5 supported package range; installed Torch/device extension observed at probe",
+      "verified_on": "2026-09-09",
+      "supported_os": [
+        "Linux"
+      ],
+      "public_sdk_status": "public API/SDK; local installation required",
+      "public_interface_used": "SentenceTransformer(local_files_only=True, trust_remote_code=False); Torch device tensor/argsort/synchronize APIs",
+      "license_audit": "Apache-2.0 SentenceTransformers; BSD-style PyTorch/extension source; device runtime terms separate",
+      "factory": "thm.runtime.fabric.inference:TorchInference",
+      "maturity": "L4",
+      "hardware_validation": "unvalidated",
+      "optional_dependencies": [
+        "torch",
+        "torch-musa",
+        "sentence-transformers"
+      ],
+      "installed_sdk_version": null,
+      "binary_redistribution": "none",
+      "validation_boundary": "SDK-shaped fixtures and lifecycle tests do not establish hardware performance or actual operator placement"
+    },
+    {
+      "provider_id": "musa.exact",
+      "vendor": "musa",
+      "runtime_family": "MUSA",
+      "official_url": "https://docs.pytorch.org/docs/stable/notes/cuda.html",
+      "documentation_version_or_date": "Public Torch device APIs checked 2026-09-09; extension/runtime versions observed locally",
+      "verified_on": "2026-09-09",
+      "supported_os": [
+        "Linux"
+      ],
+      "public_sdk_status": "public API/SDK; local installation required",
+      "public_interface_used": "Torch device tensor allocation, matmul, stable argsort, host/device copy and synchronize; vendor extension imported explicitly",
+      "license_audit": "Apache-2.0 SentenceTransformers; BSD-style PyTorch/extension source; device runtime terms separate",
+      "factory": "thm.runtime.fabric.indexes:ExactAccelerator",
+      "maturity": "L4",
+      "hardware_validation": "unvalidated",
+      "optional_dependencies": [
+        "torch",
+        "torch-musa"
+      ],
+      "installed_sdk_version": null,
+      "binary_redistribution": "none",
+      "validation_boundary": "SDK-shaped fixtures and lifecycle tests do not establish hardware performance or actual operator placement"
+    },
+    {
+      "provider_id": "musa.transfer",
+      "vendor": "musa",
+      "runtime_family": "MUSA",
+      "official_url": "https://docs.pytorch.org/docs/stable/notes/cuda.html",
+      "documentation_version_or_date": "Public Torch device APIs checked 2026-09-09; extension/runtime versions observed locally",
+      "verified_on": "2026-09-09",
+      "supported_os": [
+        "Linux"
+      ],
+      "public_sdk_status": "public API/SDK; local installation required",
+      "public_interface_used": "Torch device tensor allocation, matmul, stable argsort, host/device copy and synchronize; vendor extension imported explicitly",
+      "license_audit": "Apache-2.0 SentenceTransformers; BSD-style PyTorch/extension source; device runtime terms separate",
+      "factory": "thm.runtime.fabric.transfer:TorchTransfer",
+      "maturity": "L4",
+      "hardware_validation": "unvalidated",
+      "optional_dependencies": [
+        "torch",
+        "torch-musa"
+      ],
+      "installed_sdk_version": null,
+      "binary_redistribution": "none",
+      "validation_boundary": "SDK-shaped fixtures and lifecycle tests do not establish hardware performance or actual operator placement"
+    },
+    {
+      "provider_id": "cambricon.inference",
+      "vendor": "cambricon",
+      "runtime_family": "CNRT-CNNL",
+      "official_url": "https://github.com/Cambricon/torch_mlu",
+      "documentation_version_or_date": "SentenceTransformers 3–5 supported package range; installed Torch/device extension observed at probe",
+      "verified_on": "2026-09-09",
+      "supported_os": [
+        "Linux"
+      ],
+      "public_sdk_status": "public API/SDK; local installation required",
+      "public_interface_used": "SentenceTransformer(local_files_only=True, trust_remote_code=False); Torch device tensor/argsort/synchronize APIs",
+      "license_audit": "Apache-2.0 SentenceTransformers; current torch_mlu exact license unverified; vendor runtime terms",
+      "factory": "thm.runtime.fabric.inference:TorchInference",
+      "maturity": "L4",
+      "hardware_validation": "unvalidated",
+      "optional_dependencies": [
+        "torch",
+        "torch-mlu",
+        "sentence-transformers"
+      ],
+      "installed_sdk_version": null,
+      "binary_redistribution": "none",
+      "validation_boundary": "SDK-shaped fixtures and lifecycle tests do not establish hardware performance or actual operator placement"
+    },
+    {
+      "provider_id": "cambricon.exact",
+      "vendor": "cambricon",
+      "runtime_family": "CNRT-CNNL",
+      "official_url": "https://docs.pytorch.org/docs/stable/notes/cuda.html",
+      "documentation_version_or_date": "Public Torch device APIs checked 2026-09-09; extension/runtime versions observed locally",
+      "verified_on": "2026-09-09",
+      "supported_os": [
+        "Linux"
+      ],
+      "public_sdk_status": "public API/SDK; local installation required",
+      "public_interface_used": "Torch device tensor allocation, matmul, stable argsort, host/device copy and synchronize; vendor extension imported explicitly",
+      "license_audit": "Apache-2.0 SentenceTransformers; current torch_mlu exact license unverified; vendor runtime terms",
+      "factory": "thm.runtime.fabric.indexes:ExactAccelerator",
+      "maturity": "L4",
+      "hardware_validation": "unvalidated",
+      "optional_dependencies": [
+        "torch",
+        "torch-mlu"
+      ],
+      "installed_sdk_version": null,
+      "binary_redistribution": "none",
+      "validation_boundary": "SDK-shaped fixtures and lifecycle tests do not establish hardware performance or actual operator placement"
+    },
+    {
+      "provider_id": "cambricon.transfer",
+      "vendor": "cambricon",
+      "runtime_family": "CNRT-CNNL",
+      "official_url": "https://docs.pytorch.org/docs/stable/notes/cuda.html",
+      "documentation_version_or_date": "Public Torch device APIs checked 2026-09-09; extension/runtime versions observed locally",
+      "verified_on": "2026-09-09",
+      "supported_os": [
+        "Linux"
+      ],
+      "public_sdk_status": "public API/SDK; local installation required",
+      "public_interface_used": "Torch device tensor allocation, matmul, stable argsort, host/device copy and synchronize; vendor extension imported explicitly",
+      "license_audit": "Apache-2.0 SentenceTransformers; current torch_mlu exact license unverified; vendor runtime terms",
+      "factory": "thm.runtime.fabric.transfer:TorchTransfer",
+      "maturity": "L4",
+      "hardware_validation": "unvalidated",
+      "optional_dependencies": [
+        "torch",
+        "torch-mlu"
+      ],
+      "installed_sdk_version": null,
+      "binary_redistribution": "none",
+      "validation_boundary": "SDK-shaped fixtures and lifecycle tests do not establish hardware performance or actual operator placement"
+    },
+    {
+      "provider_id": "metax.inference",
+      "vendor": "metax",
+      "runtime_family": "MXMACA-mcPyTorch",
+      "official_url": "https://developer.metax-tech.com/api/client/document/preview/355/C500_mcFaissManual_CN.html",
+      "documentation_version_or_date": "SentenceTransformers 3–5 supported package range; installed Torch/device extension observed at probe",
+      "verified_on": "2026-09-09",
+      "supported_os": [
+        "Linux"
+      ],
+      "public_sdk_status": "public API/SDK; local installation required",
+      "public_interface_used": "SentenceTransformer(local_files_only=True, trust_remote_code=False); Torch device tensor/argsort/synchronize APIs",
+      "license_audit": "Apache-2.0 SentenceTransformers; BSD-style PyTorch/extension source; device runtime terms separate",
+      "factory": "thm.runtime.fabric.inference:TorchInference",
+      "maturity": "L4",
+      "hardware_validation": "unvalidated",
+      "optional_dependencies": [
+        "torch",
+        "sentence-transformers"
+      ],
+      "installed_sdk_version": null,
+      "binary_redistribution": "none",
+      "validation_boundary": "SDK-shaped fixtures and lifecycle tests do not establish hardware performance or actual operator placement"
+    },
+    {
+      "provider_id": "metax.exact",
+      "vendor": "metax",
+      "runtime_family": "MXMACA-mcPyTorch",
+      "official_url": "https://docs.pytorch.org/docs/stable/notes/cuda.html",
+      "documentation_version_or_date": "Public Torch device APIs checked 2026-09-09; extension/runtime versions observed locally",
+      "verified_on": "2026-09-09",
+      "supported_os": [
+        "Linux"
+      ],
+      "public_sdk_status": "public API/SDK; local installation required",
+      "public_interface_used": "Torch device tensor allocation, matmul, stable argsort, host/device copy and synchronize; vendor extension imported explicitly",
+      "license_audit": "Apache-2.0 SentenceTransformers; BSD-style PyTorch/extension source; device runtime terms separate",
+      "factory": "thm.runtime.fabric.indexes:ExactAccelerator",
+      "maturity": "L4",
+      "hardware_validation": "unvalidated",
+      "optional_dependencies": [
+        "torch"
+      ],
+      "installed_sdk_version": null,
+      "binary_redistribution": "none",
+      "validation_boundary": "SDK-shaped fixtures and lifecycle tests do not establish hardware performance or actual operator placement"
+    },
+    {
+      "provider_id": "metax.transfer",
+      "vendor": "metax",
+      "runtime_family": "MXMACA-mcPyTorch",
+      "official_url": "https://docs.pytorch.org/docs/stable/notes/cuda.html",
+      "documentation_version_or_date": "Public Torch device APIs checked 2026-09-09; extension/runtime versions observed locally",
+      "verified_on": "2026-09-09",
+      "supported_os": [
+        "Linux"
+      ],
+      "public_sdk_status": "public API/SDK; local installation required",
+      "public_interface_used": "Torch device tensor allocation, matmul, stable argsort, host/device copy and synchronize; vendor extension imported explicitly",
+      "license_audit": "Apache-2.0 SentenceTransformers; BSD-style PyTorch/extension source; device runtime terms separate",
+      "factory": "thm.runtime.fabric.transfer:TorchTransfer",
+      "maturity": "L4",
+      "hardware_validation": "unvalidated",
+      "optional_dependencies": [
+        "torch"
+      ],
+      "installed_sdk_version": null,
+      "binary_redistribution": "none",
+      "validation_boundary": "SDK-shaped fixtures and lifecycle tests do not establish hardware performance or actual operator placement"
+    },
+    {
+      "provider_id": "nvidia.rtx-native",
+      "vendor": "nvidia",
+      "runtime_family": "TensorRT-RTX-AOT-JIT",
+      "official_url": "https://docs.nvidia.com/deeplearning/tensorrt-rtx/latest/inference-library/python-api-docs.html",
+      "documentation_version_or_date": "TensorRT-RTX 1.6 / documentation checked 2026-09-09",
+      "verified_on": "2026-09-09",
+      "supported_os": [
+        "Linux",
+        "Windows"
+      ],
+      "public_sdk_status": "public API/SDK; local installation required",
+      "public_interface_used": "TensorRTRTXInference",
+      "license_audit": "NVIDIA SDK terms; separately licensed Python wrappers",
+      "factory": "thm.runtime.fabric.rtx:TensorRTRTXInference",
+      "maturity": "L4",
+      "hardware_validation": "unvalidated",
+      "optional_dependencies": [
+        "tensorrt-rtx"
+      ],
+      "installed_sdk_version": null,
+      "binary_redistribution": "none",
+      "validation_boundary": "SDK-shaped fixtures and lifecycle tests do not establish hardware performance or actual operator placement"
+    },
+    {
+      "provider_id": "nvidia.tensorrt-rtx",
+      "vendor": "nvidia",
+      "runtime_family": "TensorRT-RTX-EP-ABI",
+      "official_url": "https://onnxruntime.ai/docs/execution-providers/TensorRTRTX-ExecutionProvider.html",
+      "documentation_version_or_date": "TensorRT-RTX 1.6 / documentation checked 2026-09-09",
+      "verified_on": "2026-09-09",
+      "supported_os": [
+        "Linux",
+        "Windows"
+      ],
+      "public_sdk_status": "public API/SDK; local installation required",
+      "public_interface_used": "NvTensorRTRTXExecutionProvider; local EP ABI registration/device selection",
+      "license_audit": "MIT ONNX Runtime; NVIDIA TensorRT-RTX SDK terms",
+      "factory": "thm.runtime.fabric.inference:OrtInference",
+      "maturity": "L4",
+      "hardware_validation": "unvalidated",
+      "optional_dependencies": [
+        "onnxruntime"
+      ],
+      "installed_sdk_version": null,
+      "binary_redistribution": "none",
+      "validation_boundary": "SDK-shaped fixtures and lifecycle tests do not establish hardware performance or actual operator placement"
+    },
+    {
+      "provider_id": "amd.migraphx",
+      "vendor": "amd",
+      "runtime_family": "MIGraphX",
+      "official_url": "https://rocm.docs.amd.com/projects/AMDMIGraphX/en/develop/reference/MIGraphX-py.html",
+      "documentation_version_or_date": "MIGraphX 2.15 API / checked 2026-09-09",
+      "verified_on": "2026-09-09",
+      "supported_os": [
+        "Linux"
+      ],
+      "public_sdk_status": "public API/SDK; local installation required",
+      "public_interface_used": "MIGraphXInference",
+      "license_audit": "MIT for MIGraphX and AMD SMI sources; verify each installed ROCm component",
+      "factory": "thm.runtime.fabric.inference:MIGraphXInference",
+      "maturity": "L4",
+      "hardware_validation": "unvalidated",
+      "optional_dependencies": [
+        "migraphx"
+      ],
+      "installed_sdk_version": null,
+      "binary_redistribution": "none",
+      "validation_boundary": "SDK-shaped fixtures and lifecycle tests do not establish hardware performance or actual operator placement"
+    },
+    {
+      "provider_id": "amd.migraphx-ep",
+      "vendor": "amd",
+      "runtime_family": "MIGraphX-EP",
+      "official_url": "https://rocm.docs.amd.com/projects/AMDMIGraphX/en/develop/reference/MIGraphX-py.html",
+      "documentation_version_or_date": "MIGraphX 2.15 API / checked 2026-09-09",
+      "verified_on": "2026-09-09",
+      "supported_os": [
+        "Linux",
+        "Windows"
+      ],
+      "public_sdk_status": "public API/SDK; local installation required",
+      "public_interface_used": "OrtInference",
+      "license_audit": "MIT for MIGraphX and AMD SMI sources; verify each installed ROCm component",
+      "factory": "thm.runtime.fabric.inference:OrtInference",
+      "maturity": "L4",
+      "hardware_validation": "unvalidated",
+      "optional_dependencies": [
+        "onnxruntime"
+      ],
+      "installed_sdk_version": null,
+      "binary_redistribution": "none",
+      "validation_boundary": "SDK-shaped fixtures and lifecycle tests do not establish hardware performance or actual operator placement"
+    },
+    {
+      "provider_id": "intel.openvino",
+      "vendor": "intel",
+      "runtime_family": "OpenVINO-AUTO",
+      "official_url": "https://docs.openvino.ai/2026/openvino-workflow.html",
+      "documentation_version_or_date": "OpenVINO 2026 documentation",
+      "verified_on": "2026-09-09",
+      "supported_os": [
+        "Linux",
+        "Windows",
+        "Darwin"
+      ],
+      "public_sdk_status": "public API/SDK; local installation required",
+      "public_interface_used": "OpenVINOInference",
+      "license_audit": "Apache-2.0 for OpenVINO; other Intel SDKs have separate terms",
+      "factory": "thm.runtime.fabric.inference:OpenVINOInference",
+      "maturity": "L4",
+      "hardware_validation": "unvalidated",
+      "optional_dependencies": [
+        "openvino"
+      ],
+      "installed_sdk_version": null,
+      "binary_redistribution": "none",
+      "validation_boundary": "SDK-shaped fixtures and lifecycle tests do not establish hardware performance or actual operator placement"
+    },
+    {
+      "provider_id": "apple.coreml",
+      "vendor": "apple",
+      "runtime_family": "CoreML",
+      "official_url": "https://developer.apple.com/documentation/coreml/mlcomputeunits",
+      "documentation_version_or_date": "Core ML public SDK / checked 2026-09-09",
+      "verified_on": "2026-09-09",
+      "supported_os": [
+        "Darwin"
+      ],
+      "public_sdk_status": "public API/SDK; local installation required",
+      "public_interface_used": "CoreMLInference",
+      "license_audit": "BSD-3-Clause for coremltools; Apple platform SDK terms",
+      "factory": "thm.runtime.fabric.inference:CoreMLInference",
+      "maturity": "L4",
+      "hardware_validation": "unvalidated",
+      "optional_dependencies": [
+        "coremltools"
+      ],
+      "installed_sdk_version": null,
+      "binary_redistribution": "none",
+      "validation_boundary": "SDK-shaped fixtures and lifecycle tests do not establish hardware performance or actual operator placement"
+    },
+    {
+      "provider_id": "qualcomm.qnn",
+      "vendor": "qualcomm",
+      "runtime_family": "QNN-HTP",
+      "official_url": "https://onnxruntime.ai/docs/execution-providers/QNN-ExecutionProvider.html",
+      "documentation_version_or_date": "ORT QNN EP documentation / checked 2026-09-09",
+      "verified_on": "2026-09-09",
+      "supported_os": [
+        "Windows",
+        "Linux"
+      ],
+      "public_sdk_status": "public API/SDK; local installation required",
+      "public_interface_used": "OrtInference",
+      "license_audit": "MIT for ONNX Runtime; Qualcomm QNN SDK terms",
+      "factory": "thm.runtime.fabric.inference:OrtInference",
+      "maturity": "L4",
+      "hardware_validation": "unvalidated",
+      "optional_dependencies": [
+        "onnxruntime-qnn"
+      ],
+      "installed_sdk_version": null,
+      "binary_redistribution": "none",
+      "validation_boundary": "SDK-shaped fixtures and lifecycle tests do not establish hardware performance or actual operator placement"
+    },
+    {
+      "provider_id": "windows.directml",
+      "vendor": "microsoft",
+      "runtime_family": "DirectML",
+      "official_url": "https://onnxruntime.ai/docs/execution-providers/DirectML-ExecutionProvider.html",
+      "documentation_version_or_date": "Windows ML API reference 2026-05-30",
+      "verified_on": "2026-09-09",
+      "supported_os": [
+        "Windows"
+      ],
+      "public_sdk_status": "public API/SDK; local installation required",
+      "public_interface_used": "DmlExecutionProvider; CPU fallback disabled",
+      "license_audit": "MIT ONNX Runtime; DirectML/Windows SDK terms",
+      "factory": "thm.runtime.fabric.inference:OrtInference",
+      "maturity": "L4",
+      "hardware_validation": "unvalidated",
+      "optional_dependencies": [
+        "onnxruntime-directml"
+      ],
+      "installed_sdk_version": null,
+      "binary_redistribution": "none",
+      "validation_boundary": "SDK-shaped fixtures and lifecycle tests do not establish hardware performance or actual operator placement"
+    },
+    {
+      "provider_id": "nvidia.cuvs.brute_force",
+      "vendor": "nvidia",
+      "runtime_family": "cuVS",
+      "official_url": "https://docs.nvidia.com/cuvs/api-reference/python-api-neighbors-brute-force",
+      "documentation_version_or_date": "cuVS current Python API checked 2026-09-09",
+      "verified_on": "2026-09-09",
+      "supported_os": [
+        "Linux"
+      ],
+      "public_sdk_status": "public API/SDK; local installation required",
+      "public_interface_used": "cuvs.neighbors.brute_force.build/search; native index/search parameter types",
+      "license_audit": "Apache-2.0 cuVS; CUDA runtime terms separate",
+      "factory": "thm.runtime.fabric.native:CuvsProvider",
+      "maturity": "L4",
+      "hardware_validation": "unvalidated",
+      "optional_dependencies": [
+        "cuvs-cu12"
+      ],
+      "installed_sdk_version": null,
+      "binary_redistribution": "none",
+      "validation_boundary": "SDK-shaped fixtures and lifecycle tests do not establish hardware performance or actual operator placement"
+    },
+    {
+      "provider_id": "nvidia.cuvs.cagra",
+      "vendor": "nvidia",
+      "runtime_family": "cuVS",
+      "official_url": "https://docs.nvidia.com/cuvs/api-reference/python-api-neighbors-cagra",
+      "documentation_version_or_date": "cuVS current Python API checked 2026-09-09",
+      "verified_on": "2026-09-09",
+      "supported_os": [
+        "Linux"
+      ],
+      "public_sdk_status": "public API/SDK; local installation required",
+      "public_interface_used": "cuvs.neighbors.cagra.build/search; native index/search parameter types",
+      "license_audit": "Apache-2.0 cuVS; CUDA runtime terms separate",
+      "factory": "thm.runtime.fabric.native:CuvsProvider",
+      "maturity": "L4",
+      "hardware_validation": "unvalidated",
+      "optional_dependencies": [
+        "cuvs-cu12"
+      ],
+      "installed_sdk_version": null,
+      "binary_redistribution": "none",
+      "validation_boundary": "SDK-shaped fixtures and lifecycle tests do not establish hardware performance or actual operator placement"
+    },
+    {
+      "provider_id": "nvidia.cuvs.ivf_flat",
+      "vendor": "nvidia",
+      "runtime_family": "cuVS",
+      "official_url": "https://docs.nvidia.com/cuvs/api-reference/python-api-neighbors-ivf-flat",
+      "documentation_version_or_date": "cuVS current Python API checked 2026-09-09",
+      "verified_on": "2026-09-09",
+      "supported_os": [
+        "Linux"
+      ],
+      "public_sdk_status": "public API/SDK; local installation required",
+      "public_interface_used": "cuvs.neighbors.ivf_flat.build/search; native index/search parameter types",
+      "license_audit": "Apache-2.0 cuVS; CUDA runtime terms separate",
+      "factory": "thm.runtime.fabric.native:CuvsProvider",
+      "maturity": "L4",
+      "hardware_validation": "unvalidated",
+      "optional_dependencies": [
+        "cuvs-cu12"
+      ],
+      "installed_sdk_version": null,
+      "binary_redistribution": "none",
+      "validation_boundary": "SDK-shaped fixtures and lifecycle tests do not establish hardware performance or actual operator placement"
+    },
+    {
+      "provider_id": "nvidia.cuvs.ivf_pq",
+      "vendor": "nvidia",
+      "runtime_family": "cuVS",
+      "official_url": "https://docs.nvidia.com/cuvs/api-reference/python-api-neighbors-ivf-pq",
+      "documentation_version_or_date": "cuVS current Python API checked 2026-09-09",
+      "verified_on": "2026-09-09",
+      "supported_os": [
+        "Linux"
+      ],
+      "public_sdk_status": "public API/SDK; local installation required",
+      "public_interface_used": "cuvs.neighbors.ivf_pq.build/search; native index/search parameter types",
+      "license_audit": "Apache-2.0 cuVS; CUDA runtime terms separate",
+      "factory": "thm.runtime.fabric.native:CuvsProvider",
+      "maturity": "L4",
+      "hardware_validation": "unvalidated",
+      "optional_dependencies": [
+        "cuvs-cu12"
+      ],
+      "installed_sdk_version": null,
+      "binary_redistribution": "none",
+      "validation_boundary": "SDK-shaped fixtures and lifecycle tests do not establish hardware performance or actual operator placement"
+    },
+    {
+      "provider_id": "nvidia.cuvs.ivf_sq",
+      "vendor": "nvidia",
+      "runtime_family": "cuVS",
+      "official_url": "https://docs.nvidia.com/cuvs/api-reference/python-api-neighbors-ivf-sq",
+      "documentation_version_or_date": "cuVS current Python API checked 2026-09-09",
+      "verified_on": "2026-09-09",
+      "supported_os": [
+        "Linux"
+      ],
+      "public_sdk_status": "public API/SDK; local installation required",
+      "public_interface_used": "cuvs.neighbors.ivf_sq.build/search; native index/search parameter types",
+      "license_audit": "Apache-2.0 cuVS; CUDA runtime terms separate",
+      "factory": "thm.runtime.fabric.native:CuvsProvider",
+      "maturity": "L4",
+      "hardware_validation": "unvalidated",
+      "optional_dependencies": [
+        "cuvs-cu12"
+      ],
+      "installed_sdk_version": null,
+      "binary_redistribution": "none",
+      "validation_boundary": "SDK-shaped fixtures and lifecycle tests do not establish hardware performance or actual operator placement"
+    },
+    {
+      "provider_id": "nvidia.cuvs.tiered_index",
+      "vendor": "nvidia",
+      "runtime_family": "cuVS",
+      "official_url": "https://docs.nvidia.com/cuvs/api-reference/python-api-neighbors-tiered-index",
+      "documentation_version_or_date": "cuVS current Python API checked 2026-09-09",
+      "verified_on": "2026-09-09",
+      "supported_os": [
+        "Linux"
+      ],
+      "public_sdk_status": "public API/SDK; local installation required",
+      "public_interface_used": "cuvs.neighbors.tiered_index.build/search; native index/search parameter types",
+      "license_audit": "Apache-2.0 cuVS; CUDA runtime terms separate",
+      "factory": "thm.runtime.fabric.native:CuvsProvider",
+      "maturity": "L4",
+      "hardware_validation": "unvalidated",
+      "optional_dependencies": [
+        "cuvs-cu12"
+      ],
+      "installed_sdk_version": null,
+      "binary_redistribution": "none",
+      "validation_boundary": "SDK-shaped fixtures and lifecycle tests do not establish hardware performance or actual operator placement"
+    },
+    {
+      "provider_id": "nvidia.cuvs.vamana",
+      "vendor": "nvidia",
+      "runtime_family": "cuVS",
+      "official_url": "https://docs.nvidia.com/cuvs/user-guide/api-guides/indexing-guide/vamana",
+      "documentation_version_or_date": "cuVS current Python API checked 2026-09-09",
+      "verified_on": "2026-09-09",
+      "supported_os": [
+        "Linux"
+      ],
+      "public_sdk_status": "public API/SDK; local installation required",
+      "public_interface_used": "GPU build and DiskANN export only; no GPU serving search",
+      "license_audit": "Apache-2.0 cuVS; CUDA runtime terms separate",
+      "factory": "thm.runtime.fabric.native:CuvsProvider",
+      "maturity": "L2",
+      "hardware_validation": "unvalidated",
+      "optional_dependencies": [
+        "cuvs-cu12"
+      ],
+      "installed_sdk_version": null,
+      "binary_redistribution": "none",
+      "validation_boundary": "SDK-shaped fixtures and lifecycle tests do not establish hardware performance or actual operator placement"
+    },
+    {
+      "provider_id": "metax.mcfaiss",
+      "vendor": "metax",
+      "runtime_family": "MXMACA-mcFaiss",
+      "official_url": "https://developer.metax-tech.com/api/client/document/preview/355/C500_mcFaissManual_CN.html",
+      "documentation_version_or_date": "Public mcFaiss manual / checked 2026-09-09",
+      "verified_on": "2026-09-09",
+      "supported_os": [
+        "Linux"
+      ],
+      "public_sdk_status": "public API/SDK; local installation required",
+      "public_interface_used": "McFaissProvider",
+      "license_audit": "MetaX SDK terms; package provenance must be verified locally",
+      "factory": "thm.runtime.fabric.native:McFaissProvider",
+      "maturity": "L4",
+      "hardware_validation": "unvalidated",
+      "optional_dependencies": [],
+      "installed_sdk_version": null,
+      "binary_redistribution": "none",
+      "validation_boundary": "SDK-shaped fixtures and lifecycle tests do not establish hardware performance or actual operator placement"
+    },
+    {
+      "provider_id": "windows.catalog",
+      "vendor": "microsoft",
+      "runtime_family": "WindowsML",
+      "official_url": "https://learn.microsoft.com/en-us/windows/ai/new-windows-ml/api-reference",
+      "documentation_version_or_date": "Windows ML API reference 2026-05-30",
+      "verified_on": "2026-09-09",
+      "supported_os": [
+        "Windows"
+      ],
+      "public_sdk_status": "public API/SDK; local installation required",
+      "public_interface_used": "WindowsMLCatalog",
+      "license_audit": "Windows SDK terms; MIT for ONNX Runtime",
+      "factory": "thm.runtime.fabric.native:WindowsMLCatalog",
+      "maturity": "L4",
+      "hardware_validation": "unvalidated",
+      "optional_dependencies": [],
+      "installed_sdk_version": null,
+      "binary_redistribution": "none",
+      "validation_boundary": "SDK-shaped fixtures and lifecycle tests do not establish hardware performance or actual operator placement"
+    },
+    {
+      "provider_id": "nvidia.cufile",
+      "vendor": "nvidia",
+      "runtime_family": "cuFile-GDS",
+      "official_url": "https://docs.nvidia.com/deeplearning/tensorrt-rtx/latest/inference-library/python-api-docs.html",
+      "documentation_version_or_date": "TensorRT-RTX 1.6 / documentation checked 2026-09-09",
+      "verified_on": "2026-09-09",
+      "supported_os": [
+        "Linux",
+        "Windows",
+        "Darwin"
+      ],
+      "public_sdk_status": "public API/SDK; local installation required",
+      "public_interface_used": "ctypes.util.find_library and explicit extension bridge",
+      "license_audit": "NVIDIA SDK terms; separately licensed Python wrappers",
+      "factory": "thm.runtime.fabric.native:NativeExtensionSeam",
+      "maturity": "L1",
+      "hardware_validation": "unvalidated",
+      "optional_dependencies": [],
+      "installed_sdk_version": null,
+      "binary_redistribution": "none",
+      "validation_boundary": "SDK-shaped fixtures and lifecycle tests do not establish hardware performance or actual operator placement"
+    },
+    {
+      "provider_id": "amd.hipblaslt",
+      "vendor": "amd",
+      "runtime_family": "hipBLASLt",
+      "official_url": "https://rocm.docs.amd.com/projects/AMDMIGraphX/en/develop/reference/MIGraphX-py.html",
+      "documentation_version_or_date": "MIGraphX 2.15 API / checked 2026-09-09",
+      "verified_on": "2026-09-09",
+      "supported_os": [
+        "Linux",
+        "Windows",
+        "Darwin"
+      ],
+      "public_sdk_status": "public API/SDK; local installation required",
+      "public_interface_used": "ctypes.util.find_library and explicit extension bridge",
+      "license_audit": "MIT for MIGraphX and AMD SMI sources; verify each installed ROCm component",
+      "factory": "thm.runtime.fabric.native:NativeExtensionSeam",
+      "maturity": "L1",
+      "hardware_validation": "unvalidated",
+      "optional_dependencies": [],
+      "installed_sdk_version": null,
+      "binary_redistribution": "none",
+      "validation_boundary": "SDK-shaped fixtures and lifecycle tests do not establish hardware performance or actual operator placement"
+    },
+    {
+      "provider_id": "amd.rocblas",
+      "vendor": "amd",
+      "runtime_family": "rocBLAS",
+      "official_url": "https://rocm.docs.amd.com/projects/AMDMIGraphX/en/develop/reference/MIGraphX-py.html",
+      "documentation_version_or_date": "MIGraphX 2.15 API / checked 2026-09-09",
+      "verified_on": "2026-09-09",
+      "supported_os": [
+        "Linux",
+        "Windows",
+        "Darwin"
+      ],
+      "public_sdk_status": "public API/SDK; local installation required",
+      "public_interface_used": "ctypes.util.find_library and explicit extension bridge",
+      "license_audit": "MIT for MIGraphX and AMD SMI sources; verify each installed ROCm component",
+      "factory": "thm.runtime.fabric.native:NativeExtensionSeam",
+      "maturity": "L1",
+      "hardware_validation": "unvalidated",
+      "optional_dependencies": [],
+      "installed_sdk_version": null,
+      "binary_redistribution": "none",
+      "validation_boundary": "SDK-shaped fixtures and lifecycle tests do not establish hardware performance or actual operator placement"
+    },
+    {
+      "provider_id": "intel.onednn",
+      "vendor": "intel",
+      "runtime_family": "oneDNN",
+      "official_url": "https://docs.openvino.ai/2026/openvino-workflow.html",
+      "documentation_version_or_date": "OpenVINO 2026 documentation",
+      "verified_on": "2026-09-09",
+      "supported_os": [
+        "Linux",
+        "Windows",
+        "Darwin"
+      ],
+      "public_sdk_status": "public API/SDK; local installation required",
+      "public_interface_used": "ctypes.util.find_library and explicit extension bridge",
+      "license_audit": "Apache-2.0 for OpenVINO; other Intel SDKs have separate terms",
+      "factory": "thm.runtime.fabric.native:NativeExtensionSeam",
+      "maturity": "L1",
+      "hardware_validation": "unvalidated",
+      "optional_dependencies": [],
+      "installed_sdk_version": null,
+      "binary_redistribution": "none",
+      "validation_boundary": "SDK-shaped fixtures and lifecycle tests do not establish hardware performance or actual operator placement"
+    },
+    {
+      "provider_id": "intel.onemkl",
+      "vendor": "intel",
+      "runtime_family": "oneMKL",
+      "official_url": "https://docs.openvino.ai/2026/openvino-workflow.html",
+      "documentation_version_or_date": "OpenVINO 2026 documentation",
+      "verified_on": "2026-09-09",
+      "supported_os": [
+        "Linux",
+        "Windows",
+        "Darwin"
+      ],
+      "public_sdk_status": "public API/SDK; local installation required",
+      "public_interface_used": "ctypes.util.find_library and explicit extension bridge",
+      "license_audit": "Apache-2.0 for OpenVINO; other Intel SDKs have separate terms",
+      "factory": "thm.runtime.fabric.native:NativeExtensionSeam",
+      "maturity": "L1",
+      "hardware_validation": "unvalidated",
+      "optional_dependencies": [],
+      "installed_sdk_version": null,
+      "binary_redistribution": "none",
+      "validation_boundary": "SDK-shaped fixtures and lifecycle tests do not establish hardware performance or actual operator placement"
+    },
+    {
+      "provider_id": "intel.levelzero",
+      "vendor": "intel",
+      "runtime_family": "LevelZero",
+      "official_url": "https://docs.openvino.ai/2026/openvino-workflow.html",
+      "documentation_version_or_date": "OpenVINO 2026 documentation",
+      "verified_on": "2026-09-09",
+      "supported_os": [
+        "Linux",
+        "Windows",
+        "Darwin"
+      ],
+      "public_sdk_status": "public API/SDK; local installation required",
+      "public_interface_used": "ctypes.util.find_library and explicit extension bridge",
+      "license_audit": "Apache-2.0 for OpenVINO; other Intel SDKs have separate terms",
+      "factory": "thm.runtime.fabric.native:NativeExtensionSeam",
+      "maturity": "L1",
+      "hardware_validation": "unvalidated",
+      "optional_dependencies": [],
+      "installed_sdk_version": null,
+      "binary_redistribution": "none",
+      "validation_boundary": "SDK-shaped fixtures and lifecycle tests do not establish hardware performance or actual operator placement"
+    },
+    {
+      "provider_id": "apple.mpsgraph",
+      "vendor": "apple",
+      "runtime_family": "MPSGraph-MPS",
+      "official_url": "https://developer.apple.com/documentation/coreml/mlcomputeunits",
+      "documentation_version_or_date": "Core ML public SDK / checked 2026-09-09",
+      "verified_on": "2026-09-09",
+      "supported_os": [
+        "Linux",
+        "Windows",
+        "Darwin"
+      ],
+      "public_sdk_status": "public API/SDK; local installation required",
+      "public_interface_used": "ctypes.util.find_library and explicit extension bridge",
+      "license_audit": "BSD-3-Clause for coremltools; Apple platform SDK terms",
+      "factory": "thm.runtime.fabric.native:NativeExtensionSeam",
+      "maturity": "L1",
+      "hardware_validation": "unvalidated",
+      "optional_dependencies": [],
+      "installed_sdk_version": null,
+      "binary_redistribution": "none",
+      "validation_boundary": "SDK-shaped fixtures and lifecycle tests do not establish hardware performance or actual operator placement"
+    },
+    {
+      "provider_id": "apple.bnns",
+      "vendor": "apple",
+      "runtime_family": "Accelerate-BNNS",
+      "official_url": "https://developer.apple.com/documentation/coreml/mlcomputeunits",
+      "documentation_version_or_date": "Core ML public SDK / checked 2026-09-09",
+      "verified_on": "2026-09-09",
+      "supported_os": [
+        "Linux",
+        "Windows",
+        "Darwin"
+      ],
+      "public_sdk_status": "public API/SDK; local installation required",
+      "public_interface_used": "ctypes.util.find_library and explicit extension bridge",
+      "license_audit": "BSD-3-Clause for coremltools; Apple platform SDK terms",
+      "factory": "thm.runtime.fabric.native:NativeExtensionSeam",
+      "maturity": "L1",
+      "hardware_validation": "unvalidated",
+      "optional_dependencies": [],
+      "installed_sdk_version": null,
+      "binary_redistribution": "none",
+      "validation_boundary": "SDK-shaped fixtures and lifecycle tests do not establish hardware performance or actual operator placement"
+    },
+    {
+      "provider_id": "ascend.acl",
+      "vendor": "ascend",
+      "runtime_family": "AscendCL-ACLNN",
+      "official_url": "https://github.com/Ascend/pytorch",
+      "documentation_version_or_date": "torch_npu 26.0.0 naming / checked 2026-09-09",
+      "verified_on": "2026-09-09",
+      "supported_os": [
+        "Linux",
+        "Windows",
+        "Darwin"
+      ],
+      "public_sdk_status": "public API/SDK; local installation required",
+      "public_interface_used": "ctypes.util.find_library and explicit extension bridge",
+      "license_audit": "BSD-style torch_npu source license; CANN SDK terms",
+      "factory": "thm.runtime.fabric.native:NativeExtensionSeam",
+      "maturity": "L1",
+      "hardware_validation": "unvalidated",
+      "optional_dependencies": [],
+      "installed_sdk_version": null,
+      "binary_redistribution": "none",
+      "validation_boundary": "SDK-shaped fixtures and lifecycle tests do not establish hardware performance or actual operator placement"
+    },
+    {
+      "provider_id": "musa.runtime",
+      "vendor": "musa",
+      "runtime_family": "MUSA-muBLAS-muDNN",
+      "official_url": "https://docs.mthreads.com/musa-sdk/version-5.2.0/introduction/",
+      "documentation_version_or_date": "MUSA SDK 5.2 documentation",
+      "verified_on": "2026-09-09",
+      "supported_os": [
+        "Linux",
+        "Windows",
+        "Darwin"
+      ],
+      "public_sdk_status": "public API/SDK; local installation required",
+      "public_interface_used": "ctypes.util.find_library and explicit extension bridge",
+      "license_audit": "BSD-style torch_musa source license; MUSA SDK terms",
+      "factory": "thm.runtime.fabric.native:NativeExtensionSeam",
+      "maturity": "L1",
+      "hardware_validation": "unvalidated",
+      "optional_dependencies": [],
+      "installed_sdk_version": null,
+      "binary_redistribution": "none",
+      "validation_boundary": "SDK-shaped fixtures and lifecycle tests do not establish hardware performance or actual operator placement"
+    },
+    {
+      "provider_id": "cambricon.cnrt",
+      "vendor": "cambricon",
+      "runtime_family": "CNRT-CNNL-CNDrv",
+      "official_url": "https://github.com/Cambricon/torch_mlu",
+      "documentation_version_or_date": "Public torch_mlu source / checked 2026-09-09",
+      "verified_on": "2026-09-09",
+      "supported_os": [
+        "Linux",
+        "Windows",
+        "Darwin"
+      ],
+      "public_sdk_status": "public API/SDK; local installation required",
+      "public_interface_used": "ctypes.util.find_library and explicit extension bridge",
+      "license_audit": "Current torch_mlu exact SPDX not independently verified; vendor runtime terms",
+      "factory": "thm.runtime.fabric.native:NativeExtensionSeam",
+      "maturity": "L1",
+      "hardware_validation": "unvalidated",
+      "optional_dependencies": [],
+      "installed_sdk_version": null,
+      "binary_redistribution": "none",
+      "validation_boundary": "SDK-shaped fixtures and lifecycle tests do not establish hardware performance or actual operator placement"
+    },
+    {
+      "provider_id": "metax.runtime",
+      "vendor": "metax",
+      "runtime_family": "MXMACA-mcBLAS-mcTriton",
+      "official_url": "https://developer.metax-tech.com/api/client/document/preview/355/C500_mcFaissManual_CN.html",
+      "documentation_version_or_date": "Public mcFaiss manual / checked 2026-09-09",
+      "verified_on": "2026-09-09",
+      "supported_os": [
+        "Linux",
+        "Windows",
+        "Darwin"
+      ],
+      "public_sdk_status": "public API/SDK; local installation required",
+      "public_interface_used": "ctypes.util.find_library and explicit extension bridge",
+      "license_audit": "MetaX SDK terms; package provenance must be verified locally",
+      "factory": "thm.runtime.fabric.native:NativeExtensionSeam",
+      "maturity": "L1",
+      "hardware_validation": "unvalidated",
+      "optional_dependencies": [],
+      "installed_sdk_version": null,
+      "binary_redistribution": "none",
+      "validation_boundary": "SDK-shaped fixtures and lifecycle tests do not establish hardware performance or actual operator placement"
+    },
+    {
+      "provider_id": "google.pjrt",
+      "vendor": "google",
+      "runtime_family": "google.pjrt",
+      "official_url": "https://github.com/xngg1021/thm-tiered-hot-memory",
+      "documentation_version_or_date": "Contract only; no SDK API executed",
+      "verified_on": "2026-09-09",
+      "supported_os": [
+        "Linux",
+        "Windows",
+        "Darwin"
+      ],
+      "public_sdk_status": "documented-contract-only",
+      "public_interface_used": "documented extension contract; no native API execution",
+      "license_audit": "No third-party implementation or binaries included",
+      "factory": "thm.runtime.fabric.native:NativeExtensionSeam",
+      "maturity": "L0",
+      "hardware_validation": "unvalidated",
+      "optional_dependencies": [],
+      "installed_sdk_version": null,
+      "binary_redistribution": "none",
+      "validation_boundary": "SDK-shaped fixtures and lifecycle tests do not establish hardware performance or actual operator placement"
+    },
+    {
+      "provider_id": "aws.neuron",
+      "vendor": "aws",
+      "runtime_family": "aws.neuron",
+      "official_url": "https://github.com/xngg1021/thm-tiered-hot-memory",
+      "documentation_version_or_date": "Contract only; no SDK API executed",
+      "verified_on": "2026-09-09",
+      "supported_os": [
+        "Linux",
+        "Windows",
+        "Darwin"
+      ],
+      "public_sdk_status": "documented-contract-only",
+      "public_interface_used": "documented extension contract; no native API execution",
+      "license_audit": "No third-party implementation or binaries included",
+      "factory": "thm.runtime.fabric.native:NativeExtensionSeam",
+      "maturity": "L0",
+      "hardware_validation": "unvalidated",
+      "optional_dependencies": [],
+      "installed_sdk_version": null,
+      "binary_redistribution": "none",
+      "validation_boundary": "SDK-shaped fixtures and lifecycle tests do not establish hardware performance or actual operator placement"
+    },
+    {
+      "provider_id": "tenstorrent.ttnn",
+      "vendor": "tenstorrent",
+      "runtime_family": "tenstorrent.ttnn",
+      "official_url": "https://github.com/xngg1021/thm-tiered-hot-memory",
+      "documentation_version_or_date": "Contract only; no SDK API executed",
+      "verified_on": "2026-09-09",
+      "supported_os": [
+        "Linux",
+        "Windows",
+        "Darwin"
+      ],
+      "public_sdk_status": "documented-contract-only",
+      "public_interface_used": "documented extension contract; no native API execution",
+      "license_audit": "No third-party implementation or binaries included",
+      "factory": "thm.runtime.fabric.native:NativeExtensionSeam",
+      "maturity": "L0",
+      "hardware_validation": "unvalidated",
+      "optional_dependencies": [],
+      "installed_sdk_version": null,
+      "binary_redistribution": "none",
+      "validation_boundary": "SDK-shaped fixtures and lifecycle tests do not establish hardware performance or actual operator placement"
+    },
+    {
+      "provider_id": "portable.vulkan",
+      "vendor": "portable",
+      "runtime_family": "portable.vulkan",
+      "official_url": "https://github.com/xngg1021/thm-tiered-hot-memory",
+      "documentation_version_or_date": "Contract only; no SDK API executed",
+      "verified_on": "2026-09-09",
+      "supported_os": [
+        "Linux",
+        "Windows",
+        "Darwin"
+      ],
+      "public_sdk_status": "documented-contract-only",
+      "public_interface_used": "documented extension contract; no native API execution",
+      "license_audit": "No third-party implementation or binaries included",
+      "factory": "thm.runtime.fabric.native:NativeExtensionSeam",
+      "maturity": "L0",
+      "hardware_validation": "unvalidated",
+      "optional_dependencies": [],
+      "installed_sdk_version": null,
+      "binary_redistribution": "none",
+      "validation_boundary": "SDK-shaped fixtures and lifecycle tests do not establish hardware performance or actual operator placement"
+    },
+    {
+      "provider_id": "portable.opencl",
+      "vendor": "portable",
+      "runtime_family": "portable.opencl",
+      "official_url": "https://github.com/xngg1021/thm-tiered-hot-memory",
+      "documentation_version_or_date": "Contract only; no SDK API executed",
+      "verified_on": "2026-09-09",
+      "supported_os": [
+        "Linux",
+        "Windows",
+        "Darwin"
+      ],
+      "public_sdk_status": "documented-contract-only",
+      "public_interface_used": "documented extension contract; no native API execution",
+      "license_audit": "No third-party implementation or binaries included",
+      "factory": "thm.runtime.fabric.native:NativeExtensionSeam",
+      "maturity": "L0",
+      "hardware_validation": "unvalidated",
+      "optional_dependencies": [],
+      "installed_sdk_version": null,
+      "binary_redistribution": "none",
+      "validation_boundary": "SDK-shaped fixtures and lifecycle tests do not establish hardware performance or actual operator placement"
+    },
+    {
+      "provider_id": "diskann",
+      "vendor": "diskann",
+      "runtime_family": "diskann",
+      "official_url": "https://github.com/xngg1021/thm-tiered-hot-memory",
+      "documentation_version_or_date": "Contract only; no SDK API executed",
+      "verified_on": "2026-09-09",
+      "supported_os": [
+        "Linux",
+        "Windows",
+        "Darwin"
+      ],
+      "public_sdk_status": "documented-contract-only",
+      "public_interface_used": "documented extension contract; no native API execution",
+      "license_audit": "No third-party implementation or binaries included",
+      "factory": "thm.runtime.fabric.native:NativeExtensionSeam",
+      "maturity": "L0",
+      "hardware_validation": "unvalidated",
+      "optional_dependencies": [],
+      "installed_sdk_version": null,
+      "binary_redistribution": "none",
+      "validation_boundary": "SDK-shaped fixtures and lifecycle tests do not establish hardware performance or actual operator placement"
+    },
+    {
+      "provider_id": "multi-device",
+      "vendor": "multi-device",
+      "runtime_family": "multi-device",
+      "official_url": "https://github.com/xngg1021/thm-tiered-hot-memory",
+      "documentation_version_or_date": "Contract only; no SDK API executed",
+      "verified_on": "2026-09-09",
+      "supported_os": [
+        "Linux",
+        "Windows",
+        "Darwin"
+      ],
+      "public_sdk_status": "documented-contract-only",
+      "public_interface_used": "documented extension contract; no native API execution",
+      "license_audit": "No third-party implementation or binaries included",
+      "factory": "thm.runtime.fabric.native:NativeExtensionSeam",
+      "maturity": "L0",
+      "hardware_validation": "unvalidated",
+      "optional_dependencies": [],
+      "installed_sdk_version": null,
+      "binary_redistribution": "none",
+      "validation_boundary": "SDK-shaped fixtures and lifecycle tests do not establish hardware performance or actual operator placement"
+    }
+  ]
+}
