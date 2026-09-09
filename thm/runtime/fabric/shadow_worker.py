@@ -65,7 +65,12 @@ def main():
         # virtual address ranges. Darwin also applies an allocation ceiling.
         if sys.platform == 'darwin':
             resource.setrlimit(resource.RLIMIT_DATA, (limits['memory']+128*1024**2, limits['memory']+128*1024**2))
-    if task.get('operation') == 'probe':
+    if task.get('operation') == 'probe-spec':
+        from .registry import ProviderRegistry
+        from .contracts import ProviderSpec
+        spec = ProviderSpec(**task['spec']); registry = ProviderRegistry(); registry.register(spec)
+        result = registry.get(spec.provider_id).probe()
+    elif task.get('operation') == 'probe':
         from .registry import builtin_registry
         registry = builtin_registry(extensions=False)
         result = registry.get(task['provider']).probe()

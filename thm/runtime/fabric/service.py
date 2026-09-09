@@ -148,8 +148,9 @@ class RuntimeService:
     def _select(self, key, workload):
         if key.id in self.pinned:
             return self.pinned[key.id]
+        classes = ('strict','approximate') if self.policy == 'approximate-performance' else ('strict',)
         accepted = {x['candidate']: x for x in self.store.observations(key)
-                    if x['semantic_status'] == 'strict' and x['material_gain_status'] == 'accepted' and x['pareto']}
+                    if x['semantic_status'] in classes and x['material_gain_status'] == 'accepted' and x['pareto']}
         points = []
         for c in self.candidates:
             row = accepted.get(identity(c.id))
@@ -198,7 +199,7 @@ class RuntimeService:
                     results = [self.index.search(scope, queries[0], encoder=self.encoder, model_id=self.model_id, **effective)]
                 else:
                     results = self.index.search_many(scope, queries, encoder=self.encoder, model_id=self.model_id,
-                        query_batch_size=len(queries), semantic_guard=True, **effective)
+                        query_batch_size=len(queries), semantic_guard=self.policy != 'approximate-performance', **effective)
             except Exception as exc:
                 if not candidate:
                     raise
@@ -227,6 +228,8 @@ class RuntimeService:
                 'device': candidate.device if candidate and not fallback else 'cpu',
                 'embedding_profile': getattr(getattr(self.encoder, 'profile', None), 'id', None),
                 'index_provider': provider, 'physical_placement': plan.current_placement, 'semantic_policy': self.policy,
+                'semantic_class': candidate.semantic_class if candidate else 'strict',
+                'quality_evidence_scope': 'observed-request-only' if candidate else 'reference',
                 'profile_source': 'stored' if candidate else 'bootstrap', 'profile_freshness': 'fresh',
                 'profile_key': key.id, 'batch_policy': 'deadline-aware-opportunity',
                 'latency_ms': elapsed, 'fallback': fallback, 'generation_calls': 0,
@@ -246,6 +249,9 @@ class RuntimeService:
         with self.queue_lock:
             if any(b.queue for b in self.batchers.values()):
                 return
+        pressure = HostDeviceProvider.pressure()
+        if any(pressure.values()):
+            return
         if not self.discovery_done:
             self.explorer.submit({'operation': 'discover', 'cursor': self.discovery_cursor}, self._discovered)
             return
@@ -288,21 +294,28 @@ class RuntimeService:
                 if row.get('availability') != 'available':
                     continue
                 device = dict(description['options']).get('device')
-                if not device or not name.endswith('.exact'):
+                exact = name.endswith('.exact') or name in ('nvidia.cuvs.brute_force','metax.mcfaiss')
+                approximate = name == 'host.hnsw' or name.startswith('nvidia.cuvs.') and not exact
+                if not exact and not approximate:
                     continue
+                if approximate and self.policy != 'approximate-performance':
+                    continue
+                device = device or ('cpu' if name == 'host.hnsw' else (row.get('devices') or ['cuda'])[0])
                 self.graph.nodes.append(DeviceNode('provider:'+name, 'npu' if device == 'npu' else 'gpu',
                     True, True, True, {'vendor': description['vendor'], 'runtime': row.get('version'),
                                       'driver': row.get('driver_runtime'), 'vram_total': row.get('memory_bytes')}))
                 self.graph.edges.append(('provider:'+name, 'dram', 'explicit-copy'))
                 for workload in ('interactive', 'bulk', 'background'):
-                    self.candidates.append(Candidate(name, device=device, placement='device-memory',
-                        transfer=description['vendor']+'.transfer', workload=workload))
+                    self.candidates.append(Candidate(name, device=device, placement='dram' if device == 'cpu' else 'device-memory',
+                        transfer=description['vendor']+'.transfer', workload=workload,
+                        index='exact-flat' if exact else name.split('.')[-1], semantic_class='strict' if exact else 'approximate'))
 
     def _publish(self, key, candidate, result):
         if result.get('key') != key.id or result.get('candidate_id') != candidate.id:
             return
         semantic = SemanticGuard.compare(result['reference'], result['result'], dimension=key.dimension)['semantic_admission']
-        gain = self.gate.evaluate(result['baseline'], result['candidate'], semantic=semantic,
+        approximate = self.policy == 'approximate-performance' and candidate.semantic_class == 'approximate'
+        gain = self.gate.evaluate(result['baseline'], result['candidate'], semantic=semantic or approximate,
                                   resources={'ram': result['memory_bytes']}, limits={'ram': self.memory_budget})
         values = result['candidate']
         from .optimizer import percentile
@@ -310,13 +323,18 @@ class RuntimeService:
         measurement = {'p50': statistics.median(values), 'p95': percentile(values, .95), 'p99': percentile(values, .99),
                        'throughput': 1000/statistics.median(values), 'ram': result['memory_bytes'],
                        'sample_count': len(values), 'noise': gain.get('noise_floor', 0)}
+        if approximate:
+            from .indexes import ann_quality
+            quality = ann_quality(result['reference']['ranked_ids'], result['result']['ranked_ids'])
+            measurement.update({k: v for k,v in quality.items() if v is not None})
+            measurement['packed_context_changed'] = int(result['reference']['context'] != result['result']['context'])
         with self.lock:
             if self.closed:
                 return
-            self.store.put(key, candidate.id, measurement, semantic_status='strict' if semantic else 'rejected',
+            self.store.put(key, candidate.id, measurement, semantic_status='approximate' if approximate else 'strict' if semantic else 'rejected',
                            material_gain=gain['decision'], pareto=gain['materially_faster'])
             self.decisions = (self.decisions + [{'candidate': candidate.id, **gain}])[-32:]
-            if not semantic:
+            if not semantic and not approximate:
                 self.store.failure(key, candidate.provider, 'semantic')
             if gain['materially_faster']:
                 self.gate.switched()

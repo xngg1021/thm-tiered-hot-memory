@@ -88,12 +88,17 @@ class ProviderRegistry:
         if spec.validation_state.startswith('untrusted'):
             return {'provider': provider_id, 'availability': 'untrusted', 'devices': []}
         try:
-            result = subprocess.run([sys.executable, '-m', 'thm.runtime.fabric.probe_worker'],
-                                    input=json.dumps(spec.public()), text=True,
-                                    capture_output=True, timeout=timeout, check=True)
-            # Native libraries may log; the worker writes a distinct final JSON line.
-            line = next(line[11:] for line in reversed(result.stdout.splitlines()) if line.startswith('THM_RESULT:'))
-            return json.loads(line)
+            from .explorer import BoundedShadowExplorer
+            values = []
+            explorer = BoundedShadowExplorer(wall_seconds=timeout, cpu_seconds=min(5, timeout), io_bytes=64*1024**2)
+            try:
+                explorer.submit({'operation': 'probe-spec', 'spec': spec.public()}, values.append)
+                explorer.thread.join(timeout=timeout+6)
+                if not values:
+                    raise ProviderUnavailable('bounded discovery deferred')
+                return values[0]
+            finally:
+                explorer.close()
         except Exception as exc:
             self._failures[provider_id] = type(exc).__name__
             return {'provider': provider_id, 'availability': 'probe-failed',

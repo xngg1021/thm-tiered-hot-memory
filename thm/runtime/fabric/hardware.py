@@ -66,7 +66,7 @@ class HardwareGraph:
             # Reuse StorageTarget identity, never copy its private locator.
             key = 'storage:' + target.target_id
             nodes.append(DeviceNode(key, 'storage', None, True, True,
-                                    {'target_id': target.target_id, 'transport': getattr(target, 'transport', None)}))
+                                    {'target_id': target.target_id, 'transport': getattr(target, 'protocol', None)}))
             edges.append((key, 'dram', 'filesystem'))
         return cls(nodes, edges, p['os'], p.get('kernel', 'unknown'), p['architecture'])
 
@@ -86,6 +86,26 @@ class HostDeviceProvider:
             pass
         h.process_available_cpus = len(h.cpu_affinity) if h.cpu_affinity is not None else h.os_visible_cpus
         if h.os == 'Linux':
+            try:
+                h.installed_logical_cpus = len(cpulist(read('/sys/devices/system/cpu/present')))
+                info = dict(line.split(':',1) for line in (read('/proc/meminfo') or '').splitlines())
+                h.ram_total = int(info['MemTotal'].split()[0])*1024
+            except (ValueError, KeyError, TypeError):
+                pass
+            h.numa_nodes = {}
+            for node in sorted(Path('/sys/devices/system/node').glob('node[0-9]*'))[:64]:
+                try:
+                    h.numa_nodes[node.name] = cpulist(read(node/'cpulist'))
+                except (TypeError, ValueError):
+                    pass
+            groups = {}
+            for cpu in (h.cpu_affinity or [])[:256]:
+                root = Path('/sys/devices/system/cpu') / ('cpu'+str(cpu)) / 'topology'
+                package = read(root/'physical_package_id'); core = read(root/'core_id')
+                if package is not None and core is not None:
+                    groups.setdefault(package+':'+core, []).append(cpu)
+            h.core_types = {'logical_cpu_core_groups': groups, 'hybrid_core_type': None,
+                            'partial': bool(h.cpu_affinity and len(h.cpu_affinity)>256)}
             group = next((s[3:] for s in (read('/proc/self/cgroup') or '').splitlines() if s.startswith('0::')), '/')
             root = Path('/sys/fs/cgroup'); path = root / group.lstrip('/')
             if not path.is_dir():
@@ -130,6 +150,28 @@ class HostDeviceProvider:
                 h.process_available_cpus = None
         self.graph = HardwareGraph.from_profile(h)
         return self.graph
+
+    @staticmethod
+    def pressure():
+        from ..hardware import read
+        battery_low = False; thermal = False
+        if platform.system() == 'Linux':
+            for device in list(Path('/sys/class/power_supply').glob('*'))[:16]:
+                if read(device/'status') == 'Discharging':
+                    try:
+                        battery_low |= int(read(device/'capacity')) < 20
+                    except (TypeError, ValueError):
+                        pass
+            for zone in list(Path('/sys/class/thermal').glob('thermal_zone*'))[:32]:
+                try:
+                    temperature = int(read(zone/'temp'))
+                    for threshold in list(zone.glob('trip_point_*_temp'))[:16]:
+                        kind = read(str(threshold).replace('_temp','_type'))
+                        if kind in ('hot','critical','passive'):
+                            thermal |= temperature >= int(read(threshold))
+                except (TypeError, ValueError):
+                    pass
+        return {'battery_low': battery_low, 'thermal_pressure': thermal}
 
     def probe(self):
         return {'provider': 'host.device', 'availability': 'available',

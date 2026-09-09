@@ -4,7 +4,7 @@ import importlib
 from pathlib import Path
 import time
 from .contracts import identity
-from .indexes import ExactHost
+from .indexes import ExactHost, clean_failed_build
 from .inference import OrtInference
 from .registry import ProviderUnavailable
 
@@ -22,20 +22,29 @@ class CuvsProvider(ExactHost):
                 'devices': ['cuda:'+str(i) for i in range(count)], 'algorithm': algorithm,
                 'execution': 'build-only' if algorithm == 'vamana' else 'search', 'observed_kernel_dispatch': None}
 
+    @clean_failed_build
     def build(self, vectors, ids, identity, **options):
         import cupy as cp
         api, algorithm = self._api(); start = time.perf_counter()
         host = super().build(vectors, ids, identity)
-        dataset = cp.asarray(host.data)
+        params = dict(options.get('index_params', {}))
+        ace = algorithm == 'cagra' and params.get('build_algo') == 'ace'
+        if ace:
+            budget = options.get('resident_budget_bytes', host.bytes*4)
+            params['ace_params'] = api.AceParams(max_host_memory_gb=budget/1024**3,
+                                                max_gpu_memory_gb=budget/1024**3, use_disk=False)
+        dataset = host.data if ace else cp.asarray(host.data)
         if algorithm == 'brute_force':
             graph = api.build(dataset, metric='inner_product')
         else:
-            params = dict(options.get('index_params', {}))
             if algorithm != 'vamana':
                 params.setdefault('metric', 'inner_product')
+            if algorithm == 'tiered_index':
+                params.setdefault('algo', 'cagra')
             graph = api.build(api.IndexParams(**params), dataset)
         host.data = {'graph': graph, 'dataset': dataset, 'api': api, 'algorithm': algorithm,
-                     'search_params': options.get('search_params', {}), 'dimension': dataset.shape[1]}
+                     'search_params': options.get('search_params', {}), 'dimension': dataset.shape[1],
+                     'search_family': params.get('algo', 'cagra'), 'host_build': ace}
         cp.cuda.get_current_stream().synchronize()
         host.load_ms = (time.perf_counter()-start)*1000
         # Graph allocation varies by SDK; caller must budget a measured/declared ceiling.
@@ -47,16 +56,22 @@ class CuvsProvider(ExactHost):
         state = handle.data; api = state['api']; algorithm = state['algorithm']
         if algorithm == 'vamana':
             raise ProviderUnavailable('Vamana is a build/export seam; DiskANN CPU search requires a separate provider')
-        if not 1 <= top_k <= len(handle.ids):
+        if type(top_k) is not int or not 1 <= top_k <= len(handle.ids):
             raise ValueError('invalid top-k')
         start = time.perf_counter(); queries = cp.asarray(query_vectors, dtype=cp.float32)
         if queries.ndim != 2 or queries.shape[1] != state['dimension']:
             raise ValueError('query dimension mismatch')
         if algorithm == 'brute_force':
             distances, neighbors = api.search(state['graph'], queries, top_k)
+        elif algorithm == 'tiered_index':
+            family = importlib.import_module('cuvs.neighbors.' + state['search_family'])
+            distances, neighbors = api.search(family.SearchParams(**state['search_params']), state['graph'], queries, top_k)
         else:
             distances, neighbors = api.search(api.SearchParams(**state['search_params']), state['graph'], queries, top_k)
         distances = cp.asnumpy(distances); neighbors = cp.asnumpy(neighbors)
+        import numpy as np
+        if not np.isfinite(distances).all() or (neighbors < 0).any() or (neighbors >= len(handle.ids)).any():
+            raise ValueError('invalid cuVS top-k receipt')
         # Inner product scores are returned directly. Approximate order is disclosed.
         result = [([handle.ids[int(i)] for i in row], distances[j].astype(float).tolist()) for j, row in enumerate(neighbors)]
         self.last = {'search_ms': (time.perf_counter()-start)*1000,
@@ -90,6 +105,7 @@ class McFaissProvider(ExactHost):
         return {'availability': 'available' if count else 'device-unavailable',
                 'devices': ['maca:'+str(i) for i in range(count)], 'observed_kernel_dispatch': None}
 
+    @clean_failed_build
     def build(self, vectors, ids, identity, **options):
         api = self._api(); host = super().build(vectors, ids, identity)
         resources = api.StandardGpuResources()
@@ -102,8 +118,10 @@ class McFaissProvider(ExactHost):
     def search(self, handle, query_vectors, top_k):
         import numpy as np
         queries = np.ascontiguousarray(query_vectors, dtype=np.float32); start = time.perf_counter()
+        if queries.ndim != 2 or not len(queries) or not np.isfinite(queries).all() or type(top_k) is not int or not 1 <= top_k <= len(handle.ids):
+            raise ValueError('invalid mcFaiss query')
         scores, indices = handle.data['index'].search(queries, min(top_k, len(handle.ids)))
-        if (indices < 0).any():
+        if (indices < 0).any() or (indices >= len(handle.ids)).any() or not np.isfinite(scores).all():
             raise ValueError('incomplete mcFaiss results')
         result = [([handle.ids[int(i)] for i in indices[j]], scores[j].astype(float).tolist()) for j in range(len(queries))]
         self.last = {'search_ms': (time.perf_counter()-start)*1000,

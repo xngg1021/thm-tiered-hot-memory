@@ -11,6 +11,8 @@ def spec(name, vendor, family, cls, *, dependencies=(), devices=('cpu',), os=('L
 
 
 BUILTINS = [
+    spec('nvidia.nvml', 'nvidia', 'NVML', 'telemetry:NVMLTelemetry', dependencies=('nvidia-ml-py',), operations=('telemetry',), devices=('gpu',)),
+    spec('amd.smi', 'amd', 'AMD-SMI', 'telemetry:AMDSystemTelemetry', dependencies=('amdsmi',), operations=('telemetry',), devices=('gpu',), os=('Linux','Windows')),
     spec('host.device', 'generic', 'os', 'hardware:HostDeviceProvider', operations=('device',)),
     spec('host.exact', 'generic', 'numpy', 'indexes:ExactHost', dependencies=('numpy',), operations=('vector-search',), resident=True, priority=100),
     spec('host.hnsw', 'generic', 'hnswlib', 'indexes:HNSWGeneric', dependencies=('hnswlib',), operations=('vector-search',), resident=True),
@@ -38,6 +40,7 @@ for vendor, device, extension, runtime, systems, extra in [
     ])
 
 BUILTINS.extend([
+    spec('nvidia.rtx-native', 'nvidia', 'TensorRT-RTX-AOT-JIT', 'rtx:TensorRTRTXInference', dependencies=('tensorrt-rtx',), devices=('gpu',), os=('Linux','Windows'), compile=True),
     spec('nvidia.tensorrt-rtx', 'nvidia', 'TensorRT-RTX-EP-ABI', 'inference:OrtInference', dependencies=('onnxruntime',), devices=('gpu',), os=('Linux', 'Windows'), options=(('ep', 'NvTensorRTRTXExecutionProvider'),), compile=True),
     spec('amd.migraphx', 'amd', 'MIGraphX', 'inference:MIGraphXInference', dependencies=('migraphx',), devices=('gpu',), os=('Linux',), compile=True),
     spec('amd.migraphx-ep', 'amd', 'MIGraphX-EP', 'inference:OrtInference', dependencies=('onnxruntime',), devices=('gpu',), os=('Linux', 'Windows'), options=(('ep', 'MIGraphXExecutionProvider'),), compile=True),
@@ -47,7 +50,7 @@ BUILTINS.extend([
     spec('windows.directml', 'microsoft', 'DirectML', 'inference:OrtInference', dependencies=('onnxruntime-directml',), devices=('gpu',), os=('Windows',), options=(('ep', 'DmlExecutionProvider'),)),
 ])
 
-for algorithm in ('brute_force', 'cagra', 'ivf_flat', 'ivf_pq', 'vamana'):
+for algorithm in ('brute_force', 'cagra', 'ivf_flat', 'ivf_pq', 'ivf_sq', 'tiered_index', 'vamana'):
     BUILTINS.append(spec('nvidia.cuvs.'+algorithm, 'nvidia', 'cuVS', 'native:CuvsProvider', dependencies=('cuvs-cu12',),
                          devices=('gpu',), os=('Linux',), operations=('vector-search',), resident=True,
                          options=(('algorithm', algorithm),), maturity=2 if algorithm == 'vamana' else 4))

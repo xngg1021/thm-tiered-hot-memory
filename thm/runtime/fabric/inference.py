@@ -35,6 +35,14 @@ def model_digest(path):
     return manifest(path)['sha256']
 
 
+def artifact_digest(path):
+    # ONNX external tensors and OpenVINO XML/BIN are one source bundle. The
+    # conservative parent manifest also catches arbitrary external tensor names.
+    # Keep compiled caches outside this immutable local bundle.
+    path = Path(path)
+    return model_digest(path.parent) if path.is_file() else model_digest(path)
+
+
 class LocalInferenceBase:
     module = None
 
@@ -53,7 +61,7 @@ class LocalInferenceBase:
 
     def prepare(self, source, **options):
         module = self._module()
-        self.artifact = ModelArtifact(str(Path(source).resolve()), model_digest(source), self.spec.provider_id,
+        self.artifact = ModelArtifact(str(Path(source).resolve()), artifact_digest(source), self.spec.provider_id,
                                       str(getattr(module, '__version__', 'unknown')),
                                       options.get('precision', 'fp32'), identity(options))
         if self.artifact.precision not in self.spec.supported_precisions:
@@ -61,7 +69,7 @@ class LocalInferenceBase:
         return self.artifact
 
     def _verify(self, artifact):
-        if artifact.provider != self.spec.provider_id or model_digest(artifact.locator) != artifact.source_sha:
+        if artifact.provider != self.spec.provider_id or artifact_digest(artifact.locator) != artifact.source_sha:
             raise ValueError('model artifact identity changed')
         version = str(getattr(self._module(), '__version__', 'unknown'))
         if version != artifact.provider_version:
@@ -158,9 +166,13 @@ class OrtInference(LocalInferenceBase):
         # Optional standalone EP ABI library is explicitly local; no download lifecycle.
         library = options.get('ep_library')
         if library:
-            ort.register_execution_provider_library(ep, str(Path(library).resolve()))
-        if ep not in ort.get_available_providers():
-            raise ProviderUnavailable('requested execution provider unavailable')
+            library = Path(library)
+            if not library.is_file() or library.is_symlink():
+                raise ValueError('existing local EP library required')
+            # Registration names differ from EP names; plugin devices, rather
+            # than the built-in provider list, identify the executable plugin.
+            self.registration = 'thm-'+identity({'library': model_digest(library), 'instance': id(self)})[:24]
+            ort.register_execution_provider_library(self.registration, str(library.resolve()))
         session_options = ort.SessionOptions()
         session_options.add_session_config_entry('session.disable_cpu_ep_fallback', '1')
         if options.get('threads'):
@@ -168,14 +180,31 @@ class OrtInference(LocalInferenceBase):
         ep_options = dict(options.get('provider_options', {}))
         if 'backend_path' in self.options and 'backend_path' not in ep_options:
             ep_options['backend_path'] = self.options['backend_path']
+        plugin_devices = [d for d in ort.get_ep_devices() if d.ep_name == ep] if library and hasattr(ort, 'get_ep_devices') else []
+        if plugin_devices:
+            session_options.add_provider_for_devices(plugin_devices, ep_options)
+            providers = {}
+        elif ep in ort.get_available_providers():
+            providers = {'providers': [(ep, ep_options)]}
+        else:
+            self.close(); raise ProviderUnavailable('requested execution provider unavailable')
         start = time.perf_counter()
-        self.model = ort.InferenceSession(artifact.locator, sess_options=session_options, providers=[(ep, ep_options)])
+        try:
+            self.model = ort.InferenceSession(artifact.locator, sess_options=session_options, **providers)
+        except Exception:
+            self.close(); raise
         if ep not in self.model.get_providers():
             self.close(); raise ProviderUnavailable('requested EP did not load')
         self.artifact = artifact
         self.last = {'startup_ms': (time.perf_counter()-start)*1000, 'requested_ep': ep,
                      'registered_eps': self.model.get_providers(), 'observed_operator_placement': None}
         return self
+
+    def close(self):
+        super().close()
+        if hasattr(self, 'registration'):
+            self._module().unregister_execution_provider_library(self.registration)
+            del self.registration
 
     def encode_many(self, inputs):
         if not isinstance(inputs, dict):

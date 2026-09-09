@@ -56,7 +56,7 @@ class DeadlineAwareMicrobatcher:
                     return
                 rate = self.arrival_rate()
                 # Low arrival: serve one immediately. Only real queued opportunity grows batch.
-                target = min(self.max_batch, max(1, int(rate*self.max_wait)+1))
+                target = min(self.max_batch, max(1, len(self.queue), int(rate*self.max_wait)+1))
                 first = self.queue[0]
                 stop = min(first.deadline, first.arrived+self.max_wait)
                 while not self.closed and len(self.queue) < target and self.clock() < stop:

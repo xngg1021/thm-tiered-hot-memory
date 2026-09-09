@@ -4,7 +4,24 @@ from dataclasses import dataclass
 import importlib
 import threading
 import time
+from functools import wraps
 from .contracts import IndexIdentity
+
+
+def clean_failed_build(function):
+    @wraps(function)
+    def build(self, vectors, ids, identity, **options):
+        before = self.handles.get(identity.key)
+        try:
+            return function(self, vectors, ids, identity, **options)
+        except Exception:
+            current = self.handles.get(identity.key)
+            if current is not None and current is not before:
+                current.close()
+            if before is not None:
+                self.handles[identity.key] = before
+            raise
+    return build
 
 
 @dataclass
@@ -186,6 +203,7 @@ class ExactAccelerator(ExactHost):
         return {'availability': 'available' if available else 'device-unavailable',
                 'devices': [device] if available else [], 'version': torch.__version__, 'observed_kernel_dispatch': None}
 
+    @clean_failed_build
     def build(self, vectors, ids, identity, **options):
         host = super().build(vectors, ids, identity)
         torch, device = self._runtime()
@@ -202,7 +220,7 @@ class ExactAccelerator(ExactHost):
         import numpy as np
         torch, device = self._runtime()
         queries = np.asarray(query_vectors, dtype=np.float32)
-        if queries.ndim != 2 or queries.shape[1] != handle.data.shape[1] or not np.isfinite(queries).all() or not 1 <= top_k <= len(handle.ids):
+        if queries.ndim != 2 or not len(queries) or queries.shape[1] != handle.data.shape[1] or not np.isfinite(queries).all() or type(top_k) is not int or not 1 <= top_k <= len(handle.ids):
             raise ValueError('invalid resident search')
         start = time.perf_counter()
         q = torch.as_tensor(queries, dtype=torch.float32, device=handle.identity.device)
@@ -228,6 +246,7 @@ class HNSWGeneric(ExactHost):
         import hnswlib
         return {'availability': 'available', 'devices': ['cpu'], 'semantic_class': 'approximate'}
 
+    @clean_failed_build
     def build(self, vectors, ids, identity, **options):
         import hnswlib
         import numpy as np

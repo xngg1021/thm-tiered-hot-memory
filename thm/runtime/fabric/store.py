@@ -61,12 +61,16 @@ def scale_bucket(count, dimension, memory_budget):
 class ProfileStore:
     SCHEMA = 2
 
-    def __init__(self, path, *, clock=time.time):
+    def __init__(self, path, *, clock=time.time, max_observations=4096, max_age_seconds=30*86400):
         path = Path(path)
         if path.is_symlink():
             raise ValueError('symlink profile store refused')
         path.parent.mkdir(parents=True, exist_ok=True)
         self.clock = clock
+        if type(max_observations) is not int or not 1 <= max_observations <= 65536:
+            raise ValueError('bounded profile history required')
+        finite(max_age_seconds, 'profile maximum age')
+        self.max_observations = max_observations; self.max_age = max_age_seconds
         self.path = path
         self.db = sqlite3.connect(path, timeout=5, check_same_thread=False)
         self.db.execute('PRAGMA busy_timeout=5000')
@@ -86,7 +90,8 @@ class ProfileStore:
         # Whitelist both fields and types; arbitrary provider stdout never persists.
         allowed = {'p50', 'p95', 'p99', 'throughput', 'cpu_seconds', 'gpu_seconds', 'ram', 'vram',
                    'transfer', 'io', 'startup', 'compile', 'energy', 'failure_probability',
-                   'sample_count', 'noise', 'confidence', 'absolute_gain', 'relative_gain', 'conservative_gain'}
+                   'sample_count', 'noise', 'confidence', 'absolute_gain', 'relative_gain', 'conservative_gain',
+                   'recall_against_exact','top_k_overlap','selected_id_delta','rank_delta','packed_context_changed'}
         if set(measurement) - allowed:
             raise ValueError('unrecognized measurement field')
         for name, value in measurement.items():
@@ -104,6 +109,8 @@ class ProfileStore:
         with self.lock, self.db:
             self.db.execute('INSERT INTO observations VALUES(?,?,?,?,?,?) ON CONFLICT(key,candidate) DO UPDATE SET payload=excluded.payload,checksum=excluded.checksum,validated=excluded.validated',
                             (key.id, identity(candidate), encoded, identity(payload), now, now))
+            self.db.execute('DELETE FROM observations WHERE rowid IN (SELECT rowid FROM observations ORDER BY validated DESC,rowid DESC LIMIT -1 OFFSET ?)', (self.max_observations,))
+            self.db.execute('DELETE FROM quarantine WHERE until<?', (now-self.max_age,))
 
     def observations(self, key):
         with self.lock:
@@ -113,6 +120,8 @@ class ProfileStore:
         result = []
         for raw, checksum, first, validated in rows:
             try:
+                if validated > self.clock()+60 or self.clock()-validated > self.max_age:
+                    continue
                 data = json.loads(raw)
                 if identity(data) != checksum or data['key'] != key.public() or data['schema'] != self.SCHEMA:
                     continue

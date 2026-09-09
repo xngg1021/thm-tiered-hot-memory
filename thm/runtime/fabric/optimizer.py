@@ -71,7 +71,7 @@ class Candidate:
 class SemanticGuard:
     @staticmethod
     def eligible(candidate, policy):
-        if policy in ('reference', 'auto-safe'):
+        if policy in ('reference', 'auto-safe', 'auto-throughput'):
             return candidate.precision == 'fp32' and candidate.semantic_class == 'strict' and candidate.index == 'exact-flat'
         return policy in ('auto-throughput', 'approximate-performance')
 
@@ -213,8 +213,12 @@ class CandidatePlanner:
         def rank(c):
             fit = required_bytes <= memory_budget.get(c.device, 0)
             prior = known.get(identity(c.id), {})
+            # Device transfer/startup dominates tiny allocation-relative workloads.
+            device_worthwhile = required_bytes >= memory_budget.get(c.device, 0)/8
+            locality = (c.device != 'cpu') != device_worthwhile
             return (not fit, prior.get('material_gain_status') != 'accepted',
-                    update_rate > 0 and c.index != 'exact-flat', c.index != 'exact-flat', c.id)
+                    update_rate > 0 and c.index != 'exact-flat', locality,
+                    c.index != 'exact-flat', '.cuvs.' not in c.provider, c.id)
         ranked = sorted(eligible, key=rank)
         return [c for c in ranked if required_bytes <= memory_budget.get(c.device, 0)][:limit]
 
