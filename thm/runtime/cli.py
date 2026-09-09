@@ -55,7 +55,8 @@ def main(argv=None):
         elif args.command=='autotune':
             from .autotune import autotune
             result=autotune(args.model_path,args.model_id,backends=[('torch_fp32',d) for d in (args.device or ['cpu'])],
-                policy=args.policy,workload=args.workload,maximum=args.max_candidates,timeout=args.timeout)
+                policy=args.policy,workload=args.workload,maximum=args.max_candidates,timeout=args.timeout,
+                plan_callback=lambda entries:write_receipt(str(args.output)+'.plan.json',{'entries':entries,'phase':'before-execution'}))
         elif args.command=='prepare':
             from .prepare import prepare
             result=prepare(args.model_path,args.cache_root,args.backend)

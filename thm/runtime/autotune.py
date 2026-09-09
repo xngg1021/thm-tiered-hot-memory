@@ -181,7 +181,7 @@ def autotune(model_path,model_id,*,backends=None,policy='auto-safe',workload='in
                 'identity_key':key,'reuse_class':'within-run-reference-measurement'}
     if reference_session is not None and reference.get('status')=='ok':
         reference_session[key]={'result':json.loads(json.dumps(reference)),'sha256':digest(reference)}
-    if reference.get('status')!='ok':return {'status':'failed','reason':'reference-unavailable','reference':reference,'generation_calls':0}
+    if reference.get('status')!='ok':return {'status':'failed','reason':'reference-unavailable','reference':reference,'candidate_plan':plan,'generation_calls':0}
     try:
         if reference['identity']['source_manifest_sha256']!=source:raise ValueError('reference source identity')
         if any(reference['identity'].get(k)!=v for k,v in {'backend':'torch_fp32','device':ref['device'],'precision':'fp32'}.items()):
@@ -192,6 +192,7 @@ def autotune(model_path,model_id,*,backends=None,policy='auto-safe',workload='in
             if not math.isfinite(reference[field]) or reference[field]<=0:raise ValueError('reference timing')
     except (ValueError,KeyError,TypeError):
         return {'status':'failed','reason':'reference-invalid','reference':reference,'candidate_plan':plan,'generation_calls':0}
+    plan[0]['admission_reason']='reference-self-validated'
     trials=[]
     for entry in plan[1:]:
         if entry['skip_reason']:continue
@@ -218,6 +219,7 @@ def autotune(model_path,model_id,*,backends=None,policy='auto-safe',workload='in
         eligible=[t for t in eligible if (t['result'][metric]<reference[metric] if workload=='interactive' else t['result'][metric]>reference[metric])]
     fallback=not eligible
     winner=min(eligible,key=lambda t:t['result'][metric] if workload=='interactive' else -t['result'][metric]) if eligible else baseline
+    improved=not fallback and (winner['result'][metric]<reference[metric] if workload=='interactive' else winner['result'][metric]>reference[metric])
     ident=winner['result']['identity'];config=winner['config']
     p=RuntimeProfile(ident['embedding_profile_id'],fingerprint(hardware,source,ident.get('derived_manifest_sha256'),ident['embedding_profile_id']),
         backend=config['backend'],device=config['device'],precision=ident['precision'],threads=config['threads'],
@@ -228,9 +230,9 @@ def autotune(model_path,model_id,*,backends=None,policy='auto-safe',workload='in
             'runtime_profile':p.identity(),'selection_metric':metric,
             'selection':'fixed-reference' if policy=='reference' else ('reference-fallback' if fallback else 'calibrated-candidate'),
             'reason':'explicit-reference-policy' if policy=='reference' else ('no-faster-safe-candidate' if fallback else 'measured-winner'),
-            'accelerated_candidate_found':not fallback,
-            'optimized_auto_safe':policy=='auto-safe' and not fallback,
+            'accelerated_candidate_found':improved,
+            'optimized_auto_safe':policy=='auto-safe' and improved,
             'semantic_gate':'strict/reference' if fallback else p.semantic_gate,
             'strict_semantic_parity':winner['semantic_gate']['admitted'],
-            'aggregate_quality_parity':None,'candidate_plan':plan,'reference_reuse':provenance,'trials':trials,'reference':reference,'generation_calls':0,
+            'aggregate_quality_parity':None,'faster_than_reference':improved,'candidate_plan':plan,'reference_reuse':provenance,'trials':trials,'reference':reference,'generation_calls':0,
             'admission':'micro-corpus-only; real Protocol 2 acceptance pending','observed_kernel_dispatch':None}

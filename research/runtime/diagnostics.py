@@ -27,7 +27,16 @@ def score_deltas(reference,candidate, maximum_rows=50, maximum_candidates=64):
         entries=[]
         ar=a.get('selected_ranked_ids',a.get('selected_ids',[]));br=b.get('selected_ranked_ids',b.get('selected_ids',[]))
         def position(values,identifier):return values.index(identifier)+1 if identifier in values else None
-        for identifier in sorted(set(sa)|set(sb))[:maximum_candidates]:
+        all_ids=set(sa)|set(sb)|set(ar)|set(br)
+        changed_ids=set(a.get('selected_ids',ar))^set(b.get('selected_ids',br))
+        affected=changed_ids|{i for i in set(ar)|set(br) if position(ar,i)!=position(br,i)}
+        boundary=set(ar[-1:]+br[-1:])
+        ordered_ids=sorted(all_ids,key=lambda i:(i not in affected,i not in boundary,str(i)))
+        def cutoff(row,selected):
+            ranked=row.get('ranked_ids')
+            if not isinstance(ranked,list) or not selected or any(i not in ranked for i in selected):return None
+            return max(ranked.index(i)+1 for i in selected)
+        for identifier in ordered_ids[:maximum_candidates]:
             x,y=sa.get(identifier),sb.get(identifier)
             entries.append({'candidate_id':identifier,'reference_score':x,'candidate_score':y,'score_delta':y-x if x is not None and y is not None else None,
                 'reference_dense_score':x,'candidate_dense_score':y,
@@ -44,10 +53,12 @@ def score_deltas(reference,candidate, maximum_rows=50, maximum_candidates=64):
             'reference_scorer':da.get('scorer'),'candidate_scorer':db.get('scorer'),
             'reference_selected':a.get('selected_ranked_ids',a.get('selected_ids')),
             'candidate_selected':b.get('selected_ranked_ids',b.get('selected_ids')),
-            'mode':a.get('mode'),'cutoff_position':{'reference':len(ar),'candidate':len(br)},
+            'mode':a.get('mode'),'cutoff_position':{'reference':cutoff(a,ar),'candidate':cutoff(b,br)},
+            'cutoff_basis':'full ranked_ids when available; legacy missing ranks stay unknown',
+            'selected_count':{'reference':len(ar),'candidate':len(br)},
             'packing_boundary':{'reference':a.get('budget_used'),'candidate':b.get('budget_used')},
             'component_status':'dense measured when present; sparse/fused unavailable in legacy receipts',
-            'candidate_count':len(set(sa)|set(sb)),'candidates_truncated':len(set(sa)|set(sb))>maximum_candidates,
+            'candidate_count':len(all_ids),'candidates_truncated':len(all_ids)>maximum_candidates,
             'budget':a.get('budget'),'reference_budget_used':a.get('budget_used'),'candidate_budget_used':b.get('budget_used'),
             'reference_feature_components':da.get('feature_components'),'candidate_feature_components':db.get('feature_components'),
             'scores':entries,'root_cause':'not inferred from proximity alone'})

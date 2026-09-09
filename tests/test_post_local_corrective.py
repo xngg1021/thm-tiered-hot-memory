@@ -189,4 +189,42 @@ class CorrectiveTests(unittest.TestCase):
             self.assertEqual(r['runtime_profile']['scorer'],'numpy_reference')
             self.assertEqual(r['selection'],'fixed-reference');self.assertFalse(r['accelerated_candidate_found'])
 
+    def test_slower_throughput_winner_does_not_claim_acceleration(self):
+        with tempfile.TemporaryDirectory() as d:
+            Path(d,'weights').write_bytes(b'x');a=self.measured(manifest(d)['sha256'])
+            def runner(config,timeout):
+                b=copy.deepcopy(a)
+                if config['query_batch_size']!=1:
+                    b['queries_per_second']=5.
+                    b['retrieval_signature'][0]['selected_ids']=['different']
+                return b
+            r=autotune(d,'test',maximum=1,runner=runner,policy='auto-throughput',workload='bulk')
+            self.assertEqual(r['selection'],'calibrated-candidate')
+            self.assertEqual(r['semantic_gate'],'measured-drift')
+            self.assertFalse(r['accelerated_candidate_found']);self.assertFalse(r['faster_than_reference'])
+
+    def test_cli_publishes_plan_before_measurement(self):
+        from thm.runtime.cli import main
+        import contextlib,io
+        with tempfile.TemporaryDirectory() as d:
+            output=Path(d,'result.json')
+            def fake(*args,**kwargs):
+                kwargs['plan_callback']([{'ordinal':0}])
+                self.assertTrue(Path(str(output)+'.plan.json').is_file())
+                self.assertFalse(output.exists())
+                return {'status':'failed','reason':'reference-unavailable'}
+            with patch('thm.runtime.autotune.autotune',side_effect=fake),contextlib.redirect_stdout(io.StringIO()):
+                code=main(['autotune','--model-path','local','--model-id','test','--output',str(output)])
+            self.assertEqual(code,1)
+            self.assertEqual(json.loads(Path(str(output)+'.plan.json').read_text())['phase'],'before-execution')
+
+    def test_forensic_cap_keeps_affected_ids_and_real_cutoff(self):
+        from research.runtime.diagnostics import score_deltas
+        a={'selected_ids':['z'],'selected_ranked_ids':['z'],'ranked_ids':['a','b','z'],'runtime_diagnostics':{'candidate_ids':['a','b','z'],'scores':[.3,.2,.1]}}
+        b=copy.deepcopy(a);b['selected_ids']=['y'];b['selected_ranked_ids']=['y']
+        r=score_deltas({'rows':[a]},{'rows':[b]},maximum_candidates=2)['queries'][0]
+        self.assertEqual({x['candidate_id'] for x in r['scores']},{'z','y'})
+        self.assertEqual(r['cutoff_position']['reference'],3);self.assertIsNone(r['cutoff_position']['candidate'])
+        self.assertEqual(r['selected_count']['reference'],1)
+
 if __name__=='__main__':unittest.main()
