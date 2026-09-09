@@ -5,6 +5,27 @@ import unittest
 from thm.physical.probe import probe,linux,mounts,windows_fields,macos_fields
 
 class ProbeTests(unittest.TestCase):
+    def test_macos_bus_evidence_reaches_local_only_planner(self):
+        import plistlib
+        from thm.physical.contracts import StorageTarget,StorageProfile,PlacementIntent,DataRole
+        from thm.physical.planner import plan
+        for bus,remote in [('PCI-Express',False),('NVMe',False),('SATA',False),('SAS',False),
+                           ('USB',False),('Thunderbolt',False),('Disk Image',None),
+                           ('Virtual Interface',None),('unknown',None),('',None),
+                           ('iSCSI',True),('Fibre Channel',True),('NFS',True)]:
+            with self.subTest(bus=bus):
+                fields=macos_fields(plistlib.dumps({'BusProtocol':bus,'Writable':True,'FilesystemType':'apfs'}))
+                self.assertIs(fields['remote'],remote)
+                target=StorageTarget('mac',free_capacity=100,adapter='local-filesystem',**fields)
+                profile=StorageProfile(target.fingerprint,({'operation':'buffered-random','size':4096,
+                    'concurrency':1,'p95_ms':1.,'bytes_per_second':1000.},),1024,1.)
+                result=plan(PlacementIntent(DataRole.VECTOR_SEGMENT,capacity_required=10),[target],[profile])
+                self.assertEqual(result['selected_target'],'mac' if remote is False else None)
+        for payload in ({},{'MediaName':'fast local NVMe'},
+                        {'BusProtocol':'PCI-Express','VirtualOrPhysical':'Virtual'},
+                        {'BusProtocol':'USB','DiskImage':True}):
+            self.assertIsNone(macos_fields(payload)['remote'])
+
     def test_windows_bus_evidence_and_local_only_planner(self):
         from thm.physical.contracts import StorageTarget,StorageProfile,PlacementIntent,DataRole
         from thm.physical.planner import plan

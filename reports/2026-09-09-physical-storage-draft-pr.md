@@ -1,5 +1,7 @@
 # Draft PR: bounded verification and orthogonal physical storage
 
+Forward correction: the text below is the original publication-time Draft receipt. The later repository-wide authorization supersedes its no-merge stopping condition. Current lineage, completed review/CI and merge status are recorded in the [repository reconciliation receipt](2026-09-09-open-pr-reconciliation-closeout.md); no earlier pending result below is claimed as current status.
+
 The previous verification entry point ran full LongMemEval for every reference and winner. On the reported target machine that turned ordinary local verification into an 8–12 hour campaign. This successor introduces explicit smoke/acceptance/full-research modes, pilot-based refusal and a whole-process-tree wall ceiling. Default acceptance uses five fixed LME instances; full research requires both explicit flags. Reference reuse is exact-key and provenance-bearing.
 
 The production addition separates source/segment identity, representations, transfers and allocations. Conservative public OS probes feed storage targets and measured bounded cost profiles. SQLite keeps control metadata and FTS; optional contiguous immutable vector files provide buffered/mmap data reads. Explicit migration checks content and generation before publishing a manifest and preserves the source by default. Receipt-first execution planning binds the physical representation to an existing complete runtime profile. T0–T3, source validity and semantic demand remain independent.

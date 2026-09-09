@@ -1,5 +1,7 @@
 # One-shot local runtime verification — pending-real-local-runtime
 
+2026-09-09 forward correction: this is the historical PR14 pre-merge plan. PR14 is merged, and the repository-wide reconciliation authorization explicitly cancels the old NOT MERGED/hardware stopping condition below. Use current main, the [bounded acceptance contract](../docs/physical-storage-fabric.md) and the [repository closeout](2026-09-09-open-pr-reconciliation-closeout.md). Hardware and full-dataset results remain optional post-merge evidence; prior receipts remain unchanged.
+
 2026-09-09 amendment: the original multi-hour default is withdrawn. See [bounded local acceptance](../docs/physical-storage-fabric.md). Full research requires both explicit campaign and acknowledgement flags.
 
 Predecessor main: `9eb904c21fd25aa0a77d2420ed080702fac17e59`. Successor branch: `work/zero-llm-heterogeneous-runtime-autotune-20260908`. Use the final exact PR head recorded in its closeout comment. This plan does not authorize merge or certify any performance result.

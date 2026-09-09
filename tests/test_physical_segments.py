@@ -8,6 +8,34 @@ from thm.runtime.testing import FakeEncoder
 from thm.physical.segments import create,read_segment,export,current,object_path
 
 class SegmentTests(unittest.TestCase):
+    def test_export_rejects_same_generation_reembedding_from_another_connection(self):
+        for storage in ('json','blob'):
+            with self.subTest(storage=storage):
+                folder=self.root/storage;folder.mkdir()
+                newroot=folder/'new';newroot.mkdir()
+                with closing(SearchIndex(folder/'index.sqlite')) as index:
+                    docs=[Document('a','scope','s',0,'alpha'),Document('b','scope','s',1,'beta')]
+                    index.replace_scope('scope',docs)
+                    index.embed('scope',self.encoder,self.encoder.model_id,vector_storage=storage)
+                    generation=index.db.execute('SELECT generation FROM scopes').fetchone()[0]
+                    changed=FakeEncoder(kind='semantic-drift')
+                    self.assertEqual(changed.profile,self.profile)
+                    newer={}
+                    def reembed():
+                        with closing(SearchIndex(index.path)) as other:
+                            other.embed('scope',changed,changed.model_id,vector_storage=storage)
+                            export(other,'scope',self.profile,newroot)
+                            newer.update(current(other,'scope',self.profile.id))
+                    with self.assertRaisesRegex(ValueError,'vector snapshot changed'):
+                        export(index,'scope',self.profile,folder,before_publish=reembed)
+                    self.assertEqual(index.db.execute('SELECT generation FROM scopes').fetchone()[0],generation)
+                    self.assertEqual(current(index,'scope',self.profile.id),newer)
+                    from thm.physical.segments import load
+                    from thm.runtime.storage import pack,unpack
+                    actual=load(index,'scope',self.profile,generation)[1]
+                    expected=[unpack(pack(v),self.profile.dimension) for v in changed.encode_many([': alpha',': beta'])]
+                    self.assertEqual(actual,expected)
+
     def test_scope_replacement_clears_placements_transactionally(self):
         import sqlite3
         with closing(SearchIndex(self.root/'index.sqlite')) as index:

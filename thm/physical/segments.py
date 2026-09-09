@@ -17,6 +17,9 @@ MAX_HEADER=16*1024*1024
 SCHEMA='''CREATE TABLE IF NOT EXISTS physical_placements(
  scope TEXT, profile TEXT, generation TEXT, manifest TEXT NOT NULL,
  PRIMARY KEY(scope,profile));'''
+VECTOR_ROWS='''SELECT v.vector,v.dimension,v.dtype FROM docs d
+ JOIN vectors_v2 v ON d.scope=v.scope AND d.id=v.id AND d.hash=v.hash
+ WHERE d.scope=? AND v.profile=? ORDER BY d.rowid'''
 
 
 def sync_directory(path):
@@ -126,7 +129,7 @@ def export(index, scope, profile, root, *, mode='mmap', before_publish=None):
             generation=index.db.execute('SELECT generation FROM scopes WHERE scope=?',(scope,)).fetchone()[0]
             complete=index.db.execute('SELECT generation,count FROM vector_generations WHERE scope=? AND profile=?',(scope,profile.id)).fetchone()
             docs=index.rows(scope);keys=[[r['id'],r['hash']] for r in docs]
-            rows=list(index.db.execute('SELECT v.vector,v.dimension,v.dtype FROM docs d JOIN vectors_v2 v ON d.scope=v.scope AND d.id=v.id AND d.hash=v.hash WHERE d.scope=? AND v.profile=? ORDER BY d.rowid',(scope,profile.id)))
+            rows=[tuple(r) for r in index.db.execute(VECTOR_ROWS,(scope,profile.id))]
             if not complete or tuple(complete)!=(generation,len(docs)) or len(rows)!=len(docs):raise ValueError('incomplete profile generation')
             if any(r[1]!=profile.dimension for r in rows):raise ValueError('profile dimension mismatch')
             values=[unpack(r[0],r[1]) if r[2]=='f32le' else json.loads(r[0]) for r in rows]
@@ -139,6 +142,15 @@ def export(index, scope, profile, root, *, mode='mmap', before_publish=None):
         try:
             actual=index.db.execute('SELECT generation FROM scopes WHERE scope=?',(scope,)).fetchone()
             if not actual or actual[0]!=generation:raise ValueError('source generation changed before publication')
+            # A same-source/profile re-embed can replace vectors without changing
+            # source generation. Compare the complete snapshot under the write
+            # transaction so neither local threads nor other connections can
+            # publish stale vectors over a newer embedding/placement.
+            now_complete=index.db.execute('SELECT generation,count FROM vector_generations WHERE scope=? AND profile=?',(scope,profile.id)).fetchone()
+            now_keys=[[r['id'],r['hash']] for r in index.rows(scope)]
+            now_rows=[tuple(r) for r in index.db.execute(VECTOR_ROWS,(scope,profile.id))]
+            if not now_complete or tuple(now_complete)!=tuple(complete) or now_keys!=keys or now_rows!=rows:
+                raise ValueError('vector snapshot changed before publication')
             index.db.execute(SCHEMA)
             index.db.execute('INSERT OR REPLACE INTO physical_placements VALUES(?,?,?,?)',(scope,profile.id,generation,json.dumps(manifest,sort_keys=True)))
             index.db.commit();index._clear_caches()

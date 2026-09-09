@@ -27,7 +27,9 @@ The unmerged branch-only experiments are outside current release scope: `work/co
 - Windows public MSFT_Disk bus evidence admits local NVMe/SATA/SAS/USB (numeric and named values); network transports remain remote and ambiguous/virtual/unresolved disks unknown. Parser-to-planner regression proves local-only NVMe selection with measured costs and the other constraints satisfied.
 - Scope replacement clears physical placement pointers in the same transaction as vectors_v2/vector_generations. No-op and failed replacements preserve them; other scopes and immutable files remain intact.
 
-Local candidate validation: 417 unit tests passed; headless core ignition, ten numeric audit checks, docs, version-history and whitespace checks passed. Exact final candidate/main identities, CI and completed review receipts are recorded below when available, without treating pending runs as success.
+First forward-fix head `3c5f6e81173e5cd6a494b57c5b1b07c1a2b029fa`, tree `6cbd75e2e255a6ed7435d68d593080baa146ff65`, passed 417 local tests, correctness PR `34314841331` and push `34314838121` (all three OSes), and Hermes `34314838059`. Retrieval `34314838109` and frontier `34314838099` were skipped. Codex review `PRR_kwDOUP17J88AAAABMvk4HQ` found a P1 same-generation re-embed/export publication race and a P2 macOS locality gap, so this head was not merged. The next forward fix revalidates the exact vector snapshot within the publication write transaction and admits positively observed macOS local buses conservatively. Regressions cover JSON/BLOB re-embedding from a second database connection while retaining its newer placement, plus macOS parser-to-planner locality.
+
+Candidate validation includes the full unit suite, headless core ignition, ten numeric audit checks, docs, version-history and whitespace checks. Exact final candidate/main identities, CI and completed review receipts are recorded below when available, without treating pending runs as success.
 
 ## Acceptance and remaining evidence
 

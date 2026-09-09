@@ -130,10 +130,18 @@ def windows_fields(payload):
 
 def macos_fields(payload):
     d=plistlib.loads(payload) if isinstance(payload,bytes) else payload
+    bus=d.get('BusProtocol')
+    protocol=bus.strip().lower() if isinstance(bus,str) else None
+    local={'pci-express','pci','nvme','sata','ata','sas','usb','secure digital','sd','firewire','thunderbolt'}
+    network={'iscsi','fibre channel','fibrechannel','smb','nfs'}
+    remote=False if protocol in local else True if protocol in network else None
+    # A disk-image protocol or explicit virtual observation never proves local
+    # backing, even if the image happens to reside on an internal volume.
+    if d.get('VirtualOrPhysical')=='Virtual' or d.get('DiskImage') is True:remote=None
     return {'filesystem':d.get('FilesystemType'),'protocol':d.get('BusProtocol'),
         'readonly':not d['Writable'] if type(d.get('Writable')) is bool else None,
         'logical_block':d.get('DeviceBlockSize'),'media_class':'nonrotating-block' if d.get('SolidState') is True else 'unknown',
-        'remote':None,'numa_node':None}
+        'remote':remote,'numa_node':None}
 
 
 def probe(root):
