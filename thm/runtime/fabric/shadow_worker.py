@@ -45,12 +45,14 @@ def replay(task):
                     raise ValueError('shadow source generation changed')
                 elapsed = (time.perf_counter()-started)*1000
                 if repeat:
-                    samples[label].append(elapsed)
+                    samples[label].append(elapsed + task.get('observed_encode_floor_ms', 0))
                 outputs.append(signature(result))
             refs = outputs
         return {**samples, 'reference': refs[0], 'result': refs[1], 'generation': task['generation'],
                 'candidate_id': task['candidate_id'], 'key': task['key'], 'provider': task['provider'],
-                'memory_bytes': executor.manager.usage(task['device']), 'sample_kind': 'read-only-request-replay'}
+                'memory_bytes': executor.manager.usage(task['device']),
+                'observed_encode_floor_ms': task.get('observed_encode_floor_ms', 0),
+                'sample_kind': 'cached-embedding-replay-plus-observed-encode-floor'}
     finally:
         baseline.close(); candidate.close(); executor.close(); registry.close()
 

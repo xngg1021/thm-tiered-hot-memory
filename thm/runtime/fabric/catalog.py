@@ -11,6 +11,8 @@ def spec(name, vendor, family, cls, *, dependencies=(), devices=('cpu',), os=('L
 
 
 BUILTINS = [
+    spec('nvidia.cublaslt', 'nvidia', 'cuBLASLt-nvmath', 'nvidia:CublasLtExact', dependencies=('nvmath-python',), operations=('vector-search',), devices=('gpu',), os=('Linux','Windows'), resident=True),
+    spec('nvidia.cuda-graph', 'nvidia', 'CUDA-Graph', 'nvidia:StableCudaGraph', dependencies=('torch',), operations=('execution-graph',), devices=('gpu',), os=('Linux','Windows'), compile=True),
     spec('nvidia.nvml', 'nvidia', 'NVML', 'telemetry:NVMLTelemetry', dependencies=('nvidia-ml-py',), operations=('telemetry',), devices=('gpu',)),
     spec('amd.smi', 'amd', 'AMD-SMI', 'telemetry:AMDSystemTelemetry', dependencies=('amdsmi',), operations=('telemetry',), devices=('gpu',), os=('Linux','Windows')),
     spec('host.device', 'generic', 'os', 'hardware:HostDeviceProvider', operations=('device',)),
@@ -61,7 +63,6 @@ BUILTINS.extend([
 
 # Public C/ObjC extension seams have explicit maturity, never masquerade as executable adapters.
 for name, vendor, family, libraries in [
-    ('nvidia.cublaslt', 'nvidia', 'cuBLASLt', ('cublasLt',)),
     ('nvidia.cufile', 'nvidia', 'cuFile-GDS', ('cufile',)),
     ('amd.hipblaslt', 'amd', 'hipBLASLt', ('hipblaslt',)),
     ('amd.rocblas', 'amd', 'rocBLAS', ('rocblas',)),

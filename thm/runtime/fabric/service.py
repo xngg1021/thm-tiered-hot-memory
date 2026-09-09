@@ -82,6 +82,7 @@ class RuntimeService:
         self.provider_versions = identity(self.registry.describe('host.exact')['versions'])
         self.discovery = {}; self.discovery_cursor = 0; self.batchers = {}; self.discovery_done = False
         self.queue_lock = threading.RLock()
+        self.encode_costs = []
 
     def submit(self, scope, query, *, workload='interactive', deadline=None, **settings):
         """Nonblocking online API. Compatible requests share one bounded queue."""
@@ -209,7 +210,12 @@ class RuntimeService:
                 self.pinned[key.id] = None; fallback = 'provider-failed:' + type(exc).__name__
             finally:
                 self.index._vector_executor = None
-            if any(r['generation'] != generation for r in results):
+            try:
+                JointComputeDataPlanner().validate(plan, self.index, scope)
+                plan_stale = False
+            except ValueError:
+                plan_stale = True
+            if plan_stale or any(r['generation'] != generation for r in results):
                 # Replan once on the new snapshot; the old observation cannot be
                 # published under the new source generation.
                 self.pinned.pop(key.id, None)
@@ -239,6 +245,8 @@ class RuntimeService:
             for result in results:
                 result['execution_plan'] = plan.receipt()
                 result['runtime_receipt'] = dict(receipt)
+                if not result.get('query_embedding_cache_hit'):
+                    self.encode_costs = (self.encode_costs + [result.get('timing_ms', {}).get('query_embedding', 0)])[-64:]
             self._maybe_explore(key, generation, count, scope, queries[0], effective)
             return results
 
@@ -275,7 +283,8 @@ class RuntimeService:
                 'generation': generation, 'query_vector': list(vector), 'embedding_profile': asdict(p),
                 'model_id': self.model_id, 'counter': self.index.counter.name, 'settings': task_settings,
                 'candidate_id': candidate.id, 'provider': candidate.provider, 'device': candidate.device,
-                'key': key.id, 'memory_budget': self.memory_budget, 'repeats': 5}
+                'key': key.id, 'memory_budget': self.memory_budget, 'repeats': 5,
+                'observed_encode_floor_ms': max(self.encode_costs, default=0)}
         self.explorer.submit(task, lambda result: self._publish(key, candidate, result),
                              estimated_io=count*max(1, p.dimension)*4, gpu=candidate.device != 'cpu')
 
@@ -284,6 +293,9 @@ class RuntimeService:
         from .hardware import DeviceNode
         with self.lock:
             if self.closed:
+                return
+            if result.get('status') == 'deferred':
+                self.discovery_cursor = (result.get('cursor') or 0)+1
                 return
             self.discovery_cursor = result.get('next_cursor', 0)
             self.discovery_done = result.get('done', False)
@@ -294,7 +306,7 @@ class RuntimeService:
                 if row.get('availability') != 'available':
                     continue
                 device = dict(description['options']).get('device')
-                exact = name.endswith('.exact') or name in ('nvidia.cuvs.brute_force','metax.mcfaiss')
+                exact = name.endswith('.exact') or name in ('nvidia.cuvs.brute_force','metax.mcfaiss','nvidia.cublaslt')
                 approximate = name == 'host.hnsw' or name.startswith('nvidia.cuvs.') and not exact
                 if not exact and not approximate:
                     continue
@@ -312,6 +324,11 @@ class RuntimeService:
 
     def _publish(self, key, candidate, result):
         if result.get('key') != key.id or result.get('candidate_id') != candidate.id:
+            return
+        if result.get('status') == 'deferred':
+            with self.lock:
+                if not self.closed:
+                    self.store.failure(key, candidate.provider, 'timeout')
             return
         semantic = SemanticGuard.compare(result['reference'], result['result'], dimension=key.dimension)['semantic_admission']
         approximate = self.policy == 'approximate-performance' and candidate.semantic_class == 'approximate'
@@ -345,6 +362,14 @@ class RuntimeService:
                 'decisions': list(self.decisions), 'shadow': dict(self.explorer.last_receipt),
                 'provider_discovery': dict(self.discovery), 'discovery_complete': self.discovery_done,
                 'generation_calls': 0, 'user_benchmark_required': False}
+
+    def status(self):
+        with self.lock:
+            return {'schema': 2, 'mode': 'zero-touch', 'semantic_policy': self.policy,
+                    'hardware_fingerprint': self.graph.fingerprint, 'profile_store_state': self.store_state,
+                    'profiles': self.store.summary(), 'discovery_complete': self.discovery_done,
+                    'session_profiles': [{'key': key, 'provider': c.provider if c else 'reference'} for key,c in self.pinned.items()],
+                    'shadow': dict(self.explorer.last_receipt), 'generation_calls': 0, 'user_benchmark_required': False}
 
     def close(self):
         with self.queue_lock:

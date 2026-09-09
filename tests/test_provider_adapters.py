@@ -365,3 +365,44 @@ class ExactTokenPrefixTests(unittest.TestCase):
             for length in range(1,len(text)+1,max(1,len(text)//23)):
                 self.assertEqual(counter.count_prefix(text[:length]),counter(text[:length]))
         self.assertLessEqual(len(counter._piece_cache),512)
+
+
+class NvidiaPrimitiveTests(unittest.TestCase):
+    def test_cublaslt_uses_one_vendor_heuristic_and_returns_topk_only(self):
+        from thm.runtime.fabric.nvidia import CublasLtExact
+        cp=NativeVectorFixtureTests().cupy(); cp.argsort=np.argsort; cp.take_along_axis=np.take_along_axis
+        cp.cuda.runtime.driverGetVersion=lambda:123
+        operations=[]
+        class MM:
+            def __init__(self,a,b,**kw):self.a=a;self.b=b;self.options=kw['options'];operations.append(self)
+            def __enter__(self):return self
+            def __exit__(self,*args):self.freed=True
+            def plan(self,**kw):self.preferences=kw;return ['fixture-heuristic']
+            def execute(self):return self.a@self.b
+        mods={'cupy':cp,'nvmath':types.SimpleNamespace(__version__='fixture'),
+              'nvmath.linalg':types.SimpleNamespace(ComputeType=types.SimpleNamespace(COMPUTE_32F_PEDANTIC=69)),
+              'nvmath.linalg.advanced':types.SimpleNamespace(Matmul=MM)}
+        with mock.patch.dict(sys.modules,mods):
+            p=CublasLtExact(spec('nvidia.cublaslt'));self.assertEqual(p.probe()['availability'],'available')
+            h=p.build([[1.,0.],[0.,1.]],[7,8],index_identity(device='cuda'))
+            rows,receipt=p.search(h,[[1.,0.]],1)
+            self.assertEqual(rows[0][0],[7]);self.assertEqual(receipt['vendor_heuristic_candidates'],1)
+            self.assertEqual(operations[0].options['compute_type'],69);self.assertTrue(operations[0].freed)
+            self.assertFalse(receipt['document_matrix_transferred']);p.close()
+
+    def test_cuda_graph_shape_change_rejected_and_graph_replayed(self):
+        from thm.runtime.fabric.nvidia import StableCudaGraph
+        class Input:
+            shape=(1,2);dtype='float32';device=types.SimpleNamespace(type='cuda')
+            def clone(self):return Input()
+            def copy_(self,other):pass
+        stream=mock.Mock();graph=mock.Mock()
+        torch=types.SimpleNamespace(cuda=types.SimpleNamespace(Stream=lambda:stream,current_stream=lambda:stream,
+            stream=lambda x:contextlib.nullcontext(),CUDAGraph=lambda:graph,graph=lambda x:contextlib.nullcontext(),synchronize=mock.Mock()))
+        operation=mock.Mock(return_value='fixture-result')
+        with mock.patch.dict(sys.modules,{'torch':torch}):
+            p=StableCudaGraph();x=Input();p.prepare(operation,[x],operation_identity='validated-fixture')
+            self.assertEqual(p.execute([x]),'fixture-result');graph.replay.assert_called_once()
+            self.assertTrue(p.telemetry()['replayed']);x.shape=(2,2)
+            with self.assertRaises(ProviderUnavailable):p.execute([x])
+            p.close()

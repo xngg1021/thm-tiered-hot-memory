@@ -101,6 +101,12 @@ class BoundedShadowExplorer:
                     self.process.communicate(timeout=5)
             self.last_receipt = {'status': 'deferred', 'reason': type(exc).__name__,
                                  'wall_ms': (self.clock()-start)*1000, 'generation_calls': 0}
+            if not self.cancelled.is_set():
+                try:
+                    callback({**self.last_receipt, **{k: task.get(k) for k in ('key','candidate_id','provider','cursor')},
+                              'operation': task.get('operation')})
+                except Exception:
+                    pass  # A failed observer cannot escape the isolated worker.
         finally:
             if budget:
                 budget.close()
