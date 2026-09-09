@@ -290,7 +290,7 @@ class RuntimeService:
                 'inference_provider': provider if model_point else 'reference',
                 'authority_embedding_profile': getattr(getattr(self.encoder, 'profile', None), 'id', None),
                 'index_provider': 'numpy_reference' if model_point else provider, 'physical_placement': plan.current_placement, 'semantic_policy': self.policy,
-                'semantic_class': candidate.semantic_class if candidate else 'strict',
+                'semantic_class': 'observed-request' if model_point else candidate.semantic_class if candidate else 'strict',
                 'quality_evidence_scope': 'observed-request-only' if candidate or model_point else 'reference',
                 'profile_source': 'stored' if candidate or model_point else 'bootstrap', 'profile_freshness': 'fresh',
                 'profile_key': key.id, 'batch_policy': 'deadline-aware-opportunity',
