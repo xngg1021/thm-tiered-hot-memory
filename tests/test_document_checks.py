@@ -144,14 +144,30 @@ class DocumentTests(unittest.TestCase):
             self.assertTrue(any('requires explicit --full-research' in e for e in checker.check(self.root)['errors']), path)
 
     def test_research_opt_in_on_continued_command_lines(self):
-        for marker in ('\\', '`'):
+        for shell, marker in (('bash', '\\'), ('powershell', '`')):
             command = 'python research/recall/benchmark.py ' + marker + '\n  --dataset input.json ' + marker + '\n  '
-            self.write('docs/campaign.md', '```shell\n' + command + '--full-research\n```\n')
+            self.write('docs/campaign.md', '```' + shell + '\n' + command + '--full-research\n```\n')
             self.assertEqual(checker.check(self.root)['status'], 'PASS', marker)
-            self.write('docs/campaign.md', '```shell\n' + command + '# --full-research\n```\n')
+            self.write('docs/campaign.md', '```' + shell + '\n' + command + '# --full-research\n```\n')
             self.assertTrue(any('requires explicit --full-research' in e for e in checker.check(self.root)['errors']), marker)
         self.write('docs/campaign.md', '```shell\npython research/recall/benchmark.py --dataset input.json # \\\n --full-research\n```\n')
         self.assertTrue(any('requires explicit --full-research' in e for e in checker.check(self.root)['errors']))
+
+    def test_research_command_cannot_borrow_opt_in_from_later_command(self):
+        for separator in (';', '&&', '||', '|', '&'):
+            command = 'python research/recall/benchmark.py --dataset input.json'
+            self.write('docs/campaign.md', '```bash\n' + command + separator + ' echo --full-research\n```\n')
+            self.assertTrue(any('requires explicit --full-research' in e for e in checker.check(self.root)['errors']), separator)
+            self.write('docs/campaign.md', '```bash\n' + command + ' --full-research' + separator + ' echo done\n```\n')
+            self.assertEqual(checker.check(self.root)['status'], 'PASS', separator)
+        self.write('docs/campaign.md', '```bash\npython research/recall/benchmark.py --dataset "path;with|symbols.json" --full-research\n```\n')
+        self.assertEqual(checker.check(self.root)['status'], 'PASS')
+
+    def test_research_continuation_must_match_declared_shell(self):
+        for shell, marker in (('bash', '`'), ('powershell', '\\')):
+            command = 'python research/recall/benchmark.py --dataset input.json ' + marker + '\n  --full-research'
+            self.write('docs/campaign.md', '```' + shell + '\n' + command + '\n```\n')
+            self.assertTrue(any('requires explicit --full-research' in e for e in checker.check(self.root)['errors']), shell)
 
     def test_indented_and_prompt_prefixed_research_commands_require_opt_in(self):
         for prefix in ('    ', '\t', '$ ', '  $ ', '> ', 'PS> ', 'PS C:\\work> '):

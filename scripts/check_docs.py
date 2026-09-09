@@ -14,7 +14,7 @@ ROOT = Path(__file__).resolve().parents[1]
 
 
 def _without_shell_comment(command):
-    """A shell hash starts a comment at a word boundary, outside quotes."""
+    """Return the first command, excluding comments and outer separators."""
     quote = None
     escaped = False
     in_word = False
@@ -41,6 +41,8 @@ def _without_shell_comment(command):
             in_word = True
         elif char == '#' and not in_word:
             return command[:index]
+        elif not substitutions and char in ';|&':
+            return command[:index]
         elif substitutions and char in '()':
             substitutions[-1][1] += 1 if char == '(' else -1
             if substitutions[-1][1] == 0:
@@ -57,12 +59,17 @@ def _without_shell_comment(command):
 def _native_commands(text):
     pattern = re.compile(r'^[ \t]*(?:(?:[$%>]|PS(?:[ \t]+[^>\n]*)?>)[ \t]+)?python(?:3)?[ \t]+research/(?:recall/(?:benchmark|lme_retrieval)|economics/run_suite)\.py\b')
     lines = iter(text.splitlines())
+    fence = None
     for line in lines:
+        match = re.match(r'^\s*```([\w-]*)\s*$', line)
+        if match:
+            fence = match.group(1).lower() if fence is None else None
+            continue
         if not pattern.match(line):
             continue
         command = line
-        while command.endswith(('\\', '`')) and _without_shell_comment(command) == command:
-            marker = command[-1]
+        marker = '`' if fence in ('powershell', 'pwsh', 'ps1') else '\\'
+        while command.endswith(marker) and _without_shell_comment(command) == command:
             count = len(command) - len(command.rstrip(marker))
             if count % 2 == 0:
                 break
