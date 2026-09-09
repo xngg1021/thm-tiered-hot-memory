@@ -912,3 +912,36 @@ class RuntimeReviewRegressionTests(unittest.TestCase):
         chunks=len(BULK_QUERIES)//32
         self.assertEqual(result['scoring']['dense_scoring'],2*chunks);self.assertEqual(result['scoring']['transfer'],.5*chunks)
         self.assertEqual(result['queries_per_second'],len(BULK_QUERIES)/(result['batch_total_ms']/1000+2*chunks/1000))
+
+    def test_scope_replacement_purges_all_profile_vectors_only_for_changed_scope(self):
+        encoders=[FakeEncoder(),FakeEncoder(device='cuda',salt='other-profile')]
+        otherdocs=[dataclasses.replace(d,scope='other') for d in self.docs]
+        self.index.replace_scope('other',otherdocs)
+        for encoder,storage in zip(encoders,('json','blob')):
+            for scope in ('s','other'):self.index.embed(scope,encoder,encoder.model_id,vector_storage=storage)
+        def snapshot(scope):
+            return {table:[tuple(r) for r in self.index.db.execute('SELECT * FROM '+table+' WHERE scope=? ORDER BY profile',(scope,))] for table in ('vectors_v2','vector_generations')}
+        before=snapshot('s');other=snapshot('other')
+        self.assertFalse(self.index.replace_scope('s',self.docs)['changed']);self.assertEqual(snapshot('s'),before)
+        self.index.replace_scope('s',[dataclasses.replace(self.docs[0],text='replacement source')])
+        self.assertEqual(snapshot('s'),{'vectors_v2':[],'vector_generations':[]});self.assertEqual(snapshot('other'),other)
+        self.assertEqual(self.index.db.execute('SELECT count(*) FROM embedding_profiles').fetchone()[0],2)
+        for encoder in encoders:
+            with self.assertRaises(ValueError):self.index.search('s','replacement',mode='dense',encoder=encoder,model_id=encoder.model_id)
+
+    def test_sync_profile_cleanup_is_transactional_and_keeps_unrelated_sources(self):
+        retained=Document('retained','s','hermes',0,'retained alpha',source='hermes-message:1')
+        self.index.replace_scope('s',self.docs+[retained])
+        encoders=[FakeEncoder(),FakeEncoder(device='cuda',salt='other-profile')]
+        for e in encoders:self.index.embed('s',e,e.model_id)
+        tables=('docs','scopes','vectors_v2','vector_generations')
+        snapshot=lambda:{table:[tuple(r) for r in self.index.db.execute('SELECT * FROM '+table)] for table in tables}
+        before=snapshot()
+        self.index.db.execute("CREATE TRIGGER fail_replacement BEFORE INSERT ON docs BEGIN SELECT RAISE(ABORT,'injected replacement failure'); END")
+        try:
+            with self.assertRaises(sqlite3.IntegrityError):self.index.sync_kind('s',[],'file:')
+            self.assertEqual(snapshot(),before)
+        finally:self.index.db.execute('DROP TRIGGER fail_replacement')
+        self.index.sync_kind('s',[],'file:')
+        self.assertEqual([r['id'] for r in self.index.rows('s')],['retained'])
+        for table in ('vectors_v2','vector_generations'):self.assertEqual(self.index.db.execute('SELECT count(*) FROM '+table+' WHERE scope=?',('s',)).fetchone()[0],0)
