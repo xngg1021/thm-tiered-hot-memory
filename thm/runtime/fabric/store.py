@@ -97,7 +97,7 @@ class ProfileStore:
         for name, value in measurement.items():
             if value is not None:
                 finite(value, name)
-        if semantic_status not in ('strict', 'reference', 'approximate', 'rejected'):
+        if semantic_status not in ('strict', 'reference', 'approximate', 'observed-request', 'rejected'):
             raise ValueError('invalid semantic status')
         if material_gain not in ('accepted', 'retain-current', 'rejected'):
             raise ValueError('invalid material gain')
