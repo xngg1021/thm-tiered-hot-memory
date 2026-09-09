@@ -79,6 +79,10 @@ class RuntimeService:
             if generation is None:
                 raise ValueError('scope not indexed')
             count = self.index.db.execute('SELECT count(*) FROM docs WHERE scope=?', (scope,)).fetchone()[0]
+        from thm.features import RetrievalFeatures
+        settings = dict(settings)
+        if 'features' in settings:
+            settings['features'] = RetrievalFeatures.parse(settings['features']).identity()
         versions = [self.registry.describe(c.provider)['versions'] for c in self.candidates]
         key = ProfileKey(self.graph.fingerprint, self.graph.os+':'+self.graph.build, identity('cpu-no-driver'),
                          identity(versions), getattr(p, 'source_manifest_sha256', 'none'),
@@ -125,7 +129,12 @@ class RuntimeService:
             fallback = boot['fallback']
             executor = None
             if candidate:
-                executor = self.executors.setdefault(candidate.id, ResidentExecutor(self.registry, candidate.provider, candidate.device, self.memory_budget))
+                if candidate.id not in self.executors:
+                    self.executors[candidate.id] = ResidentExecutor(self.registry, candidate.provider, candidate.device, self.memory_budget)
+                executor = self.executors[candidate.id]
+            from thm.physical.joint import JointComputeDataPlanner
+            plan = JointComputeDataPlanner().plan(self.index, scope, embedding_profile=getattr(getattr(self.encoder, 'profile', None), 'id', None),
+                candidate=candidate, workload=workload, policy=self.policy)
             self.index._vector_executor = executor
             try:
                 result = self.index.search(scope, query, encoder=self.encoder, model_id=self.model_id, **effective)
@@ -146,6 +155,7 @@ class RuntimeService:
                 fallback=bool(fallback), semantic_policy=self.policy,
                 queries_per_second=1000/elapsed if elapsed else None,
                 profile_source='stored' if candidate else 'bootstrap'))
+            result['execution_plan'] = plan.receipt()
             result['runtime_receipt'] = {'schema': 2, 'evidence_layer': 'systems-runtime',
                 'hardware_fingerprint': self.graph.fingerprint, 'provider': provider,
                 'actual_provider': 'reference' if fallback and candidate else provider,
