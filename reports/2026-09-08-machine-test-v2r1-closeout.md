@@ -93,11 +93,13 @@ Fifth completed review identified one P2: any_gold_hits must be bounded by the s
 
 Real TokenCounter + synthetic LoCoMo conversation path and bridge smoke; canonical no-gold/unresolved predicates; bridge/report denominator and suite totals; parity preview vs total, rank-only vs set substitution, aggregate vs strict, missing selected IDs, numeric differences; portable input preflight. Full correctness: unit discovery, numeric audit, docs, version history, whitespace, Ubuntu/macOS/Windows CI. Exact final CI/review receipts belong to the PR closeout; merge requires both green CI and clean exact-head Codex review.
 
-## Remaining blockers
+## Optional historical full-research campaign
 
-Only hardware evidence blocker: **LME CPU v2 pending-real-local-runtime** on the user's HP Z6 G4 / Xeon Gold 6254 / RTX 3080 10GB. No cloud CPU run is represented as this machine. The local run must use the same model directory that produced GPU v2; the historical artifact records a model ID, not a file-manifest hash, so model weight identity cannot be independently reconstructed from that ID alone.
+As of the Evaluation Fabric successor, this multi-hour procedure is an explicit optional research campaign, not a merge gate or the default local acceptance path. Use the [bounded acceptance contract](../docs/18-evaluation-fabric.md) for ordinary validation. Historical measurements below remain unchanged.
 
-From the final merged checkout on that Z6, paste this PowerShell block. It prompts for the existing dataset file and the same model directory, verifies dataset bytes and uses the repository's recorded model ID and grid. It atomically reserves the output tag before running; both the LME runner and parity CLI additionally create their actual outputs exclusively, refusing pre-existing or concurrently created artifacts. Interrupted runs retain the reservation; select a fresh suffix for a retry.
+Remaining hardware measurement: **LME CPU v2 pending-real-local-runtime** on the user's HP Z6 G4 / Xeon Gold 6254 / RTX 3080 10GB. No cloud CPU run is represented as this machine. The local run must use the same model directory that produced GPU v2; the historical artifact records a model ID, not a file-manifest hash, so model weight identity cannot be independently reconstructed from that ID alone.
+
+Only when explicitly choosing this full-research campaign, use this PowerShell block from the final merged checkout on that Z6. It prompts for the existing dataset file and the same model directory, verifies dataset bytes and uses the repository's recorded model ID and grid. It atomically reserves the output tag before running; both the LME runner and parity CLI additionally create their actual outputs exclusively, refusing pre-existing or concurrently created artifacts. Interrupted runs retain the reservation; select a fresh suffix for a retry.
 
 ```powershell
 $ErrorActionPreference = 'Stop'
@@ -112,7 +114,7 @@ $parityFile = 'reports/2026-09-08-lme-cpu-gpu-parity-v2r1.json'
 if ((Test-Path $cpuFile) -or (Test-Path $parityFile)) { throw 'Output already exists; choose a fresh suffix' }
 $reservation = [System.IO.File]::Open("$cpuFile.reserved", 'CreateNew', 'Write', 'None')
 $reservation.Dispose()
-python research/recall/lme_retrieval.py --dataset "$datasetFile" --counter cl100k_base --modes $gpu.modes --budgets $gpu.budgets --model-path "$modelDir" --model-id $gpu.model_id --threads 16 --device cpu --batch-size 64 --output $cpuFile
+python research/recall/lme_retrieval.py --full-research --dataset "$datasetFile" --counter cl100k_base --modes $gpu.modes --budgets $gpu.budgets --model-path "$modelDir" --model-id $gpu.model_id --threads 16 --device cpu --batch-size 64 --output $cpuFile
 if ($LASTEXITCODE -ne 0) { throw 'LME CPU run failed; reservation retained' }
 python research/recall/hardware_parity.py --cpu $cpuFile --gpu $gpuFile --output $parityFile
 if ($LASTEXITCODE -gt 1) { throw 'Parity command failed' }

@@ -111,6 +111,12 @@ class DocumentTests(unittest.TestCase):
         (self.root/'README.md').write_bytes(b'# Test\r\n')
         self.assertEqual(checker.check(self.root)['status'],'FAIL')
 
+    def test_documented_research_commands_require_opt_in(self):
+        self.write('docs/campaign.md', '```powershell\npython research/recall/lme_retrieval.py --dataset example.json\n```\n')
+        self.assertTrue(any('requires explicit --full-research' in e for e in checker.check(self.root)['errors']))
+        self.write('docs/campaign.md', '```powershell\npython research/recall/lme_retrieval.py --full-research --dataset example.json\n```\n')
+        self.assertEqual(checker.check(self.root)['status'], 'PASS')
+
 
 if __name__=='__main__':
     unittest.main(verbosity=2)
