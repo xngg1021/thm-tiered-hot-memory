@@ -175,11 +175,10 @@ class ModelPortfolio:
                 'cpu_seconds':candidate_cpu,'ram':ram,'vram':result.get('vram_bytes'),'sample_count':len(values),'noise':gain.get('noise_floor',0)}
             # A paired replay over one observed query is useful evidence but it is
             # not a global equivalence certificate for an alternate embedding
-            # implementation. Default auto-safe therefore records the point but
-            # cannot promote it. Performance policies may explicitly accept this
-            # observed-request scope; reference/auto-safe stay on the authority
-            # embedding path until a stronger provider-wide certificate exists.
-            activation_allowed = self.service.policy in ('auto-throughput','approximate-performance')
+            # implementation. Reference, auto-safe and auto-throughput therefore
+            # record the point without promoting it. Only explicit approximate-
+            # performance may accept observed-request-only inference evidence.
+            activation_allowed = self.service.policy == 'approximate-performance'
             with self.lock:
                 if self.closed or worker.preempted:
                     return
