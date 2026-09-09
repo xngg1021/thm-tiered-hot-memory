@@ -34,7 +34,7 @@ def replay(task):
     executor = ResidentExecutor(registry, task['provider'], task['device'], task['memory_budget'])
     candidate._vector_executor = executor
     samples = {'baseline': [], 'candidate': []}; cpus = {'baseline': [], 'candidate': []}; refs = []
-    cold_ms = None
+    cold_ms = None; consistent = True
     try:
         for repeat in range(min(9, task.get('repeats', 5)) + 1):
             outputs = {}
@@ -52,8 +52,11 @@ def replay(task):
                     samples[label].append(elapsed + task.get('observed_encode_floor_ms', 0))
                     cpus[label].append(time.process_time()-cpu_started)
                 outputs[label] = signature(result)
+            from .optimizer import SemanticGuard
+            consistent = consistent and SemanticGuard.compare(outputs['baseline'],outputs['candidate'],
+                dimension=encoder.profile.dimension)['semantic_admission']
             refs = outputs
-        return {**samples, 'reference': refs['baseline'], 'result': refs['candidate'], 'generation': task['generation'],
+        return {**samples, 'all_repeats_consistent':consistent, 'reference': refs['baseline'], 'result': refs['candidate'], 'generation': task['generation'],
                 'candidate_id': task['candidate_id'], 'key': task['key'], 'provider': task['provider'],
                 'memory_bytes': executor.manager.usage(task['device']), 'cpu_samples': cpus,
                 'startup_ms': cold_ms, 'host_device_bytes': executor.last.get('host_device_bytes'),
@@ -83,8 +86,9 @@ def main():
     elif task.get('operation') == 'discover':
         from .registry import builtin_registry
         registry = builtin_registry(extensions=False)
-        descriptions = [r for r in registry.list(operation='vector-search')
-                        if r['provider_id'] != 'host.exact' and r['availability'] == 'unprobed' and r['maturity'] >= 3]
+        descriptions = [r for r in registry.list()
+                        if set(r['supported_operations']) & {'vector-search','inference'}
+                        and r['provider_id'] not in ('host.exact','cpu.inference') and r['availability'] == 'unprobed' and r['maturity'] >= 3]
         cursor = task.get('cursor', 0); rows = []
         for description in descriptions[cursor:cursor+1]:
             name = description['provider_id']

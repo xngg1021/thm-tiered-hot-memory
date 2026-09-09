@@ -87,13 +87,31 @@ class ChildBudget:
                 raise RuntimeError('shadow observed resource budget exceeded')
         elif self.job:
             import ctypes as c
+            class Accounting(c.Structure):
+                _fields_ = [(k,c.c_longlong) for k in ('user','kernel','period_user','period_kernel')] + [(k,c.c_uint32) for k in ('faults','total','active','terminated')]
+            accounting = Accounting()
+            if not self.kernel.QueryInformationJobObject(self.job, 1, c.byref(accounting), c.sizeof(accounting), None):
+                raise OSError('shadow job CPU accounting failed')
             limits = self.extended()
             if not self.kernel.QueryInformationJobObject(self.job, 9, c.byref(limits), c.sizeof(limits), None):
                 raise OSError('shadow job accounting failed')
-            self.last = {'ram_bytes': limits.peak_job, 'bytes_read': limits.io.read,
+            self.last = {'ram_bytes': limits.peak_job, 'cpu_seconds': (accounting.user+accounting.kernel)/1e7, 'bytes_read': limits.io.read,
                          'bytes_written': limits.io.write, 'resource_source': 'windows-job'}
-            if limits.io.read+limits.io.write > self.io:
+            if limits.io.read+limits.io.write > self.io or self.last['cpu_seconds'] > self.cpu:
                 raise RuntimeError('shadow I/O budget exceeded')
+
+    def renew(self, *, cpu, io):
+        """New bounded serving request after a completed bounded preparation."""
+        self.cpu = self.last.get('cpu_seconds', 0) + cpu
+        self.io = self.last.get('bytes_read', 0) + self.last.get('bytes_written', 0) + io
+        if self.job:
+            import ctypes as c
+            limits = self.extended()
+            if not self.kernel.QueryInformationJobObject(self.job, 9, c.byref(limits), c.sizeof(limits), None):
+                raise OSError('job accounting unavailable')
+            limits.basic.job_time = int(cpu*10_000_000)
+            if not self.kernel.SetInformationJobObject(self.job, 9, c.byref(limits), c.sizeof(limits)):
+                raise OSError('job request limits unavailable')
 
     def close(self):
         if self.job:

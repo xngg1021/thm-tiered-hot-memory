@@ -126,7 +126,7 @@ class SentenceEncoder:
         self._backend = create(path, model_id, backend=backend, device=device,
                                threads=threads, document_batch_size=batch_size, isolated=isolated)
         self.__dict__.update({k:getattr(self._backend,k) for k in
-                             ('model_id','device','batch_size','document_batch_size','query_batch_size','profile')})
+                             ('model_id','device','batch_size','document_batch_size','query_batch_size','profile','local_model_source')})
     def __call__(self,texts): return self._backend.encode_many(texts)
     def encode_many(self,texts): return self._backend.encode_many(texts)
     def encode_one(self,text): return self._backend.encode_one(text)

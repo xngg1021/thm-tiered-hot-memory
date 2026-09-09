@@ -84,6 +84,8 @@ class RuntimeService:
         self.queue_lock = threading.RLock()
         self.encode_costs = []
         self.discovery_epoch = __import__('uuid').uuid4().hex
+        from .models import ModelPortfolio
+        self.models = ModelPortfolio(self)
 
     def submit(self, scope, query, *, workload='interactive', deadline=None, **settings):
         """Nonblocking online API. Compatible requests share one bounded queue."""
@@ -188,6 +190,7 @@ class RuntimeService:
     def new_session(self):
         with self.lock:
             self.pinned.clear(); self.session_pins.clear()
+            self.models.new_session()
             return {'reason': 'explicit-new-session', 'profile_migration': 'eligible-stored-point', 'semantic_policy': self.policy}
 
     def search(self, scope, query, *, workload='interactive', **settings):
@@ -206,8 +209,10 @@ class RuntimeService:
             boot = SafeBootstrapPolicy().select(mode=mode, encoder=self.encoder)
             effective = {**settings, 'mode': boot['mode']}
             key, generation, count = self._key(scope, workload, effective)
-            candidate = self._select(key, workload) if self.policy != 'reference' and mode in ('dense', 'hybrid') else None
-            provider = candidate.provider if candidate else 'reference'
+            model_point = self.models.select(key) if self.policy != 'reference' and boot['mode'] in ('dense','hybrid') else None
+            candidate = self._select(key, workload) if not model_point and self.policy != 'reference' and boot['mode'] in ('dense', 'hybrid') else None
+            model_output = None
+            provider = model_point[2].inference_provider if model_point else candidate.provider if candidate else 'reference'
             fallback = boot['fallback']
             executor = None
             if candidate:
@@ -219,13 +224,18 @@ class RuntimeService:
                 candidate=candidate, workload=workload, policy=self.policy)
             self.index._vector_executor = executor
             try:
-                if len(queries) == 1:
+                if model_point:
+                    model_output = model_point[1].search(queries,generation)
+                    results = model_output['results']
+                elif len(queries) == 1:
                     results = [self.index.search(scope, queries[0], encoder=self.encoder, model_id=self.model_id, **effective)]
                 else:
                     results = self.index.search_many(scope, queries, encoder=self.encoder, model_id=self.model_id,
                         query_batch_size=len(queries), semantic_guard=self.policy != 'approximate-performance', **effective)
             except Exception as exc:
-                if not candidate:
+                if model_point:
+                    self.models.fail(key,model_point[2]); model_point = None; model_output = None
+                elif not candidate:
                     raise
                 self.store.failure(key, provider, 'execution')
                 self.index._vector_executor = None; self.index._results.clear()
@@ -252,25 +262,34 @@ class RuntimeService:
                 results = [self.index.search(scope, q, encoder=self.encoder, model_id=self.model_id, **effective) for q in queries]
                 if any(r['generation'] != generation for r in results):
                     raise RuntimeError('source generation changed repeatedly')
-                fallback = 'generation-replan'; candidate = None; provider = 'reference'
+                fallback = 'generation-replan'; candidate = None; model_point = None; model_output = None; provider = 'reference'
             elapsed = (time.perf_counter()-start)*1000
             result = results[0]
             receipt = {'schema': 2, 'evidence_layer': 'systems-runtime',
                 'hardware_fingerprint': self.graph.fingerprint, 'provider': provider,
                 'actual_provider': 'reference' if fallback and candidate else provider,
-                'device': candidate.device if candidate and not fallback else 'cpu',
+                'device': model_output['embedding_profile']['device'] if model_output else candidate.device if candidate and not fallback else 'cpu',
                 'embedding_profile': getattr(getattr(self.encoder, 'profile', None), 'id', None),
-                'index_provider': provider, 'physical_placement': plan.current_placement, 'semantic_policy': self.policy,
+                'inference_provider': provider if model_point else 'reference',
+                'authority_embedding_profile': getattr(getattr(self.encoder, 'profile', None), 'id', None),
+                'index_provider': 'numpy_reference' if model_point else provider, 'physical_placement': plan.current_placement, 'semantic_policy': self.policy,
                 'semantic_class': candidate.semantic_class if candidate else 'strict',
-                'quality_evidence_scope': 'observed-request-only' if candidate else 'reference',
-                'profile_source': 'stored' if candidate else 'bootstrap', 'profile_freshness': 'fresh',
+                'quality_evidence_scope': 'observed-request-only' if candidate or model_point else 'reference',
+                'profile_source': 'stored' if candidate or model_point else 'bootstrap', 'profile_freshness': 'fresh',
                 'profile_key': key.id, 'batch_policy': 'deadline-aware-opportunity',
                 'latency_ms': elapsed, 'fallback': fallback, 'generation_calls': 0,
-                'cpu_seconds': (time.process_time()-cpu)/len(queries), 'cpu_accounting': 'process-amortized',
-                'query_embedding_batch': 1, 'vector_search_batch': len(queries) if boot['mode'] in ('dense','hybrid') else 1,
+                'cpu_seconds': (time.process_time()-cpu+(model_output or {}).get('cpu_seconds',0))/len(queries), 'cpu_accounting': 'process-amortized',
+                'query_embedding_batch': 1, 'vector_search_batch': len(queries) if not model_point and boot['mode'] in ('dense','hybrid') else 1,
                 'memory_quality_improved': None, 'observed_kernel_dispatch': None}
+            if model_output:
+                receipt['embedding_profile'] = model_output['embedding_profile']['embedding_profile_id']
             for result in results:
                 result['execution_plan'] = plan.receipt()
+                if model_point:
+                    result['execution_plan'].update(inference_provider=provider, vector_index_provider='numpy_reference',
+                        embedding_profile=receipt['embedding_profile'], source_representation='private-profile-replica',
+                        target_residency='isolated-worker', device=receipt['device'])
+                    result['execution_plan']['plan_id'] = identity({k:v for k,v in result['execution_plan'].items() if k != 'plan_id'})
                 result['runtime_receipt'] = dict(receipt)
                 if not result.get('query_embedding_cache_hit'):
                     self.encode_costs = (self.encode_costs + [result.get('timing_ms', {}).get('query_embedding', 0)])[-64:]
@@ -279,6 +298,8 @@ class RuntimeService:
 
     def _maybe_explore(self, key, generation, count, scope, query, settings):
         p = getattr(self.encoder, 'profile', None)
+        if self.models.preparing:
+            return
         if not self.background or p is None or settings.get('mode') not in ('dense', 'hybrid'):
             return
         with self.queue_lock:
@@ -297,6 +318,10 @@ class RuntimeService:
             return
         vector = self.index._cache.get((p.id, query))
         if vector is None:
+            return
+        task_settings = {k: v for k, v in settings.items() if k in ('mode', 'budget', 'candidate_limit', 'neighbor_turns')}
+        if self.models.maybe_start(key, {'db':str(self.index.path), 'scope':scope, 'generation':generation,
+                'query':query, 'counter':self.index.counter.name, 'settings':task_settings}):
             return
         planned = CandidatePlanner().plan(self.candidates, workload=key.workload, policy=self.policy,
             required_bytes=count*p.dimension*4, memory_budget={c.device: self.memory_budget for c in self.candidates},
@@ -334,6 +359,7 @@ class RuntimeService:
                 known_driver = native.get('driver') if isinstance(native, dict) else native
                 if name != 'host.hnsw' and not known_driver:
                     self.discovery[name]['freshness_epoch'] = self.discovery_epoch
+                self.models.add(name, description, row)
                 if row.get('availability') != 'available':
                     continue
                 device = dict(description['options']).get('device')
@@ -361,7 +387,7 @@ class RuntimeService:
                 if not self.closed:
                     self.store.failure(key, candidate.provider, 'timeout')
             return
-        semantic = SemanticGuard.compare(result['reference'], result['result'], dimension=key.dimension)['semantic_admission']
+        semantic = SemanticGuard.compare(result['reference'], result['result'], dimension=key.dimension)['semantic_admission'] and result.get('all_repeats_consistent',True)
         approximate = self.policy == 'approximate-performance' and candidate.semantic_class == 'approximate'
         import statistics
         cpu_samples = result.get('cpu_samples', {})
@@ -404,6 +430,7 @@ class RuntimeService:
                 'session_profile_pinning': True, 'providers': self.registry.list(), 'profiles': self.store.summary(), 'profile_store_state': self.store_state,
                 'decisions': list(self.decisions), 'shadow': dict(self.explorer.last_receipt),
                 'provider_discovery': dict(self.discovery), 'discovery_complete': self.discovery_done,
+                'model_optimization': dict(self.models.last),
                 'generation_calls': 0, 'user_benchmark_required': False}
 
     def status(self):
@@ -412,14 +439,15 @@ class RuntimeService:
                     'hardware_fingerprint': self.graph.fingerprint, 'profile_store_state': self.store_state,
                     'profiles': self.store.summary(), 'discovery_complete': self.discovery_done,
                     'session_profiles': [{'key': key, 'provider': c.provider if c else 'reference'} for key,c in self.pinned.items()],
-                    'shadow': dict(self.explorer.last_receipt), 'generation_calls': 0, 'user_benchmark_required': False}
+                    'shadow': dict(self.explorer.last_receipt), 'model_optimization': dict(self.models.last),
+                    'generation_calls': 0, 'user_benchmark_required': False}
 
     def close(self):
         with self.queue_lock:
             self.closed = True
         for batcher in self.batchers.values():
             batcher.close()
-        self.explorer.close()
+        self.explorer.close(); self.models.close()
         for executor in self.executors.values():
             executor.close()
         self.registry.close(); self.store.close()

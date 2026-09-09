@@ -19,6 +19,8 @@ BUILTINS = [
     spec('host.exact', 'generic', 'numpy', 'indexes:ExactHost', dependencies=('numpy',), operations=('vector-search',), resident=True, priority=100),
     spec('host.hnsw', 'generic', 'hnswlib', 'indexes:HNSWGeneric', dependencies=('hnswlib',), operations=('vector-search',), resident=True),
     spec('host.transfer', 'generic', 'memory', 'transfer:HostTransfer', operations=('transfer',)),
+    spec('cpu.onnxruntime', 'generic', 'ONNX-Runtime-CPU', 'inference:OrtInference', dependencies=('onnxruntime',), options=(('ep','CPUExecutionProvider'),)),
+    spec('intel.openvino-cpu', 'intel', 'OpenVINO-CPU', 'inference:OpenVINOInference', dependencies=('openvino',), options=(('device','CPU'),), compile=True),
     spec('cpu.inference', 'generic', 'torch', 'inference:TorchInference', dependencies=('torch', 'sentence-transformers'), options=(('device', 'cpu'),)),
 ]
 
