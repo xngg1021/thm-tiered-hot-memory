@@ -56,13 +56,16 @@ def candidate_plan(hardware, backends, policy, maximum):
     for config in configs:
         if config['backend'] == 'torch_fp32':
             variants.append({**config, 'scorer':'torch_cuda' if config['device']=='cuda' else 'torch_cpu'})
+    families=len({(c['backend'],c['device']) for c in configs})
+    representatives=variants[:sum(c['backend']=='torch_fp32' for c in configs[:families])]
+    ordered=configs[:families]+representatives+configs[families:]+variants[len(representatives):]
     return [{'ordinal':0,'config':baseline,'capability_family':'reference',
              'execution_reason':'required-baseline','skip_reason':None}] + [
         {'ordinal':i+1,'config':config,
          'capability_family':config['backend']+'/'+config['device']+'/'+config['scorer'],
          'execution_reason':'diverse-bounded-trial' if i<maximum else None,
          'skip_reason':None if i<maximum else 'candidate-cap'}
-        for i,config in enumerate(configs+variants)]
+        for i,config in enumerate(ordered)]
 
 
 def numeric_guard(dimension):
@@ -111,6 +114,8 @@ def gate(reference,candidate):
         for row in signature:
             if not isinstance(row,dict) or not {'ranked_ids','selected_ids','budget_used','packed_evidence','complete_evidence_ids'}<=row.keys():
                 return {'admitted':False,'reason':'incomplete-structural-signature'}
+            if any(not isinstance(row[k],list) for k in ('ranked_ids','selected_ids','packed_evidence','complete_evidence_ids')) or type(row['budget_used']) is not int or row['budget_used']<0:
+                return {'admitted':False,'reason':'invalid-structural-signature'}
             scores=row.get('scores') if isinstance(row,dict) else None
             if not isinstance(scores,list) or len(scores)!=len(DOCUMENTS) or any(type(v) not in (int,float) or not math.isfinite(v) for v in scores):
                 return {'admitted':False,'reason':'invalid-signature-scores'}
@@ -176,6 +181,8 @@ def autotune(model_path,model_id,*,backends=None,policy='auto-safe',workload='in
     if reference.get('status')!='ok':return {'status':'failed','reason':'reference-unavailable','reference':reference,'generation_calls':0}
     try:
         if reference['identity']['source_manifest_sha256']!=source:raise ValueError('reference source identity')
+        if any(reference['identity'].get(k)!=v for k,v in {'backend':'torch_fp32','device':'cpu','precision':'fp32'}.items()):
+            raise ValueError('reference execution identity')
         reference_gate=gate(reference,reference)
         if not reference_gate['admitted']:raise ValueError('reference self-validation')
         for field in metrics.values():

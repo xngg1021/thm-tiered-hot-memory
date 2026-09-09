@@ -125,4 +125,55 @@ class CorrectiveTests(unittest.TestCase):
             r=observe(p,backend='torch',workload_sha256='a'*64)
             self.assertEqual(r['observed_kernel_dispatch'],['AVX512-VNNI']);self.assertNotIn('/private',json.dumps(r))
 
+    def test_query_batch_controlled_surface(self):
+        from research.runtime.query_batch import sweep
+        result=sweep('unused','test-only',encoder_factory=lambda *a,**k:FakeEncoder())
+        self.assertEqual([r['query_batch_size'] for r in result['rows']],[1,4,8,32])
+        self.assertEqual(len({r['queries'] for r in result['rows']}),1)
+        self.assertTrue(all(r['wait_overhead_ms']==0 for r in result['rows']))
+        self.assertTrue(all('semantic_parity' in r for r in result['rows']))
+        self.assertEqual(result['generation_calls'],0)
+
+    def test_preparation_publication_failure_redacted(self):
+        from thm.runtime.prepare import prepare
+        def fail(*args):
+            args[-1][0]='publication'
+            raise FileExistsError('/private/user/path')
+        with patch('thm.runtime.prepare._prepare',side_effect=fail):
+            r=prepare('source','cache','onnxruntime_fp32')
+        self.assertEqual(r['stage'],'publication');self.assertEqual(r['error_code'],'publication-conflict')
+        self.assertNotIn('/private',json.dumps(r))
+
+    def test_smoke_promotes_pilot_without_second_run(self):
+        from research.runtime import verify
+        from types import SimpleNamespace
+        calls=[]
+        def process(command,**kwargs):
+            if command[:2]==['git','rev-parse']:return SimpleNamespace(stdout='a'*40,returncode=0)
+            if command[:2]==['git','status']:return SimpleNamespace(stdout='',returncode=0)
+            if '-S' in command:return SimpleNamespace(returncode=0)
+            calls.append(command)
+            Path(command[command.index('--output')+1]).write_text(json.dumps({'rows':[],'builds':[],'summaries':{}}))
+            return SimpleNamespace(returncode=0)
+        with tempfile.TemporaryDirectory() as root:
+            data=Path(root,'data.json');data.write_text('[{}]')
+            args=SimpleNamespace(output_dir=str(Path(root,'out')),model_path='local',model_id='test',locomo_dataset=str(data),lme_dataset=str(data),mode='smoke',wall_seconds=300,include_approximate=False,plan_only=False,retrieval_ab=False,max_candidates=2)
+            tune={'status':'calibrated','selection':'reference-fallback','optimized_auto_safe':False}
+            with patch.object(verify,'load_dataset',return_value=[{}]),patch.object(verify,'manifest',return_value={'sha256':'a'*64}),patch.object(verify,'backend_probe',return_value=[]),patch.object(verify,'available',return_value={}),patch.object(verify,'census',return_value={}),patch.object(verify,'TokenCounter',return_value=None),patch.object(verify,'autotune',return_value=tune),patch.object(verify.subprocess,'run',side_effect=process):
+                result=verify.execute(args)
+            self.assertTrue(result['correctness_acceptance']);self.assertFalse(result['optimized_auto_safe'])
+            self.assertEqual(len(calls),1);self.assertTrue(result['executions'][0]['reused'])
+            self.assertEqual(result['executions'][0]['reuse_class'],'within-run-exact-pilot')
+
+    def test_forensics_prioritizes_structural_drift_over_numeric_noise(self):
+        from research.runtime.diagnostics import score_deltas
+        a={'question_id':'a','selected_ids':['x'],'selected_ranked_ids':['x'],'runtime_diagnostics':{'candidate_ids':['x'],'scores':[.1]}}
+        b=copy.deepcopy(a);b['runtime_diagnostics']['scores']=[.1000001]
+        c=copy.deepcopy(a);c['question_id']='z'
+        d=copy.deepcopy(c);d['selected_ids']=['y']
+        r=score_deltas({'rows':[a,c]},{'rows':[b,d]},maximum_rows=1)
+        self.assertEqual(r['queries'][0]['candidate_selected'],['x'])
+        self.assertEqual(r['queries'][0]['query_identity'],{'_position':1})
+        self.assertTrue(r['rows_truncated'])
+
 if __name__=='__main__':unittest.main()

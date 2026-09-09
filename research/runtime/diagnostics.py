@@ -7,7 +7,11 @@ def score_deltas(reference,candidate, maximum_rows=50, maximum_candidates=64):
     left={row_key(r,i):r for i,r in enumerate(reference['rows'])}
     right={row_key(r,i):r for i,r in enumerate(candidate['rows'])}
     out=[];total=0
-    for key in sorted(set(left)&set(right),key=repr):
+    def priority(key):
+        # Strict evidence changes must not be crowded out by numeric-only rows.
+        same=all(left[key].get(field)==right[key].get(field) for field in ('selected_ids','selected_ranked_ids','budget_used','packed_selections'))
+        return same,repr(key)
+    for key in sorted(set(left)&set(right),key=priority):
         a,b=left[key],right[key]
         da,db=a.get('runtime_diagnostics') or {},b.get('runtime_diagnostics') or {}
         def scores(d):
@@ -31,7 +35,10 @@ def score_deltas(reference,candidate, maximum_rows=50, maximum_candidates=64):
                 'candidate_dense_rank':position(db.get('candidate_ids',[]),identifier),
                 'reference_selected':identifier in ar,'candidate_selected':identifier in br,
                 'reference_selected_rank':position(ar,identifier),'candidate_selected_rank':position(br,identifier),
-                'sparse_component':None,'fused_score':None})
+                'reference_sparse_component':(da.get('sparse_components') or {}).get(identifier),
+                'candidate_sparse_component':(db.get('sparse_components') or {}).get(identifier),
+                'reference_fused_score':(da.get('fused_scores') or {}).get(identifier),
+                'candidate_fused_score':(db.get('fused_scores') or {}).get(identifier)})
         out.append({'query_identity':dict(key),'status':'measured' if sa and sb else 'missing-score-evidence',
             'reference_embedding_profile':da.get('embedding_profile_id'),'candidate_embedding_profile':db.get('embedding_profile_id'),
             'reference_scorer':da.get('scorer'),'candidate_scorer':db.get('scorer'),

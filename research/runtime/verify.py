@@ -39,7 +39,7 @@ def plan(model_path,locomo,lme,root,model_id,*,include_approximate=False):
         'policies':['reference','auto-safe','auto-throughput']+(['approximate-performance'] if include_approximate else []),
         'document_batch_candidates':[16,32,64,128,256],'query_batch_candidates':[1,4,8,32],
         'mode_budget_cartesian_explosion':False,'features':['entity','explicit_alias','temporal','query_grammar','segment','association'],
-        'performance_acceptance':'pending-real-local-runtime','generation_calls':0}
+        'performance_acceptance':'unmeasured-this-campaign','generation_calls':0}
 
 
 def acceptance_result(policies,tunes,rows,comparisons):

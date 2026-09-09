@@ -10,7 +10,7 @@ A successful, self-validated CPU reference is always available as the baseline. 
 
 ## Candidate planning, budget and reuse
 
-The baseline is ordinal 0 outside the trial cap. Round-robin backend/device representatives precede deeper batch/thread variants. Scorer variants are appended, never substituted at cap-dependent positions. The complete bounded plan records configs, ordinals, families, execution/skip reasons and admission outcomes. CLI retest and verification write a separate immutable plan before execution.
+The baseline is ordinal 0 outside the trial cap. Round-robin backend/device representatives precede deeper batch/thread variants. Representative scorer variants follow the first backend/device representatives, before deeper tuning; no candidate is substituted at cap-dependent positions. The complete bounded plan records configs, ordinals, families, execution/skip reasons and admission outcomes. CLI retest and verification write a separate immutable plan before execution.
 
 The historical six-candidate run changed candidate 5 to `torch_cpu`, whereas the twelve-candidate run retained `numpy_reference` at ordinal 5. The latter measured exactly equal scores; the former differed by 1.19e-7. No randomness is involved. Both used torch CPU/CUDA after ORT preparation failed.
 

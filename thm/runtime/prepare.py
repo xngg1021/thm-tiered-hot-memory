@@ -99,7 +99,4 @@ def _prepare(source,cache_root,backend,timeout=600, state=None):
 def prepare(source,cache_root,backend,timeout=600):
     state=['source-copy']
     try:return _prepare(source,cache_root,backend,timeout,state)
-    except (ValueError, FileExistsError):
-        # Preserve invalid configuration / immutable destination API behavior.
-        raise
     except Exception as exc:return failure(exc,state[0],backend)

@@ -6,7 +6,10 @@ import json
 
 def classify(a,b):
     changed={k for k in SEMANTIC_FIELDS if a.get(k)!=b.get(k)}
-    if not changed:return 'numeric-only' if a.get('runtime_diagnostics')!=b.get('runtime_diagnostics') else 'identical'
+    if not changed:
+        da=a.get('runtime_diagnostics') or {};db=b.get('runtime_diagnostics') or {}
+        if da.get('scores')!=db.get('scores'):return 'numeric-only'
+        return 'diagnostic-only' if da!=db else 'identical'
     if set(a.get('selected_ids',[]))!=set(b.get('selected_ids',[])):return 'selected-set-change'
     if changed=={'selected_ranked_ids'}:return 'rank-only'
     if changed <= {'selected_ranked_ids','packed_selections','selected_ids','selected_sources'}:
