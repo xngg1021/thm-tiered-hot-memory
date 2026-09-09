@@ -5,6 +5,8 @@ on:
   push:
     paths:
       - "thm/evaluation/**"
+      - "thm/runtime/**"
+      - "research/runtime/**"
       - "scripts/check_docs.py"
       - "tests/test_document_checks.py"
       - "thm/harness.py"

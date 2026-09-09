@@ -419,7 +419,8 @@ def compare(cpu: dict, gpu: dict, *, float_tol: float = 0.0, max_mismatches: int
             record(item)
     aggregate_available = not coverage_cpu and not coverage_gpu
     strict = identity_complete and total == 0
-    return {
+    from research.runtime.parity_taxonomy import taxonomy
+    return {"drift_taxonomy":taxonomy(cpu,gpu),
         "kind": "thm-hardware-semantic-parity",
         "identity_complete": identity_complete,
         "top_level_coverage_errors": {"cpu": top_cpu, "gpu": top_gpu},
