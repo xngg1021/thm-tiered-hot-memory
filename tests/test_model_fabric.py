@@ -71,9 +71,9 @@ class ModelFabricTests(unittest.TestCase):
         self.assertEqual([r[0] for r in stored],[self.encoder.profile.id])
         self.assertEqual(manifest(self.bundle)['sha256'],self.encoder.profile.source_manifest_sha256)
 
-    def test_background_admission_waits_for_session_and_returns_actual_identity(self):
+    def test_explicit_approximate_admission_waits_for_session_and_returns_actual_identity(self):
         service = RuntimeService(self.index,encoder=self.encoder,model_id=self.encoder.model_id,
-                                 policy='auto-throughput',background=False)
+                                 policy='approximate-performance',background=False)
         try:
             key,generation,_ = service._key('scope','interactive',{'mode':'dense'})
             worker, profile, reference = self.model_proof(service,key,generation)
@@ -87,6 +87,7 @@ class ModelFabricTests(unittest.TestCase):
             self.assertEqual(result['runtime_receipt']['inference_provider'],'nvidia.inference')
             self.assertEqual(result['runtime_receipt']['embedding_profile'],profile['embedding_profile_id'])
             self.assertEqual(result['runtime_receipt']['authority_embedding_profile'],self.encoder.profile.id)
+            self.assertEqual(result['runtime_receipt']['semantic_class'],'observed-request')
             self.assertEqual(result['execution_plan']['source_representation'],'private-profile-replica')
             worker.search.side_effect = RuntimeError('fixture device loss')
             result = service.search('scope','Beijing next',mode='dense')
@@ -108,9 +109,25 @@ class ModelFabricTests(unittest.TestCase):
             self.assertIsNone(service.models.ready)
             self.assertEqual(service.models.last['status'],'measured-only')
             self.assertFalse(service.models.last['automatic_activation_allowed'])
+            observations = service.store.observations(key)
+            self.assertEqual(observations[0]['semantic_status'],'observed-request')
             service.new_session()
             self.assertIsNone(service.models.select(key))
             worker.search.assert_not_called()
+        finally:
+            service.close()
+
+    def test_auto_throughput_also_keeps_observed_request_model_evidence_nonactivating(self):
+        service = RuntimeService(self.index,encoder=self.encoder,model_id=self.encoder.model_id,
+                                 policy='auto-throughput',background=False)
+        try:
+            key,generation,_ = service._key('scope','interactive',{'mode':'dense'})
+            worker, _, _ = self.model_proof(service,key,generation)
+            with mock.patch('thm.runtime.fabric.models.WarmModelWorker',return_value=worker):
+                self.assertTrue(service.models.maybe_start(key,{'generation':generation}))
+                service.models.thread.join(timeout=2)
+            self.assertIsNone(service.models.ready)
+            self.assertFalse(service.models.last['automatic_activation_allowed'])
         finally:
             service.close()
 
