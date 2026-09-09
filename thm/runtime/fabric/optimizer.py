@@ -76,14 +76,25 @@ class SemanticGuard:
         return policy in ('auto-throughput', 'approximate-performance')
 
     @staticmethod
-    def compare(reference, candidate):
+    def compare(reference, candidate, *, dimension=None):
         # No full text enters the resulting receipt.
         fields = ('generation', 'ranked_ids', 'budget', 'budget_used', 'complete_evidence_ids', 'context')
         same = all(reference.get(k) == candidate.get(k) for k in fields)
         selected = lambda r: [(x.get('id'), x.get('hash'), x.get('source'), x.get('complete')) for x in r.get('selected', ())]
         structure = same and selected(reference) == selected(candidate)
-        return {'structural_retrieval_parity': structure, 'semantic_admission': structure,
-                'aggregate_quality_parity': None, 'comparison': 'observed-request-only'}
+        numeric = None
+        if dimension is not None:
+            from ..autotune import numeric_guard
+            left = reference.get('dense_scores'); right = candidate.get('dense_scores')
+            valid = isinstance(left, list) and isinstance(right, list) and len(left) == len(right) and bool(left)
+            valid = valid and all(type(x) in (int, float) and math.isfinite(x) for x in left+right)
+            delta = max((abs(a-b) for a,b in zip(left,right)), default=0) if valid else None
+            tolerance = numeric_guard(dimension)
+            numeric = {'max_score_abs_diff': delta, 'numeric_tolerance': tolerance,
+                       'within_numeric_guard': bool(valid and delta <= tolerance)}
+        return {'structural_retrieval_parity': structure,
+                'semantic_admission': structure and (numeric is None or numeric['within_numeric_guard']),
+                'numeric_parity': numeric, 'aggregate_quality_parity': None, 'comparison': 'observed-request-only'}
 
 
 class MaterialGainGate:

@@ -204,7 +204,7 @@ class RuntimeService:
     def _publish(self, key, candidate, result):
         if result.get('key') != key.id or result.get('candidate_id') != candidate.id:
             return
-        semantic = SemanticGuard.compare(result['reference'], result['result'])['semantic_admission']
+        semantic = SemanticGuard.compare(result['reference'], result['result'], dimension=key.dimension)['semantic_admission']
         gain = self.gate.evaluate(result['baseline'], result['candidate'], semantic=semantic,
                                   resources={'ram': result['memory_bytes']}, limits={'ram': self.memory_budget})
         values = result['candidate']

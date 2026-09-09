@@ -11,6 +11,7 @@ def signature(result):
             'budget': result['budget'], 'budget_used': result['budget_used'],
             'complete_evidence_ids': result.get('complete_evidence_ids'),
             'context': identity(result['context']),
+            'dense_scores': (result.get('runtime_diagnostics') or {}).get('scores'),
             'selected': [{k: r[k] for k in ('id', 'hash', 'source', 'complete')} for r in result['selected']]}
 
 
@@ -39,7 +40,7 @@ def replay(task):
             for label, reader in [('baseline', baseline), ('candidate', candidate)]:
                 reader._results.clear()
                 started = time.perf_counter()
-                result = reader.search(task['scope'], task['query'], encoder=encoder, model_id=encoder.model_id, **task['settings'])
+                result = reader.search(task['scope'], task['query'], encoder=encoder, model_id=encoder.model_id, diagnostics=True, **task['settings'])
                 if result['generation'] != task['generation']:
                     raise ValueError('shadow source generation changed')
                 elapsed = (time.perf_counter()-started)*1000
