@@ -1,0 +1,320 @@
+{
+  "entries": [
+    {
+      "capability_family": "reference",
+      "config": {
+        "affinity": [],
+        "backend": "torch_fp32",
+        "device": "cpu",
+        "document_batch_size": 64,
+        "query_batch_size": 1,
+        "scorer": "numpy_reference",
+        "threads": 1
+      },
+      "execution_reason": "required-baseline",
+      "ordinal": 0,
+      "skip_reason": null
+    },
+    {
+      "capability_family": "torch_fp32/cpu/numpy_reference",
+      "config": {
+        "affinity": [],
+        "backend": "torch_fp32",
+        "device": "cpu",
+        "document_batch_size": 64,
+        "query_batch_size": 8,
+        "scorer": "numpy_reference",
+        "threads": 1
+      },
+      "execution_reason": "diverse-bounded-trial",
+      "ordinal": 1,
+      "skip_reason": null
+    },
+    {
+      "capability_family": "torch_fp32/cpu/torch_cpu",
+      "config": {
+        "affinity": [],
+        "backend": "torch_fp32",
+        "device": "cpu",
+        "document_batch_size": 64,
+        "query_batch_size": 8,
+        "scorer": "torch_cpu",
+        "threads": 1
+      },
+      "execution_reason": "diverse-bounded-trial",
+      "ordinal": 2,
+      "skip_reason": null
+    },
+    {
+      "capability_family": "torch_fp32/cpu/numpy_reference",
+      "config": {
+        "affinity": [],
+        "backend": "torch_fp32",
+        "device": "cpu",
+        "document_batch_size": 64,
+        "query_batch_size": 8,
+        "scorer": "numpy_reference",
+        "threads": 8
+      },
+      "execution_reason": null,
+      "ordinal": 3,
+      "skip_reason": "candidate-cap"
+    },
+    {
+      "capability_family": "torch_fp32/cpu/numpy_reference",
+      "config": {
+        "affinity": [],
+        "backend": "torch_fp32",
+        "device": "cpu",
+        "document_batch_size": 16,
+        "query_batch_size": 1,
+        "scorer": "numpy_reference",
+        "threads": 1
+      },
+      "execution_reason": null,
+      "ordinal": 4,
+      "skip_reason": "candidate-cap"
+    },
+    {
+      "capability_family": "torch_fp32/cpu/numpy_reference",
+      "config": {
+        "affinity": [],
+        "backend": "torch_fp32",
+        "device": "cpu",
+        "document_batch_size": 32,
+        "query_batch_size": 4,
+        "scorer": "numpy_reference",
+        "threads": 1
+      },
+      "execution_reason": null,
+      "ordinal": 5,
+      "skip_reason": "candidate-cap"
+    },
+    {
+      "capability_family": "torch_fp32/cpu/numpy_reference",
+      "config": {
+        "affinity": [],
+        "backend": "torch_fp32",
+        "device": "cpu",
+        "document_batch_size": 128,
+        "query_batch_size": 32,
+        "scorer": "numpy_reference",
+        "threads": 1
+      },
+      "execution_reason": null,
+      "ordinal": 6,
+      "skip_reason": "candidate-cap"
+    },
+    {
+      "capability_family": "torch_fp32/cpu/numpy_reference",
+      "config": {
+        "affinity": [],
+        "backend": "torch_fp32",
+        "device": "cpu",
+        "document_batch_size": 256,
+        "query_batch_size": 32,
+        "scorer": "numpy_reference",
+        "threads": 1
+      },
+      "execution_reason": null,
+      "ordinal": 7,
+      "skip_reason": "candidate-cap"
+    },
+    {
+      "capability_family": "torch_fp32/cpu/numpy_reference",
+      "config": {
+        "affinity": [],
+        "backend": "torch_fp32",
+        "device": "cpu",
+        "document_batch_size": 16,
+        "query_batch_size": 1,
+        "scorer": "numpy_reference",
+        "threads": 8
+      },
+      "execution_reason": null,
+      "ordinal": 8,
+      "skip_reason": "candidate-cap"
+    },
+    {
+      "capability_family": "torch_fp32/cpu/numpy_reference",
+      "config": {
+        "affinity": [],
+        "backend": "torch_fp32",
+        "device": "cpu",
+        "document_batch_size": 32,
+        "query_batch_size": 4,
+        "scorer": "numpy_reference",
+        "threads": 8
+      },
+      "execution_reason": null,
+      "ordinal": 9,
+      "skip_reason": "candidate-cap"
+    },
+    {
+      "capability_family": "torch_fp32/cpu/numpy_reference",
+      "config": {
+        "affinity": [],
+        "backend": "torch_fp32",
+        "device": "cpu",
+        "document_batch_size": 128,
+        "query_batch_size": 32,
+        "scorer": "numpy_reference",
+        "threads": 8
+      },
+      "execution_reason": null,
+      "ordinal": 10,
+      "skip_reason": "candidate-cap"
+    },
+    {
+      "capability_family": "torch_fp32/cpu/numpy_reference",
+      "config": {
+        "affinity": [],
+        "backend": "torch_fp32",
+        "device": "cpu",
+        "document_batch_size": 256,
+        "query_batch_size": 32,
+        "scorer": "numpy_reference",
+        "threads": 8
+      },
+      "execution_reason": null,
+      "ordinal": 11,
+      "skip_reason": "candidate-cap"
+    },
+    {
+      "capability_family": "torch_fp32/cpu/torch_cpu",
+      "config": {
+        "affinity": [],
+        "backend": "torch_fp32",
+        "device": "cpu",
+        "document_batch_size": 64,
+        "query_batch_size": 8,
+        "scorer": "torch_cpu",
+        "threads": 8
+      },
+      "execution_reason": null,
+      "ordinal": 12,
+      "skip_reason": "candidate-cap"
+    },
+    {
+      "capability_family": "torch_fp32/cpu/torch_cpu",
+      "config": {
+        "affinity": [],
+        "backend": "torch_fp32",
+        "device": "cpu",
+        "document_batch_size": 16,
+        "query_batch_size": 1,
+        "scorer": "torch_cpu",
+        "threads": 1
+      },
+      "execution_reason": null,
+      "ordinal": 13,
+      "skip_reason": "candidate-cap"
+    },
+    {
+      "capability_family": "torch_fp32/cpu/torch_cpu",
+      "config": {
+        "affinity": [],
+        "backend": "torch_fp32",
+        "device": "cpu",
+        "document_batch_size": 32,
+        "query_batch_size": 4,
+        "scorer": "torch_cpu",
+        "threads": 1
+      },
+      "execution_reason": null,
+      "ordinal": 14,
+      "skip_reason": "candidate-cap"
+    },
+    {
+      "capability_family": "torch_fp32/cpu/torch_cpu",
+      "config": {
+        "affinity": [],
+        "backend": "torch_fp32",
+        "device": "cpu",
+        "document_batch_size": 128,
+        "query_batch_size": 32,
+        "scorer": "torch_cpu",
+        "threads": 1
+      },
+      "execution_reason": null,
+      "ordinal": 15,
+      "skip_reason": "candidate-cap"
+    },
+    {
+      "capability_family": "torch_fp32/cpu/torch_cpu",
+      "config": {
+        "affinity": [],
+        "backend": "torch_fp32",
+        "device": "cpu",
+        "document_batch_size": 256,
+        "query_batch_size": 32,
+        "scorer": "torch_cpu",
+        "threads": 1
+      },
+      "execution_reason": null,
+      "ordinal": 16,
+      "skip_reason": "candidate-cap"
+    },
+    {
+      "capability_family": "torch_fp32/cpu/torch_cpu",
+      "config": {
+        "affinity": [],
+        "backend": "torch_fp32",
+        "device": "cpu",
+        "document_batch_size": 16,
+        "query_batch_size": 1,
+        "scorer": "torch_cpu",
+        "threads": 8
+      },
+      "execution_reason": null,
+      "ordinal": 17,
+      "skip_reason": "candidate-cap"
+    },
+    {
+      "capability_family": "torch_fp32/cpu/torch_cpu",
+      "config": {
+        "affinity": [],
+        "backend": "torch_fp32",
+        "device": "cpu",
+        "document_batch_size": 32,
+        "query_batch_size": 4,
+        "scorer": "torch_cpu",
+        "threads": 8
+      },
+      "execution_reason": null,
+      "ordinal": 18,
+      "skip_reason": "candidate-cap"
+    },
+    {
+      "capability_family": "torch_fp32/cpu/torch_cpu",
+      "config": {
+        "affinity": [],
+        "backend": "torch_fp32",
+        "device": "cpu",
+        "document_batch_size": 128,
+        "query_batch_size": 32,
+        "scorer": "torch_cpu",
+        "threads": 8
+      },
+      "execution_reason": null,
+      "ordinal": 19,
+      "skip_reason": "candidate-cap"
+    },
+    {
+      "capability_family": "torch_fp32/cpu/torch_cpu",
+      "config": {
+        "affinity": [],
+        "backend": "torch_fp32",
+        "device": "cpu",
+        "document_batch_size": 256,
+        "query_batch_size": 32,
+        "scorer": "torch_cpu",
+        "threads": 8
+      },
+      "execution_reason": null,
+      "ordinal": 20,
+      "skip_reason": "candidate-cap"
+    }
+  ],
+  "phase": "before-execution"
+}

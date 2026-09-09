@@ -1,0 +1,8 @@
+{
+  "correctness_safe": true,
+  "evidence_scope": "fixed calibration corpus and synthetic ignition only; no dataset acceptance",
+  "full_dataset_acceptance": false,
+  "generation_calls": 0,
+  "optimized_auto_safe": true,
+  "status": "calibrated"
+}

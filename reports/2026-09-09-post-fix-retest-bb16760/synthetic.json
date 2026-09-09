@@ -1,0 +1,9 @@
+{
+  "deterministic_parity": true,
+  "documents": 2,
+  "evidence": "tiny-synthetic-only",
+  "feature_execution": true,
+  "generation_calls": 0,
+  "schema": 1,
+  "status": "passed"
+}

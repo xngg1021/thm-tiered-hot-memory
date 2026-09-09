@@ -1,0 +1,21 @@
+{
+  "backend": "onnxruntime_fp32",
+  "dependency_state": {
+    "nncf": null,
+    "numpy": "2.4.3",
+    "onnxruntime": "1.20.1",
+    "onnxruntime-gpu": null,
+    "openvino": null,
+    "optimum": null,
+    "sentence-transformers": "6.0.1",
+    "torch": "2.13.0+cu130"
+  },
+  "error_class": "Exception",
+  "error_code": "conversion-failed",
+  "error_type": "Exception",
+  "generation_calls": 0,
+  "private_details_redacted": true,
+  "retryability": "requires-diagnosis-or-environment-change",
+  "stage": "export",
+  "status": "failed"
+}

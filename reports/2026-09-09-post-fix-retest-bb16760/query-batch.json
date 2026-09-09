@@ -1,0 +1,4577 @@
+{
+  "backend": "torch_fp32",
+  "dispatch_status": "unknown",
+  "embedding_profile": {
+    "backend": "torch_fp32",
+    "backend_version": "2.13.0+cu130",
+    "derived_manifest_sha256": null,
+    "device": "cpu",
+    "dimension": 384,
+    "embedding_profile_id": "ep1-3cd9bbeff3620a392a117c241b35d60d80766aecedf2b95fe780f32bf30c4976",
+    "encoder_input": "speaker-colon-space-text-v1;query-verbatim-v1",
+    "normalization": "l2-finite-nonzero-v1",
+    "precision": "fp32",
+    "schema": 1,
+    "source_manifest_sha256": "99f69f4e68fddcc15da6faf9935bed7b45f4407d611dc8a1e2ed452e1c77920e",
+    "thread_policy": "isolated-explicit",
+    "threads": 1,
+    "transformation": "none"
+  },
+  "full_dataset_acceptance": false,
+  "generation_calls": 0,
+  "kind": "controlled-cpu-query-batch",
+  "observed_kernel_dispatch": null,
+  "rows": [
+    {
+      "batch_construction_ms": 0.1311999512836337,
+      "cpu_utilization_percent": 100.13150193187042,
+      "latency_scope": "completed batch encoder+scorer; no arrival queue",
+      "p50_ms": 14.374350022990257,
+      "p95_ms": 19.198000023607165,
+      "queries": 108,
+      "queries_per_second": 66.54893666856618,
+      "query_batch_size": 1,
+      "query_encoding_ms": 1598.7936001620255,
+      "scorer_ms_including_transfer": 2.0681999740190804,
+      "semantic_parity": {
+        "admitted": true,
+        "bitwise_parity": true,
+        "candidate_results": [
+          {
+            "budget_used": 506,
+            "complete_evidence_ids": [
+              "0",
+              "5",
+              "4",
+              "1"
+            ],
+            "packed_evidence": [
+              {
+                "complete": true,
+                "hash": "9748dbffdc9c571299727367ea543735b46b85b488db0456a306a45b8d6d091e",
+                "id": "0",
+                "source": ""
+              },
+              {
+                "complete": true,
+                "hash": "c1f2b7a7f895dffcf04130bd8c261983e81bfb3933246c3668541573bed311ad",
+                "id": "5",
+                "source": ""
+              },
+              {
+                "complete": true,
+                "hash": "84950fac3fc4ca6e62d31095278651f926ee89339b84874cd5de46a7fd2dacb1",
+                "id": "4",
+                "source": ""
+              },
+              {
+                "complete": true,
+                "hash": "d83298142d23bf2819ac8e449b2208ce34d38b2341d463ad7f0fa312d5daefaa",
+                "id": "1",
+                "source": ""
+              }
+            ],
+            "ranked_ids": [
+              "0",
+              "5",
+              "4",
+              "1",
+              "6",
+              "3",
+              "7",
+              "2"
+            ],
+            "scores": [
+              0.682481050491333,
+              0.1984730064868927,
+              0.0813213661313057,
+              0.052429988980293274,
+              0.0493740439414978,
+              0.04591601341962814,
+              -0.0005256813019514084,
+              -0.04925316572189331
+            ],
+            "selected_ids": [
+              "0",
+              "5",
+              "4",
+              "1"
+            ]
+          },
+          {
+            "budget_used": 491,
+            "complete_evidence_ids": [
+              "1",
+              "2",
+              "0",
+              "5"
+            ],
+            "packed_evidence": [
+              {
+                "complete": true,
+                "hash": "d83298142d23bf2819ac8e449b2208ce34d38b2341d463ad7f0fa312d5daefaa",
+                "id": "1",
+                "source": ""
+              },
+              {
+                "complete": true,
+                "hash": "f0a10fcea363e4a640a88830a21c6c39a1fa5f498d860e3ec13bfd138caf574b",
+                "id": "2",
+                "source": ""
+              },
+              {
+                "complete": true,
+                "hash": "9748dbffdc9c571299727367ea543735b46b85b488db0456a306a45b8d6d091e",
+                "id": "0",
+                "source": ""
+              },
+              {
+                "complete": true,
+                "hash": "c1f2b7a7f895dffcf04130bd8c261983e81bfb3933246c3668541573bed311ad",
+                "id": "5",
+                "source": ""
+              }
+            ],
+            "ranked_ids": [
+              "1",
+              "2",
+              "0",
+              "5",
+              "4",
+              "3",
+              "7",
+              "6"
+            ],
+            "scores": [
+              0.7594741582870483,
+              0.07272813469171524,
+              0.057605914771556854,
+              0.04197893664240837,
+              0.026780331507325172,
+              -0.005614177323877811,
+              -0.007472140248864889,
+              -0.01697179116308689
+            ],
+            "selected_ids": [
+              "1",
+              "2",
+              "0",
+              "5"
+            ]
+          },
+          {
+            "budget_used": 497,
+            "complete_evidence_ids": [
+              "2",
+              "3",
+              "1",
+              "5"
+            ],
+            "packed_evidence": [
+              {
+                "complete": true,
+                "hash": "f0a10fcea363e4a640a88830a21c6c39a1fa5f498d860e3ec13bfd138caf574b",
+                "id": "2",
+                "source": ""
+              },
+              {
+                "complete": true,
+                "hash": "cfcc05b58452c36a18d7e9b94cbed273b97b475baf0cb29d290a30a49ce99198",
+                "id": "3",
+                "source": ""
+              },
+              {
+                "complete": true,
+                "hash": "d83298142d23bf2819ac8e449b2208ce34d38b2341d463ad7f0fa312d5daefaa",
+                "id": "1",
+                "source": ""
+              },
+              {
+                "complete": true,
+                "hash": "c1f2b7a7f895dffcf04130bd8c261983e81bfb3933246c3668541573bed311ad",
+                "id": "5",
+                "source": ""
+              }
+            ],
+            "ranked_ids": [
+              "2",
+              "3",
+              "1",
+              "5",
+              "7",
+              "4",
+              "0",
+              "6"
+            ],
+            "scores": [
+              0.8428934216499329,
+              0.15318450331687927,
+              0.1123761460185051,
+              0.10433302074670792,
+              0.052552346140146255,
+              0.03336082398891449,
+              -0.015719853341579437,
+              -0.04997927322983742
+            ],
+            "selected_ids": [
+              "2",
+              "3",
+              "1",
+              "5"
+            ]
+          },
+          {
+            "budget_used": 511,
+            "complete_evidence_ids": [
+              "3",
+              "7",
+              "2",
+              "4"
+            ],
+            "packed_evidence": [
+              {
+                "complete": true,
+                "hash": "cfcc05b58452c36a18d7e9b94cbed273b97b475baf0cb29d290a30a49ce99198",
+                "id": "3",
+                "source": ""
+              },
+              {
+                "complete": true,
+                "hash": "16899e70dfcab3295bafebea090583be0f985a2dc1158d4d62751982f1516499",
+                "id": "7",
+                "source": ""
+              },
+              {
+                "complete": true,
+                "hash": "f0a10fcea363e4a640a88830a21c6c39a1fa5f498d860e3ec13bfd138caf574b",
+                "id": "2",
+                "source": ""
+              },
+              {
+                "complete": true,
+                "hash": "84950fac3fc4ca6e62d31095278651f926ee89339b84874cd5de46a7fd2dacb1",
+                "id": "4",
+                "source": ""
+              }
+            ],
+            "ranked_ids": [
+              "3",
+              "7",
+              "2",
+              "4",
+              "6",
+              "5",
+              "0",
+              "1"
+            ],
+            "scores": [
+              0.7507451772689819,
+              0.2793647050857544,
+              0.20349174737930298,
+              0.15085172653198242,
+              0.11913330107927322,
+              0.113540418446064,
+              0.09585823118686676,
+              -0.038167379796504974
+            ],
+            "selected_ids": [
+              "3",
+              "7",
+              "2",
+              "4"
+            ]
+          },
+          {
+            "budget_used": 512,
+            "complete_evidence_ids": [
+              "4",
+              "5",
+              "3",
+              "1"
+            ],
+            "packed_evidence": [
+              {
+                "complete": true,
+                "hash": "84950fac3fc4ca6e62d31095278651f926ee89339b84874cd5de46a7fd2dacb1",
+                "id": "4",
+                "source": ""
+              },
+              {
+                "complete": true,
+                "hash": "c1f2b7a7f895dffcf04130bd8c261983e81bfb3933246c3668541573bed311ad",
+                "id": "5",
+                "source": ""
+              },
+              {
+                "complete": true,
+                "hash": "cfcc05b58452c36a18d7e9b94cbed273b97b475baf0cb29d290a30a49ce99198",
+                "id": "3",
+                "source": ""
+              },
+              {
+                "complete": true,
+                "hash": "d83298142d23bf2819ac8e449b2208ce34d38b2341d463ad7f0fa312d5daefaa",
+                "id": "1",
+                "source": ""
+              }
+            ],
+            "ranked_ids": [
+              "4",
+              "5",
+              "3",
+              "0",
+              "1",
+              "7",
+              "2",
+              "6"
+            ],
+            "scores": [
+              0.5342897176742554,
+              0.12843191623687744,
+              0.10866089165210724,
+              0.08286172151565552,
+              0.07524006068706512,
+              0.06364968419075012,
+              -0.021246150135993958,
+              -0.044678449630737305
+            ],
+            "selected_ids": [
+              "4",
+              "5",
+              "3",
+              "1"
+            ]
+          },
+          {
+            "budget_used": 507,
+            "complete_evidence_ids": [
+              "5",
+              "4",
+              "3",
+              "2"
+            ],
+            "packed_evidence": [
+              {
+                "complete": true,
+                "hash": "c1f2b7a7f895dffcf04130bd8c261983e81bfb3933246c3668541573bed311ad",
+                "id": "5",
+                "source": ""
+              },
+              {
+                "complete": true,
+                "hash": "84950fac3fc4ca6e62d31095278651f926ee89339b84874cd5de46a7fd2dacb1",
+                "id": "4",
+                "source": ""
+              },
+              {
+                "complete": true,
+                "hash": "cfcc05b58452c36a18d7e9b94cbed273b97b475baf0cb29d290a30a49ce99198",
+                "id": "3",
+                "source": ""
+              },
+              {
+                "complete": true,
+                "hash": "f0a10fcea363e4a640a88830a21c6c39a1fa5f498d860e3ec13bfd138caf574b",
+                "id": "2",
+                "source": ""
+              }
+            ],
+            "ranked_ids": [
+              "5",
+              "4",
+              "6",
+              "3",
+              "2",
+              "0",
+              "7",
+              "1"
+            ],
+            "scores": [
+              0.659308671951294,
+              0.24734266102313995,
+              0.24290794134140015,
+              0.12292349338531494,
+              0.05548415705561638,
+              0.052384041249752045,
+              0.014430496841669083,
+              -0.035470496863126755
+            ],
+            "selected_ids": [
+              "5",
+              "4",
+              "3",
+              "2"
+            ]
+          },
+          {
+            "budget_used": 508,
+            "complete_evidence_ids": [
+              "7",
+              "5",
+              "3",
+              "0"
+            ],
+            "packed_evidence": [
+              {
+                "complete": true,
+                "hash": "16899e70dfcab3295bafebea090583be0f985a2dc1158d4d62751982f1516499",
+                "id": "7",
+                "source": ""
+              },
+              {
+                "complete": true,
+                "hash": "c1f2b7a7f895dffcf04130bd8c261983e81bfb3933246c3668541573bed311ad",
+                "id": "5",
+                "source": ""
+              },
+              {
+                "complete": true,
+                "hash": "cfcc05b58452c36a18d7e9b94cbed273b97b475baf0cb29d290a30a49ce99198",
+                "id": "3",
+                "source": ""
+              },
+              {
+                "complete": true,
+                "hash": "9748dbffdc9c571299727367ea543735b46b85b488db0456a306a45b8d6d091e",
+                "id": "0",
+                "source": ""
+              }
+            ],
+            "ranked_ids": [
+              "6",
+              "7",
+              "5",
+              "3",
+              "0",
+              "4",
+              "2",
+              "1"
+            ],
+            "scores": [
+              0.40746742486953735,
+              0.05925982445478439,
+              0.04490147903561592,
+              0.026095185428857803,
+              0.016325078904628754,
+              -0.008509522303938866,
+              -0.02669108286499977,
+              -0.04549705237150192
+            ],
+            "selected_ids": [
+              "7",
+              "5",
+              "3",
+              "0"
+            ]
+          },
+          {
+            "budget_used": 504,
+            "complete_evidence_ids": [
+              "7",
+              "2",
+              "3",
+              "0"
+            ],
+            "packed_evidence": [
+              {
+                "complete": true,
+                "hash": "16899e70dfcab3295bafebea090583be0f985a2dc1158d4d62751982f1516499",
+                "id": "7",
+                "source": ""
+              },
+              {
+                "complete": true,
+                "hash": "f0a10fcea363e4a640a88830a21c6c39a1fa5f498d860e3ec13bfd138caf574b",
+                "id": "2",
+                "source": ""
+              },
+              {
+                "complete": true,
+                "hash": "cfcc05b58452c36a18d7e9b94cbed273b97b475baf0cb29d290a30a49ce99198",
+                "id": "3",
+                "source": ""
+              },
+              {
+                "complete": true,
+                "hash": "9748dbffdc9c571299727367ea543735b46b85b488db0456a306a45b8d6d091e",
+                "id": "0",
+                "source": ""
+              }
+            ],
+            "ranked_ids": [
+              "7",
+              "6",
+              "2",
+              "3",
+              "0",
+              "4",
+              "1",
+              "5"
+            ],
+            "scores": [
+              0.6248935461044312,
+              0.26810210943222046,
+              0.16957220435142517,
+              0.07768802344799042,
+              0.04975125938653946,
+              0.044065963476896286,
+              0.015214823186397552,
+              -0.012573493644595146
+            ],
+            "selected_ids": [
+              "7",
+              "2",
+              "3",
+              "0"
+            ]
+          },
+          {
+            "budget_used": 506,
+            "complete_evidence_ids": [
+              "0",
+              "5",
+              "4",
+              "1"
+            ],
+            "packed_evidence": [
+              {
+                "complete": true,
+                "hash": "9748dbffdc9c571299727367ea543735b46b85b488db0456a306a45b8d6d091e",
+                "id": "0",
+                "source": ""
+              },
+              {
+                "complete": true,
+                "hash": "c1f2b7a7f895dffcf04130bd8c261983e81bfb3933246c3668541573bed311ad",
+                "id": "5",
+                "source": ""
+              },
+              {
+                "complete": true,
+                "hash": "84950fac3fc4ca6e62d31095278651f926ee89339b84874cd5de46a7fd2dacb1",
+                "id": "4",
+                "source": ""
+              },
+              {
+                "complete": true,
+                "hash": "d83298142d23bf2819ac8e449b2208ce34d38b2341d463ad7f0fa312d5daefaa",
+                "id": "1",
+                "source": ""
+              }
+            ],
+            "ranked_ids": [
+              "0",
+              "5",
+              "4",
+              "1",
+              "6",
+              "3",
+              "7",
+              "2"
+            ],
+            "scores": [
+              0.682481050491333,
+              0.1984730064868927,
+              0.0813213661313057,
+              0.052429988980293274,
+              0.0493740439414978,
+              0.04591601341962814,
+              -0.0005256813019514084,
+              -0.04925316572189331
+            ],
+            "selected_ids": [
+              "0",
+              "5",
+              "4",
+              "1"
+            ]
+          }
+        ],
+        "max_embedding_abs_diff": 0.0,
+        "max_score_abs_diff": 0.0,
+        "numeric_parity": {
+          "bitwise_equal": true,
+          "max_embedding_abs_diff": 0.0,
+          "max_score_abs_diff": 0.0,
+          "numeric_tolerance": 9.167614572978414e-05,
+          "tolerance_basis": "fp32:2*gamma_(2d+1);normalized-dot-product-sanity-envelope",
+          "within_numeric_guard": true
+        },
+        "reason": "strict",
+        "reference_results": [
+          {
+            "budget_used": 506,
+            "complete_evidence_ids": [
+              "0",
+              "5",
+              "4",
+              "1"
+            ],
+            "packed_evidence": [
+              {
+                "complete": true,
+                "hash": "9748dbffdc9c571299727367ea543735b46b85b488db0456a306a45b8d6d091e",
+                "id": "0",
+                "source": ""
+              },
+              {
+                "complete": true,
+                "hash": "c1f2b7a7f895dffcf04130bd8c261983e81bfb3933246c3668541573bed311ad",
+                "id": "5",
+                "source": ""
+              },
+              {
+                "complete": true,
+                "hash": "84950fac3fc4ca6e62d31095278651f926ee89339b84874cd5de46a7fd2dacb1",
+                "id": "4",
+                "source": ""
+              },
+              {
+                "complete": true,
+                "hash": "d83298142d23bf2819ac8e449b2208ce34d38b2341d463ad7f0fa312d5daefaa",
+                "id": "1",
+                "source": ""
+              }
+            ],
+            "ranked_ids": [
+              "0",
+              "5",
+              "4",
+              "1",
+              "6",
+              "3",
+              "7",
+              "2"
+            ],
+            "scores": [
+              0.682481050491333,
+              0.1984730064868927,
+              0.0813213661313057,
+              0.052429988980293274,
+              0.0493740439414978,
+              0.04591601341962814,
+              -0.0005256813019514084,
+              -0.04925316572189331
+            ],
+            "selected_ids": [
+              "0",
+              "5",
+              "4",
+              "1"
+            ]
+          },
+          {
+            "budget_used": 491,
+            "complete_evidence_ids": [
+              "1",
+              "2",
+              "0",
+              "5"
+            ],
+            "packed_evidence": [
+              {
+                "complete": true,
+                "hash": "d83298142d23bf2819ac8e449b2208ce34d38b2341d463ad7f0fa312d5daefaa",
+                "id": "1",
+                "source": ""
+              },
+              {
+                "complete": true,
+                "hash": "f0a10fcea363e4a640a88830a21c6c39a1fa5f498d860e3ec13bfd138caf574b",
+                "id": "2",
+                "source": ""
+              },
+              {
+                "complete": true,
+                "hash": "9748dbffdc9c571299727367ea543735b46b85b488db0456a306a45b8d6d091e",
+                "id": "0",
+                "source": ""
+              },
+              {
+                "complete": true,
+                "hash": "c1f2b7a7f895dffcf04130bd8c261983e81bfb3933246c3668541573bed311ad",
+                "id": "5",
+                "source": ""
+              }
+            ],
+            "ranked_ids": [
+              "1",
+              "2",
+              "0",
+              "5",
+              "4",
+              "3",
+              "7",
+              "6"
+            ],
+            "scores": [
+              0.7594741582870483,
+              0.07272813469171524,
+              0.057605914771556854,
+              0.04197893664240837,
+              0.026780331507325172,
+              -0.005614177323877811,
+              -0.007472140248864889,
+              -0.01697179116308689
+            ],
+            "selected_ids": [
+              "1",
+              "2",
+              "0",
+              "5"
+            ]
+          },
+          {
+            "budget_used": 497,
+            "complete_evidence_ids": [
+              "2",
+              "3",
+              "1",
+              "5"
+            ],
+            "packed_evidence": [
+              {
+                "complete": true,
+                "hash": "f0a10fcea363e4a640a88830a21c6c39a1fa5f498d860e3ec13bfd138caf574b",
+                "id": "2",
+                "source": ""
+              },
+              {
+                "complete": true,
+                "hash": "cfcc05b58452c36a18d7e9b94cbed273b97b475baf0cb29d290a30a49ce99198",
+                "id": "3",
+                "source": ""
+              },
+              {
+                "complete": true,
+                "hash": "d83298142d23bf2819ac8e449b2208ce34d38b2341d463ad7f0fa312d5daefaa",
+                "id": "1",
+                "source": ""
+              },
+              {
+                "complete": true,
+                "hash": "c1f2b7a7f895dffcf04130bd8c261983e81bfb3933246c3668541573bed311ad",
+                "id": "5",
+                "source": ""
+              }
+            ],
+            "ranked_ids": [
+              "2",
+              "3",
+              "1",
+              "5",
+              "7",
+              "4",
+              "0",
+              "6"
+            ],
+            "scores": [
+              0.8428934216499329,
+              0.15318450331687927,
+              0.1123761460185051,
+              0.10433302074670792,
+              0.052552346140146255,
+              0.03336082398891449,
+              -0.015719853341579437,
+              -0.04997927322983742
+            ],
+            "selected_ids": [
+              "2",
+              "3",
+              "1",
+              "5"
+            ]
+          },
+          {
+            "budget_used": 511,
+            "complete_evidence_ids": [
+              "3",
+              "7",
+              "2",
+              "4"
+            ],
+            "packed_evidence": [
+              {
+                "complete": true,
+                "hash": "cfcc05b58452c36a18d7e9b94cbed273b97b475baf0cb29d290a30a49ce99198",
+                "id": "3",
+                "source": ""
+              },
+              {
+                "complete": true,
+                "hash": "16899e70dfcab3295bafebea090583be0f985a2dc1158d4d62751982f1516499",
+                "id": "7",
+                "source": ""
+              },
+              {
+                "complete": true,
+                "hash": "f0a10fcea363e4a640a88830a21c6c39a1fa5f498d860e3ec13bfd138caf574b",
+                "id": "2",
+                "source": ""
+              },
+              {
+                "complete": true,
+                "hash": "84950fac3fc4ca6e62d31095278651f926ee89339b84874cd5de46a7fd2dacb1",
+                "id": "4",
+                "source": ""
+              }
+            ],
+            "ranked_ids": [
+              "3",
+              "7",
+              "2",
+              "4",
+              "6",
+              "5",
+              "0",
+              "1"
+            ],
+            "scores": [
+              0.7507451772689819,
+              0.2793647050857544,
+              0.20349174737930298,
+              0.15085172653198242,
+              0.11913330107927322,
+              0.113540418446064,
+              0.09585823118686676,
+              -0.038167379796504974
+            ],
+            "selected_ids": [
+              "3",
+              "7",
+              "2",
+              "4"
+            ]
+          },
+          {
+            "budget_used": 512,
+            "complete_evidence_ids": [
+              "4",
+              "5",
+              "3",
+              "1"
+            ],
+            "packed_evidence": [
+              {
+                "complete": true,
+                "hash": "84950fac3fc4ca6e62d31095278651f926ee89339b84874cd5de46a7fd2dacb1",
+                "id": "4",
+                "source": ""
+              },
+              {
+                "complete": true,
+                "hash": "c1f2b7a7f895dffcf04130bd8c261983e81bfb3933246c3668541573bed311ad",
+                "id": "5",
+                "source": ""
+              },
+              {
+                "complete": true,
+                "hash": "cfcc05b58452c36a18d7e9b94cbed273b97b475baf0cb29d290a30a49ce99198",
+                "id": "3",
+                "source": ""
+              },
+              {
+                "complete": true,
+                "hash": "d83298142d23bf2819ac8e449b2208ce34d38b2341d463ad7f0fa312d5daefaa",
+                "id": "1",
+                "source": ""
+              }
+            ],
+            "ranked_ids": [
+              "4",
+              "5",
+              "3",
+              "0",
+              "1",
+              "7",
+              "2",
+              "6"
+            ],
+            "scores": [
+              0.5342897176742554,
+              0.12843191623687744,
+              0.10866089165210724,
+              0.08286172151565552,
+              0.07524006068706512,
+              0.06364968419075012,
+              -0.021246150135993958,
+              -0.044678449630737305
+            ],
+            "selected_ids": [
+              "4",
+              "5",
+              "3",
+              "1"
+            ]
+          },
+          {
+            "budget_used": 507,
+            "complete_evidence_ids": [
+              "5",
+              "4",
+              "3",
+              "2"
+            ],
+            "packed_evidence": [
+              {
+                "complete": true,
+                "hash": "c1f2b7a7f895dffcf04130bd8c261983e81bfb3933246c3668541573bed311ad",
+                "id": "5",
+                "source": ""
+              },
+              {
+                "complete": true,
+                "hash": "84950fac3fc4ca6e62d31095278651f926ee89339b84874cd5de46a7fd2dacb1",
+                "id": "4",
+                "source": ""
+              },
+              {
+                "complete": true,
+                "hash": "cfcc05b58452c36a18d7e9b94cbed273b97b475baf0cb29d290a30a49ce99198",
+                "id": "3",
+                "source": ""
+              },
+              {
+                "complete": true,
+                "hash": "f0a10fcea363e4a640a88830a21c6c39a1fa5f498d860e3ec13bfd138caf574b",
+                "id": "2",
+                "source": ""
+              }
+            ],
+            "ranked_ids": [
+              "5",
+              "4",
+              "6",
+              "3",
+              "2",
+              "0",
+              "7",
+              "1"
+            ],
+            "scores": [
+              0.659308671951294,
+              0.24734266102313995,
+              0.24290794134140015,
+              0.12292349338531494,
+              0.05548415705561638,
+              0.052384041249752045,
+              0.014430496841669083,
+              -0.035470496863126755
+            ],
+            "selected_ids": [
+              "5",
+              "4",
+              "3",
+              "2"
+            ]
+          },
+          {
+            "budget_used": 508,
+            "complete_evidence_ids": [
+              "7",
+              "5",
+              "3",
+              "0"
+            ],
+            "packed_evidence": [
+              {
+                "complete": true,
+                "hash": "16899e70dfcab3295bafebea090583be0f985a2dc1158d4d62751982f1516499",
+                "id": "7",
+                "source": ""
+              },
+              {
+                "complete": true,
+                "hash": "c1f2b7a7f895dffcf04130bd8c261983e81bfb3933246c3668541573bed311ad",
+                "id": "5",
+                "source": ""
+              },
+              {
+                "complete": true,
+                "hash": "cfcc05b58452c36a18d7e9b94cbed273b97b475baf0cb29d290a30a49ce99198",
+                "id": "3",
+                "source": ""
+              },
+              {
+                "complete": true,
+                "hash": "9748dbffdc9c571299727367ea543735b46b85b488db0456a306a45b8d6d091e",
+                "id": "0",
+                "source": ""
+              }
+            ],
+            "ranked_ids": [
+              "6",
+              "7",
+              "5",
+              "3",
+              "0",
+              "4",
+              "2",
+              "1"
+            ],
+            "scores": [
+              0.40746742486953735,
+              0.05925982445478439,
+              0.04490147903561592,
+              0.026095185428857803,
+              0.016325078904628754,
+              -0.008509522303938866,
+              -0.02669108286499977,
+              -0.04549705237150192
+            ],
+            "selected_ids": [
+              "7",
+              "5",
+              "3",
+              "0"
+            ]
+          },
+          {
+            "budget_used": 504,
+            "complete_evidence_ids": [
+              "7",
+              "2",
+              "3",
+              "0"
+            ],
+            "packed_evidence": [
+              {
+                "complete": true,
+                "hash": "16899e70dfcab3295bafebea090583be0f985a2dc1158d4d62751982f1516499",
+                "id": "7",
+                "source": ""
+              },
+              {
+                "complete": true,
+                "hash": "f0a10fcea363e4a640a88830a21c6c39a1fa5f498d860e3ec13bfd138caf574b",
+                "id": "2",
+                "source": ""
+              },
+              {
+                "complete": true,
+                "hash": "cfcc05b58452c36a18d7e9b94cbed273b97b475baf0cb29d290a30a49ce99198",
+                "id": "3",
+                "source": ""
+              },
+              {
+                "complete": true,
+                "hash": "9748dbffdc9c571299727367ea543735b46b85b488db0456a306a45b8d6d091e",
+                "id": "0",
+                "source": ""
+              }
+            ],
+            "ranked_ids": [
+              "7",
+              "6",
+              "2",
+              "3",
+              "0",
+              "4",
+              "1",
+              "5"
+            ],
+            "scores": [
+              0.6248935461044312,
+              0.26810210943222046,
+              0.16957220435142517,
+              0.07768802344799042,
+              0.04975125938653946,
+              0.044065963476896286,
+              0.015214823186397552,
+              -0.012573493644595146
+            ],
+            "selected_ids": [
+              "7",
+              "2",
+              "3",
+              "0"
+            ]
+          },
+          {
+            "budget_used": 506,
+            "complete_evidence_ids": [
+              "0",
+              "5",
+              "4",
+              "1"
+            ],
+            "packed_evidence": [
+              {
+                "complete": true,
+                "hash": "9748dbffdc9c571299727367ea543735b46b85b488db0456a306a45b8d6d091e",
+                "id": "0",
+                "source": ""
+              },
+              {
+                "complete": true,
+                "hash": "c1f2b7a7f895dffcf04130bd8c261983e81bfb3933246c3668541573bed311ad",
+                "id": "5",
+                "source": ""
+              },
+              {
+                "complete": true,
+                "hash": "84950fac3fc4ca6e62d31095278651f926ee89339b84874cd5de46a7fd2dacb1",
+                "id": "4",
+                "source": ""
+              },
+              {
+                "complete": true,
+                "hash": "d83298142d23bf2819ac8e449b2208ce34d38b2341d463ad7f0fa312d5daefaa",
+                "id": "1",
+                "source": ""
+              }
+            ],
+            "ranked_ids": [
+              "0",
+              "5",
+              "4",
+              "1",
+              "6",
+              "3",
+              "7",
+              "2"
+            ],
+            "scores": [
+              0.682481050491333,
+              0.1984730064868927,
+              0.0813213661313057,
+              0.052429988980293274,
+              0.0493740439414978,
+              0.04591601341962814,
+              -0.0005256813019514084,
+              -0.04925316572189331
+            ],
+            "selected_ids": [
+              "0",
+              "5",
+              "4",
+              "1"
+            ]
+          }
+        ],
+        "score_absolute_tolerance": 9.167614572978414e-05,
+        "semantic_admission": true,
+        "strict_retrieval_parity": true,
+        "structural_retrieval_parity": true
+      },
+      "transfer_ms": 0.0,
+      "wait_overhead_ms": 0.0,
+      "wait_semantics": "offline prebuilt input; no scheduler wait",
+      "wall_seconds": 1.622865899989847
+    },
+    {
+      "batch_construction_ms": 0.034200260415673256,
+      "cpu_utilization_percent": 97.53991059510398,
+      "latency_scope": "completed batch encoder+scorer; no arrival queue",
+      "p50_ms": 22.36479998100549,
+      "p95_ms": 25.804200035054237,
+      "queries": 108,
+      "queries_per_second": 182.2150978468537,
+      "query_batch_size": 4,
+      "query_encoding_ms": 586.4294001366943,
+      "scorer_ms_including_transfer": 0.43910008389502764,
+      "semantic_parity": {
+        "admitted": true,
+        "bitwise_parity": false,
+        "candidate_results": [
+          {
+            "budget_used": 506,
+            "complete_evidence_ids": [
+              "0",
+              "5",
+              "4",
+              "1"
+            ],
+            "packed_evidence": [
+              {
+                "complete": true,
+                "hash": "9748dbffdc9c571299727367ea543735b46b85b488db0456a306a45b8d6d091e",
+                "id": "0",
+                "source": ""
+              },
+              {
+                "complete": true,
+                "hash": "c1f2b7a7f895dffcf04130bd8c261983e81bfb3933246c3668541573bed311ad",
+                "id": "5",
+                "source": ""
+              },
+              {
+                "complete": true,
+                "hash": "84950fac3fc4ca6e62d31095278651f926ee89339b84874cd5de46a7fd2dacb1",
+                "id": "4",
+                "source": ""
+              },
+              {
+                "complete": true,
+                "hash": "d83298142d23bf2819ac8e449b2208ce34d38b2341d463ad7f0fa312d5daefaa",
+                "id": "1",
+                "source": ""
+              }
+            ],
+            "ranked_ids": [
+              "0",
+              "5",
+              "4",
+              "1",
+              "6",
+              "3",
+              "7",
+              "2"
+            ],
+            "scores": [
+              0.682481050491333,
+              0.1984729766845703,
+              0.08132137358188629,
+              0.05242999270558357,
+              0.0493740439414978,
+              0.045916009694337845,
+              -0.0005256719887256622,
+              -0.04925317317247391
+            ],
+            "selected_ids": [
+              "0",
+              "5",
+              "4",
+              "1"
+            ]
+          },
+          {
+            "budget_used": 491,
+            "complete_evidence_ids": [
+              "1",
+              "2",
+              "0",
+              "5"
+            ],
+            "packed_evidence": [
+              {
+                "complete": true,
+                "hash": "d83298142d23bf2819ac8e449b2208ce34d38b2341d463ad7f0fa312d5daefaa",
+                "id": "1",
+                "source": ""
+              },
+              {
+                "complete": true,
+                "hash": "f0a10fcea363e4a640a88830a21c6c39a1fa5f498d860e3ec13bfd138caf574b",
+                "id": "2",
+                "source": ""
+              },
+              {
+                "complete": true,
+                "hash": "9748dbffdc9c571299727367ea543735b46b85b488db0456a306a45b8d6d091e",
+                "id": "0",
+                "source": ""
+              },
+              {
+                "complete": true,
+                "hash": "c1f2b7a7f895dffcf04130bd8c261983e81bfb3933246c3668541573bed311ad",
+                "id": "5",
+                "source": ""
+              }
+            ],
+            "ranked_ids": [
+              "1",
+              "2",
+              "0",
+              "5",
+              "4",
+              "3",
+              "7",
+              "6"
+            ],
+            "scores": [
+              0.7594740390777588,
+              0.07272809743881226,
+              0.057605888694524765,
+              0.041978783905506134,
+              0.026780230924487114,
+              -0.005614135414361954,
+              -0.007472200319170952,
+              -0.016971876844763756
+            ],
+            "selected_ids": [
+              "1",
+              "2",
+              "0",
+              "5"
+            ]
+          },
+          {
+            "budget_used": 497,
+            "complete_evidence_ids": [
+              "2",
+              "3",
+              "1",
+              "5"
+            ],
+            "packed_evidence": [
+              {
+                "complete": true,
+                "hash": "f0a10fcea363e4a640a88830a21c6c39a1fa5f498d860e3ec13bfd138caf574b",
+                "id": "2",
+                "source": ""
+              },
+              {
+                "complete": true,
+                "hash": "cfcc05b58452c36a18d7e9b94cbed273b97b475baf0cb29d290a30a49ce99198",
+                "id": "3",
+                "source": ""
+              },
+              {
+                "complete": true,
+                "hash": "d83298142d23bf2819ac8e449b2208ce34d38b2341d463ad7f0fa312d5daefaa",
+                "id": "1",
+                "source": ""
+              },
+              {
+                "complete": true,
+                "hash": "c1f2b7a7f895dffcf04130bd8c261983e81bfb3933246c3668541573bed311ad",
+                "id": "5",
+                "source": ""
+              }
+            ],
+            "ranked_ids": [
+              "2",
+              "3",
+              "1",
+              "5",
+              "7",
+              "4",
+              "0",
+              "6"
+            ],
+            "scores": [
+              0.8428934216499329,
+              0.1531844139099121,
+              0.1123761385679245,
+              0.10433302074670792,
+              0.052552271634340286,
+              0.03336073458194733,
+              -0.015719877555966377,
+              -0.04997934401035309
+            ],
+            "selected_ids": [
+              "2",
+              "3",
+              "1",
+              "5"
+            ]
+          },
+          {
+            "budget_used": 511,
+            "complete_evidence_ids": [
+              "3",
+              "7",
+              "2",
+              "4"
+            ],
+            "packed_evidence": [
+              {
+                "complete": true,
+                "hash": "cfcc05b58452c36a18d7e9b94cbed273b97b475baf0cb29d290a30a49ce99198",
+                "id": "3",
+                "source": ""
+              },
+              {
+                "complete": true,
+                "hash": "16899e70dfcab3295bafebea090583be0f985a2dc1158d4d62751982f1516499",
+                "id": "7",
+                "source": ""
+              },
+              {
+                "complete": true,
+                "hash": "f0a10fcea363e4a640a88830a21c6c39a1fa5f498d860e3ec13bfd138caf574b",
+                "id": "2",
+                "source": ""
+              },
+              {
+                "complete": true,
+                "hash": "84950fac3fc4ca6e62d31095278651f926ee89339b84874cd5de46a7fd2dacb1",
+                "id": "4",
+                "source": ""
+              }
+            ],
+            "ranked_ids": [
+              "3",
+              "7",
+              "2",
+              "4",
+              "6",
+              "5",
+              "0",
+              "1"
+            ],
+            "scores": [
+              0.7507452964782715,
+              0.27936476469039917,
+              0.20349177718162537,
+              0.15085160732269287,
+              0.1191333681344986,
+              0.11354050040245056,
+              0.09585818648338318,
+              -0.038167309015989304
+            ],
+            "selected_ids": [
+              "3",
+              "7",
+              "2",
+              "4"
+            ]
+          },
+          {
+            "budget_used": 512,
+            "complete_evidence_ids": [
+              "4",
+              "5",
+              "3",
+              "1"
+            ],
+            "packed_evidence": [
+              {
+                "complete": true,
+                "hash": "84950fac3fc4ca6e62d31095278651f926ee89339b84874cd5de46a7fd2dacb1",
+                "id": "4",
+                "source": ""
+              },
+              {
+                "complete": true,
+                "hash": "c1f2b7a7f895dffcf04130bd8c261983e81bfb3933246c3668541573bed311ad",
+                "id": "5",
+                "source": ""
+              },
+              {
+                "complete": true,
+                "hash": "cfcc05b58452c36a18d7e9b94cbed273b97b475baf0cb29d290a30a49ce99198",
+                "id": "3",
+                "source": ""
+              },
+              {
+                "complete": true,
+                "hash": "d83298142d23bf2819ac8e449b2208ce34d38b2341d463ad7f0fa312d5daefaa",
+                "id": "1",
+                "source": ""
+              }
+            ],
+            "ranked_ids": [
+              "4",
+              "5",
+              "3",
+              "0",
+              "1",
+              "7",
+              "2",
+              "6"
+            ],
+            "scores": [
+              0.5342896580696106,
+              0.12843193113803864,
+              0.10866086184978485,
+              0.08286158740520477,
+              0.07524006813764572,
+              0.06364964693784714,
+              -0.02124624140560627,
+              -0.04467850178480148
+            ],
+            "selected_ids": [
+              "4",
+              "5",
+              "3",
+              "1"
+            ]
+          },
+          {
+            "budget_used": 507,
+            "complete_evidence_ids": [
+              "5",
+              "4",
+              "3",
+              "2"
+            ],
+            "packed_evidence": [
+              {
+                "complete": true,
+                "hash": "c1f2b7a7f895dffcf04130bd8c261983e81bfb3933246c3668541573bed311ad",
+                "id": "5",
+                "source": ""
+              },
+              {
+                "complete": true,
+                "hash": "84950fac3fc4ca6e62d31095278651f926ee89339b84874cd5de46a7fd2dacb1",
+                "id": "4",
+                "source": ""
+              },
+              {
+                "complete": true,
+                "hash": "cfcc05b58452c36a18d7e9b94cbed273b97b475baf0cb29d290a30a49ce99198",
+                "id": "3",
+                "source": ""
+              },
+              {
+                "complete": true,
+                "hash": "f0a10fcea363e4a640a88830a21c6c39a1fa5f498d860e3ec13bfd138caf574b",
+                "id": "2",
+                "source": ""
+              }
+            ],
+            "ranked_ids": [
+              "5",
+              "4",
+              "6",
+              "3",
+              "2",
+              "0",
+              "7",
+              "1"
+            ],
+            "scores": [
+              0.6593087911605835,
+              0.24734267592430115,
+              0.24290797114372253,
+              0.12292347848415375,
+              0.055484212934970856,
+              0.05238405242562294,
+              0.014430508017539978,
+              -0.035470351576805115
+            ],
+            "selected_ids": [
+              "5",
+              "4",
+              "3",
+              "2"
+            ]
+          },
+          {
+            "budget_used": 508,
+            "complete_evidence_ids": [
+              "7",
+              "5",
+              "3",
+              "0"
+            ],
+            "packed_evidence": [
+              {
+                "complete": true,
+                "hash": "16899e70dfcab3295bafebea090583be0f985a2dc1158d4d62751982f1516499",
+                "id": "7",
+                "source": ""
+              },
+              {
+                "complete": true,
+                "hash": "c1f2b7a7f895dffcf04130bd8c261983e81bfb3933246c3668541573bed311ad",
+                "id": "5",
+                "source": ""
+              },
+              {
+                "complete": true,
+                "hash": "cfcc05b58452c36a18d7e9b94cbed273b97b475baf0cb29d290a30a49ce99198",
+                "id": "3",
+                "source": ""
+              },
+              {
+                "complete": true,
+                "hash": "9748dbffdc9c571299727367ea543735b46b85b488db0456a306a45b8d6d091e",
+                "id": "0",
+                "source": ""
+              }
+            ],
+            "ranked_ids": [
+              "6",
+              "7",
+              "5",
+              "3",
+              "0",
+              "4",
+              "2",
+              "1"
+            ],
+            "scores": [
+              0.4074673652648926,
+              0.0592598095536232,
+              0.04490145295858383,
+              0.026095183566212654,
+              0.016325093805789948,
+              -0.008509524166584015,
+              -0.026691079139709473,
+              -0.045497097074985504
+            ],
+            "selected_ids": [
+              "7",
+              "5",
+              "3",
+              "0"
+            ]
+          },
+          {
+            "budget_used": 504,
+            "complete_evidence_ids": [
+              "7",
+              "2",
+              "3",
+              "0"
+            ],
+            "packed_evidence": [
+              {
+                "complete": true,
+                "hash": "16899e70dfcab3295bafebea090583be0f985a2dc1158d4d62751982f1516499",
+                "id": "7",
+                "source": ""
+              },
+              {
+                "complete": true,
+                "hash": "f0a10fcea363e4a640a88830a21c6c39a1fa5f498d860e3ec13bfd138caf574b",
+                "id": "2",
+                "source": ""
+              },
+              {
+                "complete": true,
+                "hash": "cfcc05b58452c36a18d7e9b94cbed273b97b475baf0cb29d290a30a49ce99198",
+                "id": "3",
+                "source": ""
+              },
+              {
+                "complete": true,
+                "hash": "9748dbffdc9c571299727367ea543735b46b85b488db0456a306a45b8d6d091e",
+                "id": "0",
+                "source": ""
+              }
+            ],
+            "ranked_ids": [
+              "7",
+              "6",
+              "2",
+              "3",
+              "0",
+              "4",
+              "1",
+              "5"
+            ],
+            "scores": [
+              0.6248935461044312,
+              0.26810210943222046,
+              0.16957224905490875,
+              0.07768788933753967,
+              0.049751296639442444,
+              0.04406614601612091,
+              0.015214973129332066,
+              -0.01257348619401455
+            ],
+            "selected_ids": [
+              "7",
+              "2",
+              "3",
+              "0"
+            ]
+          },
+          {
+            "budget_used": 506,
+            "complete_evidence_ids": [
+              "0",
+              "5",
+              "4",
+              "1"
+            ],
+            "packed_evidence": [
+              {
+                "complete": true,
+                "hash": "9748dbffdc9c571299727367ea543735b46b85b488db0456a306a45b8d6d091e",
+                "id": "0",
+                "source": ""
+              },
+              {
+                "complete": true,
+                "hash": "c1f2b7a7f895dffcf04130bd8c261983e81bfb3933246c3668541573bed311ad",
+                "id": "5",
+                "source": ""
+              },
+              {
+                "complete": true,
+                "hash": "84950fac3fc4ca6e62d31095278651f926ee89339b84874cd5de46a7fd2dacb1",
+                "id": "4",
+                "source": ""
+              },
+              {
+                "complete": true,
+                "hash": "d83298142d23bf2819ac8e449b2208ce34d38b2341d463ad7f0fa312d5daefaa",
+                "id": "1",
+                "source": ""
+              }
+            ],
+            "ranked_ids": [
+              "0",
+              "5",
+              "4",
+              "1",
+              "6",
+              "3",
+              "7",
+              "2"
+            ],
+            "scores": [
+              0.682481050491333,
+              0.1984730064868927,
+              0.0813213661313057,
+              0.052429988980293274,
+              0.0493740439414978,
+              0.04591601341962814,
+              -0.0005256813019514084,
+              -0.04925316572189331
+            ],
+            "selected_ids": [
+              "0",
+              "5",
+              "4",
+              "1"
+            ]
+          }
+        ],
+        "max_embedding_abs_diff": 1.7136335372924805e-07,
+        "max_score_abs_diff": 1.825392246246338e-07,
+        "numeric_parity": {
+          "bitwise_equal": false,
+          "max_embedding_abs_diff": 1.7136335372924805e-07,
+          "max_score_abs_diff": 1.825392246246338e-07,
+          "numeric_tolerance": 9.167614572978414e-05,
+          "tolerance_basis": "fp32:2*gamma_(2d+1);normalized-dot-product-sanity-envelope",
+          "within_numeric_guard": true
+        },
+        "reason": "strict",
+        "reference_results": [
+          {
+            "budget_used": 506,
+            "complete_evidence_ids": [
+              "0",
+              "5",
+              "4",
+              "1"
+            ],
+            "packed_evidence": [
+              {
+                "complete": true,
+                "hash": "9748dbffdc9c571299727367ea543735b46b85b488db0456a306a45b8d6d091e",
+                "id": "0",
+                "source": ""
+              },
+              {
+                "complete": true,
+                "hash": "c1f2b7a7f895dffcf04130bd8c261983e81bfb3933246c3668541573bed311ad",
+                "id": "5",
+                "source": ""
+              },
+              {
+                "complete": true,
+                "hash": "84950fac3fc4ca6e62d31095278651f926ee89339b84874cd5de46a7fd2dacb1",
+                "id": "4",
+                "source": ""
+              },
+              {
+                "complete": true,
+                "hash": "d83298142d23bf2819ac8e449b2208ce34d38b2341d463ad7f0fa312d5daefaa",
+                "id": "1",
+                "source": ""
+              }
+            ],
+            "ranked_ids": [
+              "0",
+              "5",
+              "4",
+              "1",
+              "6",
+              "3",
+              "7",
+              "2"
+            ],
+            "scores": [
+              0.682481050491333,
+              0.1984730064868927,
+              0.0813213661313057,
+              0.052429988980293274,
+              0.0493740439414978,
+              0.04591601341962814,
+              -0.0005256813019514084,
+              -0.04925316572189331
+            ],
+            "selected_ids": [
+              "0",
+              "5",
+              "4",
+              "1"
+            ]
+          },
+          {
+            "budget_used": 491,
+            "complete_evidence_ids": [
+              "1",
+              "2",
+              "0",
+              "5"
+            ],
+            "packed_evidence": [
+              {
+                "complete": true,
+                "hash": "d83298142d23bf2819ac8e449b2208ce34d38b2341d463ad7f0fa312d5daefaa",
+                "id": "1",
+                "source": ""
+              },
+              {
+                "complete": true,
+                "hash": "f0a10fcea363e4a640a88830a21c6c39a1fa5f498d860e3ec13bfd138caf574b",
+                "id": "2",
+                "source": ""
+              },
+              {
+                "complete": true,
+                "hash": "9748dbffdc9c571299727367ea543735b46b85b488db0456a306a45b8d6d091e",
+                "id": "0",
+                "source": ""
+              },
+              {
+                "complete": true,
+                "hash": "c1f2b7a7f895dffcf04130bd8c261983e81bfb3933246c3668541573bed311ad",
+                "id": "5",
+                "source": ""
+              }
+            ],
+            "ranked_ids": [
+              "1",
+              "2",
+              "0",
+              "5",
+              "4",
+              "3",
+              "7",
+              "6"
+            ],
+            "scores": [
+              0.7594741582870483,
+              0.07272813469171524,
+              0.057605914771556854,
+              0.04197893664240837,
+              0.026780331507325172,
+              -0.005614177323877811,
+              -0.007472140248864889,
+              -0.01697179116308689
+            ],
+            "selected_ids": [
+              "1",
+              "2",
+              "0",
+              "5"
+            ]
+          },
+          {
+            "budget_used": 497,
+            "complete_evidence_ids": [
+              "2",
+              "3",
+              "1",
+              "5"
+            ],
+            "packed_evidence": [
+              {
+                "complete": true,
+                "hash": "f0a10fcea363e4a640a88830a21c6c39a1fa5f498d860e3ec13bfd138caf574b",
+                "id": "2",
+                "source": ""
+              },
+              {
+                "complete": true,
+                "hash": "cfcc05b58452c36a18d7e9b94cbed273b97b475baf0cb29d290a30a49ce99198",
+                "id": "3",
+                "source": ""
+              },
+              {
+                "complete": true,
+                "hash": "d83298142d23bf2819ac8e449b2208ce34d38b2341d463ad7f0fa312d5daefaa",
+                "id": "1",
+                "source": ""
+              },
+              {
+                "complete": true,
+                "hash": "c1f2b7a7f895dffcf04130bd8c261983e81bfb3933246c3668541573bed311ad",
+                "id": "5",
+                "source": ""
+              }
+            ],
+            "ranked_ids": [
+              "2",
+              "3",
+              "1",
+              "5",
+              "7",
+              "4",
+              "0",
+              "6"
+            ],
+            "scores": [
+              0.8428934216499329,
+              0.15318450331687927,
+              0.1123761460185051,
+              0.10433302074670792,
+              0.052552346140146255,
+              0.03336082398891449,
+              -0.015719853341579437,
+              -0.04997927322983742
+            ],
+            "selected_ids": [
+              "2",
+              "3",
+              "1",
+              "5"
+            ]
+          },
+          {
+            "budget_used": 511,
+            "complete_evidence_ids": [
+              "3",
+              "7",
+              "2",
+              "4"
+            ],
+            "packed_evidence": [
+              {
+                "complete": true,
+                "hash": "cfcc05b58452c36a18d7e9b94cbed273b97b475baf0cb29d290a30a49ce99198",
+                "id": "3",
+                "source": ""
+              },
+              {
+                "complete": true,
+                "hash": "16899e70dfcab3295bafebea090583be0f985a2dc1158d4d62751982f1516499",
+                "id": "7",
+                "source": ""
+              },
+              {
+                "complete": true,
+                "hash": "f0a10fcea363e4a640a88830a21c6c39a1fa5f498d860e3ec13bfd138caf574b",
+                "id": "2",
+                "source": ""
+              },
+              {
+                "complete": true,
+                "hash": "84950fac3fc4ca6e62d31095278651f926ee89339b84874cd5de46a7fd2dacb1",
+                "id": "4",
+                "source": ""
+              }
+            ],
+            "ranked_ids": [
+              "3",
+              "7",
+              "2",
+              "4",
+              "6",
+              "5",
+              "0",
+              "1"
+            ],
+            "scores": [
+              0.7507451772689819,
+              0.2793647050857544,
+              0.20349174737930298,
+              0.15085172653198242,
+              0.11913330107927322,
+              0.113540418446064,
+              0.09585823118686676,
+              -0.038167379796504974
+            ],
+            "selected_ids": [
+              "3",
+              "7",
+              "2",
+              "4"
+            ]
+          },
+          {
+            "budget_used": 512,
+            "complete_evidence_ids": [
+              "4",
+              "5",
+              "3",
+              "1"
+            ],
+            "packed_evidence": [
+              {
+                "complete": true,
+                "hash": "84950fac3fc4ca6e62d31095278651f926ee89339b84874cd5de46a7fd2dacb1",
+                "id": "4",
+                "source": ""
+              },
+              {
+                "complete": true,
+                "hash": "c1f2b7a7f895dffcf04130bd8c261983e81bfb3933246c3668541573bed311ad",
+                "id": "5",
+                "source": ""
+              },
+              {
+                "complete": true,
+                "hash": "cfcc05b58452c36a18d7e9b94cbed273b97b475baf0cb29d290a30a49ce99198",
+                "id": "3",
+                "source": ""
+              },
+              {
+                "complete": true,
+                "hash": "d83298142d23bf2819ac8e449b2208ce34d38b2341d463ad7f0fa312d5daefaa",
+                "id": "1",
+                "source": ""
+              }
+            ],
+            "ranked_ids": [
+              "4",
+              "5",
+              "3",
+              "0",
+              "1",
+              "7",
+              "2",
+              "6"
+            ],
+            "scores": [
+              0.5342897176742554,
+              0.12843191623687744,
+              0.10866089165210724,
+              0.08286172151565552,
+              0.07524006068706512,
+              0.06364968419075012,
+              -0.021246150135993958,
+              -0.044678449630737305
+            ],
+            "selected_ids": [
+              "4",
+              "5",
+              "3",
+              "1"
+            ]
+          },
+          {
+            "budget_used": 507,
+            "complete_evidence_ids": [
+              "5",
+              "4",
+              "3",
+              "2"
+            ],
+            "packed_evidence": [
+              {
+                "complete": true,
+                "hash": "c1f2b7a7f895dffcf04130bd8c261983e81bfb3933246c3668541573bed311ad",
+                "id": "5",
+                "source": ""
+              },
+              {
+                "complete": true,
+                "hash": "84950fac3fc4ca6e62d31095278651f926ee89339b84874cd5de46a7fd2dacb1",
+                "id": "4",
+                "source": ""
+              },
+              {
+                "complete": true,
+                "hash": "cfcc05b58452c36a18d7e9b94cbed273b97b475baf0cb29d290a30a49ce99198",
+                "id": "3",
+                "source": ""
+              },
+              {
+                "complete": true,
+                "hash": "f0a10fcea363e4a640a88830a21c6c39a1fa5f498d860e3ec13bfd138caf574b",
+                "id": "2",
+                "source": ""
+              }
+            ],
+            "ranked_ids": [
+              "5",
+              "4",
+              "6",
+              "3",
+              "2",
+              "0",
+              "7",
+              "1"
+            ],
+            "scores": [
+              0.659308671951294,
+              0.24734266102313995,
+              0.24290794134140015,
+              0.12292349338531494,
+              0.05548415705561638,
+              0.052384041249752045,
+              0.014430496841669083,
+              -0.035470496863126755
+            ],
+            "selected_ids": [
+              "5",
+              "4",
+              "3",
+              "2"
+            ]
+          },
+          {
+            "budget_used": 508,
+            "complete_evidence_ids": [
+              "7",
+              "5",
+              "3",
+              "0"
+            ],
+            "packed_evidence": [
+              {
+                "complete": true,
+                "hash": "16899e70dfcab3295bafebea090583be0f985a2dc1158d4d62751982f1516499",
+                "id": "7",
+                "source": ""
+              },
+              {
+                "complete": true,
+                "hash": "c1f2b7a7f895dffcf04130bd8c261983e81bfb3933246c3668541573bed311ad",
+                "id": "5",
+                "source": ""
+              },
+              {
+                "complete": true,
+                "hash": "cfcc05b58452c36a18d7e9b94cbed273b97b475baf0cb29d290a30a49ce99198",
+                "id": "3",
+                "source": ""
+              },
+              {
+                "complete": true,
+                "hash": "9748dbffdc9c571299727367ea543735b46b85b488db0456a306a45b8d6d091e",
+                "id": "0",
+                "source": ""
+              }
+            ],
+            "ranked_ids": [
+              "6",
+              "7",
+              "5",
+              "3",
+              "0",
+              "4",
+              "2",
+              "1"
+            ],
+            "scores": [
+              0.40746742486953735,
+              0.05925982445478439,
+              0.04490147903561592,
+              0.026095185428857803,
+              0.016325078904628754,
+              -0.008509522303938866,
+              -0.02669108286499977,
+              -0.04549705237150192
+            ],
+            "selected_ids": [
+              "7",
+              "5",
+              "3",
+              "0"
+            ]
+          },
+          {
+            "budget_used": 504,
+            "complete_evidence_ids": [
+              "7",
+              "2",
+              "3",
+              "0"
+            ],
+            "packed_evidence": [
+              {
+                "complete": true,
+                "hash": "16899e70dfcab3295bafebea090583be0f985a2dc1158d4d62751982f1516499",
+                "id": "7",
+                "source": ""
+              },
+              {
+                "complete": true,
+                "hash": "f0a10fcea363e4a640a88830a21c6c39a1fa5f498d860e3ec13bfd138caf574b",
+                "id": "2",
+                "source": ""
+              },
+              {
+                "complete": true,
+                "hash": "cfcc05b58452c36a18d7e9b94cbed273b97b475baf0cb29d290a30a49ce99198",
+                "id": "3",
+                "source": ""
+              },
+              {
+                "complete": true,
+                "hash": "9748dbffdc9c571299727367ea543735b46b85b488db0456a306a45b8d6d091e",
+                "id": "0",
+                "source": ""
+              }
+            ],
+            "ranked_ids": [
+              "7",
+              "6",
+              "2",
+              "3",
+              "0",
+              "4",
+              "1",
+              "5"
+            ],
+            "scores": [
+              0.6248935461044312,
+              0.26810210943222046,
+              0.16957220435142517,
+              0.07768802344799042,
+              0.04975125938653946,
+              0.044065963476896286,
+              0.015214823186397552,
+              -0.012573493644595146
+            ],
+            "selected_ids": [
+              "7",
+              "2",
+              "3",
+              "0"
+            ]
+          },
+          {
+            "budget_used": 506,
+            "complete_evidence_ids": [
+              "0",
+              "5",
+              "4",
+              "1"
+            ],
+            "packed_evidence": [
+              {
+                "complete": true,
+                "hash": "9748dbffdc9c571299727367ea543735b46b85b488db0456a306a45b8d6d091e",
+                "id": "0",
+                "source": ""
+              },
+              {
+                "complete": true,
+                "hash": "c1f2b7a7f895dffcf04130bd8c261983e81bfb3933246c3668541573bed311ad",
+                "id": "5",
+                "source": ""
+              },
+              {
+                "complete": true,
+                "hash": "84950fac3fc4ca6e62d31095278651f926ee89339b84874cd5de46a7fd2dacb1",
+                "id": "4",
+                "source": ""
+              },
+              {
+                "complete": true,
+                "hash": "d83298142d23bf2819ac8e449b2208ce34d38b2341d463ad7f0fa312d5daefaa",
+                "id": "1",
+                "source": ""
+              }
+            ],
+            "ranked_ids": [
+              "0",
+              "5",
+              "4",
+              "1",
+              "6",
+              "3",
+              "7",
+              "2"
+            ],
+            "scores": [
+              0.682481050491333,
+              0.1984730064868927,
+              0.0813213661313057,
+              0.052429988980293274,
+              0.0493740439414978,
+              0.04591601341962814,
+              -0.0005256813019514084,
+              -0.04925316572189331
+            ],
+            "selected_ids": [
+              "0",
+              "5",
+              "4",
+              "1"
+            ]
+          }
+        ],
+        "score_absolute_tolerance": 9.167614572978414e-05,
+        "semantic_admission": true,
+        "strict_retrieval_parity": true,
+        "structural_retrieval_parity": true
+      },
+      "transfer_ms": 0.0,
+      "wait_overhead_ms": 0.0,
+      "wait_semantics": "offline prebuilt input; no scheduler wait",
+      "wall_seconds": 0.5927060999674723
+    },
+    {
+      "batch_construction_ms": 0.022199819795787334,
+      "cpu_utilization_percent": 100.8126101278693,
+      "latency_scope": "completed batch encoder+scorer; no arrival queue",
+      "p50_ms": 35.534200025722384,
+      "p95_ms": 41.2458999780938,
+      "queries": 108,
+      "queries_per_second": 217.75523787619773,
+      "query_batch_size": 8,
+      "query_encoding_ms": 492.0564000494778,
+      "scorer_ms_including_transfer": 0.2405000850558281,
+      "semantic_parity": {
+        "admitted": true,
+        "bitwise_parity": false,
+        "candidate_results": [
+          {
+            "budget_used": 506,
+            "complete_evidence_ids": [
+              "0",
+              "5",
+              "4",
+              "1"
+            ],
+            "packed_evidence": [
+              {
+                "complete": true,
+                "hash": "9748dbffdc9c571299727367ea543735b46b85b488db0456a306a45b8d6d091e",
+                "id": "0",
+                "source": ""
+              },
+              {
+                "complete": true,
+                "hash": "c1f2b7a7f895dffcf04130bd8c261983e81bfb3933246c3668541573bed311ad",
+                "id": "5",
+                "source": ""
+              },
+              {
+                "complete": true,
+                "hash": "84950fac3fc4ca6e62d31095278651f926ee89339b84874cd5de46a7fd2dacb1",
+                "id": "4",
+                "source": ""
+              },
+              {
+                "complete": true,
+                "hash": "d83298142d23bf2819ac8e449b2208ce34d38b2341d463ad7f0fa312d5daefaa",
+                "id": "1",
+                "source": ""
+              }
+            ],
+            "ranked_ids": [
+              "0",
+              "5",
+              "4",
+              "1",
+              "6",
+              "3",
+              "7",
+              "2"
+            ],
+            "scores": [
+              0.682481050491333,
+              0.1984729766845703,
+              0.08132137358188629,
+              0.05242999270558357,
+              0.0493740439414978,
+              0.045916009694337845,
+              -0.0005256719887256622,
+              -0.04925317317247391
+            ],
+            "selected_ids": [
+              "0",
+              "5",
+              "4",
+              "1"
+            ]
+          },
+          {
+            "budget_used": 491,
+            "complete_evidence_ids": [
+              "1",
+              "2",
+              "0",
+              "5"
+            ],
+            "packed_evidence": [
+              {
+                "complete": true,
+                "hash": "d83298142d23bf2819ac8e449b2208ce34d38b2341d463ad7f0fa312d5daefaa",
+                "id": "1",
+                "source": ""
+              },
+              {
+                "complete": true,
+                "hash": "f0a10fcea363e4a640a88830a21c6c39a1fa5f498d860e3ec13bfd138caf574b",
+                "id": "2",
+                "source": ""
+              },
+              {
+                "complete": true,
+                "hash": "9748dbffdc9c571299727367ea543735b46b85b488db0456a306a45b8d6d091e",
+                "id": "0",
+                "source": ""
+              },
+              {
+                "complete": true,
+                "hash": "c1f2b7a7f895dffcf04130bd8c261983e81bfb3933246c3668541573bed311ad",
+                "id": "5",
+                "source": ""
+              }
+            ],
+            "ranked_ids": [
+              "1",
+              "2",
+              "0",
+              "5",
+              "4",
+              "3",
+              "7",
+              "6"
+            ],
+            "scores": [
+              0.7594740390777588,
+              0.07272809743881226,
+              0.057605888694524765,
+              0.041978783905506134,
+              0.026780230924487114,
+              -0.005614135414361954,
+              -0.007472200319170952,
+              -0.016971876844763756
+            ],
+            "selected_ids": [
+              "1",
+              "2",
+              "0",
+              "5"
+            ]
+          },
+          {
+            "budget_used": 497,
+            "complete_evidence_ids": [
+              "2",
+              "3",
+              "1",
+              "5"
+            ],
+            "packed_evidence": [
+              {
+                "complete": true,
+                "hash": "f0a10fcea363e4a640a88830a21c6c39a1fa5f498d860e3ec13bfd138caf574b",
+                "id": "2",
+                "source": ""
+              },
+              {
+                "complete": true,
+                "hash": "cfcc05b58452c36a18d7e9b94cbed273b97b475baf0cb29d290a30a49ce99198",
+                "id": "3",
+                "source": ""
+              },
+              {
+                "complete": true,
+                "hash": "d83298142d23bf2819ac8e449b2208ce34d38b2341d463ad7f0fa312d5daefaa",
+                "id": "1",
+                "source": ""
+              },
+              {
+                "complete": true,
+                "hash": "c1f2b7a7f895dffcf04130bd8c261983e81bfb3933246c3668541573bed311ad",
+                "id": "5",
+                "source": ""
+              }
+            ],
+            "ranked_ids": [
+              "2",
+              "3",
+              "1",
+              "5",
+              "7",
+              "4",
+              "0",
+              "6"
+            ],
+            "scores": [
+              0.8428934216499329,
+              0.1531844139099121,
+              0.1123761385679245,
+              0.10433302074670792,
+              0.052552271634340286,
+              0.03336073458194733,
+              -0.015719877555966377,
+              -0.04997934401035309
+            ],
+            "selected_ids": [
+              "2",
+              "3",
+              "1",
+              "5"
+            ]
+          },
+          {
+            "budget_used": 511,
+            "complete_evidence_ids": [
+              "3",
+              "7",
+              "2",
+              "4"
+            ],
+            "packed_evidence": [
+              {
+                "complete": true,
+                "hash": "cfcc05b58452c36a18d7e9b94cbed273b97b475baf0cb29d290a30a49ce99198",
+                "id": "3",
+                "source": ""
+              },
+              {
+                "complete": true,
+                "hash": "16899e70dfcab3295bafebea090583be0f985a2dc1158d4d62751982f1516499",
+                "id": "7",
+                "source": ""
+              },
+              {
+                "complete": true,
+                "hash": "f0a10fcea363e4a640a88830a21c6c39a1fa5f498d860e3ec13bfd138caf574b",
+                "id": "2",
+                "source": ""
+              },
+              {
+                "complete": true,
+                "hash": "84950fac3fc4ca6e62d31095278651f926ee89339b84874cd5de46a7fd2dacb1",
+                "id": "4",
+                "source": ""
+              }
+            ],
+            "ranked_ids": [
+              "3",
+              "7",
+              "2",
+              "4",
+              "6",
+              "5",
+              "0",
+              "1"
+            ],
+            "scores": [
+              0.7507452964782715,
+              0.27936476469039917,
+              0.20349177718162537,
+              0.15085160732269287,
+              0.1191333681344986,
+              0.11354050040245056,
+              0.09585818648338318,
+              -0.038167309015989304
+            ],
+            "selected_ids": [
+              "3",
+              "7",
+              "2",
+              "4"
+            ]
+          },
+          {
+            "budget_used": 512,
+            "complete_evidence_ids": [
+              "4",
+              "5",
+              "3",
+              "1"
+            ],
+            "packed_evidence": [
+              {
+                "complete": true,
+                "hash": "84950fac3fc4ca6e62d31095278651f926ee89339b84874cd5de46a7fd2dacb1",
+                "id": "4",
+                "source": ""
+              },
+              {
+                "complete": true,
+                "hash": "c1f2b7a7f895dffcf04130bd8c261983e81bfb3933246c3668541573bed311ad",
+                "id": "5",
+                "source": ""
+              },
+              {
+                "complete": true,
+                "hash": "cfcc05b58452c36a18d7e9b94cbed273b97b475baf0cb29d290a30a49ce99198",
+                "id": "3",
+                "source": ""
+              },
+              {
+                "complete": true,
+                "hash": "d83298142d23bf2819ac8e449b2208ce34d38b2341d463ad7f0fa312d5daefaa",
+                "id": "1",
+                "source": ""
+              }
+            ],
+            "ranked_ids": [
+              "4",
+              "5",
+              "3",
+              "0",
+              "1",
+              "7",
+              "2",
+              "6"
+            ],
+            "scores": [
+              0.5342896580696106,
+              0.12843193113803864,
+              0.10866086184978485,
+              0.08286158740520477,
+              0.07524006813764572,
+              0.06364964693784714,
+              -0.02124624140560627,
+              -0.04467850178480148
+            ],
+            "selected_ids": [
+              "4",
+              "5",
+              "3",
+              "1"
+            ]
+          },
+          {
+            "budget_used": 507,
+            "complete_evidence_ids": [
+              "5",
+              "4",
+              "3",
+              "2"
+            ],
+            "packed_evidence": [
+              {
+                "complete": true,
+                "hash": "c1f2b7a7f895dffcf04130bd8c261983e81bfb3933246c3668541573bed311ad",
+                "id": "5",
+                "source": ""
+              },
+              {
+                "complete": true,
+                "hash": "84950fac3fc4ca6e62d31095278651f926ee89339b84874cd5de46a7fd2dacb1",
+                "id": "4",
+                "source": ""
+              },
+              {
+                "complete": true,
+                "hash": "cfcc05b58452c36a18d7e9b94cbed273b97b475baf0cb29d290a30a49ce99198",
+                "id": "3",
+                "source": ""
+              },
+              {
+                "complete": true,
+                "hash": "f0a10fcea363e4a640a88830a21c6c39a1fa5f498d860e3ec13bfd138caf574b",
+                "id": "2",
+                "source": ""
+              }
+            ],
+            "ranked_ids": [
+              "5",
+              "4",
+              "6",
+              "3",
+              "2",
+              "0",
+              "7",
+              "1"
+            ],
+            "scores": [
+              0.6593087911605835,
+              0.24734267592430115,
+              0.24290797114372253,
+              0.12292347848415375,
+              0.055484212934970856,
+              0.05238405242562294,
+              0.014430508017539978,
+              -0.035470351576805115
+            ],
+            "selected_ids": [
+              "5",
+              "4",
+              "3",
+              "2"
+            ]
+          },
+          {
+            "budget_used": 508,
+            "complete_evidence_ids": [
+              "7",
+              "5",
+              "3",
+              "0"
+            ],
+            "packed_evidence": [
+              {
+                "complete": true,
+                "hash": "16899e70dfcab3295bafebea090583be0f985a2dc1158d4d62751982f1516499",
+                "id": "7",
+                "source": ""
+              },
+              {
+                "complete": true,
+                "hash": "c1f2b7a7f895dffcf04130bd8c261983e81bfb3933246c3668541573bed311ad",
+                "id": "5",
+                "source": ""
+              },
+              {
+                "complete": true,
+                "hash": "cfcc05b58452c36a18d7e9b94cbed273b97b475baf0cb29d290a30a49ce99198",
+                "id": "3",
+                "source": ""
+              },
+              {
+                "complete": true,
+                "hash": "9748dbffdc9c571299727367ea543735b46b85b488db0456a306a45b8d6d091e",
+                "id": "0",
+                "source": ""
+              }
+            ],
+            "ranked_ids": [
+              "6",
+              "7",
+              "5",
+              "3",
+              "0",
+              "4",
+              "2",
+              "1"
+            ],
+            "scores": [
+              0.4074673652648926,
+              0.0592598095536232,
+              0.04490145295858383,
+              0.026095183566212654,
+              0.016325093805789948,
+              -0.008509524166584015,
+              -0.026691079139709473,
+              -0.045497097074985504
+            ],
+            "selected_ids": [
+              "7",
+              "5",
+              "3",
+              "0"
+            ]
+          },
+          {
+            "budget_used": 504,
+            "complete_evidence_ids": [
+              "7",
+              "2",
+              "3",
+              "0"
+            ],
+            "packed_evidence": [
+              {
+                "complete": true,
+                "hash": "16899e70dfcab3295bafebea090583be0f985a2dc1158d4d62751982f1516499",
+                "id": "7",
+                "source": ""
+              },
+              {
+                "complete": true,
+                "hash": "f0a10fcea363e4a640a88830a21c6c39a1fa5f498d860e3ec13bfd138caf574b",
+                "id": "2",
+                "source": ""
+              },
+              {
+                "complete": true,
+                "hash": "cfcc05b58452c36a18d7e9b94cbed273b97b475baf0cb29d290a30a49ce99198",
+                "id": "3",
+                "source": ""
+              },
+              {
+                "complete": true,
+                "hash": "9748dbffdc9c571299727367ea543735b46b85b488db0456a306a45b8d6d091e",
+                "id": "0",
+                "source": ""
+              }
+            ],
+            "ranked_ids": [
+              "7",
+              "6",
+              "2",
+              "3",
+              "0",
+              "4",
+              "1",
+              "5"
+            ],
+            "scores": [
+              0.6248935461044312,
+              0.26810210943222046,
+              0.16957224905490875,
+              0.07768788933753967,
+              0.049751296639442444,
+              0.04406614601612091,
+              0.015214973129332066,
+              -0.01257348619401455
+            ],
+            "selected_ids": [
+              "7",
+              "2",
+              "3",
+              "0"
+            ]
+          },
+          {
+            "budget_used": 506,
+            "complete_evidence_ids": [
+              "0",
+              "5",
+              "4",
+              "1"
+            ],
+            "packed_evidence": [
+              {
+                "complete": true,
+                "hash": "9748dbffdc9c571299727367ea543735b46b85b488db0456a306a45b8d6d091e",
+                "id": "0",
+                "source": ""
+              },
+              {
+                "complete": true,
+                "hash": "c1f2b7a7f895dffcf04130bd8c261983e81bfb3933246c3668541573bed311ad",
+                "id": "5",
+                "source": ""
+              },
+              {
+                "complete": true,
+                "hash": "84950fac3fc4ca6e62d31095278651f926ee89339b84874cd5de46a7fd2dacb1",
+                "id": "4",
+                "source": ""
+              },
+              {
+                "complete": true,
+                "hash": "d83298142d23bf2819ac8e449b2208ce34d38b2341d463ad7f0fa312d5daefaa",
+                "id": "1",
+                "source": ""
+              }
+            ],
+            "ranked_ids": [
+              "0",
+              "5",
+              "4",
+              "1",
+              "6",
+              "3",
+              "7",
+              "2"
+            ],
+            "scores": [
+              0.682481050491333,
+              0.1984730064868927,
+              0.0813213661313057,
+              0.052429988980293274,
+              0.0493740439414978,
+              0.04591601341962814,
+              -0.0005256813019514084,
+              -0.04925316572189331
+            ],
+            "selected_ids": [
+              "0",
+              "5",
+              "4",
+              "1"
+            ]
+          }
+        ],
+        "max_embedding_abs_diff": 1.7136335372924805e-07,
+        "max_score_abs_diff": 1.825392246246338e-07,
+        "numeric_parity": {
+          "bitwise_equal": false,
+          "max_embedding_abs_diff": 1.7136335372924805e-07,
+          "max_score_abs_diff": 1.825392246246338e-07,
+          "numeric_tolerance": 9.167614572978414e-05,
+          "tolerance_basis": "fp32:2*gamma_(2d+1);normalized-dot-product-sanity-envelope",
+          "within_numeric_guard": true
+        },
+        "reason": "strict",
+        "reference_results": [
+          {
+            "budget_used": 506,
+            "complete_evidence_ids": [
+              "0",
+              "5",
+              "4",
+              "1"
+            ],
+            "packed_evidence": [
+              {
+                "complete": true,
+                "hash": "9748dbffdc9c571299727367ea543735b46b85b488db0456a306a45b8d6d091e",
+                "id": "0",
+                "source": ""
+              },
+              {
+                "complete": true,
+                "hash": "c1f2b7a7f895dffcf04130bd8c261983e81bfb3933246c3668541573bed311ad",
+                "id": "5",
+                "source": ""
+              },
+              {
+                "complete": true,
+                "hash": "84950fac3fc4ca6e62d31095278651f926ee89339b84874cd5de46a7fd2dacb1",
+                "id": "4",
+                "source": ""
+              },
+              {
+                "complete": true,
+                "hash": "d83298142d23bf2819ac8e449b2208ce34d38b2341d463ad7f0fa312d5daefaa",
+                "id": "1",
+                "source": ""
+              }
+            ],
+            "ranked_ids": [
+              "0",
+              "5",
+              "4",
+              "1",
+              "6",
+              "3",
+              "7",
+              "2"
+            ],
+            "scores": [
+              0.682481050491333,
+              0.1984730064868927,
+              0.0813213661313057,
+              0.052429988980293274,
+              0.0493740439414978,
+              0.04591601341962814,
+              -0.0005256813019514084,
+              -0.04925316572189331
+            ],
+            "selected_ids": [
+              "0",
+              "5",
+              "4",
+              "1"
+            ]
+          },
+          {
+            "budget_used": 491,
+            "complete_evidence_ids": [
+              "1",
+              "2",
+              "0",
+              "5"
+            ],
+            "packed_evidence": [
+              {
+                "complete": true,
+                "hash": "d83298142d23bf2819ac8e449b2208ce34d38b2341d463ad7f0fa312d5daefaa",
+                "id": "1",
+                "source": ""
+              },
+              {
+                "complete": true,
+                "hash": "f0a10fcea363e4a640a88830a21c6c39a1fa5f498d860e3ec13bfd138caf574b",
+                "id": "2",
+                "source": ""
+              },
+              {
+                "complete": true,
+                "hash": "9748dbffdc9c571299727367ea543735b46b85b488db0456a306a45b8d6d091e",
+                "id": "0",
+                "source": ""
+              },
+              {
+                "complete": true,
+                "hash": "c1f2b7a7f895dffcf04130bd8c261983e81bfb3933246c3668541573bed311ad",
+                "id": "5",
+                "source": ""
+              }
+            ],
+            "ranked_ids": [
+              "1",
+              "2",
+              "0",
+              "5",
+              "4",
+              "3",
+              "7",
+              "6"
+            ],
+            "scores": [
+              0.7594741582870483,
+              0.07272813469171524,
+              0.057605914771556854,
+              0.04197893664240837,
+              0.026780331507325172,
+              -0.005614177323877811,
+              -0.007472140248864889,
+              -0.01697179116308689
+            ],
+            "selected_ids": [
+              "1",
+              "2",
+              "0",
+              "5"
+            ]
+          },
+          {
+            "budget_used": 497,
+            "complete_evidence_ids": [
+              "2",
+              "3",
+              "1",
+              "5"
+            ],
+            "packed_evidence": [
+              {
+                "complete": true,
+                "hash": "f0a10fcea363e4a640a88830a21c6c39a1fa5f498d860e3ec13bfd138caf574b",
+                "id": "2",
+                "source": ""
+              },
+              {
+                "complete": true,
+                "hash": "cfcc05b58452c36a18d7e9b94cbed273b97b475baf0cb29d290a30a49ce99198",
+                "id": "3",
+                "source": ""
+              },
+              {
+                "complete": true,
+                "hash": "d83298142d23bf2819ac8e449b2208ce34d38b2341d463ad7f0fa312d5daefaa",
+                "id": "1",
+                "source": ""
+              },
+              {
+                "complete": true,
+                "hash": "c1f2b7a7f895dffcf04130bd8c261983e81bfb3933246c3668541573bed311ad",
+                "id": "5",
+                "source": ""
+              }
+            ],
+            "ranked_ids": [
+              "2",
+              "3",
+              "1",
+              "5",
+              "7",
+              "4",
+              "0",
+              "6"
+            ],
+            "scores": [
+              0.8428934216499329,
+              0.15318450331687927,
+              0.1123761460185051,
+              0.10433302074670792,
+              0.052552346140146255,
+              0.03336082398891449,
+              -0.015719853341579437,
+              -0.04997927322983742
+            ],
+            "selected_ids": [
+              "2",
+              "3",
+              "1",
+              "5"
+            ]
+          },
+          {
+            "budget_used": 511,
+            "complete_evidence_ids": [
+              "3",
+              "7",
+              "2",
+              "4"
+            ],
+            "packed_evidence": [
+              {
+                "complete": true,
+                "hash": "cfcc05b58452c36a18d7e9b94cbed273b97b475baf0cb29d290a30a49ce99198",
+                "id": "3",
+                "source": ""
+              },
+              {
+                "complete": true,
+                "hash": "16899e70dfcab3295bafebea090583be0f985a2dc1158d4d62751982f1516499",
+                "id": "7",
+                "source": ""
+              },
+              {
+                "complete": true,
+                "hash": "f0a10fcea363e4a640a88830a21c6c39a1fa5f498d860e3ec13bfd138caf574b",
+                "id": "2",
+                "source": ""
+              },
+              {
+                "complete": true,
+                "hash": "84950fac3fc4ca6e62d31095278651f926ee89339b84874cd5de46a7fd2dacb1",
+                "id": "4",
+                "source": ""
+              }
+            ],
+            "ranked_ids": [
+              "3",
+              "7",
+              "2",
+              "4",
+              "6",
+              "5",
+              "0",
+              "1"
+            ],
+            "scores": [
+              0.7507451772689819,
+              0.2793647050857544,
+              0.20349174737930298,
+              0.15085172653198242,
+              0.11913330107927322,
+              0.113540418446064,
+              0.09585823118686676,
+              -0.038167379796504974
+            ],
+            "selected_ids": [
+              "3",
+              "7",
+              "2",
+              "4"
+            ]
+          },
+          {
+            "budget_used": 512,
+            "complete_evidence_ids": [
+              "4",
+              "5",
+              "3",
+              "1"
+            ],
+            "packed_evidence": [
+              {
+                "complete": true,
+                "hash": "84950fac3fc4ca6e62d31095278651f926ee89339b84874cd5de46a7fd2dacb1",
+                "id": "4",
+                "source": ""
+              },
+              {
+                "complete": true,
+                "hash": "c1f2b7a7f895dffcf04130bd8c261983e81bfb3933246c3668541573bed311ad",
+                "id": "5",
+                "source": ""
+              },
+              {
+                "complete": true,
+                "hash": "cfcc05b58452c36a18d7e9b94cbed273b97b475baf0cb29d290a30a49ce99198",
+                "id": "3",
+                "source": ""
+              },
+              {
+                "complete": true,
+                "hash": "d83298142d23bf2819ac8e449b2208ce34d38b2341d463ad7f0fa312d5daefaa",
+                "id": "1",
+                "source": ""
+              }
+            ],
+            "ranked_ids": [
+              "4",
+              "5",
+              "3",
+              "0",
+              "1",
+              "7",
+              "2",
+              "6"
+            ],
+            "scores": [
+              0.5342897176742554,
+              0.12843191623687744,
+              0.10866089165210724,
+              0.08286172151565552,
+              0.07524006068706512,
+              0.06364968419075012,
+              -0.021246150135993958,
+              -0.044678449630737305
+            ],
+            "selected_ids": [
+              "4",
+              "5",
+              "3",
+              "1"
+            ]
+          },
+          {
+            "budget_used": 507,
+            "complete_evidence_ids": [
+              "5",
+              "4",
+              "3",
+              "2"
+            ],
+            "packed_evidence": [
+              {
+                "complete": true,
+                "hash": "c1f2b7a7f895dffcf04130bd8c261983e81bfb3933246c3668541573bed311ad",
+                "id": "5",
+                "source": ""
+              },
+              {
+                "complete": true,
+                "hash": "84950fac3fc4ca6e62d31095278651f926ee89339b84874cd5de46a7fd2dacb1",
+                "id": "4",
+                "source": ""
+              },
+              {
+                "complete": true,
+                "hash": "cfcc05b58452c36a18d7e9b94cbed273b97b475baf0cb29d290a30a49ce99198",
+                "id": "3",
+                "source": ""
+              },
+              {
+                "complete": true,
+                "hash": "f0a10fcea363e4a640a88830a21c6c39a1fa5f498d860e3ec13bfd138caf574b",
+                "id": "2",
+                "source": ""
+              }
+            ],
+            "ranked_ids": [
+              "5",
+              "4",
+              "6",
+              "3",
+              "2",
+              "0",
+              "7",
+              "1"
+            ],
+            "scores": [
+              0.659308671951294,
+              0.24734266102313995,
+              0.24290794134140015,
+              0.12292349338531494,
+              0.05548415705561638,
+              0.052384041249752045,
+              0.014430496841669083,
+              -0.035470496863126755
+            ],
+            "selected_ids": [
+              "5",
+              "4",
+              "3",
+              "2"
+            ]
+          },
+          {
+            "budget_used": 508,
+            "complete_evidence_ids": [
+              "7",
+              "5",
+              "3",
+              "0"
+            ],
+            "packed_evidence": [
+              {
+                "complete": true,
+                "hash": "16899e70dfcab3295bafebea090583be0f985a2dc1158d4d62751982f1516499",
+                "id": "7",
+                "source": ""
+              },
+              {
+                "complete": true,
+                "hash": "c1f2b7a7f895dffcf04130bd8c261983e81bfb3933246c3668541573bed311ad",
+                "id": "5",
+                "source": ""
+              },
+              {
+                "complete": true,
+                "hash": "cfcc05b58452c36a18d7e9b94cbed273b97b475baf0cb29d290a30a49ce99198",
+                "id": "3",
+                "source": ""
+              },
+              {
+                "complete": true,
+                "hash": "9748dbffdc9c571299727367ea543735b46b85b488db0456a306a45b8d6d091e",
+                "id": "0",
+                "source": ""
+              }
+            ],
+            "ranked_ids": [
+              "6",
+              "7",
+              "5",
+              "3",
+              "0",
+              "4",
+              "2",
+              "1"
+            ],
+            "scores": [
+              0.40746742486953735,
+              0.05925982445478439,
+              0.04490147903561592,
+              0.026095185428857803,
+              0.016325078904628754,
+              -0.008509522303938866,
+              -0.02669108286499977,
+              -0.04549705237150192
+            ],
+            "selected_ids": [
+              "7",
+              "5",
+              "3",
+              "0"
+            ]
+          },
+          {
+            "budget_used": 504,
+            "complete_evidence_ids": [
+              "7",
+              "2",
+              "3",
+              "0"
+            ],
+            "packed_evidence": [
+              {
+                "complete": true,
+                "hash": "16899e70dfcab3295bafebea090583be0f985a2dc1158d4d62751982f1516499",
+                "id": "7",
+                "source": ""
+              },
+              {
+                "complete": true,
+                "hash": "f0a10fcea363e4a640a88830a21c6c39a1fa5f498d860e3ec13bfd138caf574b",
+                "id": "2",
+                "source": ""
+              },
+              {
+                "complete": true,
+                "hash": "cfcc05b58452c36a18d7e9b94cbed273b97b475baf0cb29d290a30a49ce99198",
+                "id": "3",
+                "source": ""
+              },
+              {
+                "complete": true,
+                "hash": "9748dbffdc9c571299727367ea543735b46b85b488db0456a306a45b8d6d091e",
+                "id": "0",
+                "source": ""
+              }
+            ],
+            "ranked_ids": [
+              "7",
+              "6",
+              "2",
+              "3",
+              "0",
+              "4",
+              "1",
+              "5"
+            ],
+            "scores": [
+              0.6248935461044312,
+              0.26810210943222046,
+              0.16957220435142517,
+              0.07768802344799042,
+              0.04975125938653946,
+              0.044065963476896286,
+              0.015214823186397552,
+              -0.012573493644595146
+            ],
+            "selected_ids": [
+              "7",
+              "2",
+              "3",
+              "0"
+            ]
+          },
+          {
+            "budget_used": 506,
+            "complete_evidence_ids": [
+              "0",
+              "5",
+              "4",
+              "1"
+            ],
+            "packed_evidence": [
+              {
+                "complete": true,
+                "hash": "9748dbffdc9c571299727367ea543735b46b85b488db0456a306a45b8d6d091e",
+                "id": "0",
+                "source": ""
+              },
+              {
+                "complete": true,
+                "hash": "c1f2b7a7f895dffcf04130bd8c261983e81bfb3933246c3668541573bed311ad",
+                "id": "5",
+                "source": ""
+              },
+              {
+                "complete": true,
+                "hash": "84950fac3fc4ca6e62d31095278651f926ee89339b84874cd5de46a7fd2dacb1",
+                "id": "4",
+                "source": ""
+              },
+              {
+                "complete": true,
+                "hash": "d83298142d23bf2819ac8e449b2208ce34d38b2341d463ad7f0fa312d5daefaa",
+                "id": "1",
+                "source": ""
+              }
+            ],
+            "ranked_ids": [
+              "0",
+              "5",
+              "4",
+              "1",
+              "6",
+              "3",
+              "7",
+              "2"
+            ],
+            "scores": [
+              0.682481050491333,
+              0.1984730064868927,
+              0.0813213661313057,
+              0.052429988980293274,
+              0.0493740439414978,
+              0.04591601341962814,
+              -0.0005256813019514084,
+              -0.04925316572189331
+            ],
+            "selected_ids": [
+              "0",
+              "5",
+              "4",
+              "1"
+            ]
+          }
+        ],
+        "score_absolute_tolerance": 9.167614572978414e-05,
+        "semantic_admission": true,
+        "strict_retrieval_parity": true,
+        "structural_retrieval_parity": true
+      },
+      "transfer_ms": 0.0,
+      "wait_overhead_ms": 0.0,
+      "wait_semantics": "offline prebuilt input; no scheduler wait",
+      "wall_seconds": 0.49596969998674467
+    },
+    {
+      "batch_construction_ms": 0.010100018698722124,
+      "cpu_utilization_percent": 215.54195800032664,
+      "latency_scope": "completed batch encoder+scorer; no arrival queue",
+      "p50_ms": 61.511649983003736,
+      "p95_ms": 105.43130000587553,
+      "queries": 108,
+      "queries_per_second": 292.1227477839721,
+      "query_batch_size": 32,
+      "query_encoding_ms": 367.3613000428304,
+      "scorer_ms_including_transfer": 0.11009996524080634,
+      "semantic_parity": {
+        "admitted": true,
+        "bitwise_parity": false,
+        "candidate_results": [
+          {
+            "budget_used": 506,
+            "complete_evidence_ids": [
+              "0",
+              "5",
+              "4",
+              "1"
+            ],
+            "packed_evidence": [
+              {
+                "complete": true,
+                "hash": "9748dbffdc9c571299727367ea543735b46b85b488db0456a306a45b8d6d091e",
+                "id": "0",
+                "source": ""
+              },
+              {
+                "complete": true,
+                "hash": "c1f2b7a7f895dffcf04130bd8c261983e81bfb3933246c3668541573bed311ad",
+                "id": "5",
+                "source": ""
+              },
+              {
+                "complete": true,
+                "hash": "84950fac3fc4ca6e62d31095278651f926ee89339b84874cd5de46a7fd2dacb1",
+                "id": "4",
+                "source": ""
+              },
+              {
+                "complete": true,
+                "hash": "d83298142d23bf2819ac8e449b2208ce34d38b2341d463ad7f0fa312d5daefaa",
+                "id": "1",
+                "source": ""
+              }
+            ],
+            "ranked_ids": [
+              "0",
+              "5",
+              "4",
+              "1",
+              "6",
+              "3",
+              "7",
+              "2"
+            ],
+            "scores": [
+              0.682481050491333,
+              0.19847294688224792,
+              0.08132138103246689,
+              0.052429959177970886,
+              0.049374066293239594,
+              0.04591602832078934,
+              -0.0005256906151771545,
+              -0.049253158271312714
+            ],
+            "selected_ids": [
+              "0",
+              "5",
+              "4",
+              "1"
+            ]
+          },
+          {
+            "budget_used": 491,
+            "complete_evidence_ids": [
+              "1",
+              "2",
+              "0",
+              "5"
+            ],
+            "packed_evidence": [
+              {
+                "complete": true,
+                "hash": "d83298142d23bf2819ac8e449b2208ce34d38b2341d463ad7f0fa312d5daefaa",
+                "id": "1",
+                "source": ""
+              },
+              {
+                "complete": true,
+                "hash": "f0a10fcea363e4a640a88830a21c6c39a1fa5f498d860e3ec13bfd138caf574b",
+                "id": "2",
+                "source": ""
+              },
+              {
+                "complete": true,
+                "hash": "9748dbffdc9c571299727367ea543735b46b85b488db0456a306a45b8d6d091e",
+                "id": "0",
+                "source": ""
+              },
+              {
+                "complete": true,
+                "hash": "c1f2b7a7f895dffcf04130bd8c261983e81bfb3933246c3668541573bed311ad",
+                "id": "5",
+                "source": ""
+              }
+            ],
+            "ranked_ids": [
+              "1",
+              "2",
+              "0",
+              "5",
+              "4",
+              "3",
+              "7",
+              "6"
+            ],
+            "scores": [
+              0.7594740390777588,
+              0.07272809743881226,
+              0.057605888694524765,
+              0.041978783905506134,
+              0.026780230924487114,
+              -0.005614135414361954,
+              -0.007472200319170952,
+              -0.016971876844763756
+            ],
+            "selected_ids": [
+              "1",
+              "2",
+              "0",
+              "5"
+            ]
+          },
+          {
+            "budget_used": 497,
+            "complete_evidence_ids": [
+              "2",
+              "3",
+              "1",
+              "5"
+            ],
+            "packed_evidence": [
+              {
+                "complete": true,
+                "hash": "f0a10fcea363e4a640a88830a21c6c39a1fa5f498d860e3ec13bfd138caf574b",
+                "id": "2",
+                "source": ""
+              },
+              {
+                "complete": true,
+                "hash": "cfcc05b58452c36a18d7e9b94cbed273b97b475baf0cb29d290a30a49ce99198",
+                "id": "3",
+                "source": ""
+              },
+              {
+                "complete": true,
+                "hash": "d83298142d23bf2819ac8e449b2208ce34d38b2341d463ad7f0fa312d5daefaa",
+                "id": "1",
+                "source": ""
+              },
+              {
+                "complete": true,
+                "hash": "c1f2b7a7f895dffcf04130bd8c261983e81bfb3933246c3668541573bed311ad",
+                "id": "5",
+                "source": ""
+              }
+            ],
+            "ranked_ids": [
+              "2",
+              "3",
+              "1",
+              "5",
+              "7",
+              "4",
+              "0",
+              "6"
+            ],
+            "scores": [
+              0.8428934216499329,
+              0.1531844139099121,
+              0.1123761385679245,
+              0.10433302074670792,
+              0.052552271634340286,
+              0.03336073458194733,
+              -0.015719877555966377,
+              -0.04997934401035309
+            ],
+            "selected_ids": [
+              "2",
+              "3",
+              "1",
+              "5"
+            ]
+          },
+          {
+            "budget_used": 511,
+            "complete_evidence_ids": [
+              "3",
+              "7",
+              "2",
+              "4"
+            ],
+            "packed_evidence": [
+              {
+                "complete": true,
+                "hash": "cfcc05b58452c36a18d7e9b94cbed273b97b475baf0cb29d290a30a49ce99198",
+                "id": "3",
+                "source": ""
+              },
+              {
+                "complete": true,
+                "hash": "16899e70dfcab3295bafebea090583be0f985a2dc1158d4d62751982f1516499",
+                "id": "7",
+                "source": ""
+              },
+              {
+                "complete": true,
+                "hash": "f0a10fcea363e4a640a88830a21c6c39a1fa5f498d860e3ec13bfd138caf574b",
+                "id": "2",
+                "source": ""
+              },
+              {
+                "complete": true,
+                "hash": "84950fac3fc4ca6e62d31095278651f926ee89339b84874cd5de46a7fd2dacb1",
+                "id": "4",
+                "source": ""
+              }
+            ],
+            "ranked_ids": [
+              "3",
+              "7",
+              "2",
+              "4",
+              "6",
+              "5",
+              "0",
+              "1"
+            ],
+            "scores": [
+              0.7507452964782715,
+              0.27936476469039917,
+              0.20349177718162537,
+              0.15085160732269287,
+              0.1191333681344986,
+              0.11354050040245056,
+              0.09585818648338318,
+              -0.038167309015989304
+            ],
+            "selected_ids": [
+              "3",
+              "7",
+              "2",
+              "4"
+            ]
+          },
+          {
+            "budget_used": 512,
+            "complete_evidence_ids": [
+              "4",
+              "5",
+              "3",
+              "1"
+            ],
+            "packed_evidence": [
+              {
+                "complete": true,
+                "hash": "84950fac3fc4ca6e62d31095278651f926ee89339b84874cd5de46a7fd2dacb1",
+                "id": "4",
+                "source": ""
+              },
+              {
+                "complete": true,
+                "hash": "c1f2b7a7f895dffcf04130bd8c261983e81bfb3933246c3668541573bed311ad",
+                "id": "5",
+                "source": ""
+              },
+              {
+                "complete": true,
+                "hash": "cfcc05b58452c36a18d7e9b94cbed273b97b475baf0cb29d290a30a49ce99198",
+                "id": "3",
+                "source": ""
+              },
+              {
+                "complete": true,
+                "hash": "d83298142d23bf2819ac8e449b2208ce34d38b2341d463ad7f0fa312d5daefaa",
+                "id": "1",
+                "source": ""
+              }
+            ],
+            "ranked_ids": [
+              "4",
+              "5",
+              "3",
+              "0",
+              "1",
+              "7",
+              "2",
+              "6"
+            ],
+            "scores": [
+              0.5342896580696106,
+              0.12843193113803864,
+              0.10866086184978485,
+              0.08286158740520477,
+              0.07524006813764572,
+              0.06364964693784714,
+              -0.02124624140560627,
+              -0.04467850178480148
+            ],
+            "selected_ids": [
+              "4",
+              "5",
+              "3",
+              "1"
+            ]
+          },
+          {
+            "budget_used": 507,
+            "complete_evidence_ids": [
+              "5",
+              "4",
+              "3",
+              "2"
+            ],
+            "packed_evidence": [
+              {
+                "complete": true,
+                "hash": "c1f2b7a7f895dffcf04130bd8c261983e81bfb3933246c3668541573bed311ad",
+                "id": "5",
+                "source": ""
+              },
+              {
+                "complete": true,
+                "hash": "84950fac3fc4ca6e62d31095278651f926ee89339b84874cd5de46a7fd2dacb1",
+                "id": "4",
+                "source": ""
+              },
+              {
+                "complete": true,
+                "hash": "cfcc05b58452c36a18d7e9b94cbed273b97b475baf0cb29d290a30a49ce99198",
+                "id": "3",
+                "source": ""
+              },
+              {
+                "complete": true,
+                "hash": "f0a10fcea363e4a640a88830a21c6c39a1fa5f498d860e3ec13bfd138caf574b",
+                "id": "2",
+                "source": ""
+              }
+            ],
+            "ranked_ids": [
+              "5",
+              "4",
+              "6",
+              "3",
+              "2",
+              "0",
+              "7",
+              "1"
+            ],
+            "scores": [
+              0.6593087911605835,
+              0.24734267592430115,
+              0.24290797114372253,
+              0.12292347848415375,
+              0.055484212934970856,
+              0.05238405242562294,
+              0.014430508017539978,
+              -0.035470351576805115
+            ],
+            "selected_ids": [
+              "5",
+              "4",
+              "3",
+              "2"
+            ]
+          },
+          {
+            "budget_used": 508,
+            "complete_evidence_ids": [
+              "7",
+              "5",
+              "3",
+              "0"
+            ],
+            "packed_evidence": [
+              {
+                "complete": true,
+                "hash": "16899e70dfcab3295bafebea090583be0f985a2dc1158d4d62751982f1516499",
+                "id": "7",
+                "source": ""
+              },
+              {
+                "complete": true,
+                "hash": "c1f2b7a7f895dffcf04130bd8c261983e81bfb3933246c3668541573bed311ad",
+                "id": "5",
+                "source": ""
+              },
+              {
+                "complete": true,
+                "hash": "cfcc05b58452c36a18d7e9b94cbed273b97b475baf0cb29d290a30a49ce99198",
+                "id": "3",
+                "source": ""
+              },
+              {
+                "complete": true,
+                "hash": "9748dbffdc9c571299727367ea543735b46b85b488db0456a306a45b8d6d091e",
+                "id": "0",
+                "source": ""
+              }
+            ],
+            "ranked_ids": [
+              "6",
+              "7",
+              "5",
+              "3",
+              "0",
+              "4",
+              "2",
+              "1"
+            ],
+            "scores": [
+              0.4074673652648926,
+              0.0592598095536232,
+              0.04490145295858383,
+              0.026095183566212654,
+              0.016325093805789948,
+              -0.008509524166584015,
+              -0.026691079139709473,
+              -0.045497097074985504
+            ],
+            "selected_ids": [
+              "7",
+              "5",
+              "3",
+              "0"
+            ]
+          },
+          {
+            "budget_used": 504,
+            "complete_evidence_ids": [
+              "7",
+              "2",
+              "3",
+              "0"
+            ],
+            "packed_evidence": [
+              {
+                "complete": true,
+                "hash": "16899e70dfcab3295bafebea090583be0f985a2dc1158d4d62751982f1516499",
+                "id": "7",
+                "source": ""
+              },
+              {
+                "complete": true,
+                "hash": "f0a10fcea363e4a640a88830a21c6c39a1fa5f498d860e3ec13bfd138caf574b",
+                "id": "2",
+                "source": ""
+              },
+              {
+                "complete": true,
+                "hash": "cfcc05b58452c36a18d7e9b94cbed273b97b475baf0cb29d290a30a49ce99198",
+                "id": "3",
+                "source": ""
+              },
+              {
+                "complete": true,
+                "hash": "9748dbffdc9c571299727367ea543735b46b85b488db0456a306a45b8d6d091e",
+                "id": "0",
+                "source": ""
+              }
+            ],
+            "ranked_ids": [
+              "7",
+              "6",
+              "2",
+              "3",
+              "0",
+              "4",
+              "1",
+              "5"
+            ],
+            "scores": [
+              0.6248935461044312,
+              0.26810210943222046,
+              0.16957224905490875,
+              0.07768788933753967,
+              0.049751296639442444,
+              0.04406614601612091,
+              0.015214973129332066,
+              -0.01257348619401455
+            ],
+            "selected_ids": [
+              "7",
+              "2",
+              "3",
+              "0"
+            ]
+          },
+          {
+            "budget_used": 506,
+            "complete_evidence_ids": [
+              "0",
+              "5",
+              "4",
+              "1"
+            ],
+            "packed_evidence": [
+              {
+                "complete": true,
+                "hash": "9748dbffdc9c571299727367ea543735b46b85b488db0456a306a45b8d6d091e",
+                "id": "0",
+                "source": ""
+              },
+              {
+                "complete": true,
+                "hash": "c1f2b7a7f895dffcf04130bd8c261983e81bfb3933246c3668541573bed311ad",
+                "id": "5",
+                "source": ""
+              },
+              {
+                "complete": true,
+                "hash": "84950fac3fc4ca6e62d31095278651f926ee89339b84874cd5de46a7fd2dacb1",
+                "id": "4",
+                "source": ""
+              },
+              {
+                "complete": true,
+                "hash": "d83298142d23bf2819ac8e449b2208ce34d38b2341d463ad7f0fa312d5daefaa",
+                "id": "1",
+                "source": ""
+              }
+            ],
+            "ranked_ids": [
+              "0",
+              "5",
+              "4",
+              "1",
+              "6",
+              "3",
+              "7",
+              "2"
+            ],
+            "scores": [
+              0.682481050491333,
+              0.19847294688224792,
+              0.08132138103246689,
+              0.052429959177970886,
+              0.049374066293239594,
+              0.04591602832078934,
+              -0.0005256906151771545,
+              -0.049253158271312714
+            ],
+            "selected_ids": [
+              "0",
+              "5",
+              "4",
+              "1"
+            ]
+          }
+        ],
+        "max_embedding_abs_diff": 1.7136335372924805e-07,
+        "max_score_abs_diff": 1.825392246246338e-07,
+        "numeric_parity": {
+          "bitwise_equal": false,
+          "max_embedding_abs_diff": 1.7136335372924805e-07,
+          "max_score_abs_diff": 1.825392246246338e-07,
+          "numeric_tolerance": 9.167614572978414e-05,
+          "tolerance_basis": "fp32:2*gamma_(2d+1);normalized-dot-product-sanity-envelope",
+          "within_numeric_guard": true
+        },
+        "reason": "strict",
+        "reference_results": [
+          {
+            "budget_used": 506,
+            "complete_evidence_ids": [
+              "0",
+              "5",
+              "4",
+              "1"
+            ],
+            "packed_evidence": [
+              {
+                "complete": true,
+                "hash": "9748dbffdc9c571299727367ea543735b46b85b488db0456a306a45b8d6d091e",
+                "id": "0",
+                "source": ""
+              },
+              {
+                "complete": true,
+                "hash": "c1f2b7a7f895dffcf04130bd8c261983e81bfb3933246c3668541573bed311ad",
+                "id": "5",
+                "source": ""
+              },
+              {
+                "complete": true,
+                "hash": "84950fac3fc4ca6e62d31095278651f926ee89339b84874cd5de46a7fd2dacb1",
+                "id": "4",
+                "source": ""
+              },
+              {
+                "complete": true,
+                "hash": "d83298142d23bf2819ac8e449b2208ce34d38b2341d463ad7f0fa312d5daefaa",
+                "id": "1",
+                "source": ""
+              }
+            ],
+            "ranked_ids": [
+              "0",
+              "5",
+              "4",
+              "1",
+              "6",
+              "3",
+              "7",
+              "2"
+            ],
+            "scores": [
+              0.682481050491333,
+              0.1984730064868927,
+              0.0813213661313057,
+              0.052429988980293274,
+              0.0493740439414978,
+              0.04591601341962814,
+              -0.0005256813019514084,
+              -0.04925316572189331
+            ],
+            "selected_ids": [
+              "0",
+              "5",
+              "4",
+              "1"
+            ]
+          },
+          {
+            "budget_used": 491,
+            "complete_evidence_ids": [
+              "1",
+              "2",
+              "0",
+              "5"
+            ],
+            "packed_evidence": [
+              {
+                "complete": true,
+                "hash": "d83298142d23bf2819ac8e449b2208ce34d38b2341d463ad7f0fa312d5daefaa",
+                "id": "1",
+                "source": ""
+              },
+              {
+                "complete": true,
+                "hash": "f0a10fcea363e4a640a88830a21c6c39a1fa5f498d860e3ec13bfd138caf574b",
+                "id": "2",
+                "source": ""
+              },
+              {
+                "complete": true,
+                "hash": "9748dbffdc9c571299727367ea543735b46b85b488db0456a306a45b8d6d091e",
+                "id": "0",
+                "source": ""
+              },
+              {
+                "complete": true,
+                "hash": "c1f2b7a7f895dffcf04130bd8c261983e81bfb3933246c3668541573bed311ad",
+                "id": "5",
+                "source": ""
+              }
+            ],
+            "ranked_ids": [
+              "1",
+              "2",
+              "0",
+              "5",
+              "4",
+              "3",
+              "7",
+              "6"
+            ],
+            "scores": [
+              0.7594741582870483,
+              0.07272813469171524,
+              0.057605914771556854,
+              0.04197893664240837,
+              0.026780331507325172,
+              -0.005614177323877811,
+              -0.007472140248864889,
+              -0.01697179116308689
+            ],
+            "selected_ids": [
+              "1",
+              "2",
+              "0",
+              "5"
+            ]
+          },
+          {
+            "budget_used": 497,
+            "complete_evidence_ids": [
+              "2",
+              "3",
+              "1",
+              "5"
+            ],
+            "packed_evidence": [
+              {
+                "complete": true,
+                "hash": "f0a10fcea363e4a640a88830a21c6c39a1fa5f498d860e3ec13bfd138caf574b",
+                "id": "2",
+                "source": ""
+              },
+              {
+                "complete": true,
+                "hash": "cfcc05b58452c36a18d7e9b94cbed273b97b475baf0cb29d290a30a49ce99198",
+                "id": "3",
+                "source": ""
+              },
+              {
+                "complete": true,
+                "hash": "d83298142d23bf2819ac8e449b2208ce34d38b2341d463ad7f0fa312d5daefaa",
+                "id": "1",
+                "source": ""
+              },
+              {
+                "complete": true,
+                "hash": "c1f2b7a7f895dffcf04130bd8c261983e81bfb3933246c3668541573bed311ad",
+                "id": "5",
+                "source": ""
+              }
+            ],
+            "ranked_ids": [
+              "2",
+              "3",
+              "1",
+              "5",
+              "7",
+              "4",
+              "0",
+              "6"
+            ],
+            "scores": [
+              0.8428934216499329,
+              0.15318450331687927,
+              0.1123761460185051,
+              0.10433302074670792,
+              0.052552346140146255,
+              0.03336082398891449,
+              -0.015719853341579437,
+              -0.04997927322983742
+            ],
+            "selected_ids": [
+              "2",
+              "3",
+              "1",
+              "5"
+            ]
+          },
+          {
+            "budget_used": 511,
+            "complete_evidence_ids": [
+              "3",
+              "7",
+              "2",
+              "4"
+            ],
+            "packed_evidence": [
+              {
+                "complete": true,
+                "hash": "cfcc05b58452c36a18d7e9b94cbed273b97b475baf0cb29d290a30a49ce99198",
+                "id": "3",
+                "source": ""
+              },
+              {
+                "complete": true,
+                "hash": "16899e70dfcab3295bafebea090583be0f985a2dc1158d4d62751982f1516499",
+                "id": "7",
+                "source": ""
+              },
+              {
+                "complete": true,
+                "hash": "f0a10fcea363e4a640a88830a21c6c39a1fa5f498d860e3ec13bfd138caf574b",
+                "id": "2",
+                "source": ""
+              },
+              {
+                "complete": true,
+                "hash": "84950fac3fc4ca6e62d31095278651f926ee89339b84874cd5de46a7fd2dacb1",
+                "id": "4",
+                "source": ""
+              }
+            ],
+            "ranked_ids": [
+              "3",
+              "7",
+              "2",
+              "4",
+              "6",
+              "5",
+              "0",
+              "1"
+            ],
+            "scores": [
+              0.7507451772689819,
+              0.2793647050857544,
+              0.20349174737930298,
+              0.15085172653198242,
+              0.11913330107927322,
+              0.113540418446064,
+              0.09585823118686676,
+              -0.038167379796504974
+            ],
+            "selected_ids": [
+              "3",
+              "7",
+              "2",
+              "4"
+            ]
+          },
+          {
+            "budget_used": 512,
+            "complete_evidence_ids": [
+              "4",
+              "5",
+              "3",
+              "1"
+            ],
+            "packed_evidence": [
+              {
+                "complete": true,
+                "hash": "84950fac3fc4ca6e62d31095278651f926ee89339b84874cd5de46a7fd2dacb1",
+                "id": "4",
+                "source": ""
+              },
+              {
+                "complete": true,
+                "hash": "c1f2b7a7f895dffcf04130bd8c261983e81bfb3933246c3668541573bed311ad",
+                "id": "5",
+                "source": ""
+              },
+              {
+                "complete": true,
+                "hash": "cfcc05b58452c36a18d7e9b94cbed273b97b475baf0cb29d290a30a49ce99198",
+                "id": "3",
+                "source": ""
+              },
+              {
+                "complete": true,
+                "hash": "d83298142d23bf2819ac8e449b2208ce34d38b2341d463ad7f0fa312d5daefaa",
+                "id": "1",
+                "source": ""
+              }
+            ],
+            "ranked_ids": [
+              "4",
+              "5",
+              "3",
+              "0",
+              "1",
+              "7",
+              "2",
+              "6"
+            ],
+            "scores": [
+              0.5342897176742554,
+              0.12843191623687744,
+              0.10866089165210724,
+              0.08286172151565552,
+              0.07524006068706512,
+              0.06364968419075012,
+              -0.021246150135993958,
+              -0.044678449630737305
+            ],
+            "selected_ids": [
+              "4",
+              "5",
+              "3",
+              "1"
+            ]
+          },
+          {
+            "budget_used": 507,
+            "complete_evidence_ids": [
+              "5",
+              "4",
+              "3",
+              "2"
+            ],
+            "packed_evidence": [
+              {
+                "complete": true,
+                "hash": "c1f2b7a7f895dffcf04130bd8c261983e81bfb3933246c3668541573bed311ad",
+                "id": "5",
+                "source": ""
+              },
+              {
+                "complete": true,
+                "hash": "84950fac3fc4ca6e62d31095278651f926ee89339b84874cd5de46a7fd2dacb1",
+                "id": "4",
+                "source": ""
+              },
+              {
+                "complete": true,
+                "hash": "cfcc05b58452c36a18d7e9b94cbed273b97b475baf0cb29d290a30a49ce99198",
+                "id": "3",
+                "source": ""
+              },
+              {
+                "complete": true,
+                "hash": "f0a10fcea363e4a640a88830a21c6c39a1fa5f498d860e3ec13bfd138caf574b",
+                "id": "2",
+                "source": ""
+              }
+            ],
+            "ranked_ids": [
+              "5",
+              "4",
+              "6",
+              "3",
+              "2",
+              "0",
+              "7",
+              "1"
+            ],
+            "scores": [
+              0.659308671951294,
+              0.24734266102313995,
+              0.24290794134140015,
+              0.12292349338531494,
+              0.05548415705561638,
+              0.052384041249752045,
+              0.014430496841669083,
+              -0.035470496863126755
+            ],
+            "selected_ids": [
+              "5",
+              "4",
+              "3",
+              "2"
+            ]
+          },
+          {
+            "budget_used": 508,
+            "complete_evidence_ids": [
+              "7",
+              "5",
+              "3",
+              "0"
+            ],
+            "packed_evidence": [
+              {
+                "complete": true,
+                "hash": "16899e70dfcab3295bafebea090583be0f985a2dc1158d4d62751982f1516499",
+                "id": "7",
+                "source": ""
+              },
+              {
+                "complete": true,
+                "hash": "c1f2b7a7f895dffcf04130bd8c261983e81bfb3933246c3668541573bed311ad",
+                "id": "5",
+                "source": ""
+              },
+              {
+                "complete": true,
+                "hash": "cfcc05b58452c36a18d7e9b94cbed273b97b475baf0cb29d290a30a49ce99198",
+                "id": "3",
+                "source": ""
+              },
+              {
+                "complete": true,
+                "hash": "9748dbffdc9c571299727367ea543735b46b85b488db0456a306a45b8d6d091e",
+                "id": "0",
+                "source": ""
+              }
+            ],
+            "ranked_ids": [
+              "6",
+              "7",
+              "5",
+              "3",
+              "0",
+              "4",
+              "2",
+              "1"
+            ],
+            "scores": [
+              0.40746742486953735,
+              0.05925982445478439,
+              0.04490147903561592,
+              0.026095185428857803,
+              0.016325078904628754,
+              -0.008509522303938866,
+              -0.02669108286499977,
+              -0.04549705237150192
+            ],
+            "selected_ids": [
+              "7",
+              "5",
+              "3",
+              "0"
+            ]
+          },
+          {
+            "budget_used": 504,
+            "complete_evidence_ids": [
+              "7",
+              "2",
+              "3",
+              "0"
+            ],
+            "packed_evidence": [
+              {
+                "complete": true,
+                "hash": "16899e70dfcab3295bafebea090583be0f985a2dc1158d4d62751982f1516499",
+                "id": "7",
+                "source": ""
+              },
+              {
+                "complete": true,
+                "hash": "f0a10fcea363e4a640a88830a21c6c39a1fa5f498d860e3ec13bfd138caf574b",
+                "id": "2",
+                "source": ""
+              },
+              {
+                "complete": true,
+                "hash": "cfcc05b58452c36a18d7e9b94cbed273b97b475baf0cb29d290a30a49ce99198",
+                "id": "3",
+                "source": ""
+              },
+              {
+                "complete": true,
+                "hash": "9748dbffdc9c571299727367ea543735b46b85b488db0456a306a45b8d6d091e",
+                "id": "0",
+                "source": ""
+              }
+            ],
+            "ranked_ids": [
+              "7",
+              "6",
+              "2",
+              "3",
+              "0",
+              "4",
+              "1",
+              "5"
+            ],
+            "scores": [
+              0.6248935461044312,
+              0.26810210943222046,
+              0.16957220435142517,
+              0.07768802344799042,
+              0.04975125938653946,
+              0.044065963476896286,
+              0.015214823186397552,
+              -0.012573493644595146
+            ],
+            "selected_ids": [
+              "7",
+              "2",
+              "3",
+              "0"
+            ]
+          },
+          {
+            "budget_used": 506,
+            "complete_evidence_ids": [
+              "0",
+              "5",
+              "4",
+              "1"
+            ],
+            "packed_evidence": [
+              {
+                "complete": true,
+                "hash": "9748dbffdc9c571299727367ea543735b46b85b488db0456a306a45b8d6d091e",
+                "id": "0",
+                "source": ""
+              },
+              {
+                "complete": true,
+                "hash": "c1f2b7a7f895dffcf04130bd8c261983e81bfb3933246c3668541573bed311ad",
+                "id": "5",
+                "source": ""
+              },
+              {
+                "complete": true,
+                "hash": "84950fac3fc4ca6e62d31095278651f926ee89339b84874cd5de46a7fd2dacb1",
+                "id": "4",
+                "source": ""
+              },
+              {
+                "complete": true,
+                "hash": "d83298142d23bf2819ac8e449b2208ce34d38b2341d463ad7f0fa312d5daefaa",
+                "id": "1",
+                "source": ""
+              }
+            ],
+            "ranked_ids": [
+              "0",
+              "5",
+              "4",
+              "1",
+              "6",
+              "3",
+              "7",
+              "2"
+            ],
+            "scores": [
+              0.682481050491333,
+              0.1984730064868927,
+              0.0813213661313057,
+              0.052429988980293274,
+              0.0493740439414978,
+              0.04591601341962814,
+              -0.0005256813019514084,
+              -0.04925316572189331
+            ],
+            "selected_ids": [
+              "0",
+              "5",
+              "4",
+              "1"
+            ]
+          }
+        ],
+        "score_absolute_tolerance": 9.167614572978414e-05,
+        "semantic_admission": true,
+        "strict_retrieval_parity": true,
+        "structural_retrieval_parity": true
+      },
+      "transfer_ms": 0.0,
+      "wait_overhead_ms": 0.0,
+      "wait_semantics": "offline prebuilt input; no scheduler wait",
+      "wall_seconds": 0.3697076000389643
+    }
+  ],
+  "schema": 1,
+  "threads": 1,
+  "workload_sha256": "c5dedc0a7ed8d4f04361b6ccbc96be146ceb08ac22f01dc691eac6aaff9d189d"
+}
