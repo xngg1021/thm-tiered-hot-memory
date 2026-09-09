@@ -1,5 +1,12 @@
 # Changelog
 
+## Unreleased — post-local corrective policy
+
+- Separate FP32 numeric sanity, exact retrieval structure and semantic admission; add measured reference fallback and explicit correctness/acceleration axes.
+- Preserve cap-independent candidate prefixes, publish plans before execution, reuse within-run reference measurements and identical smoke pilots under process-tree deadlines.
+- Add safe preparation stages, bounded parity diagnostics, optional dispatch evidence import, CPU batch sweep and overlap-aware timing summaries.
+- Correct the historical selected-set and candidate-order explanations; preserve raw Z6 receipts, semantic reference keys and package/archive 1.4.0. See the [corrective contract](docs/19-post-local-corrective.md).
+
 ## Unreleased — Evaluation Fabric and product documentation
 
 - Add unified Adapter/Task/GroundTruth/Result/Receipt contracts and independent logical, compute and physical taxonomy fields.

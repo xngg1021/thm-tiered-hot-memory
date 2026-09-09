@@ -75,3 +75,8 @@ Interface inspection on 2026-09-09 used the official source trees below. These a
 - [MemoryArena](https://github.com/ZexueHe/MemoryArena/tree/6cd9de14b71915e39ac742a20dc33785e14b6aab): `memory/client.py`; [native dataset structure](https://memoryarena.github.io/).
 
 See [validation contract](03-validation-contract.md), [runtime](17-zero-llm-heterogeneous-runtime.md), [physical storage](physical-storage-fabric.md) and [testing/release](08-testing-and-release.md).
+
+
+## Post-local corrective evidence
+
+See the [current corrective contract and short retest](19-post-local-corrective.md). Z6 CPU/CUDA/auto-throughput and local NTFS/NVMe are machine-observed at b1f8119. Aggregate parity, strict parity, calibrated policy and post-fix acceptance remain separate claims. Auto-safe now allows a measured reference fallback; lack of acceleration does not itself fail correctness. No version/stable promotion or full-dataset acceptance is implied.

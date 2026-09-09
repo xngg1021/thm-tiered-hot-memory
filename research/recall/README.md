@@ -41,6 +41,11 @@ The basic lexical path still cannot solve arbitrary paraphrase or implicit refer
 
 ## Unreleased runtime integration
 
-The canonical SearchIndex now exposes typed default-off RetrievalFeatures and bounded search_many; existing search/entity and residency behavior remain compatible. Optional runtime setup, profile/vector identity, isolated calibration and the final local experiment contract are described in [runtime architecture](../../docs/17-zero-llm-heterogeneous-runtime.md). Runtime-dependent hardware performance remains pending-real-local-runtime.
+The canonical SearchIndex now exposes typed default-off RetrievalFeatures and bounded search_many; existing search/entity and residency behavior remain compatible. Optional runtime setup, profile/vector identity, isolated calibration and the final local experiment contract are described in [runtime architecture](../../docs/17-zero-llm-heterogeneous-runtime.md). Z6 CPU/CUDA/auto-throughput evidence now exists at b1f8119; post-corrective hardware acceptance remains pending.
 
 Benchmark CLIs retain reference sequential mode and accept explicit `--runtime-policy`, `--backend`, `--query-batch-size`, `--batch-size`, `--vector-storage`, `--embedding-cache`, `--runtime-profile`, `--overlap`, `--scorer` and `--features-json`. Performance and feature experiments are separately identified. Use `research/runtime/verify.py` for the reserved full local package.
+
+
+## Post-local corrective evidence
+
+See the [current corrective contract and short retest](../../docs/19-post-local-corrective.md). Z6 CPU/CUDA/auto-throughput and local NTFS/NVMe are machine-observed at b1f8119. Aggregate parity, strict parity, calibrated policy and post-fix acceptance remain separate claims. Auto-safe now allows a measured reference fallback; lack of acceleration does not itself fail correctness. No version/stable promotion or full-dataset acceptance is implied.

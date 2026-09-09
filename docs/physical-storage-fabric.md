@@ -122,3 +122,8 @@ Windows locality uses the resolved disk's public [MSFT_Disk BusType](https://lea
 macOS first resolves the containing mounted volume with `df -P` before calling `diskutil info -plist`; an ordinary descendant storage directory is not passed as diskutil's device operand. The parser preserves spaces in mount names and permits APFS mount paths outside the apparent directory ancestry. It uses explicit diskutil bus protocol evidence for local PCI-Express/NVMe/SATA/SAS/USB/Thunderbolt targets. Network protocols remain remote; unknown protocols, disk images and explicitly virtual devices stay unknown. Product names and the internal/external location alone do not establish local backing.
 
 Real Z6 G4 performance, the full LME matrix, specialized storage transports and retrieval-feature quality gains remain post-merge measured evidence. They do not block correctness-safe Unreleased merges. See the [repository reconciliation receipt](../reports/2026-09-09-open-pr-reconciliation-closeout.md).
+
+
+## Post-local corrective evidence
+
+See the [current corrective contract and short retest](19-post-local-corrective.md). Z6 CPU/CUDA/auto-throughput and local NTFS/NVMe are machine-observed at b1f8119. Aggregate parity, strict parity, calibrated policy and post-fix acceptance remain separate claims. Auto-safe now allows a measured reference fallback; lack of acceleration does not itself fail correctness. No version/stable promotion or full-dataset acceptance is implied.

@@ -82,10 +82,15 @@ The opt-in Python entity projection and its Protocol 2 evidence are documented i
 
 ## Unreleased runtime integration
 
-The canonical SearchIndex now exposes typed default-off RetrievalFeatures and bounded search_many; existing search/entity and residency behavior remain compatible. Optional runtime setup, profile/vector identity, isolated calibration and the final local experiment contract are described in [runtime architecture](17-zero-llm-heterogeneous-runtime.md). Runtime-dependent hardware performance remains pending-real-local-runtime; this is a performance evidence boundary, not a correctness merge blocker.
+The canonical SearchIndex now exposes typed default-off RetrievalFeatures and bounded search_many; existing search/entity and residency behavior remain compatible. Optional runtime setup, profile/vector identity, isolated calibration and the final local experiment contract are described in [runtime architecture](17-zero-llm-heterogeneous-runtime.md). Z6 CPU/CUDA/auto-throughput evidence now exists at b1f8119; post-corrective hardware acceptance remains pending; this is a performance evidence boundary, not a correctness merge blocker.
 
 ## 2026-09-09 repository reconciliation
 
 PR #15 merged normally at `70180dd4a319c62cc839ee1b7f39b5573b3a1f66`; PR #16 merged normally at `3512aa02015d6eb10e390e1fe7f06309fd84b6c6` after absorbing that main. Scope cleanup, transitive reference semantics, vector snapshot publication, conservative OS locality and exclusive physical-root ownership are integrated. Seven actionable review findings were forward-fixed, the exact final source received clean Codex review, 424 tests passed, and post-merge correctness on all three OSes plus Hermes/harness integrations passed. No Open/Draft/unmerged PR remains.
 
 The bounded acceptance and physical storage capabilities remain **Unreleased**; package version 1.4.0 and the stable archive do not move. The [closeout receipt](../reports/2026-09-09-open-pr-reconciliation-closeout.md) records exact lineage, review/CI evidence, the final documentation publication and remaining measurements; the [physical storage contract](physical-storage-fabric.md) is the current short acceptance entrypoint.
+
+
+## Post-local corrective evidence
+
+See the [current corrective contract and short retest](19-post-local-corrective.md). Z6 CPU/CUDA/auto-throughput and local NTFS/NVMe are machine-observed at b1f8119. Aggregate parity, strict parity, calibrated policy and post-fix acceptance remain separate claims. Auto-safe now allows a measured reference fallback; lack of acceleration does not itself fail correctness. No version/stable promotion or full-dataset acceptance is implied.
