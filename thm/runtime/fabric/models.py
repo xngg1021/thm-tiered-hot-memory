@@ -173,17 +173,26 @@ class ModelPortfolio:
             measurement = {'p50':statistics.median(values),'p95':percentile(values,.95),'p99':percentile(values,.99),
                 'throughput':1000/statistics.median(values),'startup':result['startup_ms'],
                 'cpu_seconds':candidate_cpu,'ram':ram,'vram':result.get('vram_bytes'),'sample_count':len(values),'noise':gain.get('noise_floor',0)}
+            # A paired replay over one observed query is useful evidence but it is
+            # not a global equivalence certificate for an alternate embedding
+            # implementation. Default auto-safe therefore records the point but
+            # cannot promote it. Performance policies may explicitly accept this
+            # observed-request scope; reference/auto-safe stay on the authority
+            # embedding path until a stronger provider-wide certificate exists.
+            activation_allowed = self.service.policy in ('auto-throughput','approximate-performance')
             with self.lock:
                 if self.closed or worker.preempted:
                     return
                 self.service.store.put(key,candidate.id,measurement,semantic_status='strict' if semantic else 'rejected',
                     material_gain=gain['decision'],pareto=gain['materially_faster'],
                     evidence={'sample_kind':'observed-end-to-end','semantic_scope':'observed-request-only'})
-                self.last = {'status':'ready' if gain['materially_faster'] else 'retain-reference',
+                promoted = bool(gain['materially_faster'] and activation_allowed)
+                self.last = {'status':'ready' if promoted else 'measured-only' if gain['materially_faster'] else 'retain-reference',
                     'inference_provider':candidate.inference_provider,'generation_calls':0,
                     'embedding_profile':result['embedding_profile']['embedding_profile_id'],
-                    'sample_kind':'observed-end-to-end','gain':gain}
-                if gain['materially_faster']:
+                    'sample_kind':'observed-end-to-end','semantic_scope':'observed-request-only',
+                    'automatic_activation_allowed':activation_allowed,'gain':gain}
+                if promoted:
                     self.ready = (key.id,worker,candidate,result); keep = True
                 elif not semantic:
                     self.service.store.failure(key,candidate.inference_provider,'semantic')
