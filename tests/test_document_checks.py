@@ -117,6 +117,15 @@ class DocumentTests(unittest.TestCase):
         self.write('docs/campaign.md', '```powershell\npython research/recall/lme_retrieval.py --full-research --dataset example.json\n```\n')
         self.assertEqual(checker.check(self.root)['status'], 'PASS')
 
+    def test_research_opt_in_ignores_comments_and_respects_quotes(self):
+        command = 'python research/recall/benchmark.py --dataset '
+        for suffix in ('input.json # add --full-research', '"path # hash.json" # --full-research', '"text --full-research"'):
+            self.write('docs/campaign.md', '```shell\n' + command + suffix + '\n```\n')
+            self.assertTrue(any('requires explicit --full-research' in e for e in checker.check(self.root)['errors']), suffix)
+        for suffix in ('"path # hash.json" --full-research # optional note', "'path # hash.json' '--full-research'", '"C:\\data\\input.json" --full-research'):
+            self.write('docs/campaign.md', '```shell\n' + command + suffix + '\n```\n')
+            self.assertEqual(checker.check(self.root)['status'], 'PASS', suffix)
+
     def test_indented_and_prompt_prefixed_research_commands_require_opt_in(self):
         for prefix in ('    ', '\t', '$ ', '  $ ', '> ', 'PS> ', 'PS C:\\work> '):
             command = prefix + 'python research/recall/benchmark.py --dataset input.json'

@@ -124,6 +124,8 @@ class FabricTests(unittest.TestCase):
         outcome = AgentOutcome('fixture-lme', 'reader-1', 'judge-1', hashlib.sha256(trace).hexdigest(), 1, 1, .5)
         imported = attach_outcomes(receipt, [outcome], trace_bytes=trace)
         self.assertEqual(imported['layers']['LLM-agent-outcome']['generation_calls'], 1)
+        self.assertEqual(imported['layers']['LLM-agent-outcome']['answer_accuracy'], .5)
+        self.assertIsNone(imported['layers']['LLM-agent-outcome']['environment_success'])
         self.assertFalse(imported['full_dataset_acceptance'])
         with self.assertRaises(ValueError):
             attach_outcomes(receipt, [outcome], trace_bytes=b'changed')
@@ -134,6 +136,24 @@ class FabricTests(unittest.TestCase):
         receipt['receipt_sha256'] = digest(receipt)
         with self.assertRaises(ValueError):
             attach_outcomes(receipt, [outcome], trace_bytes=trace)
+
+    def test_outcome_aggregation_excludes_unmeasured_scores(self):
+        import hashlib
+        from thm.evaluation.outcomes import AgentOutcome, attach_outcomes
+        trace = b'external trace'
+        receipt = {'provenance': 'external-dataset', 'layers': {'memory-dataplane': {
+            'rows': [{'task_id': task_id} for task_id in ('a', 'b', 'c')]}}}
+        receipt['receipt_sha256'] = digest(receipt)
+        sha = hashlib.sha256(trace).hexdigest()
+        outcomes = [AgentOutcome('a', 'm', 'e', sha, 1, 0, 1, None),
+                    AgentOutcome('b', 'm', 'e', sha, 2, 1, 0, .25),
+                    AgentOutcome('c', 'm', 'e', sha, 1, 1, None, .75)]
+        result = attach_outcomes(receipt, outcomes, trace_bytes=trace)
+        layer = result['layers']['LLM-agent-outcome']
+        self.assertEqual((layer['answer_accuracy'], layer['environment_success']), (.5, .5))
+        self.assertEqual((layer['answer_accuracy_count'], layer['environment_success_count']), (2, 2))
+        self.assertEqual(len(layer['rows']), 3)
+        self.assertEqual(result.pop('receipt_sha256'), digest(result))
 
     def test_native_query_workers_use_thread_local_connections(self):
         from concurrent.futures import ThreadPoolExecutor

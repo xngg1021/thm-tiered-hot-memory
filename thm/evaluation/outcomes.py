@@ -49,7 +49,13 @@ def attach_outcomes(receipt, outcomes, *, trace_bytes):
     trace_sha = hashlib.sha256(trace_bytes).hexdigest()
     if any(o.trace_sha256 != trace_sha for o in outcomes):
         raise ValueError('trace checksum mismatch')
+    scores = {}
+    for metric in ('answer_accuracy', 'environment_success'):
+        values = [getattr(o, metric) for o in outcomes if getattr(o, metric) is not None]
+        scores[metric] = sum(values) / len(values) if values else None
+        scores[metric + '_count'] = len(values)
     result['layers']['LLM-agent-outcome'] = {
+        **scores, 'aggregation': 'macro mean over available per-task scores; nulls excluded',
         'status': 'measured', 'scope': 'externally supplied evaluator; not independently certified',
         'trace_sha256': trace_sha, 'rows': [asdict(o) for o in outcomes],
         'generation_calls': sum(o.generation_calls for o in outcomes),

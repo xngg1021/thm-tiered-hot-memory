@@ -6,6 +6,7 @@ import hashlib
 import json
 from pathlib import Path
 import re
+import shlex
 import sys
 from urllib.parse import unquote, urlsplit
 
@@ -77,7 +78,13 @@ def check(root: Path) -> dict:
             if any(line != line.rstrip() for line in text.splitlines()):
                 errors.append(f'{relative}: trailing whitespace')
             for command in re.findall(r'^[ \t]*(?:(?:[$%>]|PS(?:[ \t]+[^>\n]*)?>)[ \t]+)?python(?:3)?[ \t]+research/(?:recall/(?:benchmark|lme_retrieval)|economics/run_suite)\.py[^\n]*', text, re.M):
-                if not re.search(r'''(?<!\S)(?:--full-research|"--full-research"|'--full-research')(?!\S)''', command):
+                lexer = shlex.shlex(command, posix=False)
+                lexer.whitespace_split = True
+                try:
+                    arguments = list(lexer)
+                except ValueError:
+                    arguments = []
+                if not any(arg in ('--full-research', '"--full-research"', "'--full-research'") for arg in arguments):
                     errors.append(f'{relative}: native dataset command requires explicit --full-research')
             if text.count('```') % 2:
                 errors.append(f'{relative}: unpaired triple-backtick fence')
