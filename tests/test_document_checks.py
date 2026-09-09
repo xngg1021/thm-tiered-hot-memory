@@ -134,6 +134,15 @@ class DocumentTests(unittest.TestCase):
             self.write('docs/campaign.md', '```shell\n' + command + ' # --full-research\n```\n')
             self.assertTrue(any('requires explicit --full-research' in e for e in checker.check(self.root)['errors']), path)
 
+    def test_research_commands_keep_substitution_suffix_in_same_word(self):
+        for path in ('$(printf path)#hash.json', '$(printf $(printf path))#hash.json',
+                     '$(printf "path")#hash.json', 'prefix$(printf path)#hash.json'):
+            command = 'python research/recall/benchmark.py --dataset ' + path
+            self.write('docs/campaign.md', '```shell\n' + command + ' --full-research\n```\n')
+            self.assertEqual(checker.check(self.root)['status'], 'PASS', path)
+            self.write('docs/campaign.md', '```shell\n' + command + ' # --full-research\n```\n')
+            self.assertTrue(any('requires explicit --full-research' in e for e in checker.check(self.root)['errors']), path)
+
     def test_indented_and_prompt_prefixed_research_commands_require_opt_in(self):
         for prefix in ('    ', '\t', '$ ', '  $ ', '> ', 'PS> ', 'PS C:\\work> '):
             command = prefix + 'python research/recall/benchmark.py --dataset input.json'

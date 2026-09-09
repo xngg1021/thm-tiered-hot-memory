@@ -18,13 +18,21 @@ def _without_shell_comment(command):
     quote = None
     escaped = False
     in_word = False
-    for index, char in enumerate(command):
+    substitutions = []
+    index = 0
+    while index < len(command):
+        char = command[index]
         if escaped:
             escaped = False
             in_word = True
         elif char in ('\\', '`') and quote != "'":
             escaped = True
             in_word = True
+        elif command.startswith('$(', index) and quote != "'":
+            substitutions.append([quote, 1])
+            quote = None
+            in_word = False
+            index += 1
         elif quote:
             if char == quote:
                 quote = None
@@ -33,8 +41,16 @@ def _without_shell_comment(command):
             in_word = True
         elif char == '#' and not in_word:
             return command[:index]
+        elif substitutions and char in '()':
+            substitutions[-1][1] += 1 if char == '(' else -1
+            if substitutions[-1][1] == 0:
+                quote, _ = substitutions.pop()
+                in_word = True
+            else:
+                in_word = False
         else:
             in_word = not (char.isspace() or char in ';|&()<>')
+        index += 1
     return command
 
 
