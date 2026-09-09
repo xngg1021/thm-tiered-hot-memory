@@ -134,3 +134,17 @@ class FabricTests(unittest.TestCase):
         receipt['receipt_sha256'] = digest(receipt)
         with self.assertRaises(ValueError):
             attach_outcomes(receipt, [outcome], trace_bytes=trace)
+
+    def test_native_query_workers_use_thread_local_connections(self):
+        from concurrent.futures import ThreadPoolExecutor
+        with tempfile.TemporaryDirectory() as temp:
+            memory = V2Memory(Path(temp)/'memory.db', 'scope')
+            try:
+                memory.insert(FIXTURES['longmemeval-v2'][0]['trajectories'][0])
+                with ThreadPoolExecutor(max_workers=2) as pool:
+                    answers = list(pool.map(memory.query, ['observatory'] * 4))
+                self.assertTrue(all('cobalt' in a[0]['value'] for a in answers))
+            finally:
+                memory.close()
+            with self.assertRaises(RuntimeError):
+                memory.query('observatory')

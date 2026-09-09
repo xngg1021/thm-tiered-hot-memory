@@ -57,7 +57,7 @@ def main():
             receipt.pop('receipt_sha256')
             receipt['receipt_sha256'] = digest(receipt)
             (args.output / (receipt['benchmark'] + '.json')).write_text(
-                json.dumps(receipt, indent=2, ensure_ascii=False, allow_nan=False) + '\n', encoding='utf-8')
+                json.dumps(receipt, indent=2, ensure_ascii=False, allow_nan=False) + '\n', encoding='utf-8', newline='\n')
         # The acceptance entrypoint also verifies real memory interfaces with tiny inputs.
         from .memory import AgentMemory, V2Memory
         v2 = V2Memory(args.output / 'v2-interface.sqlite', 'fixture')
@@ -76,10 +76,10 @@ def main():
                   'full_dataset_acceptance': False, 'benchmark_receipts': [r['receipt_sha256'] for r in receipts],
                   'interface_evidence': 'deterministic fixtures; no live agent outcome',
                   'generation_calls': 0, 'judge_calls': 0}
-        (args.output / 'acceptance.json').write_text(json.dumps(result, indent=2) + '\n', encoding='utf-8')
+        (args.output / 'acceptance.json').write_text(json.dumps(result, indent=2) + '\n', encoding='utf-8', newline='\n')
     except Exception as exc:
         (args.output / 'failed.json').write_text(json.dumps({'status': 'failed', 'error': str(exc),
-            'full_dataset_acceptance': False}) + '\n', encoding='utf-8')
+            'full_dataset_acceptance': False}) + '\n', encoding='utf-8', newline='\n')
         raise
     print(json.dumps(result))
 

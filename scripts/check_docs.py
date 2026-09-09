@@ -184,7 +184,7 @@ def check(root: Path) -> dict:
             shapes = []
             for chunk in chunks[2::2]:
                 headings = tuple(len(x) for x in re.findall(r'^(#{2,6}) ', chunk, re.M))
-                fences = tuple(re.findall(r'^```([^\n]*)', chunk, re.M))
+                fences = tuple(re.findall(r'^```[^\n]*\n.*?^```', chunk, re.M | re.S))
                 tables = tuple(line.count('|') for line in chunk.splitlines() if line.startswith('|'))
                 shapes.append((headings, fences, tables))
             return ids, shapes

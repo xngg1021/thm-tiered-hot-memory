@@ -138,8 +138,16 @@ Multi-harness support가 universal memory database를 의미하지는 않습니�
 ```bash
 python -m pip install -e .
 python -m thm --help
-python -m thm import-files ./notes --db ./state/recall.sqlite3 --scope demo
-python -m thm search --db ./state/recall.sqlite3 --scope demo "Which database port?" --budget 600
+
+python -m thm import-files ./notes \
+  --db ./state/recall.sqlite3 \
+  --scope demo
+
+python -m thm search \
+  --db ./state/recall.sqlite3 \
+  --scope demo \
+  "Which database port?" \
+  --budget 600
 ```
 
 Optional dependencies:

@@ -16,4 +16,3 @@ def evidence_ids(value):
         if not matches or re.sub(r'[\s,;\[\]()]+', '', remainder):
             malformed.append(item)
     return found, malformed
-

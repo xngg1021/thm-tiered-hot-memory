@@ -138,8 +138,16 @@ Le support multi-harness ne fait pas de THM une memory database universelle. La 
 ```bash
 python -m pip install -e .
 python -m thm --help
-python -m thm import-files ./notes --db ./state/recall.sqlite3 --scope demo
-python -m thm search --db ./state/recall.sqlite3 --scope demo "Which database port?" --budget 600
+
+python -m thm import-files ./notes \
+  --db ./state/recall.sqlite3 \
+  --scope demo
+
+python -m thm search \
+  --db ./state/recall.sqlite3 \
+  --scope demo \
+  "Which database port?" \
+  --budget 600
 ```
 
 Dépendances optionnelles :

@@ -1,5 +1,7 @@
 """Duck-typed upstream memory interfaces backed by the existing SearchIndex."""
 from pathlib import Path
+from contextlib import contextmanager
+from threading import RLock
 from thm.retrieval import Document, SearchIndex, TokenCounter
 from .adapters import trajectory_documents
 from .contracts import nonempty
@@ -18,29 +20,48 @@ class AgentMemory:
         self.budget = budget
         if Path(path).exists():
             raise FileExistsError('native memory interface requires a fresh per-task database')
-        self.index = SearchIndex(Path(path), TokenCounter('utf8_bytes'))
+        self.path = Path(path)
+        self.lock = RLock()
+        self.closed = False
+        # Connections are opened on the calling thread, including upstream query workers.
+        index = SearchIndex(self.path, TokenCounter('utf8_bytes'))
+        index.close()
         self.documents = []
         self.last_result = None
 
+    @contextmanager
+    def connection(self):
+        with self.lock:
+            if self.closed:
+                raise RuntimeError('memory interface is closed')
+            index = SearchIndex(self.path, TokenCounter('utf8_bytes'))
+            try:
+                yield index
+            finally:
+                index.close()
+
     def add(self, chunk):
         nonempty(chunk)
-        i = len(self.documents)
-        doc = Document(f'event/{i}', self.scope, 'events', i, chunk)
-        next_documents = [*self.documents, doc]
-        self.index.replace_scope(self.scope, next_documents)
-        self.documents = next_documents
-        return {'status': 'stored', 'id': doc.id}
+        with self.connection() as index:
+            i = len(self.documents)
+            doc = Document(f'event/{i}', self.scope, 'events', i, chunk)
+            next_documents = [*self.documents, doc]
+            index.replace_scope(self.scope, next_documents)
+            self.documents = next_documents
+            return {'status': 'stored', 'id': doc.id}
 
     def query(self, query):
-        self.last_result = self.index.search(self.scope, nonempty(query), mode='sparse', budget=self.budget)
-        return self.last_result['context']
+        with self.connection() as index:
+            self.last_result = index.search(self.scope, nonempty(query), mode='sparse', budget=self.budget)
+            return self.last_result['context']
 
     def wrap_user_prompt(self, question):
         context = self.query(question)
         return f'{question}\n\nMemory evidence:\n{context}'
 
     def close(self):
-        self.index.close()
+        with self.lock:
+            self.closed = True
 
 
 class V2Memory(AgentMemory):
@@ -48,9 +69,10 @@ class V2Memory(AgentMemory):
     def insert(self, trajectory):
         docs = list(trajectory_documents(trajectory, self.scope))
         tid = trajectory['id']
-        next_documents = [d for d in self.documents if d.source != tid] + docs
-        self.index.replace_scope(self.scope, next_documents)
-        self.documents = next_documents
+        with self.connection() as index:
+            next_documents = [d for d in self.documents if d.source != tid] + docs
+            index.replace_scope(self.scope, next_documents)
+            self.documents = next_documents
 
     def query(self, query, query_image=None):
         if query_image is not None:
