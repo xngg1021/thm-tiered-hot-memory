@@ -120,10 +120,16 @@ class ModelPortfolio:
         service = self.service; source = self.source(); profile = getattr(service.encoder, 'profile', None)
         if not source or not profile or profile.backend != 'torch_fp32' or not self.providers:
             return False
+        # A live session may have an active alternate model point. Do not close or
+        # replace it because another workload/settings key appeared mid-session;
+        # new preparation waits for an explicit session boundary or a failure.
+        with self.lock:
+            if self.active is not None:
+                return False
         stale = None
         with self.lock:
             if self.ready and self.ready[1].task.get('scope') == task.get('scope') and self.ready[0] != key.id:
-                stale = self.ready[1]; self.ready = None; self.active = None
+                stale = self.ready[1]; self.ready = None
         if stale:
             stale.close()
         with self.lock:
@@ -229,7 +235,8 @@ class ModelPortfolio:
     def fail(self, key, candidate):
         with self.lock:
             point = self.active; self.active = None; self.ready = None
-            self.service.store.failure(key,candidate.inference_provider,'execution')
+            # RuntimeService records this serving failure once in the common
+            # fallback path; do not double-count the quarantine event here.
             self.last = {'status':'fallback','inference_provider':candidate.inference_provider}
         if point:
             point[1].close()
