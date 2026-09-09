@@ -82,7 +82,8 @@ class TokenCounter:
     def __init__(self, encoding: str = 'utf8_bytes'):
         self.name = encoding
         self.encode = None
-        self._piece_cache = OrderedDict()
+        self._prefix_cache = OrderedDict(); self._prefix_encoder = None
+        self.prefix_cache_hits = 0; self.prefix_cache_misses = 0
         if encoding != 'utf8_bytes':
             import tiktoken  # Optional; vocabulary cache may be populated by tiktoken on first use.
             self.encode = tiktoken.get_encoding(encoding).encode_ordinary
@@ -92,25 +93,20 @@ class TokenCounter:
 
 
     def count_prefix(self, text):
-        """Exact BPE piece reuse; never assume counts of whole blocks are additive."""
-        encoding = getattr(self.encode, '__self__', None)
-        if encoding is None or not hasattr(encoding, 'encode_single_piece') or not hasattr(encoding, '_pat_str'):
-            return self(text)
-        import regex
-        pieces = regex.findall(encoding._pat_str, text)
-        if ''.join(pieces) != text:
-            return self(text)
-        count = 0
-        for piece in pieces:
-            key = (id(encoding), piece)
-            value = self._piece_cache.get(key)
-            if value is None:
-                value = len(encoding.encode_single_piece(piece.encode('utf-8')))
-                if len(piece) <= 4096:
-                    self._piece_cache[key] = value
-                    if len(self._piece_cache) > 512:
-                        self._piece_cache.popitem(last=False)
-            count += value
+        """Cache exact whole-prefix counts through the public encoder callable."""
+        if self.encode is None:
+            return len(text.encode('utf-8'))
+        if self._prefix_encoder is not self.encode:
+            self._prefix_cache.clear(); self._prefix_encoder = self.encode
+        if text in self._prefix_cache:
+            self.prefix_cache_hits += 1; self._prefix_cache.move_to_end(text)
+            return self._prefix_cache[text]
+        self.prefix_cache_misses += 1
+        count = self(text)
+        if len(text.encode('utf-8')) <= 65536:
+            self._prefix_cache[text] = count
+            if len(self._prefix_cache) > 64:
+                self._prefix_cache.popitem(last=False)
         return count
 
 
@@ -556,11 +552,18 @@ class SearchIndex:
                             if len(self._cache)>256:self._cache.popitem(last=False)
                     vectors=[vectors_by_query[q] for q in chunk];preparation_ms=(time.perf_counter()-started)*1000;embed_ms=encoder_ms
                     executor = getattr(self, '_vector_executor', None)
+                    reference_ready = False; provider_verified = False
                     if executor is not None:
                         generation = self.db.execute('SELECT generation FROM scopes WHERE scope=?', (scope,)).fetchone()[0]
                         rankings, receipt = executor.search(scope=scope, generation=generation, embedding_profile=identity,
                             ids=ids, matrix=matrix, queries=vectors, top_k=limit)
                         timing = {'dense_scoring': receipt['search_ms'], 'transfer': receipt.get('transfer_ms'), 'resident_receipt': receipt}
+                        provider_verified = bool(receipt.get('strict_verified'))
+                    elif semantic_guard and scorer == 'numpy_reference':
+                        scored = time.perf_counter()
+                        values = np.column_stack([matrix @ np.asarray(v,dtype=np.float32) for v in vectors])
+                        timing = {'dense_scoring':(time.perf_counter()-scored)*1000,'transfer':0}
+                        rankings = None; reference_ready = True
                     else:
                         values,timing=score(matrix,vectors,scorer)
                         rankings = None
@@ -574,11 +577,11 @@ class SearchIndex:
                             ranking_times.append((time.perf_counter()-rank_start)*1000)
                     else:
                         ranking_times = [0.0]*len(chunk)  # included in provider search time
-                    # Online cohorts preserve singleton embedding semantics and
-                    # validate every top-k against the fixed FP32 reference.
-                    # No batch-size evidence is extrapolated to unseen queries.
+                    # Admitted exact providers certify separated top-k/cutoff
+                    # intervals with bounded row checks inside ResidentExecutor.
+                    # Unadmitted math and ambiguous rankings retain full fallback.
                     guard_start = time.perf_counter(); batch_fallback = False
-                    if semantic_guard:
+                    if semantic_guard and not (provider_verified or reference_ready):
                         from .runtime.autotune import numeric_guard
                         for col, vector in enumerate(vectors):
                             ref_values = matrix @ np.asarray(vector, dtype=np.float32)
@@ -601,6 +604,8 @@ class SearchIndex:
                         result['timing_kind']='post-batch-search; embedding/scoring measured once in batch_receipt'
                         result['batch_receipt']={'query_batch_size':len(chunk),'embedding_ms':embed_ms,'batch_preparation_ms':preparation_ms,'lexical_preparation_ms':lexical_ms,'overlap_requested':overlap,'overlap_active':overlap_active,'encoded_queries':len(misses),'cached_queries':len(chunk)-sum(q not in cached for q in chunk),'dense_matrix_load':load_ms,**timing}
                         result['result_cache_hit']=False
+                        guards = timing.get('resident_receipt',{}).get('ranking_guards',[])
+                        result['provider_verification'] = guards[column] if column < len(guards) else None
                         if kwargs.get('diagnostics',False):
                             result['runtime_diagnostics']={'embedding_profile_id':getattr(getattr(encoder,'profile',None),'id',model_id),
                                 'scorer':scorer,'candidate_rowids':ranked_ids,'candidate_ids':[candidate_ids[i] for i in ranked_ids],
@@ -850,6 +855,7 @@ class SearchIndex:
                 'parent_locator_ids':[r.get('parent_id',r['id']) for r in selected],
                 'complete_evidence_ids':[r['id'] for r in selected if r['complete']],
                 'runtime_diagnostics':dict(self._last_dense_diagnostics) if diagnostics else None,
+                'provider_verification':next(iter(self._last_dense_diagnostics.get('resident_receipt',{}).get('ranking_guards',[])),None),
                 'selected': selected, 'ranked_ids': ranked_ids, 'candidate_count': len(ranked),
                 'budget': budget, 'budget_used': final_units,
                 'counter': getattr(self.counter, 'name', 'caller_supplied'),

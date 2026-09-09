@@ -168,6 +168,9 @@ class ExactHost:
     def memory_usage(self):
         return sum(h.bytes for h in self.handles.values() if h.data is not None)
 
+    def fp32_accumulation(self):
+        return True  # Host NumPy flat float32 and explicit pedantic subclasses.
+
     def capabilities(self):
         return {'exact': True, 'resident_handle': True, 'incremental_update': False, 'atomic_publish': 'manager'}
 
@@ -204,6 +207,19 @@ class ExactAccelerator(ExactHost):
         return {'availability': 'available' if available else 'device-unavailable',
                 'devices': [device] if available else [], 'version': torch.__version__,
                 'driver_runtime': torch_runtime(torch, device) if available else None, 'observed_kernel_dispatch': None}
+
+    def fp32_accumulation(self):
+        torch, device = self._runtime()
+        try:
+            if torch.is_autocast_enabled(device):
+                return False
+            if torch.get_float32_matmul_precision() != 'highest':
+                return False
+            if device == 'cuda' and torch.backends.cuda.matmul.allow_tf32:
+                return False
+            return True
+        except (AttributeError, TypeError, RuntimeError):
+            return False
 
     @clean_failed_build
     def build(self, vectors, ids, identity, **options):

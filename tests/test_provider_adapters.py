@@ -359,12 +359,21 @@ class ExactTokenPrefixTests(unittest.TestCase):
         ranks={bytes([i]):i for i in range(256)}
         ranks.update({b'ab':256,b'abc':257,b'  ':258,b'\xe4\xb8\xad':259})
         encoding=tiktoken.Encoding(name='thm-fixture',pat_str=r'\s+|[^\s]+',mergeable_ranks=ranks,special_tokens={})
-        counter=TokenCounter();counter.encode=encoding.encode_ordinary
+        counter=TokenCounter();counter.encode=mock.Mock(wraps=encoding.encode_ordinary)
         corpus=['abc abc','a b c','abc\n\nabc','中文 abc 🔎','  a  b  ','ab'*2000,'line\nnext']
         for text in corpus:
             for length in range(1,len(text)+1,max(1,len(text)//23)):
                 self.assertEqual(counter.count_prefix(text[:length]),counter(text[:length]))
-        self.assertLessEqual(len(counter._piece_cache),512)
+        before=counter.encode.call_count
+        prefix='unique exact prefix 中文 🔎'
+        expected=len(encoding.encode_ordinary(prefix))
+        self.assertEqual(counter.count_prefix(prefix),expected)
+        self.assertEqual(counter.count_prefix(prefix),expected)
+        self.assertEqual(counter.encode.call_count-before,1)
+        self.assertGreater(counter.prefix_cache_hits,0)
+        self.assertLessEqual(len(counter._prefix_cache),64)
+        counter.encode=lambda text:[0]*17
+        self.assertEqual(counter.count_prefix(prefix),17)
 
 
 class NvidiaPrimitiveTests(unittest.TestCase):

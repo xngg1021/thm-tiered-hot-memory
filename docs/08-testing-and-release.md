@@ -2,7 +2,7 @@
 
 ## Zero-touch provider gates
 
-Provider/model tests cover public SDK call lifecycles, exact resident reuse, failed allocation cleanup, independent embedding profiles, bounded warm-worker failure, session activation/fallback, queue growth/recycling, driver freshness, and actual tokenizer boundary behavior. Core-only ignition still precedes installation of test-only NumPy/tiktoken in CI. Required workflows include correctness on Linux/Windows/macOS, Hermes and relevant harness integrations. Review, source audit and [matrix](provider-matrix.md) must match the exact final head; hardware and full-dataset runs are not default merge gates.
+Provider/model tests cover public SDK call lifecycles, exact resident reuse, failed allocation cleanup, independent embedding profiles, bounded warm-worker failure, session activation/fallback, queue growth/recycling, driver freshness, and public tokenizer API compatibility with exercised cache hits, and admitted steady-state cutoff guards that avoid full rescoring on separated rankings. Core-only ignition still precedes installation of test-only NumPy/tiktoken in CI. Required workflows include correctness on Linux/Windows/macOS, Hermes and relevant harness integrations. Review, source audit and [matrix](provider-matrix.md) must match the exact final head; hardware and full-dataset runs are not default merge gates.
 
 ## Evaluation Fabric release gates
 

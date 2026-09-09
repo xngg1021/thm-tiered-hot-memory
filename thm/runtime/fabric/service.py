@@ -16,7 +16,7 @@ class ResidentExecutor:
     def __init__(self, registry, provider='host.exact', device='cpu', memory_budget=256*1024**2):
         self.registry = registry; self.provider_id = provider; self.device = device
         self.manager = ResidentHandleManager({device: memory_budget}); self.last = {}
-        self.description = registry.describe(provider)
+        self.description = registry.describe(provider); self.admission = None
 
     def search(self, *, scope, generation, embedding_profile, ids, matrix, queries, top_k, placement='dram'):
         provider = self.registry.get(self.provider_id)
@@ -34,7 +34,22 @@ class ResidentExecutor:
                 handle = provider.build(matrix, ids, key)
                 self.manager.publish(handle, current_generation=generation)
         with self.manager.acquire(key) as handle:
-            result, receipt = provider.search(handle, queries, min(top_k, len(ids)))
+            admitted = self.admission == (generation,embedding_profile)
+            requested = min(top_k+1 if admitted else top_k,len(ids))
+            result, receipt = provider.search(handle, queries, requested)
+            if admitted:
+                from .ranking_guard import certify
+                guard_started = time.perf_counter(); checked = []; guards = []
+                fp32 = bool(provider.fp32_accumulation())
+                for query, ranking in zip(queries,result):
+                    row, guard = certify(matrix,ids,query,ranking,min(top_k,len(ids)),fp32_accumulation=fp32)
+                    checked.append(row); guards.append(guard)
+                if len(checked) != len(queries):
+                    raise ValueError('provider batch length mismatch')
+                result = checked
+                receipt = {**receipt, 'strict_verified':True, 'ranking_guards':guards,
+                    'semantic_guard_ms':(time.perf_counter()-guard_started)*1000}
+                receipt['search_ms'] += receipt['semantic_guard_ms']
             self.last = {**receipt, 'resident_hit': hit, 'load_ms': 0 if hit else handle.load_ms,
                          'resident_bytes': handle.bytes}
         return result, dict(self.last)
@@ -220,6 +235,7 @@ class RuntimeService:
                 if candidate.id not in self.executors:
                     self.executors[candidate.id] = ResidentExecutor(self.registry, candidate.provider, candidate.device, self.memory_budget)
                 executor = self.executors[candidate.id]
+                executor.admission = (generation,getattr(getattr(self.encoder,'profile',None),'id',None)) if candidate.semantic_class == 'strict' else None
             from thm.physical.joint import JointComputeDataPlanner
             plan = JointComputeDataPlanner().plan(self.index, scope, embedding_profile=getattr(getattr(self.encoder, 'profile', None), 'id', None),
                 candidate=candidate, workload=workload, policy=self.policy)
@@ -292,6 +308,13 @@ class RuntimeService:
                         target_residency='isolated-worker', device=receipt['device'])
                     result['execution_plan']['plan_id'] = identity({k:v for k,v in result['execution_plan'].items() if k != 'plan_id'})
                 result['runtime_receipt'] = dict(receipt)
+                verification = result.get('provider_verification')
+                if verification:
+                    result['runtime_receipt']['index_verification'] = verification
+                    if verification['verification'] == 'reference-fallback':
+                        result['runtime_receipt'].update(actual_provider='reference',
+                            actual_index_provider='numpy_reference', index_execution_chain=[provider,'numpy_reference'],
+                            fallback='index-guard:'+verification['fallback_reason'])
                 if not result.get('query_embedding_cache_hit'):
                     self.encode_costs = (self.encode_costs + [result.get('timing_ms', {}).get('query_embedding', 0)])[-64:]
             self._maybe_explore(key, generation, count, scope, queries[0], effective)

@@ -55,6 +55,8 @@ def replay(task):
             from .optimizer import SemanticGuard
             consistent = consistent and SemanticGuard.compare(outputs['baseline'],outputs['candidate'],
                 dimension=encoder.profile.dimension)['semantic_admission']
+            if not repeat and consistent:
+                executor.admission = (task['generation'],encoder.profile.id)
             refs = outputs
         return {**samples, 'all_repeats_consistent':consistent, 'reference': refs['baseline'], 'result': refs['candidate'], 'generation': task['generation'],
                 'candidate_id': task['candidate_id'], 'key': task['key'], 'provider': task['provider'],

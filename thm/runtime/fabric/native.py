@@ -10,6 +10,9 @@ from .registry import ProviderUnavailable
 
 
 class CuvsProvider(ExactHost):
+    def fp32_accumulation(self):
+        return False  # Public dtype alone does not establish the reduction math mode.
+
     def _api(self):
         algorithm = dict(self.spec.options)['algorithm']
         return importlib.import_module('cuvs.neighbors.' + algorithm), algorithm
@@ -92,6 +95,9 @@ class CuvsProvider(ExactHost):
 
 
 class McFaissProvider(ExactHost):
+    def fp32_accumulation(self):
+        return False  # Requires a version-specific MACA accumulation contract.
+
     def _api(self):
         import faiss
         # mcFaiss deliberately uses the faiss module name. Do not credit ordinary Faiss as MetaX.
