@@ -8,6 +8,29 @@ from thm.runtime.testing import FakeEncoder
 from thm.physical.segments import create,read_segment,export,current,object_path
 
 class SegmentTests(unittest.TestCase):
+    def test_scope_replacement_clears_placements_transactionally(self):
+        import sqlite3
+        with closing(SearchIndex(self.root/'index.sqlite')) as index:
+            docs=[Document('a','scope','s',0,'alpha')]
+            other=[dataclasses.replace(d,scope='other') for d in docs]
+            for scope,rows in (('scope',docs),('other',other)):
+                index.replace_scope(scope,rows);index.embed(scope,self.encoder,self.encoder.model_id)
+                export(index,scope,self.profile,self.root)
+            snapshot=lambda:[tuple(r) for r in index.db.execute('SELECT * FROM physical_placements ORDER BY scope')]
+            before=snapshot();files={p:p.read_bytes() for p in self.root.glob('*.seg')}
+            self.assertEqual(len(files),2)
+            self.assertFalse(index.replace_scope('scope',docs)['changed'])
+            self.assertEqual(snapshot(),before)
+            changed=[dataclasses.replace(d,text='changed') for d in docs]
+            index.db.execute("CREATE TRIGGER fail_replace BEFORE INSERT ON docs BEGIN SELECT RAISE(ABORT,'injected'); END")
+            with self.assertRaises(sqlite3.IntegrityError):index.replace_scope('scope',changed)
+            self.assertEqual(snapshot(),before)
+            index.db.execute('DROP TRIGGER fail_replace')
+            index.replace_scope('scope',changed)
+            self.assertIsNone(current(index,'scope',self.profile.id))
+            self.assertIsNotNone(current(index,'other',self.profile.id))
+            self.assertEqual({p:p.read_bytes() for p in files},files)
+
     def setUp(self):
         self.temp=tempfile.TemporaryDirectory();self.root=Path(self.temp.name)
         self.encoder=FakeEncoder();self.profile=self.encoder.profile

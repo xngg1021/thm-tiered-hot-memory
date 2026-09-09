@@ -1,4 +1,4 @@
-"""Bounded campaigns and exact, auditable reference reuse (protocol 2)."""
+"""Bounded campaigns and exact, auditable reference reuse (protocol 3)."""
 from dataclasses import asdict, dataclass
 import hashlib
 import json
@@ -6,7 +6,7 @@ import math
 from pathlib import Path
 from thm.runtime.identity import digest
 
-PROTOCOL = 2
+PROTOCOL = 3
 
 @dataclass(frozen=True)
 class ReferenceArtifactKey:
@@ -23,16 +23,18 @@ class ReferenceArtifactKey:
         return digest(asdict(self))
 
 
-def semantic_identity():
-    # Explicit dependency closure; scheduler, probes, docs and physical placement
-    # are excluded. Unknown future semantic modules must extend this closure.
-    root = Path(__file__).resolve().parents[2]
-    names = ['thm/retrieval.py', 'thm/entities.py', 'thm/features.py',
-             'thm/runtime/identity.py', 'thm/runtime/storage.py',
-             'thm/runtime/research.py', 'research/recall/benchmark.py',
-             'research/recall/lme_retrieval.py']
-    names += [str(p.relative_to(root)) for p in (root/'thm/runtime/backends').rglob('*.py')]
-    return digest({n: hashlib.sha256((root/n).read_bytes()).hexdigest() for n in sorted(names)})
+def semantic_identity(root=None):
+    from .reference_dependencies import semantic_manifest
+    return digest(semantic_manifest(root))
+
+
+def counter_identity(name):
+    from importlib.metadata import version, PackageNotFoundError
+    try:
+        package_version = version('tiktoken')
+    except PackageNotFoundError:
+        package_version = None
+    return {'name': name, 'tiktoken_version': package_version}
 
 
 def reuse(source, key):

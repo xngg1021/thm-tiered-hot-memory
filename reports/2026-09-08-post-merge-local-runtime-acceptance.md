@@ -6,6 +6,8 @@ Date: 2026-09-08
 
 2026-09-09 successor amendment: the original full-LME default is withdrawn. Use the successor checkout and [bounded acceptance contract](../docs/physical-storage-fabric.md). The original PR14 checkout alone does not contain these bounds. This successor remains Unreleased.
 
+2026-09-09 repository closeout correction: real Z6 G4 performance, full LME and specialized storage measurements are post-merge evidence, not merge prerequisites. Historical PR14 measurements and receipts below retain their original scope. Use current main and the [repository reconciliation receipt](2026-09-09-open-pr-reconciliation-closeout.md) for subsequent PR15/PR16 lineage, review and CI status.
+
 Repository: `xngg1021/thm-tiered-hot-memory`
 
 PR: `#14` — `Unreleased zero-LLM heterogeneous runtime and local acceptance package`

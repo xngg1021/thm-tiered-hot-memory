@@ -7,6 +7,58 @@ import unittest
 from research.runtime.bounds import campaign, estimate, ReferenceArtifactKey, reuse
 
 class BoundsTests(unittest.TestCase):
+    def test_semantic_manifest_transitive_closure_and_exclusions(self):
+        import shutil
+        from research.runtime.bounds import semantic_identity
+        from research.runtime.reference_dependencies import semantic_manifest
+        source=Path(__file__).resolve().parents[1]
+        with tempfile.TemporaryDirectory() as d:
+            root=Path(d)
+            for folder in ('thm','research'):
+                shutil.copytree(source/folder,root/folder,ignore=shutil.ignore_patterns('__pycache__','*.json','*.jsonl','.cache'))
+            manifest=semantic_manifest(root)
+            required={'thm/sources.py','research/recall/scoring.py','thm/sqlite_guard.py',
+                      'thm/runtime/isolated.py','thm/runtime/worker.py','thm/runtime/scorers.py',
+                      'thm/runtime/profiles.py','thm/runtime/backends/__init__.py',
+                      'thm/retrieval.py','thm/features.py','thm/entities.py'}
+            self.assertTrue(required<=manifest.keys())
+            self.assertEqual(list(manifest),sorted(manifest))
+            original=semantic_identity(root)
+            key=ReferenceArtifactKey('d','m',{}, {}, original, {})
+            for name in manifest:
+                with self.subTest(semantic=name):
+                    path=root/name;before=path.read_bytes()
+                    path.write_bytes(before+b'\n# semantic mutation\n')
+                    self.assertNotEqual(dataclasses.replace(key,semantic_implementation=semantic_identity(root)).id,key.id)
+                    path.write_bytes(before)
+            for name in ('docs/README.md','thm/physical/probe.py','thm/physical/benchmark.py',
+                         'thm/physical/planner.py','thm/runtime/scheduler.py'):
+                with self.subTest(nonsemantic=name):
+                    self.assertNotIn(name,manifest)
+                    path=root/name;path.parent.mkdir(parents=True,exist_ok=True)
+                    path.write_text('# unrelated change\n')
+                    self.assertEqual(semantic_identity(root),original)
+            # Future semantic dependencies must be followed, including relative
+            # from-package imports and their package initializers.
+            path=root/'thm/sources.py'
+            path.write_bytes(path.read_bytes()+b'\nfrom . import future_semantics\n')
+            future=root/'thm/future_semantics.py';future.write_text('VALUE = 1\n')
+            changed=semantic_identity(root)
+            self.assertIn('thm/future_semantics.py',semantic_manifest(root))
+            future.write_text('VALUE = 2\n')
+            self.assertNotEqual(semantic_identity(root),changed)
+            path.write_bytes(path.read_bytes()+b'\nimport thm.missing_semantics\n')
+            with self.assertRaisesRegex(ValueError,'unresolved reference dependency'):
+                semantic_identity(root)
+
+    def test_counter_package_identity_invalidates_reuse(self):
+        from unittest.mock import patch
+        from research.runtime.bounds import counter_identity
+        with patch('importlib.metadata.version',return_value='1'):
+            key=ReferenceArtifactKey('d','m',{}, {}, 's',counter_identity('cl100k_base'))
+        with patch('importlib.metadata.version',return_value='2'):
+            self.assertNotEqual(key.id,dataclasses.replace(key,counter_identity=counter_identity('cl100k_base')).id)
+
     def test_modes(self):
         self.assertEqual(campaign()['lme_limit'],5)
         self.assertEqual(campaign('smoke')['lme_limit'],2)

@@ -8,7 +8,7 @@ import subprocess
 import sys
 import time
 sys.path.insert(0,str(Path(__file__).resolve().parents[2]))
-from research.runtime.bounds import campaign, estimate, ReferenceArtifactKey, semantic_identity, reuse
+from research.runtime.bounds import campaign, estimate, ReferenceArtifactKey, semantic_identity, counter_identity, reuse
 from thm.runtime.hardware import probe,versions
 from thm.runtime.capabilities import backend_probe
 from thm.runtime.identity import manifest,implementation_identity
@@ -120,7 +120,7 @@ def execute(args):
             reference_policy={'command':command[command.index('--counter'):],
                 'limit':current_limit if label=='lme' else None},
             semantic_implementation=semantic_identity(),
-            counter_identity={'name':'cl100k_base','packages':versions()}) if arm['policy']=='reference' else None
+            counter_identity=counter_identity('cl100k_base')) if arm['policy']=='reference' else None
         reused=None
         reference_dir=getattr(args,'reference_dir',None)
         if reference_key and reference_dir and not sampling:

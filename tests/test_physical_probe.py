@@ -5,6 +5,28 @@ import unittest
 from thm.physical.probe import probe,linux,mounts,windows_fields,macos_fields
 
 class ProbeTests(unittest.TestCase):
+    def test_windows_bus_evidence_and_local_only_planner(self):
+        from thm.physical.contracts import StorageTarget,StorageProfile,PlacementIntent,DataRole
+        from thm.physical.planner import plan
+        cases=[('NVMe',False),(17,False),('17',False),('SATA',False),(11,False),
+               ('SAS',False),(10,False),('USB',False),(7,False),
+               ('SCSI',None),(1,None),('RAID',None),('Virtual',None),(14,None),
+               ('File Backed Virtual',None),('Storage Spaces',None),(16,None),
+               ('unknown',None),(None,None),(True,None),('iSCSI',True),(9,True),
+               ('Fibre Channel',True),(6,True)]
+        for bus,remote in cases:
+            with self.subTest(bus=bus):
+                fields=windows_fields(json.dumps({'disk':{'BusType':bus,'IsReadOnly':False},'volume':{'FileSystem':'NTFS'}}))
+                self.assertIs(fields['remote'],remote)
+                target=StorageTarget('windows',free_capacity=100,adapter='local-filesystem',**fields)
+                profile=StorageProfile(target.fingerprint,({'operation':'buffered-random','size':4096,
+                    'concurrency':1,'p95_ms':1.,'bytes_per_second':1000.},),1024,1.)
+                result=plan(PlacementIntent(DataRole.VECTOR_SEGMENT,capacity_required=10,local_only=True),[target],[profile])
+                self.assertEqual(result['selected_target'],'windows' if remote is False else None)
+        for disk in (None,[],[{'BusType':'NVMe'},{'BusType':'SATA'}],{'FriendlyName':'NVMe local disk'},'unresolved'):
+            self.assertIsNone(windows_fields({'disk':disk})['remote'])
+        self.assertFalse(windows_fields({'disk':[{'BusType':'NVMe'}]})['remote'])
+
     def test_missing_and_privacy(self):
         with tempfile.TemporaryDirectory() as d:
             target,topology=probe(d)

@@ -257,6 +257,8 @@ class SearchIndex:
         self.db.execute('DELETE FROM vectors WHERE scope=?', (scope,))
         self.db.execute('DELETE FROM vectors_v2 WHERE scope=?', (scope,))
         self.db.execute('DELETE FROM vector_generations WHERE scope=?', (scope,))
+        if self.db.execute("SELECT 1 FROM sqlite_master WHERE name='physical_placements'").fetchone():
+            self.db.execute('DELETE FROM physical_placements WHERE scope=?', (scope,))
         for pos, d in enumerate(docs):
             # Unsupervised adjacent-turn context; no labels or generated summaries.
             context = ' '.join(x.text for x in docs[max(0, pos - 1):pos + 2]

@@ -1,5 +1,12 @@
 # Changelog
 
+## Unreleased — repository reconciliation
+
+- Integrates PR #15's transactional scope vector/generation cleanup into the physical storage successor and clears stale physical pointers without deleting immutable objects.
+- Binds reference reuse protocol 3 to the transitive runner/worker import manifest and tiktoken version; storage probes, physical microbenchmarks, docs and unrelated scheduler code stay outside the semantic key.
+- Classifies positively observed Windows local storage buses for local-only placement while retaining unknown/remote evidence for ambiguous and network transports.
+- Separates post-merge hardware/performance evidence from correctness merge gates. See the [reconciliation receipt](reports/2026-09-09-open-pr-reconciliation-closeout.md); no stable/version promotion.
+
 ## Unreleased — orthogonal physical storage successor
 
 Bounded smoke/acceptance/full-research verification, exact reference reuse, public storage topology, immutable vector segments, explicit migration recovery and receipt-first execution planning. Package 1.4.0 and stable archive remain unchanged. See [architecture and evidence limits](docs/physical-storage-fabric.md).

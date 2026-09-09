@@ -109,9 +109,22 @@ def windows_fields(payload):
     # MediaType/BusType are CIM observations; FriendlyName/SerialNumber never used.
     disk=data.get('disk') or {};volume=data.get('volume') or {}
     if isinstance(disk,list):disk=disk[0] if len(disk)==1 else {}
-    return {'filesystem':volume.get('FileSystem'),'protocol':str(disk['BusType']) if disk.get('BusType') is not None else None,
+    if not isinstance(disk,dict):disk={}
+    if not isinstance(volume,dict):volume={}
+    bus=disk.get('BusType')
+    # MSFT_Disk BusType enum, including numeric ConvertTo-Json output:
+    # https://learn.microsoft.com/en-us/windows-hardware/drivers/storage/msft-disk
+    # SCSI/RAID/virtual/Storage Spaces alone do not prove local backing.
+    local={2,3,7,10,11,12,13,17}
+    network={6,9}
+    names={'atapi':2,'ata':3,'usb':7,'sas':10,'sata':11,'sd':12,'mmc':13,
+           'nvme':17,'fibre channel':6,'fibrechannel':6,'iscsi':9}
+    code=bus if type(bus) is int else names.get(bus.strip().lower()) if isinstance(bus,str) else None
+    if isinstance(bus,str) and bus.strip().isdigit():code=int(bus.strip())
+    remote=False if code in local else True if code in network else None
+    return {'filesystem':volume.get('FileSystem'),'protocol':str(bus) if bus is not None else None,
         'readonly':disk.get('IsReadOnly'),'logical_block':disk.get('LogicalSectorSize'),
-        'physical_block':disk.get('PhysicalSectorSize'),'media_class':'unknown','remote':None,
+        'physical_block':disk.get('PhysicalSectorSize'),'media_class':'unknown','remote':remote,
         'numa_node':None}
 
 
