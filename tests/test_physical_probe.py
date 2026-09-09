@@ -5,6 +5,53 @@ import unittest
 from thm.physical.probe import probe,linux,mounts,windows_fields,macos_fields
 
 class ProbeTests(unittest.TestCase):
+    def test_macos_probe_resolves_descendant_to_containing_volume(self):
+        import plistlib
+        from types import SimpleNamespace
+        from unittest.mock import patch
+        with tempfile.TemporaryDirectory() as d:
+            root=Path(d)/'nested'/'storage';root.mkdir(parents=True)
+            # APFS firmlinks need not make the real volume an ancestor of root.
+            mount='/System/Volumes/Data With Spaces'
+            responses=[SimpleNamespace(stdout='Filesystem 512-blocks Used Available Capacity Mounted on\n/dev/disk3s1 1000 200 800 20% '+mount+'\n'),
+                       SimpleNamespace(stdout=plistlib.dumps({'BusProtocol':'PCI-Express','Writable':True,'FilesystemType':'apfs'}))]
+            with patch('thm.physical.probe.platform.system',return_value='Darwin'),patch('thm.physical.probe.subprocess.run',side_effect=responses) as run:
+                target,_=probe(root)
+            self.assertEqual(run.call_args_list[0].args[0],['df','-P',str(root.resolve())])
+            self.assertEqual(run.call_args_list[1].args[0],['diskutil','info','-plist',mount])
+            self.assertFalse(target.remote);self.assertFalse(target.readonly)
+            self.assertEqual(target.root,str(root.resolve()))
+
+    def test_linux_filesystem_does_not_prove_block_locality(self):
+        with tempfile.TemporaryDirectory() as d:
+            root=Path(d);mount=root.resolve().as_posix().replace(' ',r'\040')
+            for fs,expected in [('ext4',None),('xfs',None),('overlay',None),('btrfs',None),('tmpfs',False),('nfs',True)]:
+                with self.subTest(fs=fs):
+                    fields,_=linux(root,sysroot=root,mountinfo=f'1 0 0:1 / {mount} rw - {fs} source rw')
+                    self.assertIs(fields['remote'],expected)
+
+    def test_linux_transport_evidence_and_local_only_planner(self):
+        from thm.physical.probe import linux_block_remote
+        from thm.physical.contracts import StorageTarget,StorageProfile,PlacementIntent,DataRole
+        from thm.physical.planner import plan
+        with tempfile.TemporaryDirectory() as d:
+            root=Path(d)
+            for transport,remote in [('pcie',False),('tcp',True),('rdma',True),('fc',True),('loop',None),('unknown',None)]:
+                with self.subTest(transport=transport):
+                    controller=root/transport/'nvme0';controller.mkdir(parents=True)
+                    (controller/'transport').write_text(transport)
+                    block=controller/'nvme0n1';block.mkdir()
+                    observed=linux_block_remote(block,root)
+                    self.assertIs(observed,remote)
+                    target=StorageTarget('linux',remote=observed,readonly=False,free_capacity=100,adapter='local-filesystem')
+                    profile=StorageProfile(target.fingerprint,({'operation':'buffered-random','size':4096,
+                        'concurrency':1,'p95_ms':1.,'bytes_per_second':1000.},),1024,1.)
+                    result=plan(PlacementIntent(DataRole.VECTOR_SEGMENT,capacity_required=10),[target],[profile])
+                    self.assertEqual(result['selected_target'],'linux' if remote is False else None)
+            for name,remote in [('session1/disk',True),('ata1/disk',False),('usb1/disk',False),('virtual/block/loop0',None)]:
+                path=root/name;path.mkdir(parents=True)
+                self.assertIs(linux_block_remote(path,root),remote)
+
     def test_macos_bus_evidence_reaches_local_only_planner(self):
         import plistlib
         from thm.physical.contracts import StorageTarget,StorageProfile,PlacementIntent,DataRole

@@ -39,6 +39,43 @@ def mounts(text):
     return result
 
 
+def linux_block_remote(block, sysroot=Path('/sys'), seen=None):
+    """Use kernel transport observations, never filesystem or product names."""
+    if not block.exists():return None
+    block=block.resolve();seen=set() if seen is None else set(seen)
+    if block in seen:return None
+    seen.add(block)
+    if (block/'partition').exists():block=block.parent
+    slaves=list((block/'slaves').glob('*'))
+    if slaves:
+        observed=[linux_block_remote(p,sysroot,seen) for p in slaves]
+        return True if any(v is True for v in observed) else False if all(v is False for v in observed) else None
+    ancestors=(block,*block.parents)
+    # iSCSI sessions and FC host classes identify remote SCSI transports.
+    for parent in ancestors:
+        if re.fullmatch(r'session[0-9]+',parent.name):return True
+        if re.fullmatch(r'host[0-9]+',parent.name) and any((sysroot/'class'/kind/parent.name).exists() for kind in ('iscsi_host','fc_host')):return True
+        if re.fullmatch(r'nvme[0-9]+',parent.name):
+            transport=read(parent/'transport')
+            if transport=='pcie':return False
+            if transport in ('tcp','rdma','fc'):return True
+            return None
+    # Virtual/loop devices do not establish where their backing bytes reside.
+    if any(parent.name=='virtual' for parent in ancestors):return None
+    if any(re.fullmatch(r'(ata|usb)[0-9]+',parent.name) for parent in ancestors):return False
+    return None
+
+
+def macos_mountpoint(output):
+    # POSIX df -P emits one row per filesystem and keeps the mount point last;
+    # maxsplit preserves spaces in mounted volume names, including APFS volumes.
+    lines=output.strip().splitlines()
+    fields=lines[-1].split(None,5) if len(lines)>=2 else []
+    if len(fields)!=6 or not fields[5].startswith('/'):
+        raise ValueError('containing macOS volume unavailable')
+    return unescape(fields[5])
+
+
 def linux(root, *, sysroot=Path('/sys'), mountinfo=None):
     root=Path(root).resolve(); nodes=[]; edges=[]
     candidates=[m for m in mounts(mountinfo if mountinfo is not None else read('/proc/self/mountinfo') or '')
@@ -47,7 +84,8 @@ def linux(root, *, sysroot=Path('/sys'), mountinfo=None):
     fields={}
     if m:
         fs=m['filesystem'];relation=digest({'device':m['device'],'root':m['root'],'mount':m['mount']})
-        remote=True if fs in ('nfs','nfs4','cifs','smb3','ceph','lustre','beegfs') else False if fs in ('ext4','xfs','btrfs','tmpfs','vfat','exfat','overlay','zfs') else None
+        block=sysroot/'dev/block'/m['device']
+        remote=True if fs in ('nfs','nfs4','cifs','smb3','ceph','lustre','beegfs') else False if fs in ('tmpfs','ramfs') else None if fs=='overlay' else linux_block_remote(block,sysroot)
         fields.update(filesystem=fs,mount_relation=relation,readonly='ro' in m['options'],remote=remote)
         block=sysroot/'dev/block'/m['device']
         if block.exists():
@@ -158,7 +196,9 @@ def probe(root):
             r=subprocess.run(['powershell','-NoProfile','-NonInteractive','-Command',script],capture_output=True,text=True,timeout=5,check=True)
             fields=windows_fields(r.stdout)
         elif system=='Darwin':
-            r=subprocess.run(['diskutil','info','-plist',str(path)],capture_output=True,timeout=5,check=True)
+            volume=subprocess.run(['df','-P',str(path)],capture_output=True,text=True,timeout=5,check=True)
+            mount=macos_mountpoint(volume.stdout)
+            r=subprocess.run(['diskutil','info','-plist',mount],capture_output=True,timeout=5,check=True)
             fields=macos_fields(r.stdout)
     except (OSError,ValueError,subprocess.SubprocessError):fields={}
     usage=shutil.disk_usage(path)

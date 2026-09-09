@@ -62,7 +62,8 @@ def main(argv=None):
                     generation=index.db.execute('SELECT generation FROM scopes WHERE scope=?',(args.scope,)).fetchone()[0]
                     m=current(index,args.scope,profile.id)
                     if m is None:raise ValueError('external placement missing')
-                    from .segments import read_segment,object_path
+                    from .segments import read_segment,object_path,root_owner
+                    root_owner(index,m['root'])
                     keys=[[r['id'],r['hash']] for r in index.rows(args.scope)]
                     values=read_segment(object_path(m['root'],m['object_name']),m,profile,generation,keys,mode=args.read_mode)
                     result={'status':'verified','rows':len(values),'object_sha256':m['object_sha256'],'read_mode':args.read_mode}

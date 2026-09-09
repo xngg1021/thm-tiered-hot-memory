@@ -20,6 +20,40 @@ SCHEMA='''CREATE TABLE IF NOT EXISTS physical_placements(
 VECTOR_ROWS='''SELECT v.vector,v.dimension,v.dtype FROM docs d
  JOIN vectors_v2 v ON d.scope=v.scope AND d.id=v.id AND d.hash=v.hash
  WHERE d.scope=? AND v.profile=? ORDER BY d.rowid'''
+OWNER_FILE='.thm-index-owner.json'
+
+
+def root_owner(index, root, *, required=False):
+    """Check exclusive index ownership; legacy unowned roots cannot retire data."""
+    root=Path(root)
+    if root.is_symlink() or not root.is_dir():raise ValueError('invalid physical root')
+    owner=root/OWNER_FILE
+    if owner.is_symlink():raise ValueError('symlink root ownership refused')
+    if not owner.exists():
+        if required:raise ValueError('physical root ownership unverified; source retirement refused')
+        return False
+    expected={'schema':1,'index_identity':digest(str(Path(index.path).resolve()))}
+    if json.loads(owner.read_text(encoding='utf-8'))!=expected:
+        raise ValueError('physical root belongs to a different index')
+    return True
+
+
+def claim_root(index, root):
+    root=Path(root)
+    if root_owner(index,root):return
+    # Existing legacy objects might be referenced by arbitrarily many databases.
+    # Never infer exclusive ownership retroactively from just this database.
+    if any(root.glob('*.seg')):raise ValueError('unowned objects require a fresh exclusive physical root')
+    fd,name=tempfile.mkstemp(prefix='.thm-owner-',dir=root)
+    try:
+        with os.fdopen(fd,'w',encoding='utf-8') as f:
+            json.dump({'schema':1,'index_identity':digest(str(Path(index.path).resolve()))},f,sort_keys=True)
+            f.flush();os.fsync(f.fileno())
+        try:os.link(name,root/OWNER_FILE)
+        except FileExistsError:pass
+        sync_directory(root)
+        root_owner(index,root,required=True)
+    finally:Path(name).unlink(missing_ok=True)
 
 
 def sync_directory(path):
@@ -134,6 +168,7 @@ def export(index, scope, profile, root, *, mode='mmap', before_publish=None):
             if any(r[1]!=profile.dimension for r in rows):raise ValueError('profile dimension mismatch')
             values=[unpack(r[0],r[1]) if r[2]=='f32le' else json.loads(r[0]) for r in rows]
         finally:index.db.rollback()
+    claim_root(index,root)
     manifest=create(root,profile,generation,keys,values)
     manifest.update(target_id='local-'+digest(str(Path(root).resolve()))[:20],read_mode=mode)
     if before_publish:before_publish()
@@ -161,6 +196,7 @@ def export(index, scope, profile, root, *, mode='mmap', before_publish=None):
 def load(index,scope,profile,generation):
     manifest=current(index,scope,profile.id)
     if manifest is None:return None
+    root_owner(index,manifest['root'])
     docs=index.rows(scope);keys=[[r['id'],r['hash']] for r in docs]
     telemetry=PhysicalTelemetry(manifest['target_id'])
     values=read_segment(object_path(manifest['root'],manifest['object_name']),manifest,profile,generation,keys,

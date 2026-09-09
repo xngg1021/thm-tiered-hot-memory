@@ -27,6 +27,8 @@ Storage fingerprints bind stable target/mount fields and hashes of probe/adapter
 
 ## Backend evidence boundary
 
+Linux filesystem names alone do not establish local block storage: ext4/xfs/btrfs may sit on remote transports, and overlay backing remains unknown. Public sysfs NVMe transport, iSCSI/FC host/session relationships, and ATA/USB ancestry supply locality evidence. Stacked block devices require all observed backing devices to be local; any observed remote backing is remote, and incomplete evidence stays unknown. This follows the [distinction between PCIe and network NVMe transports](https://xnvme.io/tutorial/transports/index.html), without inferring speed from either.
+
 | Backend family | Implementation | Performance status |
 | --- | --- | --- |
 | Portable local regular files | Immutable segments, buffered and mmap reads, extent adapter, explicit migration | Synthetic/local smoke only; target machine pending |
@@ -48,6 +50,10 @@ The format contains magic/version, profile ID, generation, dtype/dimension/row c
 External placement is optional and explicit. Re-embedding clears its pointer while retaining immutable files. Scope replacement transactionally clears all profile vectors, vector generations and physical placement pointers for the changed scope; no-op replacement and failed transactions preserve them, and other scopes and immutable files remain intact. A stale or corrupt placement fails closed unless the existing scheduler was explicitly configured for sparse fallback. No cross-profile dense fallback is introduced.
 
 ## Explicit migration and recovery
+
+New export and migration roots are exclusively owned by one canonical database path, recorded through an atomically published ownership receipt before any index publishes objects there. Another database cannot export/migrate into the same owned root, even if an identical verified object exists. Loads and verification reject copied foreign placement pointers. Retirement rechecks source and target ownership as well as every same-index placement reference; this prevents deleting a different database's live object.
+
+Legacy roots without an ownership receipt remain readable and support copy-to-fresh-owned-root migration, with their source retained. Existing unowned segment objects cannot be retroactively claimed as exclusive, and retirement of an unowned source is refused. A copied database must use its own physical root rather than silently inherit another database's ownership. Root ownership does not promote data to logical authority.
 
 `storage migrate` creates a fresh private journal containing exact predecessor, target, profile, rows and retirement intent. Recovery checks the current SQLite manifest and source generation, copies to a fresh target temp, verifies bytes/schema/vectors, exclusively publishes the object and transactionally changes the manifest. Each checkpoint appends a physical receipt. Default copy/verify/publish keeps the old file. Source retirement requires `--retire-source` and the exact same flag on resume, verifies the new publication again, and refuses deletion while another placement references the old object. No global cleanup command exists.
 
@@ -109,6 +115,6 @@ Reference sidecars bind exact dataset bytes/subset, local model manifest, backen
 
 Windows locality uses the resolved disk's public [MSFT_Disk BusType](https://learn.microsoft.com/en-us/windows-hardware/drivers/storage/msft-disk), accepting both numeric CIM JSON values and enum names. NVMe, SATA, SAS and USB admit `local_only` placement when other constraints and measured costs pass. iSCSI/Fibre Channel are remote; SCSI, RAID, virtual, Storage Spaces, missing or multiply resolved disks remain unknown. Friendly names never prove locality.
 
-macOS similarly uses explicit diskutil bus protocol evidence for local PCI-Express/NVMe/SATA/SAS/USB/Thunderbolt targets. Network protocols remain remote; unknown protocols, disk images and explicitly virtual devices stay unknown. Product names and the internal/external location alone do not establish local backing.
+macOS first resolves the containing mounted volume with `df -P` before calling `diskutil info -plist`; an ordinary descendant storage directory is not passed as diskutil's device operand. The parser preserves spaces in mount names and permits APFS mount paths outside the apparent directory ancestry. It uses explicit diskutil bus protocol evidence for local PCI-Express/NVMe/SATA/SAS/USB/Thunderbolt targets. Network protocols remain remote; unknown protocols, disk images and explicitly virtual devices stay unknown. Product names and the internal/external location alone do not establish local backing.
 
 Real Z6 G4 performance, the full LME matrix, specialized storage transports and retrieval-feature quality gains remain post-merge measured evidence. They do not block correctness-safe Unreleased merges. See the [repository reconciliation receipt](../reports/2026-09-09-open-pr-reconciliation-closeout.md).

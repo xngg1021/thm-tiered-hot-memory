@@ -4,7 +4,7 @@ import os
 from pathlib import Path
 import tempfile
 from thm.runtime.identity import EmbeddingProfile,digest
-from .segments import current,object_path,read_segment,sync_directory,file_sha
+from .segments import current,object_path,read_segment,sync_directory,file_sha,root_owner,claim_root
 
 STAGES=('before-copy','partial-copy','after-copy-before-verify','after-verify-before-publish',
         'after-publish-before-cleanup','during-cleanup')
@@ -23,10 +23,12 @@ def begin(index,scope,profile,target_root,journal,*,retire_source=False):
     if source is None:raise ValueError('published external segment required')
     root=Path(target_root)
     if root.is_symlink() or not root.is_dir() or root.resolve()==Path(source['root']).resolve():raise ValueError('distinct existing target root required')
+    root_owner(index,source['root'],required=retire_source)
     with index._lock:
         generation=index.db.execute('SELECT generation FROM scopes WHERE scope=?',(scope,)).fetchone()[0]
         keys=[[r['id'],r['hash']] for r in index.rows(scope)]
         read_segment(object_path(source['root'],source['object_name']),source,profile,generation,keys)
+    claim_root(index,root)
     journal=Path(journal);journal.mkdir(parents=True,exist_ok=False)
     target={**source,'root':str(root.resolve()),'target_id':'local-'+digest(str(root.resolve()))[:20]}
     data={'schema':1,'scope':scope,'profile':profile.identity(),'source':source,'target':target,
@@ -42,6 +44,8 @@ def resume(index,journal,*,inject=None):
     if data['index_identity']!=digest(str(index.path)):raise ValueError('migration index identity mismatch')
     p=dict(data['profile']);p.pop('embedding_profile_id');profile=EmbeddingProfile(**p)
     source=data['source'];target=data['target'];scope=data['scope'];keys=data['row_keys']
+    root_owner(index,source['root'],required=data['retire_source'])
+    root_owner(index,target['root'],required=True)
     src=object_path(source['root'],source['object_name']);dst=object_path(target['root'],target['object_name'])
     # Serialize recovery of this journal without stealing stale locks. A crash
     # releases the SQLite lock, and publication comparisons protect other journals.
@@ -98,6 +102,8 @@ def resume(index,journal,*,inject=None):
             index.db.execute('BEGIN IMMEDIATE')
             try:
                 if current(index,scope,profile.id)!=target:raise ValueError('cleanup publication changed')
+                root_owner(index,source['root'],required=True)
+                root_owner(index,target['root'],required=True)
                 read_segment(dst,target,profile,source['generation'],keys)
                 for row in index.db.execute('SELECT manifest FROM physical_placements'):
                     other=json.loads(row[0])

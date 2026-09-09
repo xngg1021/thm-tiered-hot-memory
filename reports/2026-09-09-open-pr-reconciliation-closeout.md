@@ -31,6 +31,10 @@ First forward-fix head `3c5f6e81173e5cd6a494b57c5b1b07c1a2b029fa`, tree `6cbd75e
 
 Candidate validation includes the full unit suite, headless core ignition, ten numeric audit checks, docs, version-history and whitespace checks. Exact final candidate/main identities, CI and completed review receipts are recorded below when available, without treating pending runs as success.
 
+Second forward-fix head `216b3706c0068173c8fe53fb980e61b595598463`, tree `7f068c5078c910c14a92622c4c570fac16a01a16`, passed 419 tests, correctness PR `34315736073`, push `34315733812` and Hermes `34315733771`; retrieval `34315733776` and frontier `34315733748` were skipped. Codex review `PRR_kwDOUP17J88AAAABMvqnxw` completed with three actionable P2s, so this head was not merged: resolve a macOS descendant to its actual volume before diskutil, avoid Linux filesystem-only locality inference, and protect physical objects shared across retrieval databases from retirement.
+
+The next forward fix adds a tested df-to-diskutil command path, conservative sysfs transport/stacked-backing locality, and exclusive canonical-index root ownership. New roots refuse foreign publications and loads; existing unowned/shared roots remain readable and copyable but cannot be claimed or retired. Two-database regressions cover identical objects in foreign owned destinations and preservation of legacy shared publications. Source-retirement crash recovery still runs through all six checkpoints.
+
 ## Acceptance and remaining evidence
 
 Package remains `1.4.0`; new runtime/storage capabilities remain **Unreleased**. Stable archive remains `archive/v1.4.0-stable@e6e4dda5835e3cb345207457d5491131c6959b2c`. Real Z6 G4 speed/dispatch, full 500-instance LME, CXL/GDS/SPDK and other specialized transport performance, and retrieval-feature quality gain remain pending post-merge evidence. No hardware superiority or default feature admission follows from CI.
