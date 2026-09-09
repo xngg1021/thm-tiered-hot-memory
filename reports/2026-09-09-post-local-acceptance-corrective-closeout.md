@@ -73,3 +73,6 @@ Additional forward evidence hardening separates a calibrated throughput candidat
 ## Exact-head review correction
 
 Codex review 5154160682 on `e1552b8975a0609442dd887bb885d70070cbd108` found one actionable P2: matrix runners emit `timing_breakdown_ms`, while the new decomposition helper read `timing_ms`. The forward fix reads the actual matrix field, retains compatibility with direct SearchIndex rows, and reports unknown rather than zero when component clocks are missing. Regressions exercise both actual bounded LoCoMo and LME runner outputs, plus absent/partial timing rows. This changes only evidence aggregation, not retrieval semantics. The corrected head must pass a fresh review and CI before merging.
+
+
+The next exact-head review found a second P2 on shared batch timing. The subsequent forward fix separately aggregates each complete batch receipt once by native chunk size and matrix loading once per scope/mode/budget call. Equal timing values do not collapse distinct batches, and incomplete chunks remain unresolved. Regressions exercise real multi-chunk SearchIndex output and identical-clock/partial-chunk fixtures. Retrieval and reference dependency keys remain unchanged.

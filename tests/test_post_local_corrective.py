@@ -251,4 +251,33 @@ class CorrectiveTests(unittest.TestCase):
         r=decomposition({'rows':[{'timing_ms':{'total':3,'retrieval_total':2,'pack':1}}]})
         self.assertEqual(r['component_sum_check']['rows_checked'],1)
 
+    def test_decomposition_counts_real_shared_batches_and_single_matrix_load(self):
+        from research.runtime.performance import decomposition
+        from thm.retrieval import SearchIndex,Document,TokenCounter
+        with tempfile.TemporaryDirectory() as root:
+            index=SearchIndex(Path(root,'index.sqlite'),TokenCounter());encoder=FakeEncoder()
+            try:
+                index.replace_scope('s',[Document(str(i),'s','session',i,text) for i,text in enumerate(DOCUMENTS)])
+                index.embed('s',encoder,encoder.model_id)
+                rows=index.search_many('s',list(QUERIES[:5]),mode='hybrid',budget=512,encoder=encoder,model_id=encoder.model_id,query_batch_size=2)
+                for row in rows:row['timing_breakdown_ms']=row.pop('timing_ms')
+                shared=decomposition({'rows':rows})['shared_batch_clocks']
+                self.assertEqual(shared['batches'],3);self.assertEqual(shared['calls'],1)
+                self.assertEqual(shared['totals_ms']['dense_matrix_load'],rows[0]['batch_receipt']['dense_matrix_load'])
+                self.assertAlmostEqual(shared['totals_ms']['dense_scoring'],sum(rows[i]['batch_receipt']['dense_scoring'] for i in (0,2,4)))
+                self.assertGreater(shared['totals_ms']['dense_scoring'],0)
+                self.assertEqual(shared['unresolved_receipt_rows'],0)
+            finally:index.close()
+
+    def test_equal_batch_clocks_are_not_collapsed_and_partial_chunks_unknown(self):
+        from research.runtime.performance import shared_batch_clocks
+        receipt={'query_batch_size':2,'dense_matrix_load':7.,'dense_scoring':10.,'transfer':2.}
+        row={'scope':'s','mode':'dense','budget':600,'batch_receipt':receipt}
+        shared=shared_batch_clocks([copy.deepcopy(row) for _ in range(4)])
+        self.assertEqual(shared['batches'],2);self.assertEqual(shared['totals_ms']['dense_scoring'],20.)
+        self.assertEqual(shared['totals_ms']['dense_matrix_load'],7.)
+        self.assertEqual(shared['totals_ms']['transfer'],4.)
+        partial=shared_batch_clocks([row])
+        self.assertEqual(partial['unresolved_receipt_rows'],1);self.assertEqual(partial['totals_ms'],{})
+
 if __name__=='__main__':unittest.main()
