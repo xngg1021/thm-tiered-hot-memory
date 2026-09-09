@@ -4,6 +4,7 @@ on:
   workflow_dispatch:
   push:
     paths:
+      - "tests/test_post_local_corrective.py"
       - "thm/**"
       - "plugins/**"
       - "pyproject.toml"

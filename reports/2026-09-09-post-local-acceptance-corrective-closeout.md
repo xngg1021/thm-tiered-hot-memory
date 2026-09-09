@@ -1,4 +1,4 @@
-# Post-local corrective checkpoint — local gates passed, remote lifecycle blocked
+# Post-local corrective checkpoint — remote lifecycle resumed
 
 This is a forward-only checkpoint, **not a completed merge or post-fix hardware acceptance**.
 
@@ -39,11 +39,11 @@ English and seven localized READMEs, current validation/status/testing/runtime/e
 - Historical raw artifact directory and VERSION unchanged; reference semantic closure unchanged.
 - No multi-hour campaign or new Z6 measurement was executed.
 
-## Remote lifecycle and approval block
+## Initial approval block (historical, now resolved)
 
 Automatic approval review rejected the `git push` operation. Its stated reason was that repository code, documentation and potentially sensitive machine/evidence artifacts would be disclosed to a destination without trusted end-user authorization for that payload/destination. The supplied attachment was not accepted by that review as sufficient authorization. No alternate publishing route was attempted.
 
-A subsequent read-only `git ls-remote` confirmed main still at `aa8391e` and the corrective branch absent. No PR was created, no remote CI credited, no Codex exact-head review requested, and no merge performed. These remain explicit incomplete gates. Issue #13 has not been modified; its ready-to-post ledger follows below. Continue only after the user explicitly confirms pushing this branch/payload to this repository and the requested review/guarded-merge lifecycle.
+A subsequent read-only `git ls-remote` confirmed main still at `aa8391e` and the corrective branch absent. No PR was created, no remote CI credited, no Codex exact-head review requested, and no merge performed. These remain explicit incomplete gates. Issue #13 has not been modified; its ready-to-post ledger follows below. The user subsequently explicitly authorized pushing and completing the remaining lifecycle. This initial block is resolved; the following resumption record supersedes its pending-publication state.
 
 ## Ready-to-post issue #13 evidence ledger
 
@@ -56,3 +56,12 @@ Implemented locally: corrected auto-safe admission/reference fallback, determini
 ## Short local follow-up after merge
 
 See [the exact commands and scope](../docs/19-post-local-corrective.md#short-local-retest). The corrective retest has a 600-second process-tree ceiling; optional CPU sweep adds 240 seconds. Neither requires LoCoMo/LME matrices. Post-fix real-hardware acceptance remains pending, including unresolved legacy forensic components and ORT root cause.
+
+
+## Authorized remote resumption
+
+The user directly authorized push and completion. CLI Git lacked a write credential, so the authenticated GitHub API published six ordered commits, verifying each tree against its local counterpart. Author metadata caused different commit SHAs; no published history was rewritten. Initial remote reviewed head: `96a9d3df15acd2b11c9b2f24362654994c4f097a`, tree `aac88f91fd6ad52ba3d870ce91c9dfb7ff898bf8`.
+
+[PR #18](https://github.com/xngg1021/thm-tiered-hot-memory/pull/18) is open. [Issue #13 ledger](https://github.com/xngg1021/thm-tiered-hot-memory/issues/13#issuecomment-5601608941) was posted and the issue remains open. Exact-head Codex review was requested. Local current-code checks passed with 468 tests, headless, numeric, docs, version and whitespace gates. The explicit reference policy additionally remains pinned to its requested device and fixed scorer.
+
+First-head Hermes run 34349475238 and harness run 34349475199 passed. Ubuntu passed in correctness run 34349518299; macOS exposed a test fixture counting OS probe subprocesses as matrix executions. The forward correction restricts the fixture counter to commands with matrix output, without changing production retrieval or masking an executed matrix. Integration workflows now include this regression file in their trigger paths so the corrected head gets fresh integration evidence. Final CI/review/merge results will be appended after their actual completion.

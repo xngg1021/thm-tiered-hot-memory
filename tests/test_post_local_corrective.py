@@ -152,6 +152,7 @@ class CorrectiveTests(unittest.TestCase):
             if command[:2]==['git','rev-parse']:return SimpleNamespace(stdout='a'*40,returncode=0)
             if command[:2]==['git','status']:return SimpleNamespace(stdout='',returncode=0)
             if '-S' in command:return SimpleNamespace(returncode=0)
+            if '--output' not in command:return SimpleNamespace(stdout='',returncode=0)
             calls.append(command)
             Path(command[command.index('--output')+1]).write_text(json.dumps({'rows':[],'builds':[],'summaries':{}}))
             return SimpleNamespace(returncode=0)
