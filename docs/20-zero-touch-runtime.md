@@ -11,7 +11,7 @@ Package/version remains **1.4.0**. The immutable stable archive remains `archive
 3. The public `RuntimeService.submit` queue combines compatible concurrent requests when a real queue exists. Low arrival rates remain singleton requests. `search` provides a synchronous facade. Harnesses can also use their own concurrency/lifecycle policies.
 4. Passive telemetry observes queue wait, request completion, stage clocks, actual batch, process CPU and fallback. Unsupported measurements stay null.
 5. A disposable worker probes one installed provider or replays one candidate within wall/CPU/RAM/I/O limits. Foreground arrivals preempt background work without waiting for teardown. Battery/thermal observations and queue pressure can suppress exploration.
-6. Semantic parity, resource limits, a material gain threshold and uncertainty checks control publication. A warmed model candidate owns a separate derived database/profile. Eligible changes wait for the next session boundary. Failure or stale generation returns to the validated reference.
+6. Semantic parity, resource limits, a material gain threshold and uncertainty checks control publication. Exact vector-index candidates may become eligible only under their policy and identity constraints. Alternate inference/model implementations are measured on observed requests in private replicas but are **not** globally certified by that sample: `reference`, `auto-safe` and `auto-throughput` retain the authority embedding path. Only explicit `approximate-performance` may activate an observed-request-only alternate model at a later session boundary. Failure or stale generation returns to the validated reference.
 
 Runtime decisions change execution, not source ownership, scope, valid time, activity, explicit hits, truth, T0–T3 membership or retrieval policy. The budget advisor remains shadow-only.
 
@@ -29,7 +29,7 @@ finally:
     runtime.close()
 ```
 
-The example assumes an already indexed scope with matching reference vectors. `RuntimeService` owns its worker/queue/provider lifecycles; the caller still owns the source `SearchIndex` and reference encoder. The default policy is `auto-safe`; `reference` disables automatic exploration. `approximate-performance` is an explicit opt-in and retains quality deltas.
+The example assumes an already indexed scope with matching reference vectors. `RuntimeService` owns its worker/queue/provider lifecycles; the caller still owns the source `SearchIndex` and reference encoder. The default policy is `auto-safe`; `reference` disables automatic exploration. `approximate-performance` is an explicit opt-in and retains quality/evidence-scope disclosures.
 
 `THMHarnessAdapter` uses the runtime. Hermes initializes it lazily, forwards session changes and closes it on shutdown. Modern and legacy MCP status include the runtime state. Legacy MCP's declared output schema includes the added status field. Reference research runners continue to call `SearchIndex` with fixed explicit identities.
 
@@ -37,7 +37,7 @@ The example assumes an already indexed scope with matching reference vectors. `R
 
 For a local FP32 SentenceTransformer source, installed framework providers and the supported ORT/OpenVINO text-model bridges can be prepared in a bounded worker. The worker loads a reference, uses the actual tokenizer/pooling contract, copies the derived SQLite index into a private workspace and embeds documents under a new `EmbeddingProfile`. It then compares uncached query encoding, scoring, ranking and packing across paired repetitions.
 
-A successful worker can remain warm and serve at a later session boundary. Query vectors and document vectors always come from its own profile; the original index remains unchanged. A source-generation change invalidates the point. A timeout, incompatible model architecture, failed exporter, semantic mismatch or unknown constrained GPU memory retains the reference. Temporary model/index artifacts disappear when the worker closes. Durable compiled engine caches supplied by native adapters have their own content/dependency keys.
+The worker's comparison is an **observed-request-only** semantic check. It is valuable measurement evidence, but one sampled query cannot prove that an alternate embedding implementation is globally equivalent on unseen queries. Therefore the resulting point is recorded as `observed-request` evidence and is never automatically activated by `reference`, `auto-safe` or `auto-throughput`. Under explicit `approximate-performance`, a materially faster measured point may remain warm and serve after a session boundary with its evidence scope disclosed. Query vectors and document vectors always come from its own profile; the original index remains unchanged. A source-generation change invalidates the point. A timeout, incompatible model architecture, failed exporter, semantic mismatch or unknown constrained GPU memory retains the reference. Temporary model/index artifacts disappear when the worker closes. Durable compiled engine caches supplied by native adapters have their own content/dependency keys.
 
 Arbitrary named-tensor models require explicit preprocessing/pooling from their caller. Core ML, native TensorRT-RTX, MIGraphX and other raw-tensor adapters do not invent a text model contract. Provider implementation availability and automatic text-bridge eligibility are separate facts.
 
@@ -55,7 +55,7 @@ Arbitrary named-tensor models require explicit preprocessing/pooling from their 
 | Profile history | At most 4096 observations, 30-day freshness limit |
 | Session choices | Bounded to 128 cached identities; incompatible generations cannot reuse a point |
 
-Large imports/models/conversions may not fit the default background budget; they are deferred automatically. The core path continues to serve. Linux uses procfs accounting, Windows uses Job Objects and public accounting, and macOS uses `proc_pid_rusage`. Linux I/O includes cached file reads; macOS accounting reports physical disk I/O. These are explicitly different observations. Unsupported energy, GPU time, topology and dispatch remain unknown.
+Large imports/models/conversions may not fit the default background budget; they are deferred automatically. The core path continues to serve. Linux uses procfs accounting, Windows uses Job Objects and public accounting, and macOS uses `proc_pid_rusage`. Retained Windows warm workers renew their cumulative Job Object CPU ceiling rather than resetting it as a per-request allowance. Linux I/O includes cached file reads; macOS accounting reports physical disk I/O. These are explicitly different observations. Unsupported energy, GPU time, topology and dispatch remain unknown.
 
 Only the private worker receives source paths and request text. Public profile keys hash private identifiers. Stored measurements and explain/status output contain no query text, model locator, source content, device serial or claimed kernel dispatch. No SDK/model download, privileged command, power-plan change or host thread-policy mutation is performed.
 
