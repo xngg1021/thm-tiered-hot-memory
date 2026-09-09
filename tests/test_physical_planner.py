@@ -15,3 +15,14 @@ class PlannerTests(unittest.TestCase):
         for change in ({'minimum_replicas':2},{'p95_latency_ms':.1},{'failure_domain':'x'},{'workload':'archive'}):
             self.assertIsNone(plan(replace(intent,**change),[a],[profile(a)])['selected_target'])
         self.assertIsNone(plan(intent,[a],[])['selected_target'])
+    def test_bounded_scratch_and_cleanup(self):
+        from pathlib import Path
+        import tempfile
+        from thm.physical.benchmark import benchmark
+        with tempfile.TemporaryDirectory() as d:
+            target=StorageTarget('test',root=d,readonly=False,adapter='local-filesystem')
+            for kw in ({'scratch_bytes':129*1024*1024},{'seconds':61},{'concurrency':8}):
+                with self.assertRaises(ValueError):benchmark(target,**kw)
+            profile=benchmark(target,scratch_bytes=1024*1024,seconds=1)
+            self.assertTrue(profile.costs);self.assertEqual(list(Path(d).iterdir()),[])
+            self.assertIn('cold unavailable',profile.cache_state)

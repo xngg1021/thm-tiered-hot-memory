@@ -1,5 +1,9 @@
 # Changelog
 
+## Unreleased — orthogonal physical storage successor
+
+Bounded smoke/acceptance/full-research verification, exact reference reuse, public storage topology, immutable vector segments, explicit migration recovery and receipt-first execution planning. Package 1.4.0 and stable archive remain unchanged. See [architecture and evidence limits](docs/physical-storage-fabric.md).
+
 This changelog is reconstructed from the repository's existing Git history. It does not invent retrospective semantic versions for commits that did not carry an explicit version identity.
 
 ## Unreleased — zero-LLM heterogeneous runtime

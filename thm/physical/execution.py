@@ -30,10 +30,10 @@ class ExecutionPlanner:
             'physical_target':placement['target_id'] if placement else 'sqlite-local',
             'matrix_read_path':placement['read_mode'] if placement else 'sqlite-buffered',
             'matrix_residency':'dram','encoder_device':p.device,'scorer':p.scorer,
-            'scorer_device':p.device if p.scorer.startswith('torch') else 'cpu',
+            'scorer_device':'cuda' if p.scorer=='torch_cuda' else 'cpu',
             'estimated_storage_bytes':placement['byte_length'] if placement else None,
             'transport':'filesystem-to-dram' if placement else 'sqlite-to-dram',
-            'accelerator_copy_required':p.scorer.startswith('torch') and p.device!='cpu',
+            'accelerator_copy_required':p.scorer=='torch_cuda',
             'workload':workload,'fallback':'explicit-sparse' if scheduler.fallback else 'fail-closed',
             'automatic_relocation':False,'drift':'disclosed-by-runtime-profile; unmeasured' if scheduler.policy=='auto-throughput' else None}
         result['plan_id']=digest(result)

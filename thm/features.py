@@ -185,7 +185,13 @@ def pack_segments(index,rows,budget,query):
                         begin,end=lo,hi;break
                     width//=2
                 if width==0:continue
-            blocks.append(block);selected.append({'id':row['id'],'parent_id':row['id'],'hash':row['hash'],'source':row['source'],
+            from dataclasses import asdict
+            from .physical.contracts import GenerationRef,LogicalObjectRef,SegmentRef
+            from .runtime.identity import digest
+            generation=index.db.execute('SELECT generation FROM scopes WHERE scope=?',(row['scope'],)).fetchone()[0]
+            parent=LogicalObjectRef(row['source'],row['id'],GenerationRef(row['scope'],generation),'parent-turn')
+            segment=SegmentRef(parent,digest([row['id'],row['hash'],begin,end]),begin,end)
+            blocks.append(block);selected.append({'segment_ref':asdict(segment),'id':row['id'],'parent_id':row['id'],'hash':row['hash'],'source':row['source'],
                 'complete':False,'text':text,'span_start':begin,'span_end':end,'locator_kind':'segment-v2'})
             used=index._count('\n\n'.join(blocks));break
     return '\n\n'.join(blocks),selected,used

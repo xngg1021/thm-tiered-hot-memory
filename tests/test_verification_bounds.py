@@ -24,3 +24,16 @@ class BoundsTests(unittest.TestCase):
             with self.assertRaises(ValueError):reuse(p,dataclasses.replace(key,semantic_implementation='new'))
             p.write_text('{"changed":true}')
             with self.assertRaises(ValueError):reuse(p,key)
+    def test_whole_process_budget_and_existing_namespace(self):
+        import sys
+        from research.runtime.bounds import bounded_process
+        with tempfile.TemporaryDirectory() as d:
+            root=Path(d)/'run'
+            self.assertEqual(bounded_process([sys.executable,'-c','import time;time.sleep(5)'],.1,root),124)
+            self.assertFalse(json.loads((root/'interrupted.json').read_text())['full_dataset_acceptance'])
+            before=list(root.iterdir())
+            with self.assertRaises(FileExistsError):bounded_process([sys.executable,'-c','pass'],1,root)
+            self.assertEqual(before,list(root.iterdir()))
+    def test_nonfinite_budget_refused(self):
+        for seconds in (float('inf'),float('nan'),-1,0):
+            with self.assertRaises(ValueError):campaign(wall_seconds=seconds)

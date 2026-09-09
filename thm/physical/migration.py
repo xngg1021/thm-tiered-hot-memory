@@ -72,7 +72,7 @@ def resume(index,journal,*,inject=None):
             fd,name=tempfile.mkstemp(prefix='.thm-migrate-',dir=dst.parent)
             try:
                 with os.fdopen(fd,'wb') as out,src.open('rb') as stream:
-                    first=stream.read(4096);out.write(first);out.flush();checkpoint('partial-copy')
+                    first=stream.read(min(4096,max(1,src.stat().st_size//2)));out.write(first);out.flush();checkpoint('partial-copy')
                     for chunk in iter(lambda:stream.read(1024*1024),b''):out.write(chunk)
                     out.flush();os.fsync(out.fileno())
                 checkpoint('after-copy-before-verify')

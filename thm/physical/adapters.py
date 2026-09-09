@@ -16,3 +16,31 @@ def capabilities():
                 'hardware_performance':'pending-real-hardware'},
         **{name:{'adapter':'unavailable','contract':'extension-descriptor',
                 'hardware_performance':'unvalidated'} for name in EXTENSIONS}}
+
+class LocalFilesystemAdapter:
+    """Immutable content-addressed extent reads, with physical-only telemetry."""
+    def __init__(self,root,*,mode='buffered'):
+        from pathlib import Path
+        if mode not in ('buffered','mmap'):raise ValueError('invalid read mode')
+        self.root=Path(root);self.mode=mode
+        if self.root.is_symlink() or not self.root.is_dir():raise ValueError('invalid local root')
+    def verify(self,object_sha256):
+        from .segments import object_path,file_sha
+        path=object_path(self.root,object_sha256+'.seg')
+        return path.is_file() and file_sha(path)==object_sha256
+    def read(self,extent,*,telemetry=None):
+        import mmap
+        import os
+        import time
+        from .segments import object_path
+        path=object_path(self.root,extent.object_sha256+'.seg');start=time.perf_counter()
+        with path.open('rb') as f:
+            if extent.offset+extent.length>os.fstat(f.fileno()).st_size:raise ValueError('transfer exceeds object extent')
+            if self.mode=='mmap':
+                with mmap.mmap(f.fileno(),0,access=mmap.ACCESS_READ) as mapped:data=mapped[extent.offset:extent.offset+extent.length]
+            else:f.seek(extent.offset);data=f.read(extent.length)
+            if len(data)!=extent.length:raise ValueError('short physical read')
+        if telemetry is not None:
+            telemetry.bytes_requested+=extent.length;telemetry.bytes_read+=len(data)
+            telemetry.transfer_seconds+=time.perf_counter()-start;telemetry.access_mode=self.mode
+        return data

@@ -1,6 +1,7 @@
 """Separate logical, representation, transfer and allocation identities."""
 from dataclasses import asdict, dataclass, field
 from enum import Enum
+import math
 from thm.runtime.identity import digest
 
 class DataRole(str, Enum):
@@ -103,13 +104,24 @@ class StorageTarget:
     driver_identity: str | None = None
     observation: str = 'unvalidated'
     adapter: str = 'unavailable'
+    def __post_init__(self):
+        for name in ('capacity','free_capacity','logical_block','physical_block','replication'):
+            value=getattr(self,name)
+            if value is not None and (type(value) is not int or value<0):raise ValueError('invalid observed '+name)
+        for name in ('readonly','mmap','direct_io','dax','remote','gpu_direct'):
+            value=getattr(self,name)
+            if value is not None and type(value) is not bool:raise ValueError('invalid capability '+name)
     def public(self):
         data=asdict(self);data.pop('root')
         return data
     @property
     def fingerprint(self):
         data=self.public();data.pop('free_capacity');data.pop('network_rtt_ms')
-        return digest({'target':data,'schema':1,'implementation':'physical-local-v1'})
+        from pathlib import Path
+        import hashlib
+        root=Path(__file__).parent
+        implementation=digest({name:hashlib.sha256((root/name).read_bytes()).hexdigest() for name in ('contracts.py','probe.py','benchmark.py','adapters.py')})
+        return digest({'target':data,'schema':1,'implementation':implementation})
 
 @dataclass(frozen=True)
 class TopologyNode:
@@ -152,19 +164,30 @@ class StorageProfile:
 @dataclass(frozen=True)
 class PlacementIntent:
     role: DataRole
-    workload: str = 'interactive'
+    workload: str | None = None
     capacity_required: int = 0
     local_only: bool = True
     mutable: bool = False
     p95_latency_ms: float | None = None
     minimum_replicas: int | None = None
     failure_domain: str | None = None
-    operation: str = 'buffered-random'
+    operation: str | None = None
     transfer_size: int = 4096
     concurrency: int = 1
     accelerator_consumer: str | None = None
     max_write_amplification: float | None = None
     def __post_init__(self):
+        for name in ('p95_latency_ms','max_write_amplification'):
+            value=getattr(self,name)
+            if value is not None and (not isinstance(value,(int,float)) or not math.isfinite(value) or value<0):raise ValueError('invalid constraint '+name)
+        for name in ('capacity_required','transfer_size','concurrency'):
+            value=getattr(self,name)
+            if type(value) is not int or value<(0 if name=='capacity_required' else 1):raise ValueError('invalid constraint '+name)
+        if self.minimum_replicas is not None and (type(self.minimum_replicas) is not int or self.minimum_replicas<1):raise ValueError('invalid durability constraint')
+        role=DataRole(self.role)
+        sequential=role in (DataRole.JOURNAL,DataRole.RAW_CORPUS,DataRole.TELEMETRY,DataRole.IMMUTABLE_HISTORY,DataRole.BACKUP,DataRole.ARCHIVE)
+        if self.workload is None:object.__setattr__(self,'workload','archive' if role==DataRole.ARCHIVE else 'background' if sequential else 'interactive')
+        if self.operation is None:object.__setattr__(self,'operation','buffered-sequential' if sequential else 'buffered-random')
         if self.workload not in ('interactive','bulk','background','archive') or self.capacity_required<0:
             raise ValueError('invalid placement intent')
 

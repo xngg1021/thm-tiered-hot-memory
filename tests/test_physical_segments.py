@@ -37,3 +37,20 @@ class SegmentTests(unittest.TestCase):
             other=self.root/'other';other.mkdir()
             with self.assertRaisesRegex(ValueError,'generation changed'):
                 export(index,'scope',self.profile,other,before_publish=lambda:index.replace_scope('scope',[Document('c','scope','s',0,'changed')]))
+    def test_payload_validation_even_with_recomputed_checksums(self):
+        import hashlib,json,struct
+        m=create(self.root,self.profile,'g',self.keys,self.values)
+        raw=object_path(self.root,m['object_name']).read_bytes()
+        length=struct.unpack('<I',raw[8:12])[0];offset=12+length
+        for value in (float('nan'),float('inf'),0.):
+            payload=struct.pack('<'+'f'*self.profile.dimension,*([value]*self.profile.dimension))
+            modified=raw[:offset]+payload+hashlib.sha256(payload).digest()
+            path=self.root/'corrupt';path.write_bytes(modified)
+            manifest={**m,'object_sha256':hashlib.sha256(modified).hexdigest()}
+            with self.assertRaises(ValueError):read_segment(path,manifest,self.profile,'g',self.keys)
+        for field,value in (('dimension',self.profile.dimension+1),('rows',2),('dtype','f16le'),('schema',2)):
+            header={**json.loads(raw[12:offset]),field:value};encoded=json.dumps(header).encode()
+            modified=raw[:8]+struct.pack('<I',len(encoded))+encoded+raw[offset:]
+            path=self.root/'corrupt';path.write_bytes(modified)
+            manifest={**m,field:value,'object_sha256':hashlib.sha256(modified).hexdigest()}
+            with self.assertRaises(ValueError):read_segment(path,manifest,self.profile,'g',self.keys)

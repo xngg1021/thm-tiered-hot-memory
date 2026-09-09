@@ -90,6 +90,17 @@ def linux(root, *, sysroot=Path('/sys'), mountinfo=None):
                               ('dax-device','class/dax','dax*'),('nic','class/net','*')]:
         for i,entry in enumerate(sorted((sysroot/base).glob(pattern))):
             nodes.append(TopologyNode(kind+'-'+str(i),kind,{'observation':'sysfs-presence; performance unvalidated'}))
+    if fields.get('pcie_bdf'):
+        pci='pci-'+fields['pcie_bdf'];nodes.append(TopologyNode(pci,'pcie-device'))
+        if any(n.node_id=='block' for n in nodes):edges.append(TopologyEdge(pci,'block','pcie-relation'))
+    if fields.get('numa_node') is not None and 'node'+str(fields['numa_node']) in {n.node_id for n in nodes}:
+        edges.append(TopologyEdge('node'+str(fields['numa_node']),'block','observed-device-affinity'))
+    for i,gpu in enumerate(sorted((sysroot/'class/drm').glob('card[0-9]'))):
+        device=gpu/'device'
+        if device.exists():
+            gid='accelerator-'+str(i);nodes.append(TopologyNode(gid,'accelerator',{'observation':'public-drm-device; memory/copy capabilities unknown'}))
+            numa=integer(read(device/'numa_node'))
+            if numa is not None and 'node'+str(numa) in {n.node_id for n in nodes}:edges.append(TopologyEdge('node'+str(numa),gid,'observed-device-affinity'))
     return fields,StorageTopology(tuple(nodes),tuple(edges))
 
 

@@ -4,6 +4,8 @@ Status: **CODE MERGED / REAL LOCAL HARDWARE ACCEPTANCE PENDING**
 
 Date: 2026-09-08
 
+2026-09-09 successor amendment: the original full-LME default is withdrawn. Use the successor checkout and [bounded acceptance contract](../docs/physical-storage-fabric.md). The original PR14 checkout alone does not contain these bounds. This successor remains Unreleased.
+
 Repository: `xngg1021/thm-tiered-hot-memory`
 
 PR: `#14` — `Unreleased zero-LLM heterogeneous runtime and local acceptance package`
@@ -161,18 +163,19 @@ python research/runtime/verify.py `
   --locomo-dataset "$locomo" `
   --lme-dataset "$lme" `
   --output-dir "$planOut" `
-  --retrieval-ab `
+  --mode acceptance `
+  --wall-seconds 3600 `
   --max-candidates 12 `
   --plan-only
 ```
 
 Use the plan to inspect candidate generation and expected outputs. A plan-only result is not performance evidence.
 
-## 9. Recommended first full acceptance run
+## 9. Recommended bounded acceptance run
 
 Do **not** require approximate-performance in the first baseline. `--include-approximate` makes an approximate winner part of run completeness; a machine where the optional low-precision path is unsupported should not invalidate otherwise complete reference/auto-safe/auto-throughput evidence.
 
-Run the reference, strict auto-safe, throughput and independent retrieval A/B package first:
+Run reference and measured winners with fixed five-instance LME subset and bounded LoCoMo first:
 
 ```powershell
 python research/runtime/verify.py `
@@ -181,7 +184,8 @@ python research/runtime/verify.py `
   --locomo-dataset "$locomo" `
   --lme-dataset "$lme" `
   --output-dir "$output" `
-  --retrieval-ab `
+  --mode acceptance `
+  --wall-seconds 3600 `
   --max-candidates 12
 
 if ($LASTEXITCODE -ne 0) {
@@ -189,13 +193,13 @@ if ($LASTEXITCODE -ne 0) {
 }
 ```
 
-The one-shot package probes actual hardware, prepares only installed local backends, calibrates bounded candidates, runs isolated LoCoMo and LongMemEval-S matrices, compares required runtime profiles, emits score/parity diagnostics, and executes the default-off retrieval successor A/B separately from the runtime-performance comparison.
+The package measures fixed pilot inputs, refuses projections beyond the remaining budget, and bounds the entire owned process tree. Default acceptance uses only five LME instances; smoke uses two and omits the full LoCoMo matrix. A subset receipt cannot establish full LME acceptance. Extended A/B and score diagnostics require the explicitly acknowledged full campaign.
 
 No provider/generative LLM call is part of the intended verification path.
 
 ## 10. Optional approximate-performance run
 
-Run approximation as a separate experiment after the baseline has been preserved:
+Only when explicitly requesting a multi-hour research campaign, run approximation as a separate experiment after preserving the baseline. The 43,200-second value below is a ceiling, not an estimated duration; measured pilot receipts provide the estimate.
 
 ```powershell
 $approxOutput = (Read-Host 'Fresh approximate output directory OUTSIDE the checkout').Trim('"')
@@ -207,6 +211,9 @@ python research/runtime/verify.py `
   --locomo-dataset "$locomo" `
   --lme-dataset "$lme" `
   --output-dir "$approxOutput" `
+  --full-campaign `
+  --acknowledge-multi-hour-run `
+  --wall-seconds 43200 `
   --include-approximate `
   --max-candidates 12
 ```
