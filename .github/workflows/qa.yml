@@ -46,7 +46,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        tiktoken: ['0.7.0', '0.8.0', '0.9.0', '0.11.0', '0.12.0', '0.13.0', '0.14.0']
+        tiktoken: ['0.7.0', '0.8.0', '0.9.0', '0.10.0', '0.11.0', '0.12.0', '0.13.0', '0.14.0']
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
