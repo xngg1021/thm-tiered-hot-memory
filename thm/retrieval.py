@@ -502,7 +502,7 @@ class SearchIndex:
             'scores':[float(scores[int(i)]) for i in order]}
         return [ids[int(i)] for i in order],embed_ms,was_cached
 
-    def search_many(self,scope,queries,*,query_batch_size=32,scorer='numpy_reference',overlap=False,**kwargs):
+    def search_many(self,scope,queries,*,query_batch_size=32,scorer='numpy_reference',overlap=False,semantic_guard=False,**kwargs):
         """Production batch API: one scope snapshot, bounded encode_many and GEMM."""
         from .runtime.identity import bounded_int
         from .runtime.scorers import score
@@ -538,7 +538,7 @@ class SearchIndex:
                         if overlap_active:
                             from concurrent.futures import ThreadPoolExecutor
                             def encode_batch():
-                                at=time.perf_counter();raw=encoder(misses)
+                                at=time.perf_counter();raw=[encoder([q])[0] for q in misses] if semantic_guard else encoder(misses)
                                 return raw,(time.perf_counter()-at)*1000
                             with ThreadPoolExecutor(max_workers=1,thread_name_prefix='thm-batch-encoder') as pool:
                                 future=pool.submit(encode_batch);lexical_start=time.perf_counter()
@@ -546,7 +546,7 @@ class SearchIndex:
                                 lexical_ms=(time.perf_counter()-lexical_start)*1000
                                 raw,encoder_ms=future.result()
                         else:
-                            at=time.perf_counter();raw=encoder(misses);encoder_ms=(time.perf_counter()-at)*1000
+                            at=time.perf_counter();raw=[encoder([q])[0] for q in misses] if semantic_guard else encoder(misses);encoder_ms=(time.perf_counter()-at)*1000
                         if profile:
                             from .runtime.identity import validate_vectors
                             validate_vectors(raw,profile,len(misses))
@@ -555,25 +555,61 @@ class SearchIndex:
                             self._cache[(identity,q)]=v
                             if len(self._cache)>256:self._cache.popitem(last=False)
                     vectors=[vectors_by_query[q] for q in chunk];preparation_ms=(time.perf_counter()-started)*1000;embed_ms=encoder_ms
-                    values,timing=score(matrix,vectors,scorer);self._batch_dense={}
+                    executor = getattr(self, '_vector_executor', None)
+                    if executor is not None:
+                        generation = self.db.execute('SELECT generation FROM scopes WHERE scope=?', (scope,)).fetchone()[0]
+                        rankings, receipt = executor.search(scope=scope, generation=generation, embedding_profile=identity,
+                            ids=ids, matrix=matrix, queries=vectors, top_k=limit)
+                        timing = {'dense_scoring': receipt['search_ms'], 'transfer': receipt.get('transfer_ms'), 'resident_receipt': receipt}
+                    else:
+                        values,timing=score(matrix,vectors,scorer)
+                        rankings = None
+                    ranking_times = []
+                    if rankings is None:
+                        rankings = []
+                        for col in range(len(chunk)):
+                            rank_start = time.perf_counter()
+                            order = np.argsort(-values[:,col], kind='stable')[:limit]
+                            rankings.append(([ids[int(i)] for i in order], [float(values[i,col]) for i in order]))
+                            ranking_times.append((time.perf_counter()-rank_start)*1000)
+                    else:
+                        ranking_times = [0.0]*len(chunk)  # included in provider search time
+                    # Online cohorts preserve singleton embedding semantics and
+                    # validate every top-k against the fixed FP32 reference.
+                    # No batch-size evidence is extrapolated to unseen queries.
+                    guard_start = time.perf_counter(); batch_fallback = False
+                    if semantic_guard:
+                        from .runtime.autotune import numeric_guard
+                        for col, vector in enumerate(vectors):
+                            ref_values = matrix @ np.asarray(vector, dtype=np.float32)
+                            ref_order = np.argsort(-ref_values, kind='stable')[:limit]
+                            ref_ids = [ids[int(i)] for i in ref_order]
+                            ref_scores = [float(ref_values[i]) for i in ref_order]
+                            ranked_ids, ranked_scores = rankings[col]
+                            tolerance = numeric_guard(matrix.shape[1])
+                            if ranked_ids != ref_ids or not np.allclose(ranked_scores, ref_scores, atol=tolerance, rtol=0):
+                                rankings[col] = (ref_ids, ref_scores); batch_fallback = True
+                    timing['semantic_guard_ms'] = (time.perf_counter()-guard_start)*1000 if semantic_guard else 0
+                    timing['batch_semantic_status'] = 'reference-fallback' if batch_fallback else 'strict' if semantic_guard else 'unvalidated'
+                    self._batch_dense={}
                     for column,q in enumerate(chunk):
                         row_start=time.perf_counter();ranking_start=row_start
-                        order=np.argsort(-values[:,column],kind='stable')[:limit]
-                        ranking_ms=(time.perf_counter()-ranking_start)*1000
-                        self._batch_dense={q:([ids[int(i)] for i in order],embed_ms/len(chunk),q in cached)}
+                        ranked_ids, ranked_scores = rankings[column]
+                        ranking_ms=(time.perf_counter()-ranking_start)*1000 + ranking_times[column]
+                        self._batch_dense={q:(ranked_ids,embed_ms/len(chunk),q in cached)}
                         result=self._search(scope,q,**kwargs)
                         result['timing_kind']='post-batch-search; embedding/scoring measured once in batch_receipt'
                         result['batch_receipt']={'query_batch_size':len(chunk),'embedding_ms':embed_ms,'batch_preparation_ms':preparation_ms,'lexical_preparation_ms':lexical_ms,'overlap_requested':overlap,'overlap_active':overlap_active,'encoded_queries':len(misses),'cached_queries':len(chunk)-sum(q not in cached for q in chunk),'dense_matrix_load':load_ms,**timing}
                         result['result_cache_hit']=False
                         if kwargs.get('diagnostics',False):
                             result['runtime_diagnostics']={'embedding_profile_id':getattr(getattr(encoder,'profile',None),'id',model_id),
-                                'scorer':scorer,'candidate_rowids':[ids[int(i)] for i in order],'candidate_ids':[candidate_ids[ids[int(i)]] for i in order],
+                                'scorer':scorer,'candidate_rowids':ranked_ids,'candidate_ids':[candidate_ids[i] for i in ranked_ids],
                                 'selected_ids':[r['id'] for r in result['selected']],'budget_cutoff':result['budget'],'budget_used':result['budget_used'],
-                                'feature_components':result.get('features'),'scores':[float(values[int(i),column]) for i in order]}
+                                'feature_components':result.get('features'),'scores':ranked_scores}
                         row_ms=(time.perf_counter()-row_start)*1000
                         result['timing_ms']['dense_ranking']=ranking_ms
                         result['timing_ms']['batch_row_overhead']=max(0.0,row_ms-result['timing_ms']['total'])
-                        result['timing_ms']['amortized_total']=row_ms+(preparation_ms+timing['dense_scoring'])/len(chunk)+load_ms/len(queries)
+                        result['timing_ms']['amortized_total']=row_ms+ranking_times[column]+(preparation_ms+timing['dense_scoring']+timing['semantic_guard_ms'])/len(chunk)+load_ms/len(queries)
                         if overlap:result['overlap']={'requested':True,'active':overlap_active,'cpu':'caller-thread SQLite/FTS','accelerator':'batched query embedding','microbatch_delay_ms':0}
                         out.append(result)
                 return out

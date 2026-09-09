@@ -61,14 +61,28 @@ def main():
         import resource
         resource.setrlimit(resource.RLIMIT_CPU, (max(1, int(limits['cpu'])), max(1, int(limits['cpu']))))
         resource.setrlimit(resource.RLIMIT_FSIZE, (limits['io'], limits['io']))
-        # Native libraries reserve substantial virtual address space. Bound resident
-        # allocation in the handle manager; explicit AS ceiling includes interpreter.
-        if sys.platform.startswith('linux'):
-            resource.setrlimit(resource.RLIMIT_AS, (limits['memory']+512*1024**2, limits['memory']+512*1024**2))
+        # RSS is monitored by the parent on Linux, native runtimes reserve large
+        # virtual address ranges. Darwin also applies an allocation ceiling.
+        if sys.platform == 'darwin':
+            resource.setrlimit(resource.RLIMIT_DATA, (limits['memory']+128*1024**2, limits['memory']+128*1024**2))
     if task.get('operation') == 'probe':
         from .registry import builtin_registry
         registry = builtin_registry(extensions=False)
         result = registry.get(task['provider']).probe()
+    elif task.get('operation') == 'discover':
+        from .registry import builtin_registry
+        registry = builtin_registry(extensions=False)
+        descriptions = [r for r in registry.list(operation='vector-search')
+                        if r['provider_id'] != 'host.exact' and r['availability'] == 'unprobed' and r['maturity'] >= 3]
+        cursor = task.get('cursor', 0); rows = []
+        for description in descriptions[cursor:cursor+1]:
+            name = description['provider_id']
+            try:
+                row = registry.get(name).probe()
+            except Exception as exc:
+                row = {'availability': 'probe-failed', 'error': type(exc).__name__}
+            rows.append({'provider': name, **row})
+        result = {'providers': rows, 'next_cursor': cursor+1, 'done': cursor+1 >= len(descriptions)}
     elif task.get('operation') == 'replay':
         result = replay(task)
     else:

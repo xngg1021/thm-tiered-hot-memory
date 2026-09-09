@@ -345,6 +345,8 @@ class ServiceTests(unittest.TestCase):
         explorer = BoundedShadowExplorer()
         self.assertFalse(explorer.eligible(foreground_pressure=.9))
         self.assertFalse(explorer.eligible(battery_low=True))
+        self.assertTrue(explorer.eligible(gpu=True,gpu_duty_observed=False))
+        explorer.wall = 10
         self.assertFalse(explorer.eligible(gpu=True,gpu_duty_observed=False))
         self.assertFalse(explorer.eligible(estimated_io=2**40))
         explorer.close()

@@ -6,6 +6,9 @@ import subprocess
 import sys
 import threading
 import time
+import tempfile
+from .contracts import finite
+from .resources import ChildBudget
 
 
 class BoundedShadowExplorer:
@@ -15,6 +18,8 @@ class BoundedShadowExplorer:
             raise ValueError('bounded shadow budget required')
         if memory_bytes <= 0 or io_bytes < 0:
             raise ValueError('invalid resource budget')
+        for value in (wall_seconds, interval_seconds, memory_bytes, io_bytes, cpu_seconds):
+            finite(value, 'shadow resource')
         self.wall = wall_seconds; self.interval = interval_seconds; self.memory = memory_bytes
         self.io = io_bytes; self.cpu = cpu_seconds; self.clock = clock
         self.last_started = None; self.process = None; self.thread = None
@@ -24,7 +29,7 @@ class BoundedShadowExplorer:
                  estimated_io=0, estimated_compile_ms=0, gpu=False, gpu_duty_observed=False):
         return (not self.cancelled.is_set() and foreground_pressure <= .2 and not battery_low and not thermal_pressure
                 and estimated_io <= self.io and estimated_compile_ms <= self.wall*1000
-                and (not gpu or gpu_duty_observed)
+                and (not gpu or gpu_duty_observed or self.wall/self.interval <= .05)
                 and (self.last_started is None or self.clock()-self.last_started >= self.interval)
                 and not (self.thread and self.thread.is_alive()))
 
@@ -52,20 +57,34 @@ class BoundedShadowExplorer:
 
     def _run(self, task, callback):
         start = self.clock()
+        budget = None
         envelope = {'task': task, 'limits': {'memory': self.memory, 'io': self.io, 'cpu': self.cpu}}
         env = dict(os.environ)
         # Child-only limits; never alter the host process or global environment.
         env.update(OMP_NUM_THREADS='1', MKL_NUM_THREADS='1', OPENBLAS_NUM_THREADS='1',
                    HF_HUB_OFFLINE='1', TRANSFORMERS_OFFLINE='1', HF_DATASETS_OFFLINE='1')
         try:
+            output_file = tempfile.TemporaryFile(mode='w+b')
             with self.lock:
                 if self.cancelled.is_set():
                     return
                 self.process = subprocess.Popen([sys.executable, '-m', 'thm.runtime.fabric.shadow_worker'],
-                    stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.DEVNULL,
+                    stdin=subprocess.PIPE, stdout=output_file, stderr=subprocess.DEVNULL,
                     text=True, env=env, start_new_session=os.name == 'posix')
                 process = self.process
-            output, _ = process.communicate(json.dumps(envelope), timeout=self.wall)
+            budget = ChildBudget(process, memory=self.memory+128*1024**2, cpu=self.cpu, io=self.io)
+            # Deliver work only after the parent's limits are in place.
+            payload = json.dumps(envelope)
+            while True:
+                budget.check()
+                if self.clock()-start >= self.wall or output_file.tell() > 1024*1024:
+                    raise TimeoutError('shadow wall/output budget exceeded')
+                try:
+                    process.communicate(payload, timeout=min(.05, max(.001, self.wall-(self.clock()-start))))
+                    break
+                except subprocess.TimeoutExpired:
+                    payload = None
+            output_file.seek(0); output = output_file.read(1024*1024).decode('utf-8')
             if process.returncode:
                 raise RuntimeError('shadow worker failed')
             line = next(s[11:] for s in reversed(output.splitlines()) if s.startswith('THM_RESULT:'))
@@ -73,7 +92,8 @@ class BoundedShadowExplorer:
             if not self.cancelled.is_set():
                 callback(result)
             self.last_receipt = {'status': 'completed', 'wall_ms': (self.clock()-start)*1000,
-                                 'generation_calls': 0, 'authority_mutations': 0}
+                                 'generation_calls': 0, 'authority_mutations': 0,
+                                 'gpu_duty_upper_bound': self.wall/self.interval, **budget.last}
         except Exception as exc:
             with self.lock:
                 if self.process:
@@ -82,6 +102,10 @@ class BoundedShadowExplorer:
             self.last_receipt = {'status': 'deferred', 'reason': type(exc).__name__,
                                  'wall_ms': (self.clock()-start)*1000, 'generation_calls': 0}
         finally:
+            if budget:
+                budget.close()
+            if 'output_file' in locals():
+                output_file.close()
             with self.lock:
                 self.process = None
 

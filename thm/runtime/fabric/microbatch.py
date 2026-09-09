@@ -4,6 +4,7 @@ from concurrent.futures import Future
 from dataclasses import dataclass
 import threading
 import time
+from .contracts import finite
 
 
 @dataclass
@@ -29,6 +30,8 @@ class DeadlineAwareMicrobatcher:
         self.worker.start()
 
     def submit(self, value, *, deadline=None):
+        if deadline is not None:
+            finite(deadline, 'deadline')
         now = self.clock(); future = Future()
         with self.condition:
             if self.closed:
