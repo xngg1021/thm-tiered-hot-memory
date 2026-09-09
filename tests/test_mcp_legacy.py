@@ -84,6 +84,9 @@ class LegacyMCPServerTests(unittest.TestCase):
             "tools/call",
             {"name": "thm_status", "arguments": {}},
         )["result"]["structuredContent"]
+        from thm.mcp_legacy_server import STATUS_OUTPUT_SCHEMA
+        self.assertLessEqual(set(status), set(STATUS_OUTPUT_SCHEMA['properties']))
+        self.assertEqual(status['runtime']['mode'], 'zero-touch')
         self.assertFalse(status["source_writes"])
         self.assertEqual(status["scope"], "legacy-test")
 

@@ -63,10 +63,8 @@ def main():
         import resource
         resource.setrlimit(resource.RLIMIT_CPU, (max(1, int(limits['cpu'])), max(1, int(limits['cpu']))))
         resource.setrlimit(resource.RLIMIT_FSIZE, (limits['io'], limits['io']))
-        # RSS is monitored by the parent on Linux, native runtimes reserve large
-        # virtual address ranges. Darwin also applies an allocation ceiling.
-        if sys.platform == 'darwin':
-            resource.setrlimit(resource.RLIMIT_DATA, (limits['memory']+128*1024**2, limits['memory']+128*1024**2))
+        # Parent public process accounting bounds physical RSS. RLIMIT_DATA
+        # rejects Darwin allocator arenas even when the actual RSS is small.
     if task.get('operation') == 'probe-spec':
         from .registry import ProviderRegistry
         from .contracts import ProviderSpec
@@ -98,4 +96,8 @@ def main():
 
 
 if __name__ == '__main__':
-    main()
+    try:
+        main()
+    except Exception as exc:
+        print('THM_ERROR:' + json.dumps({'stage': 'setup-or-operation', 'error': type(exc).__name__}))
+        raise SystemExit(1)

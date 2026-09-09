@@ -76,6 +76,7 @@ STATUS_OUTPUT_SCHEMA: dict[str, Any] = {
         "neighbors": {"type": "integer"},
         "semantic": {"type": "boolean"},
         "source_writes": {"type": "boolean"},
+        "runtime": {"type": "object"},
     },
     "required": ["scope", "budget", "counter", "mode", "neighbors", "semantic", "source_writes"],
     "additionalProperties": False,

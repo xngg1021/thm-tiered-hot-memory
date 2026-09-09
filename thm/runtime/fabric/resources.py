@@ -38,6 +38,28 @@ class ChildBudget:
             kernel.CloseHandle(job); raise OSError('shadow job limits unavailable')
         self.job = job; self.kernel = kernel; self.extended = Extended
 
+    def _darwin_usage(self):
+        import ctypes as c
+        class Usage(c.Structure):
+            _fields_ = [('uuid', c.c_uint8 * 16)] + [(name, c.c_uint64) for name in (
+                'user_time', 'system_time', 'pkg_idle_wkups', 'interrupt_wkups', 'pageins',
+                'wired_size', 'resident_size', 'phys_footprint', 'proc_start_abstime',
+                'proc_exit_abstime', 'child_user_time', 'child_system_time',
+                'child_pkg_idle_wkups', 'child_interrupt_wkups', 'child_pageins',
+                'child_elapsed_abstime', 'diskio_bytesread', 'diskio_byteswritten')]
+        library = c.CDLL('/usr/lib/libproc.dylib', use_errno=True)
+        library.proc_pid_rusage.argtypes = [c.c_int, c.c_int, c.c_void_p]
+        library.proc_pid_rusage.restype = c.c_int
+        usage = Usage()
+        if library.proc_pid_rusage(self.process.pid, 2, c.byref(usage)):
+            if self.process.poll() is not None:
+                return None
+            raise OSError(c.get_errno(), 'shadow process accounting unavailable')
+        return {'ram_bytes': usage.resident_size,
+                'cpu_seconds': (usage.user_time + usage.system_time + usage.child_user_time + usage.child_system_time)/1e9,
+                'bytes_read': usage.diskio_bytesread, 'bytes_written': usage.diskio_byteswritten,
+                'resource_source': 'darwin-proc-pid-rusage-v2-physical-io'}
+
     def check(self):
         if sys.platform.startswith('linux'):
             root = Path('/proc') / str(self.process.pid)
@@ -54,6 +76,14 @@ class ChildBudget:
             self.last = {'ram_bytes': rss, 'cpu_seconds': cpu, 'bytes_read': read, 'bytes_written': written,
                          'resource_source': 'procfs-child'}
             if rss > self.memory or cpu > self.cpu or read+written > self.io:
+                raise RuntimeError('shadow observed resource budget exceeded')
+        elif sys.platform == 'darwin':
+            observed = self._darwin_usage()
+            if observed is None:
+                return
+            self.last = observed
+            if (observed['ram_bytes'] > self.memory or observed['cpu_seconds'] > self.cpu
+                    or observed['bytes_read'] + observed['bytes_written'] > self.io):
                 raise RuntimeError('shadow observed resource budget exceeded')
         elif self.job:
             import ctypes as c

@@ -57,7 +57,7 @@ class BoundedShadowExplorer:
 
     def _run(self, task, callback):
         start = self.clock()
-        budget = None
+        budget = None; worker_error = None
         envelope = {'task': task, 'limits': {'memory': self.memory, 'io': self.io, 'cpu': self.cpu}}
         env = dict(os.environ)
         # Child-only limits; never alter the host process or global environment.
@@ -86,6 +86,8 @@ class BoundedShadowExplorer:
                     payload = None
             output_file.seek(0); output = output_file.read(1024*1024).decode('utf-8')
             if process.returncode:
+                errors = [s[10:] for s in output.splitlines() if s.startswith('THM_ERROR:')]
+                worker_error = json.loads(errors[-1]) if errors else None
                 raise RuntimeError('shadow worker failed')
             line = next(s[11:] for s in reversed(output.splitlines()) if s.startswith('THM_RESULT:'))
             result = json.loads(line)
@@ -100,7 +102,7 @@ class BoundedShadowExplorer:
                     self._kill(self.process)
                     self.process.communicate(timeout=5)
             self.last_receipt = {'status': 'deferred', 'reason': type(exc).__name__,
-                                 'wall_ms': (self.clock()-start)*1000, 'generation_calls': 0}
+                                 'wall_ms': (self.clock()-start)*1000, 'generation_calls': 0, 'worker_error': worker_error}
             if not self.cancelled.is_set():
                 try:
                     callback({**self.last_receipt, **{k: task.get(k) for k in ('key','candidate_id','provider','cursor')},

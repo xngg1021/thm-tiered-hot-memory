@@ -400,3 +400,21 @@ class ServiceTests(unittest.TestCase):
 
 if __name__ == '__main__':
     unittest.main()
+
+
+class DarwinBudgetTests(unittest.TestCase):
+    def test_public_accounting_enforces_each_limit(self):
+        from thm.runtime.fabric.resources import ChildBudget
+        process = types.SimpleNamespace(pid=123)
+        with mock.patch('thm.runtime.fabric.resources.os.name', 'posix'):
+            budget = ChildBudget(process, memory=100, cpu=1, io=20)
+        base = {'ram_bytes': 90, 'cpu_seconds': .5, 'bytes_read': 5, 'bytes_written': 3,
+                'resource_source': 'darwin-proc-pid-rusage-v2-physical-io'}
+        with mock.patch('thm.runtime.fabric.resources.sys.platform', 'darwin'):
+            with mock.patch.object(budget, '_darwin_usage', return_value=base):
+                budget.check()
+                self.assertEqual(budget.last, base)
+            for metric, value in [('ram_bytes',101),('cpu_seconds',1.1),('bytes_written',21)]:
+                with mock.patch.object(budget, '_darwin_usage', return_value={**base, metric:value}):
+                    with self.assertRaises(RuntimeError):
+                        budget.check()
