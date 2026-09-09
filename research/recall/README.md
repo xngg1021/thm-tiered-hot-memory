@@ -1,11 +1,15 @@
 # Reproducible retrieval-only and residency experiments
 
+## Evaluation Fabric entrypoints
+
+Use `python -m thm.evaluation --mode acceptance --wall-seconds 3300 --output .thm-evaluation/acceptance-01` from the repository root for offline bounded fixtures. [Contract and full-research inputs](../../docs/18-evaluation-fabric.md). Native research CLIs below now require an explicit --full-research switch. LoCoMo Protocol 2 and LongMemEval-S publish additive evaluation_fabric metrics with source identities; old rows remain inspectable. V2/BEAM/MemoryArena adapters and fixtures establish interface support only. Full campaigns are independently enabled and were not run as part of this successor.
+
 Dataset: Maharana et al., *Evaluating Very Long-Term Conversational Memory of LLM Agents*, ACL 2024. Official repository: https://github.com/snap-research/locomo . Dataset pin: `3eb6f2c585f5e1699204e3c3bdf7adc5c28cb376`, file `data/locomo10.json`.
 
 Upstream data/code are CC BY-NC 4.0 at this snapshot. They are not relicensed by THM's MIT license. This repository does not redistribute the conversations, QA text, images, generated summaries or model weights. Run this evaluation for the permitted research purpose and consult the original dataset license for other uses.
 
 ```bash
-python research/recall/benchmark.py --dataset /path/to/locomo10.json --counter cl100k_base --modes literal sparse --budgets 300 600 1200 --output /tmp/recall.json
+python research/recall/benchmark.py --full-research --dataset /path/to/locomo10.json --counter cl100k_base --modes literal sparse --budgets 300 600 1200 --output /tmp/recall.json
 python research/recall/decay_replay.py --sweep --output /tmp/decay.json
 ```
 

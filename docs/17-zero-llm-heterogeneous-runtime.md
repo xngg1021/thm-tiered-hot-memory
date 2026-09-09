@@ -1,5 +1,9 @@
 # Zero-LLM heterogeneous runtime — Unreleased successor
 
+## Evaluation across three planes
+
+The [Evaluation Fabric](18-evaluation-fabric.md) separates logical T0–T3, compute profile and physical placement. Runtime receipts are systems-runtime evidence; retrieval recall belongs to memory-dataplane, and actual reader/environment results belong to LLM-agent-outcome. The new offline fixture acceptance does not require an encoder and does not certify CPU/GPU dispatch, model parity or user hardware performance. Existing model-based runtime verification remains a separate explicitly bounded path.
+
 This is an implementation and local acceptance contract, not an accepted performance release. The immutable 1.4 stable pointer remains `e6e4dda5835e3cb345207457d5491131c6959b2c`. The predecessor is main `9eb904c21fd25aa0a77d2420ed080702fac17e59` (merged PR #12). No hardware speedup or new retrieval gain is claimed before the user's real local experiment.
 
 ## Architecture and boundaries

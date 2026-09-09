@@ -1,16 +1,17 @@
 name: THM deterministic frontier
 on:
   workflow_dispatch:
-  push:
-    paths:
-      - 'thm/**'
-      - 'research/recall/**'
-      - '.github/workflows/frontier-benchmark.yml'
+    inputs:
+      full_research:
+        description: 'Explicitly enable the full research dataset campaign'
+        required: true
+        type: boolean
+        default: false
 permissions:
   contents: read
 jobs:
   protocol2:
-    if: github.event_name == 'workflow_dispatch' || contains(github.event.head_commit.message, '[frontier]')
+    if: inputs.full_research == true
     runs-on: ubuntu-latest
     timeout-minutes: 45
     steps:

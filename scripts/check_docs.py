@@ -6,10 +6,113 @@ import hashlib
 import json
 from pathlib import Path
 import re
+import shlex
 import sys
 from urllib.parse import unquote, urlsplit
 
 ROOT = Path(__file__).resolve().parents[1]
+
+
+def _without_shell_comment(command, *, shell='bash', mask_substitutions=False):
+    """Return the first command, excluding comments and outer separators."""
+    quote = None
+    escaped = False
+    in_word = False
+    substitutions = []
+    ranges = []
+    substitution_start = None
+
+    def finish(end):
+        result = command[:end]
+        if mask_substitutions:
+            for start, stop in ranges:
+                result = result[:start] + 'x' * (stop - start) + result[stop:]
+            if substitutions:
+                result = result[:substitution_start] + 'x' * (end - substitution_start)
+        return result
+
+    index = 0
+    while index < len(command):
+        char = command[index]
+        if escaped:
+            escaped = False
+            in_word = True
+        elif char == ('`' if shell == 'powershell' else '\\') and quote != "'":
+            escaped = True
+            in_word = True
+        elif char == '`' and shell == 'bash' and quote != "'":
+            if substitutions and substitutions[-1][1] is None:
+                quote, _ = substitutions.pop()
+                in_word = True
+                if not substitutions:
+                    ranges.append((substitution_start, index + 1))
+            else:
+                if not substitutions:
+                    substitution_start = index
+                substitutions.append([quote, None])
+                quote = None
+                in_word = False
+        elif ((command.startswith('$(', index) and quote != "'") or
+              (command.startswith(('<(', '>('), index) and quote is None)):
+            if not substitutions:
+                substitution_start = index
+            substitutions.append([quote, 1])
+            quote = None
+            in_word = False
+            index += 1
+        elif quote:
+            if char == quote:
+                quote = None
+        elif char in ('"', "'"):
+            quote = char
+            in_word = True
+        elif char == '#' and not in_word:
+            return finish(index)
+        elif not substitutions and char in ';|&':
+            return finish(index)
+        elif substitutions and substitutions[-1][1] is not None and char in '()':
+            substitutions[-1][1] += 1 if char == '(' else -1
+            if substitutions[-1][1] == 0:
+                quote, _ = substitutions.pop()
+                in_word = True
+                if not substitutions:
+                    ranges.append((substitution_start, index + 1))
+            else:
+                in_word = False
+        else:
+            in_word = not (char.isspace() or char in ';|&()<>')
+        index += 1
+    return finish(len(command))
+
+
+def _native_commands(text):
+    pattern = re.compile(r'^[ \t]*(?:(?:[$%>]|PS(?:[ \t]+[^>\n]*)?>)[ \t]+)?python(?:3)?[ \t]+research/(?:recall/(?:benchmark|lme_retrieval)|economics/run_suite)\.py\b')
+    lines = iter(text.splitlines())
+    fence = None
+    for line in lines:
+        match = re.match(r'^\s*```([\w-]*)\s*$', line)
+        if match:
+            fence = match.group(1).lower() if fence is None else None
+            continue
+        if not pattern.match(line):
+            continue
+        command = line
+        shell = fence
+        if shell not in ('powershell', 'pwsh', 'ps1', 'bash', 'sh', 'zsh', 'shell'):
+            shell = 'powershell' if re.match(r'^\s*PS(?:[ \t]+[^>\n]*)?>[ \t]+', line) else 'bash'
+        shell = 'powershell' if shell in ('powershell', 'pwsh', 'ps1') else 'bash'
+        marker = '`' if shell == 'powershell' else '\\'
+        while command.endswith(marker) and _without_shell_comment(command, shell=shell) == command:
+            count = len(command) - len(command.rstrip(marker))
+            if count % 2 == 0:
+                break
+            following = next(lines, None)
+            if following is None:
+                break
+            command = command[:-1] + following
+        yield command, shell
+
+
 REPORT = 'reports/2026-09-06-学术工具复审.md'
 ORIGINAL_BLOB = 'a5cb344275050c16d12f5c3b42db9e0203c60cdd'
 START = '<!-- original-report:start -->\n'
@@ -76,6 +179,16 @@ def check(root: Path) -> dict:
         if path.suffix == '.md':
             if any(line != line.rstrip() for line in text.splitlines()):
                 errors.append(f'{relative}: trailing whitespace')
+            for command, shell in _native_commands(text):
+                lexer = shlex.shlex(_without_shell_comment(command, shell=shell, mask_substitutions=True), posix=False)
+                lexer.whitespace_split = True
+                lexer.commenters = ''
+                try:
+                    arguments = list(lexer)
+                except ValueError:
+                    arguments = []
+                if not any(arg in ('--full-research', '"--full-research"', "'--full-research'") for arg in arguments):
+                    errors.append(f'{relative}: native dataset command requires explicit --full-research')
             if text.count('```') % 2:
                 errors.append(f'{relative}: unpaired triple-backtick fence')
             if relative.startswith('README') and _strong_closes_before_cjk(text):
@@ -152,6 +265,8 @@ def check(root: Path) -> dict:
             '1.4.0', 'T0', 'T1', 'T2', 'T3', '72.52%', '69.39%',
             'Claude Code', 'Codex CLI', 'Gemini CLI', 'MCP v2', 'CHANGELOG.md',
             'docs/12-version-history.md', 'docs/16-zero-llm-retrieval-frontier.md',
+            'Evaluation Fabric', 'LongMemEval-V2', 'BEAM', 'MemoryArena', 'StorageProfile',
+            'docs/18-evaluation-fabric.md', '--wall-seconds 3300',
         )
         for name in ALL_READMES:
             text = texts.get(name, '')
@@ -173,10 +288,26 @@ def check(root: Path) -> dict:
                 if transient in text:
                     errors.append(f'{name}: transient/development chronology leaked onto product homepage: {transient}')
 
-        for marker in ('Design philosophy', 'How far can agent memory go without another LLM call?',
-                       '1.4.0', '72.52%', 'Version history and recovery'):
-            if marker not in homepage:
-                errors.append(f'README.md: missing productized homepage marker {marker}')
+        expected_sections = ('architecture', 'philosophy', 'logical', 'tiers', 'compute',
+            'physical', 'evaluation', 'evidence', 'harness', 'quickstart', 'acceptance',
+            'invariants', 'boundary', 'documentation')
+        def structure(text):
+            chunks = re.split(r'<!-- section:([a-z]+) -->\n', text)
+            ids = tuple(chunks[1::2])
+            shapes = []
+            for chunk in chunks[2::2]:
+                headings = tuple(len(x) for x in re.findall(r'^(#{2,6}) ', chunk, re.M))
+                fences = tuple(re.findall(r'^```[^\n]*\n.*?^```', chunk, re.M | re.S))
+                tables = tuple(line.count('|') for line in chunk.splitlines() if line.startswith('|'))
+                shapes.append((headings, fences, tables))
+            return ids, shapes
+        canonical_ids, canonical_shapes = structure(homepage)
+        if canonical_ids != expected_sections:
+            errors.append('README.md: invalid canonical section identities/order')
+        for name in ALL_READMES:
+            ids, shapes = structure(texts.get(name, ''))
+            if ids != expected_sections or shapes != canonical_shapes:
+                errors.append(f'{name}: README structural parity mismatch (sections/headings/fences/tables)')
 
     return {'status': 'FAIL' if errors else 'PASS', 'markdown_files': len(markdown),
             'relative_links_checked': links, 'json_fences_parsed': fences,

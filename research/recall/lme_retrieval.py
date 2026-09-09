@@ -29,6 +29,9 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
 from thm.retrieval import Document, SearchIndex, SentenceEncoder, TokenCounter
 from research.evidence_io import require_new_output, write_new_text
 
+# Capture the source loaded by this native runner, independently of THM package code.
+NATIVE_IMPLEMENTATION_SHA256 = hashlib.sha256(Path(__file__).read_bytes()).hexdigest()
+
 
 def percentile(values, q):
     if not values:
@@ -115,6 +118,7 @@ def run(dataset, counter, modes, budgets, *, model_path=None, model_id=None, lim
                                              speaker=role, timestamp='', source=session_id))
                     gold = set(instance["answer_session_ids"])
                     known = {d.source for d in docs}
+                    source_by_document = {d.id: d.source for d in docs}
                     start = time.perf_counter()
                     metadata = index.replace_scope(scope, docs)
                     generations[scope] = metadata["generation"]
@@ -148,6 +152,7 @@ def run(dataset, counter, modes, budgets, *, model_path=None, model_id=None, lim
                                 "gold_sessions": len(gold),
                                 "resolved_gold": len(gold & known),
                                 "hits": len(hit_sessions),
+                                "parent_locator_hits": len(gold & {source_by_document[x] for x in out.get("parent_locator_ids", selected_order) if x in source_by_document}),
                                 "candidate_hits": None,
                                 "selected_count": len(selected), "complete_selected_count":len(selected),
                                 "packed_selected_count":len(out["selected"]), "packed_selections":[{k:x.get(k) for k in ("id","complete","span_start","span_end")} for x in out["selected"]],
@@ -173,7 +178,9 @@ def run(dataset, counter, modes, budgets, *, model_path=None, model_id=None, lim
                 "development": aggregate([r for r in rows if r["split"] == "development"]),
                 "held_out": aggregate([r for r in rows if r["split"] == "held_out"]),
             }
+    from thm.evaluation.legacy import project
     return {
+        "evaluation_fabric": project("longmemeval-s", all_rows, dataset, native_source_sha256=NATIVE_IMPLEMENTATION_SHA256),
         "benchmark": "LongMemEval-S retrieval coverage (session-level evidence)",
         "protocol": 1,"runtime":runtime_receipt, "counter": counter.name, "modes": modes, "budgets": budgets,
         "idf_scope": "one_database_per_instance",
@@ -205,7 +212,11 @@ def main():
     ap.add_argument("--batch-size", type=int, default=64)
     from thm.runtime.research import add_arguments,config_from_args
     add_arguments(ap)
+    ap.add_argument('--full-research', action='store_true', help='Explicit full native research runner; otherwise use bounded Evaluation Fabric')
     args = ap.parse_args()
+    require_new_output(args.output)
+    if not args.full_research:
+        ap.error('Native research runner requires --full-research; bounded default: python -m thm.evaluation --output NEW_DIRECTORY')
     require_new_output(args.output)
     raw = Path(args.dataset).read_bytes()
     dataset = json.loads(raw)

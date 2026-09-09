@@ -1,5 +1,9 @@
 # 相关工作：分层记忆、上下文管理与验证边界
 
+## Current benchmark interfaces
+
+The [Evaluation Fabric source inventory](18-evaluation-fabric.md#upstream-interface-provenance) pins official LongMemEval-V2, BEAM and MemoryArena interface revisions. V2 uses trajectory insert/query; BEAM uses nested conversations and probing rubrics; MemoryArena couples sessions through actual agent/environment experience. These are evaluation interfaces, not additional memory algorithms or accepted THM dataset outcomes. LoCoMo and LongMemEval-S retain their respective document/session evidence units.
+
 <!-- current-v1.4-status:start -->
 > **Current release status — THM 1.4.0 accepted/stable implementation milestone.** Stable code/content milestone: `e6e4dda5835e3cb345207457d5491131c6959b2c`; immutable recovery pointer: `archive/v1.4.0-stable`. This document retains its original research/design/1.2/1.3 scope as historical foundation rather than rewriting old evidence as a new result. Current implementation state is tracked in [07-implementation-status.md](07-implementation-status.md), the 1.4 shadow control plane in [14-residency-control-plane.md](14-residency-control-plane.md), the opt-in Hermes T1 surface in [15-hermes-warm-directory.md](15-hermes-warm-directory.md), and the exact acceptance record in [the 1.4 closeout](../reports/2026-09-07-v1.4-closeout.md).
 <!-- current-v1.4-status:end -->

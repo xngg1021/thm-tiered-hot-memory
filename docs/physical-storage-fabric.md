@@ -1,5 +1,9 @@
 # Unreleased physical storage fabric and bounded verification
 
+## Evaluation receipt integration
+
+[Evaluation Fabric](18-evaluation-fabric.md) carries serialized StorageProfile, profile ID, representation placement and extent I/O PhysicalTelemetry in a separate systems-runtime physical_probe. The probe uses bounded scratch with existing verify/read adapters. SQLite query I/O is unavailable and cannot inherit these microbenchmark counters. Logical T0–T3, compute profile and physical placement remain orthogonal; unknown capability observations and specialized hardware remain unvalidated.
+
 Package identity remains 1.4.0. This successor has no stable/release designation.
 
 ## Independent planes

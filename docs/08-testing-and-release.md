@@ -1,5 +1,9 @@
 # Testing, document publication and bounded release
 
+## Evaluation Fabric release gates
+
+Run `python -m thm.evaluation --mode acceptance --wall-seconds 3300 --output .thm-evaluation/acceptance-01` for bounded offline local acceptance. [Full contract](18-evaluation-fabric.md). Correctness CI executes smoke on Linux/Windows/macOS, unit tests, README structural parity and existing documentation/history gates. Hermes and relevant harness gates remain separate. Full research workflows require manual full_research=true; no full dataset is a default gate. Clean exact-head Codex P1/P2 review and an expected-head normal merge precede post-merge CI. Package/stable remains 1.4.0.
+
 Run the public checks from the repository root:
 
 ```bash

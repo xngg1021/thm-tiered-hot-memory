@@ -150,7 +150,10 @@ def main():
     ap.add_argument("--datasets-root", default=os.environ.get("THM_DATASETS_ROOT"))
     ap.add_argument("--reports-dir", default=str(DEFAULT_REPORTS))
     ap.add_argument("--ce-root", default=os.environ.get("CONTEXT_ECONOMICS_ROOT"))
+    ap.add_argument("--full-research", action="store_true", help="Explicitly enable full dataset runners")
     args = ap.parse_args()
+    if not args.full_research and (not args.skip_locomo or not args.skip_lme):
+        ap.error("dataset campaigns require --full-research; use thm.evaluation for bounded acceptance")
 
     if type(args.batch_size) is not int or args.batch_size <= 0:
         raise ValueError("--batch-size must be a positive integer")
@@ -191,7 +194,7 @@ def main():
     if not args.skip_locomo:
         require_new(locomo_out)
         steps.append(run_checked([
-            sys.executable, "research/recall/benchmark.py",
+            sys.executable, "research/recall/benchmark.py", "--full-research",
             "--dataset", str(datasets / "locomo10.json"),
             "--counter", "cl100k_base",
             "--modes", *args.modes,
@@ -204,7 +207,7 @@ def main():
     if not args.skip_lme:
         require_new(lme_out)
         steps.append(run_checked([
-            sys.executable, "research/recall/lme_retrieval.py",
+            sys.executable, "research/recall/lme_retrieval.py", "--full-research",
             "--dataset", str(datasets / "longmemeval_s"),
             "--counter", "cl100k_base",
             "--modes", *args.modes,

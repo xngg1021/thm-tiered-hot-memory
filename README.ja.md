@@ -6,16 +6,16 @@
 
 作者: Junfu Shi (SJF, xngg1021) · License: [MIT](LICENSE)
 
-## THM が必要な理由
+<!-- section:architecture -->
+## 三つのプレーンによるアーキテクチャ
 
-長時間動く Agent は、毎回の prompt に載せるには大きすぎる状態を蓄積します。すべてを常駐させれば carry cost を繰り返し払い、すべて捨てれば search / retrieval / reacquisition を繰り返すことになります。THM はこれを**residency・retrieval・bounded budget allocation** の問題として扱います。
+THM は論理メモリ、計算実行、物理ストレージを分離します。Evaluation Fabric は新しいメモリアルゴリズムを追加せず、三つのプレーンを計測します。どの表現でも元のソース識別子と scope が基準です。
 
-中心となる問いは次です。
+アーキテクチャと証拠の契約
 
-> **もう一度 LLM を呼ばずに、Agent Memory はどこまで強くできるか？**
+安定 package と archive は 1.4.0 を維持します。Runtime、Physical Storage Fabric、Evaluation Fabric は Unreleased です。既存の測定は元の protocol、source SHA、範囲を保持し、未実行の benchmark やハードウェアを accepted evidence に含めません。
 
-そのため THM は deterministic signal、local index、明示的 provenance、固定 evidence budget、replayable control rule を優先します。Generative extraction、summary、memory rewrite は core dataplane の必須条件ではありません。
-
+<!-- section:philosophy -->
 ## Design philosophy
 
 ### 1. Source authority を守る
@@ -54,6 +54,12 @@ THM は residency / prefetch / budget の shadow recommendation を出せます�
 
 Retrieval semantics は THM core に集約します。Hermes は最も深い lifecycle integration、OpenAI Agents と LangChain は native SDK adapter、MCP は複数 CLI/harness が共有できる protocol surface です。
 
+<!-- section:logical -->
+## 論理メモリプレーン
+
+scope 付き SearchIndex、予算内の証拠パッキング、シャドー常駐制御は同じコアを使います。T0–T3 は論理的な常駐とアクセスを表します。活動、有効性、固定、検索は別々に記録し、自動昇格と予算書き戻しは無効のままです。
+
+<!-- section:tiers -->
 ## T0–T3 memory Tiers
 
 | Tier | 役割 | 典型例 |
@@ -65,24 +71,36 @@ Retrieval semantics は THM core に集約します。Hermes は最も深い lif
 
 T0–T3 は **THM の memory Tier** です。別プロジェクト Context Economics の L0–L6 Layer とは独立した taxonomy です。
 
-## 現在実装されているもの
+<!-- section:compute -->
+## 計算実行プレーン
 
-THM は現在、次を実装しています。
+RuntimeProfile は encoder/backend、精度、デバイス、scorer、バッチサイズ、スレッドを固定します。任意のスケジューラーと有界 AutoTune が実行設定を選びます。CPU/CUDA などの記述には別途 runtime 証拠が必要で、fixture の成功は dispatch や高速化の証明にはなりません。
 
-- profile/scope isolated local index と fail-closed source/database validation
-- SQLite FTS5 sparse retrieval、optional local sentence embedding、deterministic rank fusion
-- token-budgeted evidence packing と source traceability
-- explicit activity / validity / pin semantics と reproducible decay diagnostics
-- harness-neutral read-only recall core
-- Hermes `MemoryProvider`、OpenAI Agents `FunctionTool`、LangChain/LangGraph `BaseRetriever`、MCP v2、selected CLI host 用 pinned compatibility bridge
-- resident/hard-miss、planned-retrieval telemetry
-- locator-only T1 warm directory と opt-in session-frozen Hermes locator snapshot
-- miss cost と resident carry cost に基づく shadow T0 recommendation、bounded exact 0/1 packing
-- bounded anti-self-training prefetch と shadow resident-budget feedback
-- existing sparse/hybrid candidate だけを re-rank する opt-in zero-generative-LLM entity projection
+[Runtime](docs/17-zero-llm-heterogeneous-runtime.md)
 
-Stable package line は **1.4.0** です。Zero-LLM entity projection は opt-in research successor として main にありますが、**1.5 stable とはしていません**。過去の version / PR / review / implementation chronology は [CHANGELOG.md](CHANGELOG.md) と [version history](docs/12-version-history.md) に置き、homepage には現在の設計と capability だけを置きます。
+<!-- section:physical -->
+## 物理ストレージプレーン
 
+StorageProfile は実測アクセスコスト、placement は表現とターゲットの対応、PhysicalTelemetry は実際の extent I/O を記録します。検証済みローカルファイルシステムの buffered/mmap を実装しています。CXL、DAX、SPDK、GDS、リモート転送は拡張記述であり、ハードウェア性能は未検証です。
+
+[Physical Storage Fabric](docs/physical-storage-fabric.md)
+
+<!-- section:evaluation -->
+## Evaluation Fabric
+
+Adapter はネイティブ入力を Task、評価器専用の GroundTruth、Result、SHA に結び付く Receipt に変換します。LoCoMo Protocol 2 と LongMemEval-S は dataplane 指標を共有し、文書単位とセッション単位の違いを保持します。LongMemEval-V2 は公開 trajectory states と insert/query、BEAM は batches/turns と probing questions、MemoryArena はサブタスクとセッション間の add/wrap_user_prompt に対応します。
+
+Fixture はインターフェースと決定論的検索だけを検証します。V2 はテキスト専用で画像クエリを拒否します。gold locator がなければ recall は null です。MemoryArena のタスク解析は環境実行ではありません。回答と rubric は検索文書に入りません。
+
+| 証拠レイヤー | Receipt 契約 |
+| --- | --- |
+| memory-dataplane | any/all-gold、macro/micro recall、親ロケータ、予算、遅延 |
+| systems-runtime | 計算設定、StorageProfile、placement、I/O 計測 |
+| LLM-agent-outcome | 生成・judge 呼び出し、回答精度、環境成功率；既定は not-run |
+
+[Evaluation Fabric](docs/18-evaluation-fabric.md)
+
+<!-- section:evidence -->
 ## Measured retrieval evidence
 
 THM は retrieval evidence と answer-generation claim を分離します。
@@ -100,6 +118,7 @@ Canonical LoCoMo Protocol 2 は 1,532 fully resolved non-adversarial questions �
 
 これは final answer accuracy、user satisfaction、universal superiority の指標ではありません。[Protocol 2](reports/2026-09-06-recall-protocol2.md) と [zero-LLM frontier](docs/16-zero-llm-retrieval-frontier.md) を参照してください。
 
+<!-- section:harness -->
 ## Harness integration
 
 | Surface | Integration depth |
@@ -113,13 +132,22 @@ Canonical LoCoMo Protocol 2 は 1,532 fully resolved non-adversarial questions �
 
 Multi-harness support は universal memory database を意味しません。Lifecycle integration の深さは host ごとに異なり、Hermes が最も深い native integration です。
 
+<!-- section:quickstart -->
 ## Quick start
 
 ```bash
 python -m pip install -e .
 python -m thm --help
-python -m thm import-files ./notes --db ./state/recall.sqlite3 --scope demo
-python -m thm search --db ./state/recall.sqlite3 --scope demo "Which database port?" --budget 600
+
+python -m thm import-files ./notes \
+  --db ./state/recall.sqlite3 \
+  --scope demo
+
+python -m thm search \
+  --db ./state/recall.sqlite3 \
+  --scope demo \
+  "Which database port?" \
+  --budget 600
 ```
 
 Optional dependencies:
@@ -139,6 +167,18 @@ thm-mcp --db /absolute/path/recall.sqlite3 --scope demo --budget 600
 thm-mcp-legacy --db /absolute/path/recall.sqlite3 --scope demo --budget 600
 ```
 
+<!-- section:acceptance -->
+## 有界ローカル受け入れ検証
+
+リポジトリのルートで Python 3.10 以降を使います。モデル、データセットのダウンロードや provider key は不要です。プロセスツリーの期限は 3300 秒で、60 分以内の終了処理に余裕を残します。タイムアウトや失敗は未完了の receipt と非ゼロ終了コードになり、成功証拠にはなりません。
+
+```powershell
+python -m thm.evaluation --mode acceptance --wall-seconds 3300 --output .thm-evaluation/acceptance-01
+```
+
+完全な campaign は --mode full-research --full-research --benchmark NAME --dataset FILE で独立して有効化します。外部で準備したネイティブ入力と、別途設定した agent、環境、judge が必要です。このコマンドは検索だけを測り、実際の agent 実行や benchmark の受け入れを行いません。
+
+<!-- section:invariants -->
 ## 守るべき invariants
 
 - read-only retrieval は native memory を mutation しない
@@ -151,12 +191,14 @@ thm-mcp-legacy --db /absolute/path/recall.sqlite3 --scope demo --budget 600
 - ordinary mid-session memory write は frozen Hermes prompt snapshot を暗黙に rebuild しない
 - held-out task evidence がない限り automatic tier movement / budget write-back は disabled
 
+<!-- section:boundary -->
 ## Evidence boundary
 
 THM は deterministic/local retrieval と shadow-control experiment を提供しますが、universal answer-quality improvement、universal optimal decay curve、production-ready automatic T0–T3 movement、安全な automatic delete propagation、retrieval metric からの prompt-cache / user-latency 改善、retrieved evidence の model usage を主張しません。
 
 Unit/invariant evidence、retrieval benchmark、harness lifecycle、real task outcome は別々の evidence class です。
 
+<!-- section:documentation -->
 ## Documentation
 
 - [Documentation index](docs/README.md)

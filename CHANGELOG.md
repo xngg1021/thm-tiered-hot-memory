@@ -1,5 +1,13 @@
 # Changelog
 
+## Unreleased — Evaluation Fabric and product documentation
+
+- Add unified Adapter/Task/GroundTruth/Result/Receipt contracts and independent logical, compute and physical taxonomy fields.
+- Integrate LoCoMo Protocol 2 and LongMemEval-S dataplane projections; add native V2, BEAM and MemoryArena interfaces with original deterministic fixtures.
+- Add offline process-bounded smoke/acceptance, explicit full-research campaigns, three-layer evidence and separate physical StorageProfile/placement/I/O probe receipts.
+- Reorganize English and seven localized READMEs around current three-plane architecture and Evaluation Fabric; enforce section structure parity in docs CI.
+- Keep package/stable at 1.4.0. No full dataset, LLM-agent outcome or specialized hardware performance is accepted by these fixture gates.
+
 ## Unreleased — repository reconciliation
 
 - Integrates PR #15's transactional scope vector/generation cleanup into the physical storage successor and clears stale physical pointers without deleting immutable objects.

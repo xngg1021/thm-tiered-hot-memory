@@ -111,6 +111,106 @@ class DocumentTests(unittest.TestCase):
         (self.root/'README.md').write_bytes(b'# Test\r\n')
         self.assertEqual(checker.check(self.root)['status'],'FAIL')
 
+    def test_documented_research_commands_require_opt_in(self):
+        self.write('docs/campaign.md', '```powershell\npython research/recall/lme_retrieval.py --dataset example.json\n```\n')
+        self.assertTrue(any('requires explicit --full-research' in e for e in checker.check(self.root)['errors']))
+        self.write('docs/campaign.md', '```powershell\npython research/recall/lme_retrieval.py --full-research --dataset example.json\n```\n')
+        self.assertEqual(checker.check(self.root)['status'], 'PASS')
+
+    def test_research_opt_in_ignores_comments_and_respects_quotes(self):
+        command = 'python research/recall/benchmark.py --dataset '
+        for suffix in ('input.json # add --full-research', '"path # hash.json" # --full-research', '"text --full-research"'):
+            self.write('docs/campaign.md', '```shell\n' + command + suffix + '\n```\n')
+            self.assertTrue(any('requires explicit --full-research' in e for e in checker.check(self.root)['errors']), suffix)
+        for suffix in ('"path # hash.json" --full-research # optional note', "'path # hash.json' '--full-research'", '"C:\\data\\input.json" --full-research'):
+            self.write('docs/campaign.md', '```shell\n' + command + suffix + '\n```\n')
+            self.assertEqual(checker.check(self.root)['status'], 'PASS', suffix)
+
+    def test_research_commands_preserve_embedded_and_escaped_hashes(self):
+        for path in ('path#hash.json', r'path\#hash.json', r'\#hash.json', 'path`#hash.json'):
+            fence = 'powershell' if '`' in path else 'bash'
+            command = 'python research/recall/benchmark.py --dataset ' + path
+            self.write('docs/campaign.md', '```' + fence + '\n' + command + ' --full-research\n```\n')
+            self.assertEqual(checker.check(self.root)['status'], 'PASS', path)
+            self.write('docs/campaign.md', '```' + fence + '\n' + command + ' # --full-research\n```\n')
+            self.assertTrue(any('requires explicit --full-research' in e for e in checker.check(self.root)['errors']), path)
+
+    def test_research_commands_keep_substitution_suffix_in_same_word(self):
+        for path in ('$(printf path)#hash.json', '$(printf $(printf path))#hash.json',
+                     '$(printf "path")#hash.json', 'prefix$(printf path)#hash.json'):
+            command = 'python research/recall/benchmark.py --dataset ' + path
+            self.write('docs/campaign.md', '```shell\n' + command + ' --full-research\n```\n')
+            self.assertEqual(checker.check(self.root)['status'], 'PASS', path)
+            self.write('docs/campaign.md', '```shell\n' + command + ' # --full-research\n```\n')
+            self.assertTrue(any('requires explicit --full-research' in e for e in checker.check(self.root)['errors']), path)
+
+    def test_research_opt_in_on_continued_command_lines(self):
+        for shell, marker in (('bash', '\\'), ('powershell', '`')):
+            command = 'python research/recall/benchmark.py ' + marker + '\n  --dataset input.json ' + marker + '\n  '
+            self.write('docs/campaign.md', '```' + shell + '\n' + command + '--full-research\n```\n')
+            self.assertEqual(checker.check(self.root)['status'], 'PASS', marker)
+            self.write('docs/campaign.md', '```' + shell + '\n' + command + '# --full-research\n```\n')
+            self.assertTrue(any('requires explicit --full-research' in e for e in checker.check(self.root)['errors']), marker)
+        self.write('docs/campaign.md', '```shell\npython research/recall/benchmark.py --dataset input.json # \\\n --full-research\n```\n')
+        self.assertTrue(any('requires explicit --full-research' in e for e in checker.check(self.root)['errors']))
+
+    def test_research_command_cannot_borrow_opt_in_from_later_command(self):
+        for separator in (';', '&&', '||', '|', '&'):
+            command = 'python research/recall/benchmark.py --dataset input.json'
+            self.write('docs/campaign.md', '```bash\n' + command + separator + ' echo --full-research\n```\n')
+            self.assertTrue(any('requires explicit --full-research' in e for e in checker.check(self.root)['errors']), separator)
+            self.write('docs/campaign.md', '```bash\n' + command + ' --full-research' + separator + ' echo done\n```\n')
+            self.assertEqual(checker.check(self.root)['status'], 'PASS', separator)
+        self.write('docs/campaign.md', '```bash\npython research/recall/benchmark.py --dataset "path;with|symbols.json" --full-research\n```\n')
+        self.assertEqual(checker.check(self.root)['status'], 'PASS')
+
+    def test_research_continuation_must_match_declared_shell(self):
+        for shell, marker in (('bash', '`'), ('powershell', '\\')):
+            command = 'python research/recall/benchmark.py --dataset input.json ' + marker + '\n  --full-research'
+            self.write('docs/campaign.md', '```' + shell + '\n' + command + '\n```\n')
+            self.assertTrue(any('requires explicit --full-research' in e for e in checker.check(self.root)['errors']), shell)
+
+    def test_research_process_substitution_keeps_inner_separators(self):
+        for path in ('<(producer | filter)', '>(producer; filter)', '<(producer <(nested | filter) | filter)'):
+            command = 'python research/recall/benchmark.py --dataset ' + path
+            self.write('docs/campaign.md', '```bash\n' + command + ' --full-research\n```\n')
+            self.assertEqual(checker.check(self.root)['status'], 'PASS', path)
+            self.write('docs/campaign.md', '```bash\n' + command + '; echo --full-research\n```\n')
+            self.assertTrue(any('requires explicit --full-research' in e for e in checker.check(self.root)['errors']), path)
+        for path in ('<(producer --full-research | filter)', '$(producer --full-research | filter)'):
+            self.write('docs/campaign.md', '```bash\npython research/recall/benchmark.py --dataset ' + path + '\n```\n')
+            self.assertTrue(any('requires explicit --full-research' in e for e in checker.check(self.root)['errors']), path)
+
+    def test_research_prompt_selects_powershell_without_shell_fence(self):
+        for opening, closing in (('', ''), ('```text\n', '```\n')):
+            for prompt in ('PS> ', 'PS C:\\work> '):
+                command = prompt + 'python research/recall/benchmark.py --dataset input.json '
+                self.write('docs/campaign.md', opening + command + '`\n --full-research\n' + closing)
+                self.assertEqual(checker.check(self.root)['status'], 'PASS', prompt)
+                self.write('docs/campaign.md', opening + command + '\\\n --full-research\n' + closing)
+                self.assertTrue(any('requires explicit --full-research' in e for e in checker.check(self.root)['errors']), prompt)
+
+    def test_research_backtick_substitutions_do_not_supply_outer_flags(self):
+        for path in ('`producer --full-research value`', 'prefix`producer --full-research value`#hash.json',
+                     '$(producer `nested --full-research value`)'):
+            command = 'python research/recall/benchmark.py --dataset ' + path
+            self.write('docs/campaign.md', '```bash\n' + command + '\n```\n')
+            self.assertTrue(any('requires explicit --full-research' in e for e in checker.check(self.root)['errors']), path)
+            self.write('docs/campaign.md', '```bash\n' + command + ' --full-research\n```\n')
+            self.assertEqual(checker.check(self.root)['status'], 'PASS', path)
+        self.write('docs/campaign.md', '```powershell\npython research/recall/benchmark.py --dataset path`#hash.json --full-research\n```\n')
+        self.assertEqual(checker.check(self.root)['status'], 'PASS')
+
+    def test_indented_and_prompt_prefixed_research_commands_require_opt_in(self):
+        for prefix in ('    ', '\t', '$ ', '  $ ', '> ', 'PS> ', 'PS C:\\work> '):
+            command = prefix + 'python research/recall/benchmark.py --dataset input.json'
+            self.write('docs/campaign.md', '```shell\n' + command + '\n```\n')
+            self.assertTrue(any('requires explicit --full-research' in e for e in checker.check(self.root)['errors']), prefix)
+            self.write('docs/campaign.md', '```shell\n' + command + ' --full-research\n```\n')
+            self.assertEqual(checker.check(self.root)['status'], 'PASS', prefix)
+        self.write('docs/campaign.md', '```shell\npython research/recall/benchmark.py --dataset fake--full-research.json\n```\n')
+        self.assertTrue(any('requires explicit --full-research' in e for e in checker.check(self.root)['errors']))
+
 
 if __name__=='__main__':
     unittest.main(verbosity=2)
