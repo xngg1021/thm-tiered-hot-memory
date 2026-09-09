@@ -1,14 +1,13 @@
 {
-  "schema_version": 1,
+  "schema_version": 2,
   "date": "2026-09-09",
   "repository": "xngg1021/thm-tiered-hot-memory",
   "implementation_pr": 20,
-  "status": "engineering-validated-release-gates-incomplete",
+  "status": "engineering-validated-release-review-pending",
   "base_head": "2d5c2adcf994edd8b7bb3c0546983ba9531af392",
   "base_tree": "2fcad509e0566c25202a1ce99936e306af62a4fd",
-  "implementation_head": "64fdcc42a673d7d07513d58bca00facbe69afdf7",
-  "implementation_tree": "1119c97ad0c16c73835d9d0346da50fb79121384",
-  "last_implementation_source_head": "7c5a77a060c728a7df402f0ef8862ae7b6f92e92",
+  "implementation_head": "ca4d5f14d088ab9be0e53b01595143182b2072eb",
+  "implementation_tree": "ff7126959c337af4719f1ab9e4696589c36de1d9",
   "package_version": "1.4.0",
   "stable_archive": {
     "ref": "archive/v1.4.0-stable",
@@ -16,83 +15,49 @@
     "changed": false
   },
   "historical_hardware_head": "bb1676007b0f86dec0267585c56136c82157ae54",
+  "chat_takeover_fixes": [
+    "Windows retained warm-worker Job Object CPU ceilings renew cumulatively",
+    "observed-request alternate-model evidence is not promoted by reference, auto-safe or auto-throughput",
+    "only explicit approximate-performance may activate observed-request-only alternate-model evidence",
+    "active alternate-model session pins are not replaced by a new workload/settings key",
+    "model serving failures are counted once in provider quarantine",
+    "alternate-model runtime receipts expose semantic_class=observed-request and quality_evidence_scope=observed-request-only",
+    "final-newline hygiene restored after docs gate detected generated-wheel copy drift"
+  ],
   "catalog": {
     "entries": 71,
-    "maturity_counts": {
-      "L0": 7,
-      "L1": 12,
-      "L2": 1,
-      "L3": 0,
-      "L4": 51,
-      "L5": 0
-    }
+    "maturity_counts": {"L0": 7, "L1": 12, "L2": 1, "L3": 0, "L4": 51, "L5": 0},
+    "hardware_accepted_entries": 0
   },
   "evidence_ledgers": {
     "retrieval_engineering": {
       "scope": "deterministic SQL, tokenizer, row-count and semantic fixtures",
-      "speaker_sql_queries": {
-        "same_generation_two_searches": 1,
-        "after_replacement_total": 2
-      },
+      "speaker_sql_queries": {"same_generation_two_searches": 1, "after_replacement_total": 2},
       "tokenizer": {
         "api": "public encode_ordinary via exact whole-prefix cache",
         "private_bpe_api": false,
         "repeated_identical_prefix_additional_encode_calls": 0,
         "max_cache_entries": 64,
-        "ci_versions": [
-          "0.7.0",
-          "0.8.0",
-          "0.9.0",
-          "0.10.0",
-          "0.11.0",
-          "0.12.0",
-          "0.13.0",
-          "0.14.0"
-        ]
+        "ci_versions": ["0.7.0", "0.8.0", "0.9.0", "0.10.0", "0.11.0", "0.12.0", "0.13.0", "0.14.0"]
       },
       "ranking": {
         "source_rows": 500,
         "online_cohort_top_k": 5,
-        "online_cohort_host_rows_scored": [
-          6,
-          6
-        ],
+        "online_cohort_host_rows_scored": [6, 6],
         "ambiguous_top_k": 1,
-        "ambiguous_host_rows_scored": [
-          2,
-          500
-        ],
+        "ambiguous_host_rows_scored": [2, 500],
         "guard_cost_in_shadow_admission": true
       },
       "hardware_speedup_claim": false
     },
     "fabric_correctness": {
-      "local_tests": {
-        "count": 553,
-        "status": "passed",
-        "implementation_source_head": "7c5a77a060c728a7df402f0ef8862ae7b6f92e92"
-      },
-      "core_only_ignition": {
-        "status": "passed",
-        "native_provider_calls": 0,
-        "network_calls": 0,
-        "generation_calls": 0
-      },
-      "numeric_audit": {
-        "status": "passed",
-        "checks": 10,
-        "scope": "historical public specification arithmetic"
-      },
-      "documents": "passed",
-      "version_history": "passed",
-      "offline_evaluation_smoke": {
-        "status": "passed",
-        "mode": "smoke",
-        "generation_calls": 0,
-        "judge_calls": 0,
-        "full_dataset_acceptance": false,
-        "scope": "five deterministic fixture interfaces"
-      }
+      "test_count": 556,
+      "core_only_ignition": {"native_provider_calls": 0, "network_calls": 0, "generation_calls": 0},
+      "numeric_audit_checks": 10,
+      "offline_evaluation_smoke": {"generation_calls": 0, "judge_calls": 0, "full_dataset_acceptance": false},
+      "alternate_model_semantic_scope": "observed-request-only",
+      "auto_safe_alternate_model_activation": false,
+      "auto_throughput_alternate_model_activation": false
     },
     "real_hardware_performance": {
       "status": "not-accepted-for-new-fabric",
@@ -107,64 +72,19 @@
     }
   },
   "ci": [
-    {
-      "run_id": 34378979939,
-      "workflow": "THM correctness",
-      "event": "pull_request",
-      "head": "64fdcc42a673d7d07513d58bca00facbe69afdf7",
-      "conclusion": "success"
-    },
-    {
-      "run_id": 34378975911,
-      "workflow": "THM correctness",
-      "event": "push",
-      "head": "64fdcc42a673d7d07513d58bca00facbe69afdf7",
-      "conclusion": "success"
-    },
-    {
-      "run_id": 34378460874,
-      "workflow": "THM harness integrations",
-      "event": "push",
-      "head": "7c5a77a060c728a7df402f0ef8862ae7b6f92e92",
-      "conclusion": "success"
-    },
-    {
-      "run_id": 34378460854,
-      "workflow": "THM Hermes integration",
-      "event": "push",
-      "head": "7c5a77a060c728a7df402f0ef8862ae7b6f92e92",
-      "conclusion": "success"
-    }
+    {"run_id": 34401841245, "workflow": "THM correctness", "event": "push", "head": "ca4d5f14d088ab9be0e53b01595143182b2072eb", "conclusion": "success"},
+    {"run_id": 34401841275, "workflow": "THM harness integrations", "event": "push", "head": "ca4d5f14d088ab9be0e53b01595143182b2072eb", "conclusion": "success"},
+    {"run_id": 34401841296, "workflow": "THM Hermes integration", "event": "push", "head": "ca4d5f14d088ab9be0e53b01595143182b2072eb", "conclusion": "success"}
   ],
   "review": {
     "targeted_user_review_id": 5156589002,
-    "requests": [
-      {
-        "head": "7c5a77a060c728a7df402f0ef8862ae7b6f92e92",
-        "request_comment": 5605429393,
-        "failure_comment": 5605440475,
-        "status": "service-failed-ref-not-found"
-      },
-      {
-        "head": "64fdcc42a673d7d07513d58bca00facbe69afdf7",
-        "request_comment": 5605562768,
-        "failure_comment": 5605572566,
-        "status": "service-failed-ref-not-found"
-      },
-      {
-        "head": "64fdcc42a673d7d07513d58bca00facbe69afdf7",
-        "trigger": "draft-marked-ready",
-        "summary_comment": 5605434182,
-        "status": "service-failed-ref-not-found",
-        "observed_at": "2026-09-09T16:55:46.531063Z"
-      }
-    ],
+    "prior_codex_attempts": "service-failed-ref-not-found",
     "valid_exact_head_review": false,
     "empty_threads_are_not_approval": true,
-    "ready_for_review": true
+    "next_required_action": "request exact-head Codex review on the final closeout-document head"
   },
   "release_gates": {
-    "exact_head_codex_review": "incomplete-service-error",
+    "exact_head_codex_review": "pending",
     "normal_expected_head_merge": "pending",
     "merge_sha": null,
     "main_ci": "pending",
