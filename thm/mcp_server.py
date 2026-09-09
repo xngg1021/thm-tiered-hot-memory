@@ -44,6 +44,7 @@ class MCPStatusResult(TypedDict):
     neighbors: int
     semantic: bool
     source_writes: bool
+    runtime: dict
 
 
 def build_server(config: HarnessConfig | dict):
@@ -81,6 +82,7 @@ def build_server(config: HarnessConfig | dict):
             "neighbors": cfg.neighbors,
             "semantic": cfg.mode in ("dense", "hybrid"),
             "source_writes": False,
+            "runtime": adapter.runtime_status(),
         }
 
     atexit.register(adapter.close)

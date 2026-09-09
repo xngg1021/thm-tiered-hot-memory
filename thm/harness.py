@@ -112,6 +112,16 @@ class THMHarnessAdapter:
                 "execution_plan":out.get("execution_plan"),
             }
 
+    def runtime_status(self):
+        with self._lock:
+            return self._runtime.status() if self._runtime is not None else {
+                'mode': 'zero-touch', 'profile_source': 'bootstrap', 'generation_calls': 0, 'user_benchmark_required': False}
+
+    def new_session(self):
+        with self._lock:
+            if self._runtime is not None:
+                return self._runtime.new_session()
+
     def close(self) -> None:
         with self._lock:
             if self._runtime is not None:

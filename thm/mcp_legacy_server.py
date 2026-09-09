@@ -179,6 +179,7 @@ class LegacyMCPServer:
                 "neighbors": cfg.neighbors,
                 "semantic": cfg.mode in ("dense", "hybrid"),
                 "source_writes": False,
+                "runtime": self.adapter.runtime_status(),
             }
             return self._tool_result(payload)
 
