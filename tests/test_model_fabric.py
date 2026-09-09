@@ -41,7 +41,7 @@ class ModelFabricTests(unittest.TestCase):
             'startup_ms':2,'embedding_profile':profile,'vram_bytes':100}
         worker = mock.Mock(); worker.preempted = False; worker.prepare.return_value = proof
         worker.memory = 1024; worker.budget.last = {'ram_bytes':100}
-        worker.task = {'generation':generation}
+        worker.task = {'generation':generation, 'scope':'scope'}
         worker.search.return_value = {'results':[reference],'cpu_seconds':.002,'embedding_profile':profile}
         description = service.registry.describe('nvidia.inference')
         service.models.add('nvidia.inference',description,{'availability':'available'})
@@ -78,23 +78,29 @@ class ModelFabricTests(unittest.TestCase):
             key,generation,_ = service._key('scope','interactive',{'mode':'dense'})
             worker, profile, reference = self.model_proof(service,key,generation)
             with mock.patch('thm.runtime.fabric.models.WarmModelWorker',return_value=worker):
-                self.assertTrue(service.models.maybe_start(key,{'generation':generation}))
+                self.assertTrue(service.models.maybe_start(key,{'generation':generation,'scope':'scope'}))
                 service.models.thread.join(timeout=2)
             self.assertIsNotNone(service.models.ready)
             self.assertIsNone(service.models.select(key))
             service.new_session()
+            active = service.models.active
             result = service.search('scope','Beijing',mode='dense')
             self.assertEqual(result['runtime_receipt']['inference_provider'],'nvidia.inference')
             self.assertEqual(result['runtime_receipt']['embedding_profile'],profile['embedding_profile_id'])
             self.assertEqual(result['runtime_receipt']['authority_embedding_profile'],self.encoder.profile.id)
             self.assertEqual(result['runtime_receipt']['quality_evidence_scope'],'observed-request-only')
             self.assertEqual(result['execution_plan']['source_representation'],'private-profile-replica')
+            other_key,_,_ = service._key('scope','interactive',{'mode':'dense','candidate_limit':7})
+            self.assertFalse(service.models.maybe_start(other_key,{'generation':generation,'scope':'scope'}))
+            self.assertIs(service.models.active, active)
             worker.search.side_effect = RuntimeError('fixture device loss')
             result = service.search('scope','Beijing next',mode='dense')
             self.assertEqual(result['runtime_receipt']['actual_provider'],'reference')
             self.assertEqual(result['execution_plan']['inference_provider'],'reference')
             self.assertTrue(result['runtime_receipt']['fallback'].startswith('provider-failed'))
             self.assertIsNone(service.models.active)
+            failure_count = service.store.db.execute('SELECT max(failures) FROM quarantine').fetchone()[0]
+            self.assertEqual(failure_count,1)
         finally:
             service.close()
 
@@ -104,7 +110,7 @@ class ModelFabricTests(unittest.TestCase):
             key,generation,_ = service._key('scope','interactive',{'mode':'dense'})
             worker, _, _ = self.model_proof(service,key,generation)
             with mock.patch('thm.runtime.fabric.models.WarmModelWorker',return_value=worker):
-                self.assertTrue(service.models.maybe_start(key,{'generation':generation}))
+                self.assertTrue(service.models.maybe_start(key,{'generation':generation,'scope':'scope'}))
                 service.models.thread.join(timeout=2)
             self.assertIsNone(service.models.ready)
             self.assertEqual(service.models.last['status'],'measured-only')
@@ -124,7 +130,7 @@ class ModelFabricTests(unittest.TestCase):
             key,generation,_ = service._key('scope','interactive',{'mode':'dense'})
             worker, _, _ = self.model_proof(service,key,generation)
             with mock.patch('thm.runtime.fabric.models.WarmModelWorker',return_value=worker):
-                self.assertTrue(service.models.maybe_start(key,{'generation':generation}))
+                self.assertTrue(service.models.maybe_start(key,{'generation':generation,'scope':'scope'}))
                 service.models.thread.join(timeout=2)
             self.assertIsNone(service.models.ready)
             self.assertFalse(service.models.last['automatic_activation_allowed'])
