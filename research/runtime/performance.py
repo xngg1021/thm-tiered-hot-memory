@@ -1,18 +1,24 @@
 """Summaries retain nested timing scopes instead of adding overlapping clocks."""
 from collections import Counter
+import math
 
 
 def decomposition(artifact):
-    totals=Counter();count=0;batch_rows=0
+    totals=Counter();count=0;batch_rows=0;checked=0;residual=0.0;invalid=0
     for row in artifact.get('rows',[]):
-        timing=row.get('timing_ms') or {}
+        timing=row.get('timing_breakdown_ms',row.get('timing_ms')) or {}
         if not timing:continue
         count+=1;batch_rows+=int(bool(row.get('batch_receipt')))
-        for name,value in timing.items():
-            if type(value) in (float,int):totals[name]+=value
+        numeric={name:value for name,value in timing.items() if type(value) in (float,int) and math.isfinite(value)}
+        invalid+=len(timing)-len(numeric)
+        totals.update(numeric)
+        if {'total','retrieval_total','pack'}<=numeric.keys():
+            checked+=1;residual+=numeric['total']-numeric['retrieval_total']-numeric['pack']
     return {'rows_with_timing':count,'rows_with_batch_receipt':batch_rows,
         'raw_stage_totals_ms':dict(totals),
-        'component_sum_check':{'total_minus_retrieval_and_pack_ms':totals['total']-totals['retrieval_total']-totals['pack'],
+        'invalid_timing_fields':invalid,
+        'component_sum_check':{'total_minus_retrieval_and_pack_ms':residual if checked else None,
+            'rows_checked':checked,'rows_with_incomplete_components':count-checked,
             'scope':'unbatched row total = retrieval_total + pack; batch setup is outside row total'},
         'overlap_semantics':{'fts':'nested in sparse','query_embedding':'nested in retrieval_total',
             'dense_matrix_load':'nested in retrieval_total; shared in batched path',

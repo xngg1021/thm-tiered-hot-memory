@@ -227,4 +227,28 @@ class CorrectiveTests(unittest.TestCase):
         self.assertEqual(r['cutoff_position']['reference'],3);self.assertIsNone(r['cutoff_position']['candidate'])
         self.assertEqual(r['selected_count']['reference'],1)
 
+    def test_decomposition_reads_native_matrix_runner_timings(self):
+        from research.runtime.performance import decomposition
+        from research.recall.benchmark import run as locomo
+        from research.recall.lme_retrieval import run as lme
+        from thm.retrieval import TokenCounter
+        cases=[(locomo,[{'sample_id':'a','conversation':{'session_1':[{'dia_id':'D1:1','speaker':'Alice','text':'alpha project'}]},'qa':[{'question':'alpha','category':4,'evidence':['D1:1']}]}]),
+               (lme,[{'question_id':'a','question':'alpha','haystack_session_ids':['s'],'haystack_sessions':[[{'role':'user','content':'alpha project'}]],'answer_session_ids':['s']}])]
+        for runner,data in cases:
+            artifact=runner(data,TokenCounter(),['sparse'],[600])
+            r=decomposition(artifact)
+            self.assertEqual(r['rows_with_timing'],len(artifact['rows']))
+            self.assertGreater(r['raw_stage_totals_ms']['total'],0)
+            self.assertEqual(r['component_sum_check']['rows_checked'],len(artifact['rows']))
+            self.assertAlmostEqual(r['component_sum_check']['total_minus_retrieval_and_pack_ms'],0)
+
+    def test_decomposition_missing_clocks_are_unknown(self):
+        from research.runtime.performance import decomposition
+        for artifact in ({'rows':[]},{'rows':[{}]},{'rows':[{'timing_breakdown_ms':{'fts':1.}}]}):
+            r=decomposition(artifact)
+            self.assertIsNone(r['component_sum_check']['total_minus_retrieval_and_pack_ms'])
+            self.assertEqual(r['component_sum_check']['rows_checked'],0)
+        r=decomposition({'rows':[{'timing_ms':{'total':3,'retrieval_total':2,'pack':1}}]})
+        self.assertEqual(r['component_sum_check']['rows_checked'],1)
+
 if __name__=='__main__':unittest.main()

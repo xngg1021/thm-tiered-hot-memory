@@ -68,3 +68,8 @@ First-head Hermes run 34349475238 and harness run 34349475199 passed. Ubuntu pas
 
 
 Additional forward evidence hardening separates a calibrated throughput candidate from measured speedup, preserves an execution-before-plan ordering guarantee for the standalone CLI, and prioritizes affected IDs inside bounded forensic rows. Cutoff rank is no longer conflated with selected count. Reference dependency closure remains unchanged. These corrections have dedicated regressions and will receive a fresh exact-head review.
+
+
+## Exact-head review correction
+
+Codex review 5154160682 on `e1552b8975a0609442dd887bb885d70070cbd108` found one actionable P2: matrix runners emit `timing_breakdown_ms`, while the new decomposition helper read `timing_ms`. The forward fix reads the actual matrix field, retains compatibility with direct SearchIndex rows, and reports unknown rather than zero when component clocks are missing. Regressions exercise both actual bounded LoCoMo and LME runner outputs, plus absent/partial timing rows. This changes only evidence aggregation, not retrieval semantics. The corrected head must pass a fresh review and CI before merging.
