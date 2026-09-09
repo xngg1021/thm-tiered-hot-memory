@@ -107,3 +107,12 @@ Receipts are in `reports/2026-09-09-local-acceptance-b1f8119/` (prefixes: none =
 - runtime smoke: `smoke-comparison.json`, `smoke-runtime-estimate.json`, `smoke-cpu-reference-lme.json`, `smoke-auto-safe-autotune.json`
 - acceptance: `comparison.json`, `runtime-estimate.json`, `hardware.json`, `storage.json`, `lme-census.json`, `plan.json`, execution receipts, LME result matrices, four parity receipts, `auto-safe-autotune.json.gz`, `auto-throughput-autotune.json.gz`, and the gzipped LoCoMo matrices
 - gate diagnosis: `tune-diag.json.gz`
+
+
+## Forward correction — post-local corrective audit (2026-09-09)
+
+The original narrative above is historical; these corrections supersede its causal claims without changing any raw artifact or tested SHA. CUDA LoCoMo has 23 strict mismatch rows: packed_selections=23, selected_ranked_ids=23, selected_ids=3. Thus three rows change the selected set; the differences are not only rank ordering. Auto-throughput has five strict mismatch rows and zero selected-set changes. Both arms retain aggregate quality equivalence. Near-boundary floating-point sensitivity is a consistency statement, not a proven sole cause.
+
+The six-candidate acceptance run substituted `torch_cpu` at ordinal 5; the twelve-candidate standalone run retained `numpy_reference` there. The former has a 1.19e-7 score delta; the latter has zero. Candidate generation is deterministic: the old “chance” description is withdrawn. Tiny embedding/score drift alone does not establish structurally equal retrieval.
+
+`onnxruntime_fp32-preparation.json` has status=failed and only error_type=Exception. Its cause remains unresolved; a new run with structured stage diagnostics is required. Auto-safe's missing winner exposed an admission/fallback policy defect, not unsafe CPU reference retrieval. The historical overall verdict remains incomplete-local-run. Corrective code and its future machine results must be reported separately; see [the corrective contract](../docs/19-post-local-corrective.md).

@@ -34,7 +34,7 @@ The lazy registry implements Torch FP32, ORT FP32/INT8 and OpenVINO FP32/INT8 vi
 
 `thm-runtime prepare` copies a local source model into private staging, exports locally, verifies the original source hash, then publishes to a fresh content-addressed directory. It disables remote code/downloads in its isolated worker, does not overwrite the original model, and records converter versions and exact derived bytes. ORT INT8 uses dynamic QInt8; OpenVINO INT8 uses NNCF weight-only compression, explicitly distinct from activation PTQ/VNNI execution. Unsupported model exports fail closed. Partial or existing output namespaces are consumed, never silently replaced.
 
-Backend API contracts follow [SentenceTransformers local backend documentation](https://sbert.net/docs/package_reference/sentence_transformer/model.html) and [ORT execution-provider documentation](https://onnxruntime.ai/docs/execution-providers/). Real encoder/provider execution remains `pending-real-local-runtime`; deterministic test doubles validate orchestration, not model quality or hardware speed.
+Backend API contracts follow [SentenceTransformers local backend documentation](https://sbert.net/docs/package_reference/sentence_transformer/model.html) and [ORT execution-provider documentation](https://onnxruntime.ai/docs/execution-providers/). Real Torch CPU/CUDA execution is recorded at b1f8119; ORT/OpenVINO success and post-corrective acceptance remain pending; deterministic test doubles validate orchestration, not model quality or hardware speed.
 
 ## Calibration, profiles and scheduling
 
@@ -83,4 +83,9 @@ First-generation failures remain in [the frontier evidence](16-zero-llm-retrieva
 | Benchmark/research | No | Explicit | Fixed reference plus separately identified candidates | Reproducibility |
 | Headless CI/IDE automation | No | No | Error signature/file/branch query directly to recall | Deterministic ignition |
 
-See [the local verification plan](../reports/2026-09-08-local-runtime-verification-plan.md). This successor PR must remain open, with local acceptance pending. Stable pointers and accepted version are unchanged.
+See [the local verification plan](../reports/2026-09-08-local-runtime-verification-plan.md). The runtime/storage/evaluation predecessors have merged; the Z6 b1f8119 run is recorded with incomplete-local-run due to the old auto-safe gate. Corrective code still needs its own targeted machine retest. Stable pointers and accepted version are unchanged.
+
+
+## Post-local corrective evidence
+
+See the [current corrective contract and short retest](19-post-local-corrective.md). Z6 CPU/CUDA/auto-throughput and local NTFS/NVMe are machine-observed at b1f8119. Aggregate parity, strict parity, calibrated policy and post-fix acceptance remain separate claims. Auto-safe now allows a measured reference fallback; lack of acceleration does not itself fail correctness. No version/stable promotion or full-dataset acceptance is implied.

@@ -44,3 +44,8 @@ No live Hermes integration or model-effectiveness result is asserted by this doc
 ## Minimum comparison protocol
 
 Use the same synthetic records, explicit scope, fixed clock and complete-context budget for a simple recency/frequency baseline, warm-tier retrieval and the candidate policy. Clearly name common validity filters. Keep development and held-out queries distinct; report failures without changing the questions after seeing the results. Report retrieval hits, correct empty outcomes, expired and wrong-subject selections, context sizes, local retrieval calls and latency separately. Offline lookup timing excludes model and network latency. Any model experiment requires its own inputs, authorization, budget and observed request evidence.
+
+
+## Post-local corrective evidence
+
+See the [current corrective contract and short retest](19-post-local-corrective.md). Z6 CPU/CUDA/auto-throughput and local NTFS/NVMe are machine-observed at b1f8119. Aggregate parity, strict parity, calibrated policy and post-fix acceptance remain separate claims. Auto-safe now allows a measured reference fallback; lack of acceleration does not itself fail correctness. No version/stable promotion or full-dataset acceptance is implied.

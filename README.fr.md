@@ -15,6 +15,13 @@ Contrats d’architecture et de preuve
 
 Le package stable et l’archive restent en 1.4.0. Runtime, Physical Storage Fabric et Evaluation Fabric restent Unreleased. Les mesures existantes conservent protocole, SHA source et périmètre ; aucun benchmark non exécuté ou matériel non mesuré ne devient accepted evidence.
 
+<!-- section:machine-corrective -->
+## Mesures Z6 et politique corrigée
+
+Le Z6 G4 a exécuté CPU reference, RTX 3080 CUDA et auto-throughput sur `b1f8119`, avec mesure des coûts StorageProfile NTFS/NVMe locaux. Les plongements de documents sur GPU étaient nettement plus rapides et le sous-ensemble LME borné améliorait le temps total. La qualité agrégée LoCoMo était équivalente, mais CUDA présentait 23 lignes strictement différentes, dont 3 changements d’ensemble sélectionné. L’ancien auto-safe a échoué. La politique corrigée sépare la borne numérique FP32 de l’identité exacte de la structure de recherche et autorise un repli explicite vers la référence sans prétendre à une accélération. La validation matérielle après correction, le dispatch AVX/VNNI observé et LME complet restent en attente.
+
+[2026-09-09 evidence](reports/2026-09-09-local-acceptance-b1f8119.md) · [Corrective contract / short retest](docs/19-post-local-corrective.md)
+
 <!-- section:philosophy -->
 ## Philosophie de conception
 

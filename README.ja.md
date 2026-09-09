@@ -15,6 +15,13 @@ THM は論理メモリ、計算実行、物理ストレージを分離します�
 
 安定 package と archive は 1.4.0 を維持します。Runtime、Physical Storage Fabric、Evaluation Fabric は Unreleased です。既存の測定は元の protocol、source SHA、範囲を保持し、未実行の benchmark やハードウェアを accepted evidence に含めません。
 
+<!-- section:machine-corrective -->
+## Z6 実機証拠と修正ポリシー
+
+Z6 G4 の検証対象 `b1f8119` では CPU reference、RTX 3080 CUDA、auto-throughput が実行され、ローカル NTFS/NVMe StorageProfile のコストが測定された。GPU 文書埋め込みは大幅に高速化し、限定 LME サブセットの全体時間も改善した。LoCoMo の集計品質は同等だが、CUDA には厳密不一致が 23 行あり、3 行で選択集合が変化した。過去の auto-safe は失敗した。修正後の許可判定は FP32 数値上限と検索構造の完全一致を分離し、加速を主張せず明示的な reference フォールバックを許可する。修正後の実機検証、AVX/VNNI の実行観測、完全 LME は未検証。
+
+[2026-09-09 evidence](reports/2026-09-09-local-acceptance-b1f8119.md) · [Corrective contract / short retest](docs/19-post-local-corrective.md)
+
 <!-- section:philosophy -->
 ## Design philosophy
 

@@ -75,3 +75,8 @@ The optional zero-LLM hardware/profile/AutoTune runtime, identity-safe vector st
 
 - [Unreleased physical storage fabric and bounded verification](physical-storage-fabric.md)
 - [2026-09-09 repository reconciliation and forward-only closeout](../reports/2026-09-09-open-pr-reconciliation-closeout.md)
+
+
+## Post-local corrective evidence
+
+See the [current corrective contract and short retest](19-post-local-corrective.md). Z6 CPU/CUDA/auto-throughput and local NTFS/NVMe are machine-observed at b1f8119. Aggregate parity, strict parity, calibrated policy and post-fix acceptance remain separate claims. Auto-safe now allows a measured reference fallback; lack of acceleration does not itself fail correctness. No version/stable promotion or full-dataset acceptance is implied.

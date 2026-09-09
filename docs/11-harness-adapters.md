@@ -147,8 +147,13 @@ The opt-in Python entity projection and its Protocol 2 evidence are documented i
 
 ## Unreleased runtime integration
 
-The canonical SearchIndex now exposes typed default-off RetrievalFeatures and bounded search_many; existing search/entity and residency behavior remain compatible. Optional runtime setup, profile/vector identity, isolated calibration and the final local experiment contract are described in [runtime architecture](17-zero-llm-heterogeneous-runtime.md). Runtime-dependent hardware performance remains pending-real-local-runtime.
+The canonical SearchIndex now exposes typed default-off RetrievalFeatures and bounded search_many; existing search/entity and residency behavior remain compatible. Optional runtime setup, profile/vector identity, isolated calibration and the final local experiment contract are described in [runtime architecture](17-zero-llm-heterogeneous-runtime.md). Z6 CPU/CUDA/auto-throughput evidence now exists at b1f8119; post-corrective hardware acceptance remains pending.
 
 HarnessConfig accepts `features={"entity": true}` or an explicit typed configuration. MCP CLI accepts `--features-json`. OpenAI/LangChain adapters continue to delegate to the same harness object. A deterministic caller can invoke recall directly on an error signature, branch/file locator or user query; no model query generation is required. Core-only MCP stdio remains available through `thm-mcp-legacy`.
 
 MCP source records retain `complete`, `parent_id`, `span_start`, `span_end`, and `locator_kind` alongside the parent source hash. Full-source offsets remain null when not supplied; partial segments never become complete evidence at the transport boundary.
+
+
+## Post-local corrective evidence
+
+See the [current corrective contract and short retest](19-post-local-corrective.md). Z6 CPU/CUDA/auto-throughput and local NTFS/NVMe are machine-observed at b1f8119. Aggregate parity, strict parity, calibrated policy and post-fix acceptance remain separate claims. Auto-safe now allows a measured reference fallback; lack of acceleration does not itself fail correctness. No version/stable promotion or full-dataset acceptance is implied.

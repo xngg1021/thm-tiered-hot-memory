@@ -4,7 +4,10 @@ on:
   workflow_dispatch:
   push:
     paths:
+      - "tests/test_post_local_corrective.py"
       - "thm/evaluation/**"
+      - "thm/runtime/**"
+      - "research/runtime/**"
       - "scripts/check_docs.py"
       - "tests/test_document_checks.py"
       - "thm/harness.py"

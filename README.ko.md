@@ -15,6 +15,13 @@ THM은 논리 메모리, 계산 실행, 물리 저장소를 분리합니다. Eva
 
 안정 package와 archive는 1.4.0을 유지합니다. Runtime, Physical Storage Fabric, Evaluation Fabric은 Unreleased입니다. 기존 측정은 원래 protocol, source SHA, 범위를 유지하며 실행하지 않은 benchmark나 하드웨어는 accepted evidence가 아닙니다.
 
+<!-- section:machine-corrective -->
+## Z6 실측 증거와 수정 정책
+
+Z6 G4의 테스트 대상 `b1f8119`에서 CPU reference, RTX 3080 CUDA, auto-throughput이 실제 실행되었으며 로컬 NTFS/NVMe StorageProfile 비용을 측정했다. GPU 문서 임베딩은 크게 빨라졌고 제한된 LME 부분집합의 전체 시간도 개선됐다. LoCoMo 집계 품질은 같지만 CUDA는 23개 행에서 엄격 불일치가 있었고 그중 3개 행은 선택 집합이 달랐다. 당시 auto-safe는 실패했다. 수정된 승인 정책은 FP32 수치 범위와 검색 구조의 정확한 일치를 분리하고 가속을 주장하지 않는 명시적 reference 복귀를 허용한다. 수정 후 실기기 검증, AVX/VNNI 실행 관측, 전체 LME는 아직 미검증이다.
+
+[2026-09-09 evidence](reports/2026-09-09-local-acceptance-b1f8119.md) · [Corrective contract / short retest](docs/19-post-local-corrective.md)
+
 <!-- section:philosophy -->
 ## Design philosophy
 
