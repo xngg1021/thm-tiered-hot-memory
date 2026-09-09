@@ -95,7 +95,7 @@ Microbench defaults are 8 MiB and five seconds; hard admitted limits are 128 MiB
 
 | Mode | LME | Other work | Default wall ceiling |
 | --- | --- | --- | --- |
-| smoke | First 2 pinned instances | Tiny synthetic retrieval/parity, probes, preparation, at most 2 autotune candidates, CPU reference and strict winner | 300 seconds |
+| smoke | First 2 pinned instances | Tiny synthetic retrieval/parity, probes, baseline-only calibration; identical reference pilot promoted without a second matrix; optional preparation and accelerated trials skipped | 300 seconds |
 | acceptance (default) | First 5 pinned instances | LoCoMo reference/winners, at most 6 autotune candidates, parity | 3,600 seconds |
 | full-research | Full pinned dataset | Requested extended A/B, winners and diagnostics | Explicit budget; acknowledgement mandatory |
 

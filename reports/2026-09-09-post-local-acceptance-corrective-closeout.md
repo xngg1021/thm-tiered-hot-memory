@@ -1,6 +1,10 @@
-# Post-local corrective checkpoint — remote lifecycle resumed
+# Post-local corrective closeout — merged, hardware follow-up pending
 
-This is a forward-only checkpoint, **not a completed merge or post-fix hardware acceptance**.
+PR #18 is normally merged. The final closeout below supersedes the retained historical checkpoints. Post-fix hardware acceptance remains pending.
+
+## Historical checkpoint before authorized publication
+
+The following checkpoint recorded the then-incomplete remote lifecycle; its pending publication/review/merge statements are historical, not current status.
 
 ## Authority and implementation identity
 
@@ -76,3 +80,58 @@ Codex review 5154160682 on `e1552b8975a0609442dd887bb885d70070cbd108` found one 
 
 
 The next exact-head review found a second P2 on shared batch timing. The subsequent forward fix separately aggregates each complete batch receipt once by native chunk size and matrix loading once per scope/mode/budget call. Equal timing values do not collapse distinct batches, and incomplete chunks remain unresolved. Regressions exercise real multi-chunk SearchIndex output and identical-clock/partial-chunk fixtures. Retrieval and reference dependency keys remain unchanged.
+
+
+## Final corrective merge closeout
+
+### Exact identities and ancestry
+
+| Identity | Commit | Tree |
+| --- | --- | --- |
+| Predecessor main / historical evidence commit | `aa8391ebe506c38536dce787192d4d305ac335e1` | `f72642b512eca274202aa494fbf9809d4722f691` |
+| Final reviewed and tested code HEAD | `d4c566efbca5dbcbfe0ac1e3b92fd45a93b86d08` | `7d7a5202b4a9aa6abf63e48e622dfa7c5571621a` |
+| Final production main / normal merge anchor | `1db685fe762b4bab9c66e8ace9bed5cc116afb43` | `7d7a5202b4a9aa6abf63e48e622dfa7c5571621a` |
+
+Merge parents are exactly the predecessor and final reviewed HEAD above. GitHub accepted the expected-head guard; no squash, rebase or force update occurred. The merge tree equals the reviewed tree. The actual machine-tested source remains `b1f81192179fafc31c12b7d7c9e5c4210ce9cfd1`, not this corrective source.
+
+This closeout and a stale smoke-table sentence are a documentation-only forward successor. Its own commit/tree cannot be embedded in its content without changing that identity. The [final main identity and post-merge validation ledger](https://github.com/xngg1021/thm-tiered-hot-memory/pull/18#issuecomment-5602127037) records that final administrative main SHA/tree, its exact file delta and actual completed CI results. The production merge anchor above stays immutable.
+
+### Final gates and review disposition
+
+- Final local suite: **475 tests passed**, repeated on the merged checkout (9.106 seconds); headless probe has zero generation/provider/network calls. Numeric, documentation/localization, version/history and whitespace gates passed on the reviewed head; documentation gates are rerun for this closeout.
+- Exact reviewed-head correctness: [push 34352411670](https://github.com/xngg1021/thm-tiered-hot-memory/actions/runs/34352411670) and [PR 34352416732](https://github.com/xngg1021/thm-tiered-hot-memory/actions/runs/34352416732), both SUCCESS across Ubuntu/Python 3.10, Windows/Python 3.13 and macOS/Python 3.13.
+- Exact reviewed-head integrations: [Hermes 34352411583](https://github.com/xngg1021/thm-tiered-hot-memory/actions/runs/34352411583) and [harness 34352411563](https://github.com/xngg1021/thm-tiered-hot-memory/actions/runs/34352411563), both SUCCESS.
+- [Final Codex review](https://github.com/xngg1021/thm-tiered-hot-memory/pull/18#issuecomment-5602080131) explicitly identifies `d4c566efbc` and found no major issues. Both actionable P2 threads were forward-fixed, regressed and resolved before merge. No unresolved review thread remained.
+- Post-merge main gates: [correctness 34353439155](https://github.com/xngg1021/thm-tiered-hot-memory/actions/runs/34353439155), [Hermes 34353439261](https://github.com/xngg1021/thm-tiered-hot-memory/actions/runs/34353439261), [harness 34353439222](https://github.com/xngg1021/thm-tiered-hot-memory/actions/runs/34353439222). Hermes and harness already completed successfully at document preparation; correctness and final documentation-commit outcomes are bound in the final ledger linked above, after actual completion.
+
+The two review defects were native matrix timing-field mismatch and omitted shared batch clocks. Their final fixes consume `timing_breakdown_ms`, retain direct-row compatibility, expose absent clocks as unknown, and aggregate shared clocks once per complete batch and matrix load once per call. Read-only recomputation of original throughput LoCoMo receipts found 23,832 rows, 1,518 batches, 60 calls / matrix loads and zero unresolved batch rows. Raw row clocks retain inclusive/amortized semantics; they are not additive with shared totals.
+
+### Admission, fallback and evidence contract
+
+FP32 numeric sanity uses `2*gamma(2*d+1)`, with unit roundoff `2^-24`; at dimension 384 this is approximately `9.17e-5`. This is a deterministic sanity envelope, not a universal transformer-error proof. Tiny numeric changes pass only with exact ranked/selected IDs, packed evidence identity/hash/source/completeness and budget. Bitwise equality is a separate diagnostic. Retrieval sorting, fusion and packing semantics were not changed.
+
+A successful reference remains calibrated fallback when no faster safe candidate exists; no acceleration is claimed. Explicit reference policy remains fixed to its requested device/scorer. Throughput drift and measured speedup have separate fields. Cap-independent candidate plans, baseline ordinal zero, backend/device/scorer representatives, skip reasons, source-bound within-run reference reuse and process-tree deadlines remain enforced. Smoke skips preparation and optional accelerated trials and promotes its identical reference pilot.
+
+The 48-artifact inventory, CUDA 23/3 versus throughput 5/0 strict/selected-set counts, aggregate equivalence and legacy missing forensic fields retain their historical evidence boundaries. ORT's original generic failure cause remains unresolved; new structured stage/category diagnostics permit a targeted follow-up without inventing a diagnosis. No new multi-hour matrix or real Z6 measurement was run. Reference semantic dependency closure, raw machine receipts, VERSION, stable/archive 1.4.0 and private cross-run cache-key requirements are unchanged.
+
+### Issue delta and final gap audit
+
+All current open issues and PRs were inspected. PR #18 is merged, no open corrective PR remains, and #13 is the only open issue. Its body and checklist now distinguish established CPU/CUDA/throughput/query_batch=8 and NTFS/NVMe observations from the remaining controlled CPU batch sweep, positive ISA/clock dispatch evidence, ORT/OpenVINO success, INT8 quality and post-fix Z6 acceptance.
+
+The final repository search covered no-candidate-passed, strict/exact parity, score_tolerance, auto-safe/throughput, pending-local labels, open-PR claims, rank-only drift, AVX512/VNNI/observed dispatch, ORT preparation and full-LME requirements. Current English and seven localized READMEs retain the corrected evidence boundary. The final remaining current-doc mismatch was the storage smoke table's old preparation/two-trial/winner description; its documentation-only correction matches the reviewed implementation. Historical reports and checkpoints remain identifiable as historical and are superseded through forward corrections.
+
+### Targeted machine follow-up
+
+Use the merged checkout and existing local model, with new output directories:
+
+```powershell
+python -m research.runtime.corrective_retest --model-path MODEL_DIRECTORY --model-id sentence-transformers/all-MiniLM-L6-v2 --output-dir NEW_RETEST_DIRECTORY --wall-seconds 600 --prepare-ort
+```
+
+Optional controlled CPU sweep:
+
+```powershell
+python -m research.runtime.query_batch --model-path MODEL_DIRECTORY --model-id sentence-transformers/all-MiniLM-L6-v2 --output-dir NEW_BATCH_DIRECTORY --wall-seconds 240
+```
+
+Total requested process ceilings are 14 minutes. No LoCoMo/LME matrix is required. The exact [scope and interpretation](../docs/19-post-local-corrective.md#short-local-retest) remain controlling; these commands do not establish full-dataset acceptance. Issue #13 remains open until its actual evidence requirements are met.
