@@ -169,6 +169,26 @@ class DocumentTests(unittest.TestCase):
             self.write('docs/campaign.md', '```' + shell + '\n' + command + '\n```\n')
             self.assertTrue(any('requires explicit --full-research' in e for e in checker.check(self.root)['errors']), shell)
 
+    def test_research_process_substitution_keeps_inner_separators(self):
+        for path in ('<(producer | filter)', '>(producer; filter)', '<(producer <(nested | filter) | filter)'):
+            command = 'python research/recall/benchmark.py --dataset ' + path
+            self.write('docs/campaign.md', '```bash\n' + command + ' --full-research\n```\n')
+            self.assertEqual(checker.check(self.root)['status'], 'PASS', path)
+            self.write('docs/campaign.md', '```bash\n' + command + '; echo --full-research\n```\n')
+            self.assertTrue(any('requires explicit --full-research' in e for e in checker.check(self.root)['errors']), path)
+        for path in ('<(producer --full-research | filter)', '$(producer --full-research | filter)'):
+            self.write('docs/campaign.md', '```bash\npython research/recall/benchmark.py --dataset ' + path + '\n```\n')
+            self.assertTrue(any('requires explicit --full-research' in e for e in checker.check(self.root)['errors']), path)
+
+    def test_research_prompt_selects_powershell_without_shell_fence(self):
+        for opening, closing in (('', ''), ('```text\n', '```\n')):
+            for prompt in ('PS> ', 'PS C:\\work> '):
+                command = prompt + 'python research/recall/benchmark.py --dataset input.json '
+                self.write('docs/campaign.md', opening + command + '`\n --full-research\n' + closing)
+                self.assertEqual(checker.check(self.root)['status'], 'PASS', prompt)
+                self.write('docs/campaign.md', opening + command + '\\\n --full-research\n' + closing)
+                self.assertTrue(any('requires explicit --full-research' in e for e in checker.check(self.root)['errors']), prompt)
+
     def test_indented_and_prompt_prefixed_research_commands_require_opt_in(self):
         for prefix in ('    ', '\t', '$ ', '  $ ', '> ', 'PS> ', 'PS C:\\work> '):
             command = prefix + 'python research/recall/benchmark.py --dataset input.json'

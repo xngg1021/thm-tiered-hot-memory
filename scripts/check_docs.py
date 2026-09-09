@@ -13,12 +13,24 @@ from urllib.parse import unquote, urlsplit
 ROOT = Path(__file__).resolve().parents[1]
 
 
-def _without_shell_comment(command):
+def _without_shell_comment(command, *, mask_substitutions=False):
     """Return the first command, excluding comments and outer separators."""
     quote = None
     escaped = False
     in_word = False
     substitutions = []
+    ranges = []
+    substitution_start = None
+
+    def finish(end):
+        result = command[:end]
+        if mask_substitutions:
+            for start, stop in ranges:
+                result = result[:start] + 'x' * (stop - start) + result[stop:]
+            if substitutions:
+                result = result[:substitution_start] + 'x' * (end - substitution_start)
+        return result
+
     index = 0
     while index < len(command):
         char = command[index]
@@ -28,7 +40,10 @@ def _without_shell_comment(command):
         elif char in ('\\', '`') and quote != "'":
             escaped = True
             in_word = True
-        elif command.startswith('$(', index) and quote != "'":
+        elif ((command.startswith('$(', index) and quote != "'") or
+              (command.startswith(('<(', '>('), index) and quote is None)):
+            if not substitutions:
+                substitution_start = index
             substitutions.append([quote, 1])
             quote = None
             in_word = False
@@ -40,20 +55,22 @@ def _without_shell_comment(command):
             quote = char
             in_word = True
         elif char == '#' and not in_word:
-            return command[:index]
+            return finish(index)
         elif not substitutions and char in ';|&':
-            return command[:index]
+            return finish(index)
         elif substitutions and char in '()':
             substitutions[-1][1] += 1 if char == '(' else -1
             if substitutions[-1][1] == 0:
                 quote, _ = substitutions.pop()
                 in_word = True
+                if not substitutions:
+                    ranges.append((substitution_start, index + 1))
             else:
                 in_word = False
         else:
             in_word = not (char.isspace() or char in ';|&()<>')
         index += 1
-    return command
+    return finish(len(command))
 
 
 def _native_commands(text):
@@ -68,7 +85,10 @@ def _native_commands(text):
         if not pattern.match(line):
             continue
         command = line
-        marker = '`' if fence in ('powershell', 'pwsh', 'ps1') else '\\'
+        shell = fence
+        if shell not in ('powershell', 'pwsh', 'ps1', 'bash', 'sh', 'zsh', 'shell'):
+            shell = 'powershell' if re.match(r'^\s*PS(?:[ \t]+[^>\n]*)?>[ \t]+', line) else 'bash'
+        marker = '`' if shell in ('powershell', 'pwsh', 'ps1') else '\\'
         while command.endswith(marker) and _without_shell_comment(command) == command:
             count = len(command) - len(command.rstrip(marker))
             if count % 2 == 0:
@@ -147,7 +167,7 @@ def check(root: Path) -> dict:
             if any(line != line.rstrip() for line in text.splitlines()):
                 errors.append(f'{relative}: trailing whitespace')
             for command in _native_commands(text):
-                lexer = shlex.shlex(_without_shell_comment(command), posix=False)
+                lexer = shlex.shlex(_without_shell_comment(command, mask_substitutions=True), posix=False)
                 lexer.whitespace_split = True
                 lexer.commenters = ''
                 try:
