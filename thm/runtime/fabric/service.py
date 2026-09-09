@@ -123,7 +123,6 @@ class RuntimeService:
                 self.batchers[group] = DeadlineAwareMicrobatcher(
                     lambda queries: self._execute(scope, queries, workload=workload, **settings), max_batch=32)
             future = self.batchers[group].submit(query, deadline=deadline)
-        # Receipt is attached before forwarding the completed result to callers.
         from concurrent.futures import Future
         output = Future()
         def finish(done):
@@ -175,8 +174,6 @@ class RuntimeService:
             return self.pinned[key.id]
         anchor = identity({k:v for k,v in asdict(key).items() if k not in ('hardware','driver','provider_version')})
         if anchor in self.session_pins:
-            # New device observations may invalidate a choice, but cannot promote
-            # a different provider within an already pinned logical session.
             prior_key, prior = self.session_pins[anchor]
             self.pinned[key.id] = prior if prior_key == key.id else None
             return self.pinned[key.id]
@@ -214,8 +211,6 @@ class RuntimeService:
 
     def _execute(self, scope, queries, *, workload='interactive', **settings):
         start = time.perf_counter(); cpu = time.process_time()
-        # Hold the derived index lock across plan construction and execution.
-        # External SQLite writers are detected by the returned generation below.
         with self.lock, self.index._lock:
             if self.closed:
                 raise RuntimeError('runtime service closed')
@@ -270,8 +265,6 @@ class RuntimeService:
             except ValueError:
                 plan_stale = True
             if plan_stale or any(r['generation'] != generation for r in results):
-                # Replan once on the new snapshot; the old observation cannot be
-                # published under the new source generation.
                 self.pinned.pop(key.id, None)
                 key, generation, count = self._key(scope, workload, effective)
                 plan = JointComputeDataPlanner().plan(self.index, scope,
@@ -335,7 +328,6 @@ class RuntimeService:
         if not self.discovery_done:
             self.explorer.submit({'operation': 'discover', 'cursor': self.discovery_cursor}, self._discovered)
             return
-        # Custom token counters and retrieval feature experiments are not replayed.
         from thm.retrieval import TokenCounter
         from thm.features import RetrievalFeatures
         if type(self.index.counter) is not TokenCounter or RetrievalFeatures.parse(settings.get('features')) != RetrievalFeatures():
@@ -354,7 +346,6 @@ class RuntimeService:
         candidate = candidates[len(self.decisions) % len(candidates)] if candidates else None
         if candidate is None:
             return
-        task_settings = {k: v for k, v in settings.items() if k in ('mode', 'budget', 'candidate_limit', 'neighbor_turns')}
         task = {'operation': 'replay', 'db': str(self.index.path), 'scope': scope, 'query': query,
                 'generation': generation, 'query_vector': list(vector), 'embedding_profile': asdict(p),
                 'model_id': self.model_id, 'counter': self.index.counter.name, 'settings': task_settings,
@@ -365,7 +356,6 @@ class RuntimeService:
                              estimated_io=count*max(1, p.dimension)*4, gpu=candidate.device != 'cpu')
 
     def _discovered(self, result):
-        """Publish only sanitized, observed runtime facts from the private child."""
         from .hardware import DeviceNode
         with self.lock:
             if self.closed:
@@ -428,7 +418,6 @@ class RuntimeService:
                                   resources={'ram': result['memory_bytes'], 'cpu_seconds': cpu_candidate}, limits=resource_limits)
         values = result['candidate']
         from .optimizer import percentile
-        import statistics
         measurement = {'p50': statistics.median(values), 'p95': percentile(values, .95), 'p99': percentile(values, .99),
                        'throughput': 1000/statistics.median(values), 'ram': result['memory_bytes'],
                        'sample_count': len(values), 'noise': gain.get('noise_floor', 0),
