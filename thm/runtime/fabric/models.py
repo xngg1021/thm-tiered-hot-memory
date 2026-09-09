@@ -182,7 +182,8 @@ class ModelPortfolio:
             with self.lock:
                 if self.closed or worker.preempted:
                     return
-                self.service.store.put(key,candidate.id,measurement,semantic_status='strict' if semantic else 'rejected',
+                self.service.store.put(key,candidate.id,measurement,
+                    semantic_status='observed-request' if semantic else 'rejected',
                     material_gain=gain['decision'],pareto=gain['materially_faster'],
                     evidence={'sample_kind':'observed-end-to-end','semantic_scope':'observed-request-only'})
                 promoted = bool(gain['materially_faster'] and activation_allowed)
