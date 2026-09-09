@@ -51,19 +51,19 @@ Standalone benchmark/LME/bridge/report/parity CLIs exclusively create outputs an
 
 ```bash
 # CPU 全套；默认原子占用 -cpu-v2。若该 tag 已存在或曾中断，必须换新 tag
-python research/economics/run_suite.py \
+python research/economics/run_suite.py --full-research \
   --device cpu \
   --datasets-root ../datasets --model-path ../models/all-MiniLM-L6-v2 \
   --ce-root ../context-economics
 
 # GPU 全套；默认原子占用 -gpu-v2
-python research/economics/run_suite.py \
+python research/economics/run_suite.py --full-research \
   --device cuda --batch-size 64 \
   --datasets-root ../datasets --model-path ../models/all-MiniLM-L6-v2 \
   --ce-root ../context-economics
 
 # 如需重复实验，显式使用新的唯一 tag；失败/中断的 tag 也不复用
-python research/economics/run_suite.py \
+python research/economics/run_suite.py --full-research \
   --device cpu --artifact-tag cpu-v2-rerun-02 \
   --datasets-root ../datasets --model-path ../models/all-MiniLM-L6-v2 \
   --ce-root ../context-economics

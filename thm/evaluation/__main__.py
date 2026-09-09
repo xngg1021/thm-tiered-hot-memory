@@ -34,7 +34,18 @@ def main():
     if not args.worker:
         from .bounds import bounded_process
         command = [sys.executable, '-m', 'thm.evaluation', *sys.argv[1:], '--worker']
-        raise SystemExit(bounded_process(command, args.wall_seconds, args.output))
+        code = bounded_process(command, args.wall_seconds, args.output)
+        if code:
+            raise SystemExit(code)
+        # Only the supervisor may publish acceptance after successful worker exit.
+        from thm.runtime.receipts import write_receipt
+        result = json.loads((args.output / 'completed.json').read_text(encoding='utf-8'))
+        if result.get('status') != 'completed' or (args.output / 'interrupted.json').exists():
+            raise RuntimeError('worker did not complete cleanly')
+        result['status'] = 'passed'
+        write_receipt(args.output / 'acceptance.json', result)
+        print(json.dumps(result))
+        return
     args.output.mkdir(parents=True)
     started = time.monotonic()
     try:
@@ -72,16 +83,15 @@ def main():
         finally:
             v2.close()
             arena.close()
-        result = {'status': 'passed', 'mode': args.mode, 'wall_seconds': time.monotonic()-started,
+        result = {'status': 'completed', 'mode': args.mode, 'wall_seconds': time.monotonic()-started,
                   'full_dataset_acceptance': False, 'benchmark_receipts': [r['receipt_sha256'] for r in receipts],
                   'interface_evidence': 'deterministic fixtures; no live agent outcome',
                   'generation_calls': 0, 'judge_calls': 0}
-        (args.output / 'acceptance.json').write_text(json.dumps(result, indent=2) + '\n', encoding='utf-8', newline='\n')
+        (args.output / 'completed.json').write_text(json.dumps(result, indent=2) + '\n', encoding='utf-8', newline='\n')
     except Exception as exc:
         (args.output / 'failed.json').write_text(json.dumps({'status': 'failed', 'error': str(exc),
             'full_dataset_acceptance': False}) + '\n', encoding='utf-8', newline='\n')
         raise
-    print(json.dumps(result))
 
 
 if __name__ == '__main__':

@@ -148,3 +148,28 @@ class FabricTests(unittest.TestCase):
                 memory.close()
             with self.assertRaises(RuntimeError):
                 memory.query('observatory')
+
+    def test_first_agent_session_starts_with_empty_evidence(self):
+        with tempfile.TemporaryDirectory() as temp:
+            memory = AgentMemory(Path(temp)/'memory.db', 'new-task')
+            try:
+                self.assertEqual(memory.query('first question'), '')
+                self.assertIn('first question', memory.wrap_user_prompt('first question'))
+                memory.add('observatory code cobalt')
+                self.assertIn('cobalt', memory.query('observatory'))
+            finally:
+                memory.close()
+
+    def test_cli_only_supervisor_publishes_acceptance(self):
+        with tempfile.TemporaryDirectory() as temp:
+            out = Path(temp)/'worker'
+            result = subprocess.run([sys.executable, '-m', 'thm.evaluation', '--worker',
+                '--mode', 'smoke', '--output', str(out)], capture_output=True, text=True)
+            self.assertEqual(result.returncode, 0, result.stderr)
+            self.assertFalse((out/'acceptance.json').exists())
+            self.assertEqual(json.loads((out/'completed.json').read_text())['status'], 'completed')
+            out = Path(temp)/'supervised'
+            result = subprocess.run([sys.executable, '-m', 'thm.evaluation',
+                '--mode', 'smoke', '--output', str(out)], capture_output=True, text=True)
+            self.assertEqual(result.returncode, 0, result.stderr)
+            self.assertEqual(json.loads((out/'acceptance.json').read_text())['status'], 'passed')

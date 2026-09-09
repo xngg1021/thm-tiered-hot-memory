@@ -25,7 +25,10 @@ class AgentMemory:
         self.closed = False
         # Connections are opened on the calling thread, including upstream query workers.
         index = SearchIndex(self.path, TokenCounter('utf8_bytes'))
-        index.close()
+        try:
+            index.replace_scope(self.scope, [])
+        finally:
+            index.close()
         self.documents = []
         self.last_result = None
 
