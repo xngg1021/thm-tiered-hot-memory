@@ -66,7 +66,7 @@ class ModelFabricTests(unittest.TestCase):
             proof = {'generation':generation,'reference':signature(reference),'result':signature(reference),
                 'baseline':[10]*5,'candidate':[1]*5,'cpu_samples':{'baseline':[.01]*5,'candidate':[.001]*5},
                 'startup_ms':2,'embedding_profile':profile,'vram_bytes':100}
-            worker = mock.Mock(); worker.prepare.return_value = proof
+            worker = mock.Mock(); worker.preempted = False; worker.prepare.return_value = proof
             worker.memory = 1024; worker.budget.last = {'ram_bytes':100}
             worker.task = {'generation':generation}
             worker.search.return_value = {'results':[reference],'cpu_seconds':.002,'embedding_profile':profile}

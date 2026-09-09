@@ -89,6 +89,7 @@ class RuntimeService:
 
     def submit(self, scope, query, *, workload='interactive', deadline=None, **settings):
         """Nonblocking online API. Compatible requests share one bounded queue."""
+        self.explorer.preempt(); self.models.preempt()
         from thm.features import RetrievalFeatures
         from .microbatch import DeadlineAwareMicrobatcher
         normalized = dict(settings)
@@ -347,6 +348,8 @@ class RuntimeService:
             if self.closed:
                 return
             if result.get('status') == 'deferred':
+                if result.get('reason') == 'foreground-pressure':
+                    return
                 self.discovery_cursor = (result.get('cursor') or 0)+1
                 return
             self.discovery_cursor = result.get('next_cursor', 0)
@@ -383,6 +386,8 @@ class RuntimeService:
         if result.get('key') != key.id or result.get('candidate_id') != candidate.id:
             return
         if result.get('status') == 'deferred':
+            if result.get('reason') == 'foreground-pressure':
+                return
             with self.lock:
                 if not self.closed:
                     self.store.failure(key, candidate.provider, 'timeout')

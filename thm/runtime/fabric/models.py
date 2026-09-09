@@ -18,7 +18,7 @@ from .resources import ChildBudget
 class WarmModelWorker:
     def __init__(self, task, *, memory, cpu, io, wall):
         self.task = dict(task); self.memory = memory; self.cpu = cpu; self.io = io; self.wall = wall
-        self.process = None; self.budget = None; self.reader = None; self.closed = False
+        self.process = None; self.budget = None; self.reader = None; self.closed = False; self.preempted = False
         self.responses = queue.Queue(maxsize=2); self.lock = threading.RLock()
         self.workspace = tempfile.TemporaryDirectory(prefix='thm-model-')
         self.task['workspace'] = self.workspace.name
@@ -174,7 +174,7 @@ class ModelPortfolio:
                 'throughput':1000/statistics.median(values),'startup':result['startup_ms'],
                 'cpu_seconds':candidate_cpu,'ram':ram,'vram':result.get('vram_bytes'),'sample_count':len(values),'noise':gain.get('noise_floor',0)}
             with self.lock:
-                if self.closed:
+                if self.closed or worker.preempted:
                     return
                 self.service.store.put(key,candidate.id,measurement,semantic_status='strict' if semantic else 'rejected',
                     material_gain=gain['decision'],pareto=gain['materially_faster'],
@@ -190,13 +190,22 @@ class ModelPortfolio:
         except Exception as exc:
             with self.lock:
                 if not self.closed:
-                    self.last = {'status':'deferred','reason':type(exc).__name__,'inference_provider':candidate.inference_provider}
-                    self.service.store.failure(key,candidate.inference_provider,'compile')
+                    self.last = {'status':'deferred','reason':'foreground-pressure' if worker.preempted else type(exc).__name__,'inference_provider':candidate.inference_provider}
+                    if not worker.preempted:
+                        self.service.store.failure(key,candidate.inference_provider,'compile')
         finally:
             if not keep:
                 worker.close()
             with self.lock:
                 self.preparing = None
+
+    def preempt(self):
+        with self.lock:
+            worker = self.preparing
+            if worker is None or worker.preempted:
+                return
+            worker.preempted = True
+        threading.Thread(target=worker.close,name='thm-model-preempt',daemon=True).start()
 
     def new_session(self):
         with self.lock:

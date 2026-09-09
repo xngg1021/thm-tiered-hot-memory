@@ -23,7 +23,7 @@ class BoundedShadowExplorer:
         self.wall = wall_seconds; self.interval = interval_seconds; self.memory = memory_bytes
         self.io = io_bytes; self.cpu = cpu_seconds; self.clock = clock
         self.last_started = None; self.process = None; self.thread = None
-        self.cancelled = threading.Event(); self.lock = threading.RLock(); self.last_receipt = {}
+        self.preempted = False; self.cancelled = threading.Event(); self.lock = threading.RLock(); self.last_receipt = {}
 
     def eligible(self, *, foreground_pressure=0, battery_low=False, thermal_pressure=False,
                  estimated_io=0, estimated_compile_ms=0, gpu=False, gpu_duty_observed=False):
@@ -37,10 +37,20 @@ class BoundedShadowExplorer:
         with self.lock:
             if not self.eligible(**pressure):
                 return False
+            self.preempted = False
             self.last_started = self.clock()
             self.thread = threading.Thread(target=self._run, args=(task, callback), name='thm-shadow', daemon=True)
             self.thread.start()
             return True
+
+    def preempt(self):
+        """Foreground arrival requests cancellation without waiting for teardown."""
+        with self.lock:
+            if self.preempted or not self.process or self.process.poll() is not None:
+                return
+            self.preempted = True
+            process = self.process
+        threading.Thread(target=self._kill, args=(process,), name='thm-shadow-preempt', daemon=True).start()
 
     def _kill(self, process):
         if process.poll() is not None:
@@ -101,7 +111,7 @@ class BoundedShadowExplorer:
                 if self.process:
                     self._kill(self.process)
                     self.process.communicate(timeout=5)
-            self.last_receipt = {'status': 'deferred', 'reason': type(exc).__name__,
+            self.last_receipt = {'status': 'deferred', 'reason': 'foreground-pressure' if self.preempted else type(exc).__name__,
                                  'wall_ms': (self.clock()-start)*1000, 'generation_calls': 0, 'worker_error': worker_error}
             if not self.cancelled.is_set():
                 try:
