@@ -36,6 +36,7 @@ class AgentOutcome:
 
 def attach_outcomes(receipt, outcomes, *, trace_bytes):
     """Verify trace bytes and exact task coverage, not the evaluator's score truth."""
+    outcomes = tuple(outcomes)
     result = copy.deepcopy(receipt)
     claimed = result.pop('receipt_sha256', None)
     if claimed != digest(result):

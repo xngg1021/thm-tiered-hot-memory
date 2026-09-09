@@ -123,12 +123,15 @@ class FabricTests(unittest.TestCase):
         trace = b'original evaluator trace'
         outcome = AgentOutcome('fixture-lme', 'reader-1', 'judge-1', hashlib.sha256(trace).hexdigest(), 1, 1, .5)
         imported = attach_outcomes(receipt, [outcome], trace_bytes=trace)
+        self.assertEqual(imported, attach_outcomes(receipt, (o for o in [outcome]), trace_bytes=trace))
         self.assertEqual(imported['layers']['LLM-agent-outcome']['generation_calls'], 1)
         self.assertEqual(imported['layers']['LLM-agent-outcome']['answer_accuracy'], .5)
         self.assertIsNone(imported['layers']['LLM-agent-outcome']['environment_success'])
         self.assertFalse(imported['full_dataset_acceptance'])
         with self.assertRaises(ValueError):
             attach_outcomes(receipt, [outcome], trace_bytes=b'changed')
+        with self.assertRaises(ValueError):
+            attach_outcomes(receipt, (o for o in [outcome]), trace_bytes=b'changed')
         with self.assertRaises(ValueError):
             attach_outcomes(receipt, [outcome, outcome], trace_bytes=trace)
         receipt['provenance'] = 'deterministic-fixture'

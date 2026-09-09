@@ -143,6 +143,16 @@ class DocumentTests(unittest.TestCase):
             self.write('docs/campaign.md', '```shell\n' + command + ' # --full-research\n```\n')
             self.assertTrue(any('requires explicit --full-research' in e for e in checker.check(self.root)['errors']), path)
 
+    def test_research_opt_in_on_continued_command_lines(self):
+        for marker in ('\\', '`'):
+            command = 'python research/recall/benchmark.py ' + marker + '\n  --dataset input.json ' + marker + '\n  '
+            self.write('docs/campaign.md', '```shell\n' + command + '--full-research\n```\n')
+            self.assertEqual(checker.check(self.root)['status'], 'PASS', marker)
+            self.write('docs/campaign.md', '```shell\n' + command + '# --full-research\n```\n')
+            self.assertTrue(any('requires explicit --full-research' in e for e in checker.check(self.root)['errors']), marker)
+        self.write('docs/campaign.md', '```shell\npython research/recall/benchmark.py --dataset input.json # \\\n --full-research\n```\n')
+        self.assertTrue(any('requires explicit --full-research' in e for e in checker.check(self.root)['errors']))
+
     def test_indented_and_prompt_prefixed_research_commands_require_opt_in(self):
         for prefix in ('    ', '\t', '$ ', '  $ ', '> ', 'PS> ', 'PS C:\\work> '):
             command = prefix + 'python research/recall/benchmark.py --dataset input.json'

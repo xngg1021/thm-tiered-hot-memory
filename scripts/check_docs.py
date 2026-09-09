@@ -54,6 +54,25 @@ def _without_shell_comment(command):
     return command
 
 
+def _native_commands(text):
+    pattern = re.compile(r'^[ \t]*(?:(?:[$%>]|PS(?:[ \t]+[^>\n]*)?>)[ \t]+)?python(?:3)?[ \t]+research/(?:recall/(?:benchmark|lme_retrieval)|economics/run_suite)\.py\b')
+    lines = iter(text.splitlines())
+    for line in lines:
+        if not pattern.match(line):
+            continue
+        command = line
+        while command.endswith(('\\', '`')) and _without_shell_comment(command) == command:
+            marker = command[-1]
+            count = len(command) - len(command.rstrip(marker))
+            if count % 2 == 0:
+                break
+            following = next(lines, None)
+            if following is None:
+                break
+            command = command[:-1] + following
+        yield command
+
+
 REPORT = 'reports/2026-09-06-学术工具复审.md'
 ORIGINAL_BLOB = 'a5cb344275050c16d12f5c3b42db9e0203c60cdd'
 START = '<!-- original-report:start -->\n'
@@ -120,7 +139,7 @@ def check(root: Path) -> dict:
         if path.suffix == '.md':
             if any(line != line.rstrip() for line in text.splitlines()):
                 errors.append(f'{relative}: trailing whitespace')
-            for command in re.findall(r'^[ \t]*(?:(?:[$%>]|PS(?:[ \t]+[^>\n]*)?>)[ \t]+)?python(?:3)?[ \t]+research/(?:recall/(?:benchmark|lme_retrieval)|economics/run_suite)\.py[^\n]*', text, re.M):
+            for command in _native_commands(text):
                 lexer = shlex.shlex(_without_shell_comment(command), posix=False)
                 lexer.whitespace_split = True
                 lexer.commenters = ''
