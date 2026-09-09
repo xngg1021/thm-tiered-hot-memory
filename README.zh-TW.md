@@ -15,13 +15,6 @@ THM 將邏輯記憶、計算執行和實體儲存分開。Evaluation Fabric 在�
 
 穩定 package 與 archive 保持 1.4.0。Runtime、Physical Storage Fabric 與 Evaluation Fabric 繼續標為 Unreleased。既有量測保留原始 protocol、source SHA 和適用範圍，未執行的 benchmark 與硬體不計入 accepted evidence。
 
-<!-- section:machine-corrective -->
-## Z6 實機證據與修正策略
-
-Z6 G4 在受測 `b1f8119` 上實際執行 CPU reference、RTX 3080 CUDA 與 auto-throughput，並測得本機 NTFS/NVMe StorageProfile 成本。GPU 文件嵌入明顯較快，有限 LME 子集端到端耗時改善。LoCoMo 聚合品質一致，但 CUDA 有 23 列嚴格差異，其中 3 列 selected set 改變。歷史 auto-safe 失敗；修正後的准入將 FP32 數值界限與檢索結構精確一致分開，允許明確回退 reference，且不宣稱加速。修復後實機驗收、AVX/VNNI 實際 dispatch 與完整 LME 仍待驗證。
-
-[2026-09-09 evidence](reports/2026-09-09-local-acceptance-b1f8119.md) · [Corrective contract / short retest](docs/19-post-local-corrective.md)
-
 <!-- section:philosophy -->
 ## 設計理念
 
