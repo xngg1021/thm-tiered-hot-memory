@@ -38,9 +38,13 @@ class LongMemEvalS:
                     text = message['content']
                     if not isinstance(text, str):
                         raise ValueError('message content must be text')
-                    if text.strip():
+                    text = text.strip()
+                    if text:
                         role = message.get('role', '')
-                        docs.append(Document(f'{sid}~{i}#{j}', scope, sid, j,
+                        if not isinstance(role, str):
+                            raise ValueError('message role must be text')
+                        role = role.strip()
+                        docs.append(Document(f'{sid}~{i}#{j}', scope, f'{sid}~{i}', j,
                             f'{role}: {text}' if role else text, speaker=role, source=sid))
             gold = tuple(sorted(set(sample['answer_session_ids'])))
             task = Task(scope, scope, sample['question'], tuple(docs))

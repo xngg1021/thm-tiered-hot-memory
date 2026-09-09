@@ -173,3 +173,33 @@ class FabricTests(unittest.TestCase):
                 '--mode', 'smoke', '--output', str(out)], capture_output=True, text=True)
             self.assertEqual(result.returncode, 0, result.stderr)
             self.assertEqual(json.loads((out/'acceptance.json').read_text())['status'], 'passed')
+
+    def test_repeated_lme_sessions_preserve_positions_and_gold_unit(self):
+        source = copy.deepcopy(FIXTURES['longmemeval-s'])
+        source[0]['haystack_session_ids'] = ['s1', 's1']
+        task, gold = next(ADAPTERS['longmemeval-s'].tasks(source))
+        self.assertEqual(len({(d.session, d.order) for d in task.documents}), 2)
+        self.assertEqual({d.source for d in task.documents}, {'s1'})
+        with tempfile.TemporaryDirectory() as temp:
+            receipt = run(ADAPTERS['longmemeval-s'], source, Path(temp)/'run')
+        self.assertEqual(receipt['layers']['memory-dataplane']['metrics']['any_gold_hit_rate'], 1)
+
+    def test_native_lme_segment_parent_coverage_is_not_complete_evidence(self):
+        from unittest.mock import patch
+        from thm.retrieval import SearchIndex, TokenCounter
+        from thm.features import RetrievalFeatures
+        from research.recall.lme_retrieval import run as native_run
+        source = copy.deepcopy(FIXTURES['longmemeval-s'])
+        source[0]['question'] = 'alpha'
+        source[0]['haystack_sessions'][0][0]['content'] = 'irrelevant filler ' * 100 + '. alpha specific evidence. ' + 'other filler ' * 100
+        original = SearchIndex.search
+        def with_segments(index, *args, **kwargs):
+            return original(index, *args, **kwargs, features=RetrievalFeatures(segment=True))
+        with patch.object(SearchIndex, 'search', with_segments):
+            result = native_run(source, TokenCounter('utf8_bytes'), ['sparse'], [180])
+        row = result['rows'][0]
+        self.assertEqual(row['hits'], 0)
+        self.assertEqual(row['parent_locator_hits'], 1)
+        metrics = result['evaluation_fabric']['layers']['memory-dataplane']['operating_points']['sparse@180']
+        self.assertEqual(metrics['parent_locator_coverage'], 1)
+        self.assertEqual(metrics['any_gold_hit_rate'], 0)

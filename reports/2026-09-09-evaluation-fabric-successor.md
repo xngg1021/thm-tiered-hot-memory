@@ -25,3 +25,7 @@ The following forward fix initializes empty per-task memory, makes the superviso
 No full LoCoMo/LME/V2/BEAM/MemoryArena campaign was executed in Work. No live reader/judge/agent environment outcome was produced. V2 is explicitly text-only; missing gold locators remain unscorable. Physical probes do not establish Z6 G4 performance, CPU/GPU dispatch, CXL/DAX/SPDK/GDS support or an end-to-end speedup. All new capabilities remain Unreleased.
 
 The [Evaluation Fabric contract](../docs/18-evaluation-fabric.md) contains the bounded Windows acceptance command and independent full-research entrypoints.
+
+## Review-driven LME forward fixes
+
+Codex review of `597a4912fc` found the suite opt-in and documented command omissions (P1/P2), both fixed in `183630fe64`. Its follow-up review of `183630fe64` found repeated LME session position collisions (P1) and missing native LME parent-locator session counts (P2). The next successor gives each session occurrence a unique positional identity while retaining its original source ID for gold scoring, and maps parent locators through document-to-session identities. Regressions execute repeated-session indexing and real partial-segment retrieval, asserting parent coverage without complete-evidence credit. All four review threads are retained in PR #17 with their exact fixes.

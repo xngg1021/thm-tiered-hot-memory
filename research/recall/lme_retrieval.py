@@ -115,6 +115,7 @@ def run(dataset, counter, modes, budgets, *, model_path=None, model_id=None, lim
                                              speaker=role, timestamp='', source=session_id))
                     gold = set(instance["answer_session_ids"])
                     known = {d.source for d in docs}
+                    source_by_document = {d.id: d.source for d in docs}
                     start = time.perf_counter()
                     metadata = index.replace_scope(scope, docs)
                     generations[scope] = metadata["generation"]
@@ -148,6 +149,7 @@ def run(dataset, counter, modes, budgets, *, model_path=None, model_id=None, lim
                                 "gold_sessions": len(gold),
                                 "resolved_gold": len(gold & known),
                                 "hits": len(hit_sessions),
+                                "parent_locator_hits": len(gold & {source_by_document[x] for x in out.get("parent_locator_ids", selected_order) if x in source_by_document}),
                                 "candidate_hits": None,
                                 "selected_count": len(selected), "complete_selected_count":len(selected),
                                 "packed_selected_count":len(out["selected"]), "packed_selections":[{k:x.get(k) for k in ("id","complete","span_start","span_end")} for x in out["selected"]],
