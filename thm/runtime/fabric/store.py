@@ -86,7 +86,7 @@ class ProfileStore:
             self.db.execute('CREATE TABLE IF NOT EXISTS invalidated (key TEXT PRIMARY KEY)')
             self.db.execute('PRAGMA user_version=2')
 
-    def put(self, key, candidate, measurement, *, semantic_status, material_gain, pareto=False):
+    def put(self, key, candidate, measurement, *, semantic_status, material_gain, pareto=False, evidence=None):
         # Whitelist both fields and types; arbitrary provider stdout never persists.
         allowed = {'p50', 'p95', 'p99', 'throughput', 'cpu_seconds', 'gpu_seconds', 'ram', 'vram',
                    'transfer', 'io', 'startup', 'compile', 'energy', 'failure_probability',
@@ -101,9 +101,18 @@ class ProfileStore:
             raise ValueError('invalid semantic status')
         if material_gain not in ('accepted', 'retain-current', 'rejected'):
             raise ValueError('invalid material gain')
+        evidence = evidence or {}
+        if set(evidence) - {'sample_kind', 'observed_encode_floor_ms', 'semantic_scope'}:
+            raise ValueError('unrecognized evidence field')
+        if evidence.get('sample_kind') not in (None, 'cached-embedding-replay-plus-observed-encode-floor', 'observed-end-to-end'):
+            raise ValueError('invalid evidence sample kind')
+        if evidence.get('semantic_scope') not in (None, 'observed-request-only'):
+            raise ValueError('invalid semantic evidence scope')
+        if 'observed_encode_floor_ms' in evidence:
+            finite(evidence['observed_encode_floor_ms'], 'encode floor')
         payload = {'schema': self.SCHEMA, 'key': key.public(), 'candidate': identity(candidate),
                    'measurement': measurement, 'semantic_status': semantic_status,
-                   'material_gain_status': material_gain, 'pareto': bool(pareto)}
+                   'material_gain_status': material_gain, 'pareto': bool(pareto), 'evidence': evidence}
         encoded = json.dumps(payload, sort_keys=True, allow_nan=False)
         now = self.clock()
         with self.lock, self.db:

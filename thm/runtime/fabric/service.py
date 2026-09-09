@@ -71,18 +71,19 @@ class RuntimeService:
         self.store_state = 'persistent'
         try:
             self.store = ProfileStore(store_path or index.path.parent / ('runtime-'+identity(str(index.path))[:16]+'.sqlite'))
-        except (OSError, __import__('sqlite3').DatabaseError):
+        except (OSError, ValueError, __import__('sqlite3').DatabaseError):
             self.store = ProfileStore(':memory:')
             self.store_state = 'volatile-safe-fallback'
         self.telemetry = PassiveTelemetry(); self.gate = MaterialGainGate()
         self.explorer = explorer or BoundedShadowExplorer(memory_bytes=memory_budget)
         self.background = background and policy != 'reference'; self.lock = threading.RLock()
-        self.pinned = {}; self.executors = {}; self.decisions = []; self.closed = False
+        self.pinned = {}; self.session_pins = {}; self.executors = {}; self.decisions = []; self.closed = False
         self.candidates = [Candidate('host.exact', workload=w) for w in ('interactive', 'bulk', 'background')]
         self.provider_versions = identity(self.registry.describe('host.exact')['versions'])
         self.discovery = {}; self.discovery_cursor = 0; self.batchers = {}; self.discovery_done = False
         self.queue_lock = threading.RLock()
         self.encode_costs = []
+        self.discovery_epoch = __import__('uuid').uuid4().hex
 
     def submit(self, scope, query, *, workload='interactive', deadline=None, **settings):
         """Nonblocking online API. Compatible requests share one bounded queue."""
@@ -97,7 +98,10 @@ class RuntimeService:
                 raise RuntimeError('runtime service closed')
             if group not in self.batchers:
                 if len(self.batchers) >= 8:
-                    raise RuntimeError('bounded runtime queue groups exhausted')
+                    idle = next((k for k,b in self.batchers.items() if b.idle()), None)
+                    if idle is None:
+                        raise RuntimeError('bounded runtime queue groups busy')
+                    self.batchers.pop(idle).close(wait=False)
                 self.batchers[group] = DeadlineAwareMicrobatcher(
                     lambda queries: self._execute(scope, queries, workload=workload, **settings), max_batch=32)
             future = self.batchers[group].submit(query, deadline=deadline)
@@ -136,35 +140,54 @@ class RuntimeService:
         settings = dict(settings)
         if 'features' in settings:
             settings['features'] = RetrievalFeatures.parse(settings['features']).identity()
+        from thm.physical.segments import current
+        placement = current(self.index, scope, getattr(p, 'id', None)) if p is not None else None
         versions = identity({'host': self.provider_versions, 'discovered': self.discovery})
         key = ProfileKey(self.graph.fingerprint, self.graph.os+':'+self.graph.build, identity(self.discovery),
                          identity(versions), getattr(p, 'source_manifest_sha256', 'none'),
                          getattr(p, 'derived_manifest_sha256', None) or 'none', getattr(p, 'dimension', 0),
                          getattr(p, 'precision', 'fp32'), identity({'generation': generation[0], 'profile': getattr(p, 'id', None)}),
                          scale_bucket(count, getattr(p, 'dimension', 0), self.memory_budget),
-                         identity(settings), 'dram', workload, self.policy, self.implementation,
+                         identity(settings), identity(placement) if placement else 'sqlite-local', workload, self.policy, self.implementation,
                          shape_bucket=identity({'scope': scope, 'fanout': settings.get('candidate_limit', 100)}))
         return key, generation[0], count
 
     def _select(self, key, workload):
         if key.id in self.pinned:
             return self.pinned[key.id]
+        anchor = identity({k:v for k,v in asdict(key).items() if k not in ('hardware','driver','provider_version')})
+        if anchor in self.session_pins:
+            # New device observations may invalidate a choice, but cannot promote
+            # a different provider within an already pinned logical session.
+            prior_key, prior = self.session_pins[anchor]
+            self.pinned[key.id] = prior if prior_key == key.id else None
+            return self.pinned[key.id]
         classes = ('strict','approximate') if self.policy == 'approximate-performance' else ('strict',)
         accepted = {x['candidate']: x for x in self.store.observations(key)
                     if x['semantic_status'] in classes and x['material_gain_status'] == 'accepted' and x['pareto']}
-        points = []
+        points = []; states = {'slo_ms': 100 if workload == 'interactive' else float('inf')}
         for c in self.candidates:
             row = accepted.get(identity(c.id))
             if row and not self.store.quarantined(key, c.provider) and SemanticGuard.eligible(c, self.policy):
-                points.append({'id': c.id, 'workload': workload, 'semantic_safe': True, 'semantic_class': 'strict', **row['measurement']})
-        selected = PolicySelector().select(points, workload, {})
+                points.append({'id': c.id, 'workload': workload, 'semantic_safe': True, 'semantic_class': row['semantic_status'], **row['measurement']})
+                executor = self.executors.get(c.id)
+                resident = bool(executor and executor.manager.handles)
+                states[c.id] = {'queue_depth': sum(len(b.queue) for b in self.batchers.values()),
+                    'concurrency': 1, 'model_warm': True, 'provider_ready': True,
+                    'index_resident': resident, 'stage_ms': row['measurement'].get('startup')}
+        selected = PolicySelector().select(points, workload, states)
         candidate = next((c for c in self.candidates if selected and c.id == selected['id']), None)
+        if len(self.pinned) >= 128:
+            self.pinned.pop(next(iter(self.pinned)))
+        if len(self.session_pins) >= 128:
+            self.session_pins.pop(next(iter(self.session_pins)))
         self.pinned[key.id] = candidate
+        self.session_pins[anchor] = (key.id, candidate)
         return candidate
 
     def new_session(self):
         with self.lock:
-            self.pinned.clear()
+            self.pinned.clear(); self.session_pins.clear()
             return {'reason': 'explicit-new-session', 'profile_migration': 'eligible-stored-point', 'semantic_policy': self.policy}
 
     def search(self, scope, query, *, workload='interactive', **settings):
@@ -208,6 +231,10 @@ class RuntimeService:
                 self.index._vector_executor = None; self.index._results.clear()
                 results = [self.index.search(scope, q, encoder=self.encoder, model_id=self.model_id, **effective) for q in queries]
                 self.pinned[key.id] = None; fallback = 'provider-failed:' + type(exc).__name__
+                candidate = None; provider = 'reference'
+                plan = JointComputeDataPlanner().plan(self.index, scope,
+                    embedding_profile=getattr(getattr(self.encoder, 'profile', None), 'id', None),
+                    workload=workload, policy=self.policy)
             finally:
                 self.index._vector_executor = None
             try:
@@ -303,6 +330,10 @@ class RuntimeService:
                 name = row['provider']
                 description = self.registry.describe(name)
                 self.discovery[name] = {k: row.get(k) for k in ('availability', 'version', 'driver_runtime', 'devices')}
+                native = row.get('driver_runtime')
+                known_driver = native.get('driver') if isinstance(native, dict) else native
+                if name != 'host.hnsw' and not known_driver:
+                    self.discovery[name]['freshness_epoch'] = self.discovery_epoch
                 if row.get('availability') != 'available':
                     continue
                 device = dict(description['options']).get('device')
@@ -332,14 +363,23 @@ class RuntimeService:
             return
         semantic = SemanticGuard.compare(result['reference'], result['result'], dimension=key.dimension)['semantic_admission']
         approximate = self.policy == 'approximate-performance' and candidate.semantic_class == 'approximate'
+        import statistics
+        cpu_samples = result.get('cpu_samples', {})
+        cpu_candidate = statistics.median(cpu_samples['candidate']) if cpu_samples.get('candidate') else None
+        cpu_baseline = statistics.median(cpu_samples['baseline']) if cpu_samples.get('baseline') else None
+        resource_limits = {'ram': self.memory_budget}
+        if cpu_baseline is not None:
+            resource_limits['cpu_seconds'] = max(cpu_baseline*1.25, cpu_baseline+.001)
         gain = self.gate.evaluate(result['baseline'], result['candidate'], semantic=semantic or approximate,
-                                  resources={'ram': result['memory_bytes']}, limits={'ram': self.memory_budget})
+                                  resources={'ram': result['memory_bytes'], 'cpu_seconds': cpu_candidate}, limits=resource_limits)
         values = result['candidate']
         from .optimizer import percentile
         import statistics
         measurement = {'p50': statistics.median(values), 'p95': percentile(values, .95), 'p99': percentile(values, .99),
                        'throughput': 1000/statistics.median(values), 'ram': result['memory_bytes'],
-                       'sample_count': len(values), 'noise': gain.get('noise_floor', 0)}
+                       'sample_count': len(values), 'noise': gain.get('noise_floor', 0),
+                       'cpu_seconds': cpu_candidate, 'startup': result.get('startup_ms'),
+                       'transfer': result.get('host_device_bytes')}
         if approximate:
             from .indexes import ann_quality
             quality = ann_quality(result['reference']['ranked_ids'], result['result']['ranked_ids'])
@@ -349,7 +389,10 @@ class RuntimeService:
             if self.closed:
                 return
             self.store.put(key, candidate.id, measurement, semantic_status='approximate' if approximate else 'strict' if semantic else 'rejected',
-                           material_gain=gain['decision'], pareto=gain['materially_faster'])
+                           material_gain=gain['decision'], pareto=gain['materially_faster'],
+                           evidence={'sample_kind': result.get('sample_kind'),
+                                     'observed_encode_floor_ms': result.get('observed_encode_floor_ms', 0),
+                                     'semantic_scope': 'observed-request-only'})
             self.decisions = (self.decisions + [{'candidate': candidate.id, **gain}])[-32:]
             if not semantic and not approximate:
                 self.store.failure(key, candidate.provider, 'semantic')

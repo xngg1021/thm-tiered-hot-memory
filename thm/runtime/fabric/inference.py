@@ -124,9 +124,10 @@ class TorchInference(LocalInferenceBase):
             available = False
         if self.options.get('require_maca') and not ('metax' in torch.__version__.lower() or getattr(torch.version, 'maca', None)):
             available = False
+        from .drivers import torch_runtime
         return {'provider': self.spec.provider_id, 'availability': 'available' if available else 'device-unavailable',
                 'devices': [device] if available else [], 'version': torch.__version__,
-                'driver_runtime': getattr(torch.version, 'hip', None) or getattr(torch.version, 'cuda', None),
+                'driver_runtime': torch_runtime(torch, device) if available else None,
                 'observed_kernel_dispatch': None}
 
     def load(self, artifact, **options):

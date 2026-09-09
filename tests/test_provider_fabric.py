@@ -321,6 +321,70 @@ class ServiceTests(unittest.TestCase):
         self.index = SearchIndex(Path(self.temp.name)/'index.db'); self.addCleanup(self.index.close)
         self.index.replace_scope('scope',documents())
 
+    def test_idle_queue_groups_recycle_after_many_settings(self):
+        service = RuntimeService(self.index, background=False)
+        try:
+            for budget in range(100, 116):
+                self.assertLessEqual(service.search('scope','Beijing',budget=budget)['budget_used'],budget)
+            self.assertLessEqual(len(service.batchers),8)
+        finally:
+            service.close()
+
+    def test_new_discovery_does_not_promote_inside_session(self):
+        service = RuntimeService(self.index, background=False)
+        try:
+            original, _, _ = service._key('scope','interactive',{'mode':'dense'})
+            self.assertIsNone(service._select(original,'interactive'))
+            changed = replace(original,driver='new-driver',provider_version='new-provider',hardware='new-hardware')
+            candidate = service.candidates[0]
+            service.store.put(changed,candidate.id,{'p50':1,'p95':1,'startup':1},
+                semantic_status='strict',material_gain='accepted',pareto=True)
+            self.assertIsNone(service._select(changed,'interactive'))
+            service.new_session()
+            self.assertEqual(service._select(changed,'interactive'),candidate)
+        finally:
+            service.close()
+
+    def test_cold_staging_can_exceed_interactive_slo(self):
+        service = RuntimeService(self.index, background=False)
+        try:
+            profile, _, _ = service._key('scope','interactive',{'mode':'dense'})
+            candidate = service.candidates[0]
+            service.store.put(profile,candidate.id,{'p50':1,'p95':2,'startup':101},
+                semantic_status='strict',material_gain='accepted',pareto=True)
+            self.assertIsNone(service._select(profile,'interactive'))
+        finally:
+            service.close()
+
+    def test_unknown_driver_prevents_cross_process_profile_reuse(self):
+        service = RuntimeService(self.index, background=False)
+        second = RuntimeService(self.index, background=False,store_path=':memory:')
+        try:
+            discovery = {'providers':[{'provider':'nvidia.exact','availability':'available',
+                'devices':['cuda'],'version':'fixture','driver_runtime':{'driver':None,'runtime':{'cuda':'fixture'}}}]}
+            service._discovered(discovery); second._discovered(discovery)
+            left, _, _ = service._key('scope','interactive',{})
+            right, _, _ = second._key('scope','interactive',{})
+            self.assertNotEqual(left.id,right.id)
+        finally:
+            service.close(); second.close()
+
+    def test_unsupported_profile_schema_falls_back_without_overwrite(self):
+        import sqlite3
+        path = Path(self.temp.name)/'future.sqlite'
+        db = sqlite3.connect(path); db.execute('PRAGMA user_version=99'); db.close()
+        service = RuntimeService(self.index,background=False,store_path=path)
+        try:
+            self.assertEqual(service.store_state,'volatile-safe-fallback')
+            self.assertTrue(service.search('scope','Beijing')['context'])
+        finally:
+            service.close()
+        db = sqlite3.connect(path)
+        try:
+            self.assertEqual(db.execute('PRAGMA user_version').fetchone()[0],99)
+        finally:
+            db.close()
+
     def test_first_request_never_runs_tuning(self):
         with mock.patch.object(BoundedShadowExplorer,'submit',side_effect=AssertionError('no sparse tuning')):
             service = RuntimeService(self.index)

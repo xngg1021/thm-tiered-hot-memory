@@ -200,8 +200,10 @@ class ExactAccelerator(ExactHost):
             available = False
         if options.get('require_maca') and not ('metax' in torch.__version__.lower() or getattr(torch.version, 'maca', None)):
             available = False
+        from .drivers import torch_runtime
         return {'availability': 'available' if available else 'device-unavailable',
-                'devices': [device] if available else [], 'version': torch.__version__, 'observed_kernel_dispatch': None}
+                'devices': [device] if available else [], 'version': torch.__version__,
+                'driver_runtime': torch_runtime(torch, device) if available else None, 'observed_kernel_dispatch': None}
 
     @clean_failed_build
     def build(self, vectors, ids, identity, **options):

@@ -25,7 +25,7 @@ class DeadlineAwareMicrobatcher:
         self.execute = execute; self.max_batch = max_batch; self.max_wait = max_wait_ms/1000
         self.slo = slo_ms/1000; self.max_pending = max_pending; self.clock = clock
         self.queue = deque(); self.arrivals = deque(maxlen=64)
-        self.condition = threading.Condition(); self.closed = False
+        self.condition = threading.Condition(); self.closed = False; self.active = False
         self.worker = threading.Thread(target=self._run, name='thm-microbatch', daemon=True)
         self.worker.start()
 
@@ -42,6 +42,10 @@ class DeadlineAwareMicrobatcher:
             self.queue.append(Pending(value, now, end, future))
             self.arrivals.append(now); self.condition.notify()
         return future
+
+    def idle(self):
+        with self.condition:
+            return not self.active and not self.queue
 
     def arrival_rate(self):
         if len(self.arrivals) < 2:
@@ -62,6 +66,7 @@ class DeadlineAwareMicrobatcher:
                 while not self.closed and len(self.queue) < target and self.clock() < stop:
                     self.condition.wait(timeout=max(0, stop-self.clock()))
                 batch = [self.queue.popleft() for _ in range(min(target, len(self.queue)))]
+                self.active = True
             now = self.clock(); active = []
             for pending in batch:
                 if not pending.future.set_running_or_notify_cancel():
@@ -71,6 +76,8 @@ class DeadlineAwareMicrobatcher:
                 else:
                     active.append(pending)
             if not active:
+                with self.condition:
+                    self.active = False
                 continue
             started = self.clock()
             try:
@@ -86,6 +93,9 @@ class DeadlineAwareMicrobatcher:
             except Exception as exc:
                 for pending in active:
                     pending.future.set_exception(exc)
+            finally:
+                with self.condition:
+                    self.active = False
 
     def close(self, *, wait=True):
         with self.condition:

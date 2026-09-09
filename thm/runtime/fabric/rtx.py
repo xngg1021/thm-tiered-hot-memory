@@ -33,6 +33,11 @@ class TensorRTRTXInference(LocalInferenceBase):
 
     def _engine_bytes(self, artifact, cache_root, options):
         self._verify(artifact); trt = self._module()
+        from pathlib import Path
+        source = Path(artifact.locator)
+        bundle = source.parent if source.is_file() else source
+        if cache_root and Path(cache_root).resolve().is_relative_to(bundle.resolve()):
+            raise ValueError('compiled cache must be outside immutable model bundle')
         dependencies = self._dependencies(artifact, options)
         cache = CompiledArtifactStore(cache_root) if cache_root else None
         value = cache.load(dependencies) if cache else None

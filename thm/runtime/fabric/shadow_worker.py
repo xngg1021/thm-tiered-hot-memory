@@ -33,24 +33,30 @@ def replay(task):
     candidate = SearchIndex(task['db'], TokenCounter(task['counter']), readonly=True)
     executor = ResidentExecutor(registry, task['provider'], task['device'], task['memory_budget'])
     candidate._vector_executor = executor
-    samples = {'baseline': [], 'candidate': []}; refs = []
+    samples = {'baseline': [], 'candidate': []}; cpus = {'baseline': [], 'candidate': []}; refs = []
+    cold_ms = None
     try:
         for repeat in range(min(9, task.get('repeats', 5)) + 1):
-            outputs = []
-            for label, reader in [('baseline', baseline), ('candidate', candidate)]:
+            outputs = {}
+            pair = [('baseline', baseline), ('candidate', candidate)]
+            for label, reader in pair if repeat % 2 == 0 else reversed(pair):
                 reader._results.clear()
-                started = time.perf_counter()
+                started = time.perf_counter(); cpu_started = time.process_time()
                 result = reader.search(task['scope'], task['query'], encoder=encoder, model_id=encoder.model_id, diagnostics=True, **task['settings'])
                 if result['generation'] != task['generation']:
                     raise ValueError('shadow source generation changed')
                 elapsed = (time.perf_counter()-started)*1000
+                if label == 'candidate' and not repeat:
+                    cold_ms = executor.last.get('load_ms')
                 if repeat:
                     samples[label].append(elapsed + task.get('observed_encode_floor_ms', 0))
-                outputs.append(signature(result))
+                    cpus[label].append(time.process_time()-cpu_started)
+                outputs[label] = signature(result)
             refs = outputs
-        return {**samples, 'reference': refs[0], 'result': refs[1], 'generation': task['generation'],
+        return {**samples, 'reference': refs['baseline'], 'result': refs['candidate'], 'generation': task['generation'],
                 'candidate_id': task['candidate_id'], 'key': task['key'], 'provider': task['provider'],
-                'memory_bytes': executor.manager.usage(task['device']),
+                'memory_bytes': executor.manager.usage(task['device']), 'cpu_samples': cpus,
+                'startup_ms': cold_ms, 'host_device_bytes': executor.last.get('host_device_bytes'),
                 'observed_encode_floor_ms': task.get('observed_encode_floor_ms', 0),
                 'sample_kind': 'cached-embedding-replay-plus-observed-encode-floor'}
     finally:

@@ -94,7 +94,7 @@ class ProviderRegistry:
             try:
                 explorer.submit({'operation': 'probe-spec', 'spec': spec.public()}, values.append)
                 explorer.thread.join(timeout=timeout+6)
-                if not values:
+                if not values or values[0].get('status') == 'deferred':
                     raise ProviderUnavailable('bounded discovery deferred')
                 return values[0]
             finally:
