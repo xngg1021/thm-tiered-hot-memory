@@ -82,12 +82,36 @@ class TokenCounter:
     def __init__(self, encoding: str = 'utf8_bytes'):
         self.name = encoding
         self.encode = None
+        self._piece_cache = OrderedDict()
         if encoding != 'utf8_bytes':
             import tiktoken  # Optional; vocabulary cache may be populated by tiktoken on first use.
             self.encode = tiktoken.get_encoding(encoding).encode_ordinary
 
     def __call__(self, text: str) -> int:
         return len(self.encode(text)) if self.encode else len(text.encode('utf-8'))
+
+
+    def count_prefix(self, text):
+        """Exact BPE piece reuse; never assume counts of whole blocks are additive."""
+        encoding = getattr(self.encode, '__self__', None)
+        if encoding is None or not hasattr(encoding, 'encode_single_piece') or not hasattr(encoding, '_pat_str'):
+            return self(text)
+        import regex
+        pieces = regex.findall(encoding._pat_str, text)
+        if ''.join(pieces) != text:
+            return self(text)
+        count = 0
+        for piece in pieces:
+            key = (id(encoding), piece)
+            value = self._piece_cache.get(key)
+            if value is None:
+                value = len(encoding.encode_single_piece(piece.encode('utf-8')))
+                if len(piece) <= 4096:
+                    self._piece_cache[key] = value
+                    if len(self._piece_cache) > 512:
+                        self._piece_cache.popitem(last=False)
+            count += value
+        return count
 
 
 class SentenceEncoder:
@@ -187,6 +211,9 @@ class SearchIndex:
         self.counter = counter or TokenCounter()
         self._cache, self._dense = OrderedDict(), {}
         self._results = OrderedDict()
+        self._speakers = OrderedDict()
+        self._row_cache = OrderedDict()
+        self._row_cache_bytes = 0
         self._batch_dense = None
         self._query_future = None
         self._last_dense_diagnostics = {}
@@ -200,6 +227,9 @@ class SearchIndex:
         self._cache.clear()
         self._dense.clear()
         self._results.clear()
+        self._speakers.clear()
+        self._row_cache.clear()
+        self._row_cache_bytes = 0
 
     def _refresh_caches(self):
         version = self.db.execute('PRAGMA data_version').fetchone()[0]
@@ -603,7 +633,8 @@ class SearchIndex:
             if byte_counter:
                 units = used + len(block.encode('utf-8')) + (2 if blocks else 0)
             else:
-                units = self._count('\n\n'.join(blocks + [block]))
+                prefix = '\n\n'.join(blocks + [block])
+                units = self.counter.count_prefix(prefix) if type(self.counter) is TokenCounter else self._count(prefix)
             if units <= budget:
                 used = units
                 blocks.append(block)
@@ -618,9 +649,16 @@ class SearchIndex:
 
     def _lexical_channels(self,scope,query,mode,candidate_limit):
         tokens = terms(query)[:64]
-        speakers = set()
-        for row in self.db.execute('SELECT DISTINCT speaker FROM docs WHERE scope=?', (scope,)):
-            speakers.update(terms(row[0]))
+        generation = self.db.execute('SELECT generation FROM scopes WHERE scope=?', (scope,)).fetchone()
+        speaker_key = (scope, generation[0] if generation else None)
+        if speaker_key not in self._speakers:
+            speakers = set()
+            for row in self.db.execute('SELECT DISTINCT speaker FROM docs WHERE scope=?', (scope,)):
+                speakers.update(terms(row[0]))
+            self._speakers[speaker_key] = frozenset(speakers)
+            if len(self._speakers) > 64:
+                self._speakers.popitem(last=False)
+        speakers = self._speakers[speaker_key]
         focus = [t for t in tokens if t not in STOP and t not in speakers]
         focus = focus or [t for t in tokens if t not in STOP]
         channels = []
@@ -630,6 +668,45 @@ class SearchIndex:
             channels.append(self._fts('lexical', scope, focus, candidate_limit))
             channels.append(self._fts('lexical', scope, [t for t in tokens if t not in STOP], candidate_limit, True))
         return channels
+
+    def _materialize(self, scope, generation, rowids):
+        by_id = {}
+        missing = []
+        for rid in rowids:
+            key = (scope, generation, rid)
+            if key in self._row_cache:
+                by_id[rid] = dict(self._row_cache[key])
+                self._row_cache.move_to_end(key)
+            else:
+                missing.append(rid)
+        for offset in range(0, len(missing), 500):
+            batch = missing[offset:offset+500]
+            marks = ','.join('?' for _ in batch)
+            for raw in self.db.execute(f'SELECT * FROM docs WHERE scope=? AND rowid IN ({marks})', (scope, *batch)):
+                row = dict(raw); by_id[row['rowid']] = row
+                size = sum(len(v.encode('utf-8')) for v in row.values() if isinstance(v, str))
+                if size <= 1024*1024:
+                    while self._row_cache and (len(self._row_cache) >= 256 or self._row_cache_bytes+size > 4*1024*1024):
+                        _, old = self._row_cache.popitem(last=False)
+                        self._row_cache_bytes -= sum(len(v.encode('utf-8')) for v in old.values() if isinstance(v, str))
+                    self._row_cache[(scope, generation, row['rowid'])] = dict(row)
+                    self._row_cache_bytes += size
+        return by_id
+
+    def _prefetch_neighbors(self, scope, ranked, turns):
+        neighbors = {}
+        for offset in range(0, len(ranked), 100):
+            batch = ranked[offset:offset+100]
+            values = ','.join('(?,?,?)' for _ in batch)
+            args = [v for row in batch for v in (row['rowid'], row['session'], row['ord'])]
+            sql = f"""WITH wanted(origin,session,pos) AS (VALUES {values})
+                SELECT w.origin,d.* FROM wanted w JOIN docs d
+                ON d.scope=? AND d.session=w.session AND d.ord BETWEEN w.pos-? AND w.pos+?
+                AND d.rowid!=w.origin ORDER BY w.origin,ABS(d.ord-w.pos),d.ord,d.id"""
+            for raw in self.db.execute(sql, (*args, scope, turns, turns)):
+                row = dict(raw); origin = row.pop('origin')
+                neighbors.setdefault(origin, []).append(row)
+        return neighbors
 
     def _validate_search_options(self,scope,query,*,budget=600,mode='sparse',candidate_limit=100,
                                  neighbor_turns=0,encoder=None,model_id=None,entity_projection=False,features=None,diagnostics=False,scorer='numpy_reference'):
@@ -695,12 +772,7 @@ class SearchIndex:
         ordered = sorted(scores, key=lambda rid: (-scores[rid], rid))
         fusion_ms=(time.perf_counter()-fusion_start)*1000
         material_start=time.perf_counter()
-        by_rowid = {}
-        for offset in range(0, len(ordered), 500):
-            batch = ordered[offset:offset+500]
-            marks = ','.join('?' for _ in batch)
-            for row in self.db.execute(f'SELECT * FROM docs WHERE scope=? AND rowid IN ({marks})', (scope, *batch)):
-                by_rowid[row['rowid']] = dict(row)
+        by_rowid = self._materialize(scope, generation[0], ordered)
         ranked = [by_rowid[rid] for rid in ordered]
         material_ms=(time.perf_counter()-material_start)*1000
         ranked = self._rank_candidates(scope, query, ranked)
@@ -719,13 +791,9 @@ class SearchIndex:
         # Optional adjacent context is actual text, not automatic credit for unseen IDs.
         expansion_start=time.perf_counter()
         expanded, seen = [], set()
+        neighbors = self._prefetch_neighbors(scope, ranked, neighbor_turns) if neighbor_turns else {}
         for row in ranked:
-            candidates = [row]
-            if neighbor_turns:
-                candidates += [dict(r) for r in self.db.execute('''SELECT * FROM docs
-                   WHERE scope=? AND session=? AND ord BETWEEN ? AND ? AND rowid!=?
-                   ORDER BY ABS(ord-?),ord,id''', (scope, row['session'], row['ord']-neighbor_turns,
-                   row['ord']+neighbor_turns, row['rowid'], row['ord']))]
+            candidates = [row] + neighbors.get(row['rowid'], [])
             for item in candidates:
                 if item['rowid'] not in seen:
                     seen.add(item['rowid'])
