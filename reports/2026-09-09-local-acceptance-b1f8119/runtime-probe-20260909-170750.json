@@ -1,0 +1,163 @@
+{
+  "core_only_available": true,
+  "generation_calls": 0,
+  "hardware": {
+    "accelerators": [
+      {
+        "backend": "torch",
+        "cpu_backend_capability": "AVX512",
+        "cuda_available": true,
+        "cuda_runtime": "13.0",
+        "observed_kernel_dispatch": null,
+        "rocm_runtime": null
+      },
+      {
+        "device": 0,
+        "driver": null,
+        "kind": "CUDA",
+        "model": "NVIDIA GeForce RTX 3080",
+        "observed_kernel_dispatch": null,
+        "vram_available": 9536798720,
+        "vram_total": 10736893952
+      },
+      {
+        "available": false,
+        "kind": "MPS",
+        "observed_kernel_dispatch": null
+      },
+      {
+        "backend": "onnxruntime",
+        "execution_providers": [
+          "AzureExecutionProvider",
+          "CPUExecutionProvider"
+        ],
+        "observed_kernel_dispatch": null
+      }
+    ],
+    "architecture": "amd64",
+    "backend_reports_support": {
+      "execution_providers": null,
+      "installed_versions": {
+        "nncf": null,
+        "numpy": "2.4.3",
+        "onnxruntime": "1.20.1",
+        "onnxruntime-gpu": null,
+        "openvino": null,
+        "optimum": null,
+        "sentence-transformers": "6.0.1",
+        "torch": "2.13.0+cu130"
+      }
+    },
+    "cache_hierarchy": [],
+    "cgroup_quota_cpus": null,
+    "core_types": null,
+    "cpu_affinity": [
+      0,
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7,
+      8,
+      9,
+      10,
+      11,
+      12,
+      13,
+      14,
+      15,
+      16,
+      17,
+      18,
+      19,
+      20,
+      21,
+      22,
+      23,
+      24,
+      25,
+      26,
+      27,
+      28,
+      29,
+      30,
+      31,
+      32,
+      33,
+      34,
+      35
+    ],
+    "cpuset": null,
+    "hardware_reports_support": {
+      "amx_bf16": null,
+      "amx_int8": null,
+      "avx2": null,
+      "avx512_vnni": null,
+      "avx512f": null,
+      "avx_vnni": null,
+      "bf16": null,
+      "dotprod": null,
+      "fp16": null,
+      "i8mm": null,
+      "neon": null,
+      "power10_mma": null,
+      "rvv": null,
+      "sme": null,
+      "sme2": null,
+      "sve": null,
+      "sve2": null
+    },
+    "installed_logical_cpus": 36,
+    "kernel": "10",
+    "model": "Intel(R) Xeon(R) Gold 6254 CPU @ 3.10GHz",
+    "numa_nodes": {},
+    "observed_kernel_dispatch": null,
+    "os": "Windows",
+    "os_visible_cpus": 36,
+    "physical_cores_if_known": 18,
+    "process_available_cpus": 36,
+    "processor_groups": [
+      0
+    ],
+    "ram_available": null,
+    "ram_total": null,
+    "schema": 1,
+    "sockets": 1,
+    "vendor": "GenuineIntel"
+  },
+  "model_downloads": 0,
+  "profile_freshness": "not-configured",
+  "reason": "core-ready; semantic setup is optional",
+  "schema": 1,
+  "selected_profile": null,
+  "semantic_accelerators": {
+    "onnxruntime_fp32": {
+      "installed": true,
+      "precision": "fp32",
+      "real_runtime_validation": "pending-real-local-runtime"
+    },
+    "onnxruntime_int8": {
+      "installed": true,
+      "precision": "int8",
+      "real_runtime_validation": "pending-real-local-runtime"
+    },
+    "openvino_fp32": {
+      "installed": false,
+      "precision": "fp32",
+      "real_runtime_validation": "pending-real-local-runtime"
+    },
+    "openvino_int8": {
+      "installed": false,
+      "precision": "int8",
+      "real_runtime_validation": "pending-real-local-runtime"
+    },
+    "torch_fp32": {
+      "installed": true,
+      "precision": "fp32",
+      "real_runtime_validation": "pending-real-local-runtime"
+    }
+  },
+  "semantic_status": "explicit-local-model-and-backend-required"
+}

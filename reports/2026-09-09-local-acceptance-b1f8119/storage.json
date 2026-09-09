@@ -1,0 +1,32 @@
+{
+  "target": {
+    "adapter": "local-filesystem",
+    "capacity": 2000382062592,
+    "dax": null,
+    "direct_io": null,
+    "driver_identity": null,
+    "failure_domain": null,
+    "filesystem": "NTFS",
+    "free_capacity": 348057698304,
+    "gpu_direct": null,
+    "logical_block": 512,
+    "media_class": "unknown",
+    "mmap": null,
+    "mount_relation": null,
+    "network_rtt_ms": null,
+    "numa_node": null,
+    "observation": "public-os-best-effort",
+    "pcie_bdf": null,
+    "physical_block": 4096,
+    "protocol": "NVMe",
+    "readonly": false,
+    "remote": false,
+    "replication": null,
+    "target_id": "local-44dc3b7ee95160efbbea",
+    "zoned": null
+  },
+  "topology": {
+    "edges": [],
+    "nodes": []
+  }
+}

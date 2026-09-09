@@ -1,0 +1,39 @@
+{
+  "bytes_avoided": 34808,
+  "counter": "cl100k_base",
+  "counter_units_avoided": 7254,
+  "duplicate_count": 30,
+  "duplicate_percentage": 1.1102886750555145,
+  "generation_calls": 0,
+  "reuse_opportunity_by_instance": [
+    {
+      "inputs": 550,
+      "instance_ordinal": 0,
+      "reused_exact_inputs": 2
+    },
+    {
+      "inputs": 497,
+      "instance_ordinal": 1,
+      "reused_exact_inputs": 0
+    },
+    {
+      "inputs": 529,
+      "instance_ordinal": 2,
+      "reused_exact_inputs": 0
+    },
+    {
+      "inputs": 616,
+      "instance_ordinal": 3,
+      "reused_exact_inputs": 15
+    },
+    {
+      "inputs": 510,
+      "instance_ordinal": 4,
+      "reused_exact_inputs": 13
+    }
+  ],
+  "schema": 1,
+  "speedup": null,
+  "total_encoder_inputs": 2702,
+  "unique_exact_encoder_inputs": 2672
+}

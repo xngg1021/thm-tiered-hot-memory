@@ -1,0 +1,16 @@
+{
+  "benchmark_receipts": [
+    "8c62c1f16967687ab18b664aaa0086e3e7b9cbca667a66e8ab09376f0992e711",
+    "12cfa714698b347398fb8e182edbf8a78ddeff9f973e8526ed0df7d562f1b50b",
+    "a4d829b0808b868a40f8dcfb91c91de39aaeabfd4e50218ac08060094803254f",
+    "0eed6b7bb6233a6901b737e0da1c27bff6cc1055f771f2c8a2c98f85cf9a4b8b",
+    "da9fbf94a3f2747056192644f814cedcf3241e6763f3397acdd1fc0a50f6f04f"
+  ],
+  "full_dataset_acceptance": false,
+  "generation_calls": 0,
+  "interface_evidence": "deterministic fixtures; no live agent outcome",
+  "judge_calls": 0,
+  "mode": "smoke",
+  "status": "passed",
+  "wall_seconds": 2.625
+}

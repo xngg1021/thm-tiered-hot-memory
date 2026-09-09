@@ -1,0 +1,14 @@
+{
+  "artifact_count_scope": "estimated top-level files; derived model subtrees and SQLite sidecars excluded",
+  "expected_matrix_artifacts": 6,
+  "expected_top_level_artifacts": 45,
+  "measured_instances_per_second": 0.026902329784265863,
+  "projected_locomo_seconds": 3388.4080320002977,
+  "projected_reference_seconds": 185.85750899999402,
+  "projected_total_seconds": 3945.9805590002798,
+  "projected_winner_seconds": 371.71501799998805,
+  "projection_method": "measured-reference-linear-conservative; winners unmeasured",
+  "sample_instances": 5,
+  "sample_seconds": 185.85750899999402,
+  "within_budget": true
+}

@@ -1,0 +1,64 @@
+{
+  "aggregate_metric_fields_compared": 288,
+  "aggregate_semantic_metrics_available": true,
+  "aggregate_semantic_metrics_equivalent": true,
+  "aggregate_summary_coverage_errors": {
+    "cpu": [],
+    "gpu": []
+  },
+  "diagnostic_mismatch_row_count": 0,
+  "equivalent": true,
+  "excluded_from_parity": [
+    "timing_ms",
+    "query_embedding_ms",
+    "build/index seconds",
+    "environment strings",
+    "wall-clock throughput"
+  ],
+  "feature_experiment": null,
+  "float_abs_tolerance": 0.0,
+  "grid_cohort_errors": {
+    "cpu": [],
+    "gpu": []
+  },
+  "identity_complete": true,
+  "interpretation": "Strict parity includes selected IDs and ranked order across all rows, including category 5. Aggregate parity compares only explicit retrieval-quality summary fields. Rank-only requires ordering to be the sole semantic drift; mixed changes are other-semantic rows unless the selected set differs. Protocol 2 requires ranked IDs; LME requires ordered IDs with aligned source identities. Missing summaries do not establish aggregate parity.",
+  "kind": "thm-hardware-semantic-parity",
+  "main_category_mismatch_row_count": 0,
+  "max_semantic_numeric_abs_diff": 0.0,
+  "mismatch_count_capped": 0,
+  "mismatch_counts_by_field": {},
+  "mismatch_preview_count": 0,
+  "mismatch_preview_limit": 50,
+  "mismatch_preview_truncated": false,
+  "mismatch_rows_by_mode_budget_category": {},
+  "mismatches": [],
+  "mismatching_row_count": 0,
+  "other_category_mismatch_row_count": 0,
+  "other_semantic_mismatch_row_count": 0,
+  "rank_only_mismatch_row_count": 0,
+  "rows_compared": 60,
+  "rows_cpu": 60,
+  "rows_gpu": 60,
+  "selection_set_mismatch_row_count": 0,
+  "source_artifacts": {
+    "candidate": {
+      "file": "auto-throughput-lme.json",
+      "sha256": "d94846a012c88d9eba2a03f8d38a32083607c7fd168d1d7289489eadb1403042"
+    },
+    "cpu": {
+      "file": "cpu-reference-lme.json",
+      "sha256": "8efb967bd18a5cee67643ba84551c2d62353ca09a81755ac2d0743669574bb3e"
+    }
+  },
+  "strict_row_coverage_errors": {
+    "cpu": {},
+    "gpu": {}
+  },
+  "strict_semantic_equivalent": true,
+  "top_level_coverage_errors": {
+    "cpu": [],
+    "gpu": []
+  },
+  "total_mismatch_count": 0
+}

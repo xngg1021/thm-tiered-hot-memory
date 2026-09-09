@@ -1,0 +1,173 @@
+{
+  "profile": {
+    "cache_state": "warm-or-os-managed; cold unavailable",
+    "costs": [
+      {
+        "bytes_per_second": 4220885.462001478,
+        "concurrency": 1,
+        "operation": "buffered-random",
+        "p95_ms": 5.672600003890693,
+        "samples": 8,
+        "size": 4096,
+        "write_amplification": null
+      },
+      {
+        "bytes_per_second": 20481280.607185777,
+        "concurrency": 1,
+        "operation": "buffered-sequential",
+        "p95_ms": 0.1674999948590994,
+        "samples": 8,
+        "size": 4096,
+        "write_amplification": null
+      },
+      {
+        "bytes_per_second": 17453925.86157391,
+        "concurrency": 1,
+        "operation": "mmap",
+        "p95_ms": 0.1981999957934022,
+        "samples": 8,
+        "size": 4096,
+        "write_amplification": null
+      },
+      {
+        "bytes_per_second": 80858729.02639906,
+        "concurrency": 1,
+        "operation": "buffered-random",
+        "p95_ms": 0.17289997776970267,
+        "samples": 8,
+        "size": 16384,
+        "write_amplification": null
+      },
+      {
+        "bytes_per_second": 93864223.57132883,
+        "concurrency": 1,
+        "operation": "buffered-sequential",
+        "p95_ms": 0.1482000225223601,
+        "samples": 8,
+        "size": 16384,
+        "write_amplification": null
+      },
+      {
+        "bytes_per_second": 60670246.88021586,
+        "concurrency": 1,
+        "operation": "mmap",
+        "p95_ms": 0.22079999325796962,
+        "samples": 8,
+        "size": 16384,
+        "write_amplification": null
+      },
+      {
+        "bytes_per_second": 317634800.3081907,
+        "concurrency": 1,
+        "operation": "buffered-random",
+        "p95_ms": 0.18159998580813408,
+        "samples": 8,
+        "size": 65536,
+        "write_amplification": null
+      },
+      {
+        "bytes_per_second": 344450428.81125826,
+        "concurrency": 1,
+        "operation": "buffered-sequential",
+        "p95_ms": 0.17339998157694936,
+        "samples": 8,
+        "size": 65536,
+        "write_amplification": null
+      },
+      {
+        "bytes_per_second": 233317609.62527415,
+        "concurrency": 1,
+        "operation": "mmap",
+        "p95_ms": 0.24939997820183635,
+        "samples": 8,
+        "size": 65536,
+        "write_amplification": null
+      },
+      {
+        "bytes_per_second": 995326066.1965033,
+        "concurrency": 1,
+        "operation": "buffered-random",
+        "p95_ms": 0.28850004309788346,
+        "samples": 8,
+        "size": 262144,
+        "write_amplification": null
+      },
+      {
+        "bytes_per_second": 1066276175.5484786,
+        "concurrency": 1,
+        "operation": "buffered-sequential",
+        "p95_ms": 0.2654999843798578,
+        "samples": 8,
+        "size": 262144,
+        "write_amplification": null
+      },
+      {
+        "bytes_per_second": 751505768.5044235,
+        "concurrency": 1,
+        "operation": "mmap",
+        "p95_ms": 0.3242000238969922,
+        "samples": 8,
+        "size": 262144,
+        "write_amplification": null
+      },
+      {
+        "bytes_per_second": 1448559480.7745593,
+        "concurrency": 1,
+        "operation": "buffered-random",
+        "p95_ms": 0.7025999948382378,
+        "samples": 8,
+        "size": 1048576,
+        "write_amplification": null
+      },
+      {
+        "bytes_per_second": 1394869888.6235461,
+        "concurrency": 1,
+        "operation": "buffered-sequential",
+        "p95_ms": 0.6431000074371696,
+        "samples": 8,
+        "size": 1048576,
+        "write_amplification": null
+      },
+      {
+        "bytes_per_second": 916427195.4936925,
+        "concurrency": 1,
+        "operation": "mmap",
+        "p95_ms": 1.034500019159168,
+        "samples": 8,
+        "size": 1048576,
+        "write_amplification": null
+      }
+    ],
+    "schema": 1,
+    "scratch_bytes": 8388608,
+    "target_fingerprint": "1c111f3ffba22d25dc143b2d8a4b31cf259aed3867260acbb0fbecf2bc0e1d62",
+    "wall_seconds": 0.1380059999646619
+  },
+  "profile_id": "e865e2119e74784a85fc79535abc49d72f7453ec557282b9b90743b7d33cb0a1",
+  "target": {
+    "adapter": "local-filesystem",
+    "capacity": 2000382062592,
+    "dax": null,
+    "direct_io": null,
+    "driver_identity": null,
+    "failure_domain": null,
+    "filesystem": "NTFS",
+    "free_capacity": 348083609600,
+    "gpu_direct": null,
+    "logical_block": 512,
+    "media_class": "unknown",
+    "mmap": null,
+    "mount_relation": null,
+    "network_rtt_ms": null,
+    "numa_node": null,
+    "observation": "public-os-best-effort",
+    "pcie_bdf": null,
+    "physical_block": 4096,
+    "protocol": "NVMe",
+    "readonly": false,
+    "remote": false,
+    "replication": null,
+    "target_id": "local-78360314bc03cdf32901",
+    "zoned": null
+  }
+}

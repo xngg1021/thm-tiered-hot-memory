@@ -1,0 +1,24 @@
+{
+  "bytes_avoided": 32,
+  "counter": "cl100k_base",
+  "counter_units_avoided": 10,
+  "duplicate_count": 2,
+  "duplicate_percentage": 0.19102196752626552,
+  "generation_calls": 0,
+  "reuse_opportunity_by_instance": [
+    {
+      "inputs": 550,
+      "instance_ordinal": 0,
+      "reused_exact_inputs": 2
+    },
+    {
+      "inputs": 497,
+      "instance_ordinal": 1,
+      "reused_exact_inputs": 0
+    }
+  ],
+  "schema": 1,
+  "speedup": null,
+  "total_encoder_inputs": 1047,
+  "unique_exact_encoder_inputs": 1045
+}

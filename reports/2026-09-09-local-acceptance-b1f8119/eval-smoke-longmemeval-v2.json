@@ -1,0 +1,285 @@
+{
+  "benchmark": "longmemeval-v2",
+  "protocol": "public trajectory states / text-only 1",
+  "source_sha256": "b38c6ad1f0dd356caf2f0b37443330d402b91f7815ac149fccd22cf9bae6d07c",
+  "implementation_sha256": "c279124036408bd44740d323d5e96c9d2957a16769c7ef69e58e7d57706a1d6e",
+  "mode": "smoke",
+  "provenance": "deterministic-fixture",
+  "taxonomy": {
+    "logical_tier": "T3",
+    "compute_profile": "python-sparse-cpu",
+    "physical_placement": "sqlite-os-managed"
+  },
+  "layers": {
+    "memory-dataplane": {
+      "status": "measured",
+      "metrics": {
+        "tasks": 1,
+        "scorable": 0,
+        "no_gold": 1,
+        "unresolved": 0,
+        "diagnostic_only": 0,
+        "any_gold_hit_rate": null,
+        "all_gold_hit_rate": null,
+        "macro_evidence_recall": null,
+        "micro_evidence_recall": null,
+        "parent_locator_coverage": null,
+        "empty_context_rate": 0,
+        "mean_budget_used": 126,
+        "latency_ms": {
+          "p50": 0.44460000935941935,
+          "p95": 0.44460000935941935,
+          "p99": 0.44460000935941935
+        }
+      },
+      "rows": [
+        {
+          "task_id": "fixture-v2/0",
+          "evidence_unit": "unavailable",
+          "gold_count": 0,
+          "scorable": false,
+          "resolved": true,
+          "diagnostic_only": false,
+          "hits": 0,
+          "parent_locator_hits": 0,
+          "selected_ids": [
+            "trajectory-1#0"
+          ],
+          "budget_used": 126,
+          "latency_ms": 0.44460000935941935,
+          "packed_count": 1
+        }
+      ],
+      "counter": "utf8_bytes",
+      "budget": 600,
+      "mode": "sparse"
+    },
+    "systems-runtime": {
+      "status": "measured",
+      "wall_seconds": 0.02370879997033626,
+      "python": "3.11.15",
+      "os": "Windows-10-10.0.26200-SP0",
+      "sqlite": "3.53.1",
+      "compute_profile": "python-sparse-cpu",
+      "documents_indexed_including_rebuilds": 1,
+      "source_bytes_including_rebuilds": 65,
+      "physical_storage": {
+        "status": "unavailable",
+        "storage_profile": null,
+        "placement": null,
+        "io_telemetry": null,
+        "reason": "SQLite OS I/O is not instrumented"
+      },
+      "physical_probe": {
+        "status": "measured",
+        "scope": "separate physical fixture; not SQLite telemetry",
+        "target": {
+          "target_id": "local-dbe6741f6c14ac9886f9",
+          "media_class": "unknown",
+          "protocol": "NVMe",
+          "filesystem": "NTFS",
+          "mount_relation": null,
+          "numa_node": null,
+          "pcie_bdf": null,
+          "capacity": 2000382062592,
+          "free_capacity": 348083896320,
+          "logical_block": 512,
+          "physical_block": 4096,
+          "readonly": false,
+          "mmap": null,
+          "direct_io": null,
+          "dax": null,
+          "zoned": null,
+          "remote": false,
+          "network_rtt_ms": null,
+          "replication": null,
+          "failure_domain": null,
+          "gpu_direct": null,
+          "driver_identity": null,
+          "observation": "public-os-best-effort",
+          "adapter": "local-filesystem"
+        },
+        "storage_profile": {
+          "target_fingerprint": "e80140a3408bbf2c24b30bd8b9fd643d71c8ae98e550e588bd1110a7df92092c",
+          "costs": [
+            {
+              "operation": "buffered-random",
+              "size": 4096,
+              "concurrency": 1,
+              "samples": 8,
+              "p95_ms": 5.971800012048334,
+              "bytes_per_second": 4064550.551185172,
+              "write_amplification": null
+            },
+            {
+              "operation": "buffered-sequential",
+              "size": 4096,
+              "concurrency": 1,
+              "samples": 8,
+              "p95_ms": 0.2429999876767397,
+              "bytes_per_second": 16471297.760515181,
+              "write_amplification": null
+            },
+            {
+              "operation": "mmap",
+              "size": 4096,
+              "concurrency": 1,
+              "samples": 8,
+              "p95_ms": 0.20670000230893493,
+              "bytes_per_second": 18173146.321854696,
+              "write_amplification": null
+            },
+            {
+              "operation": "buffered-random",
+              "size": 16384,
+              "concurrency": 1,
+              "samples": 8,
+              "p95_ms": 0.1876000314950943,
+              "bytes_per_second": 77548218.86470431,
+              "write_amplification": null
+            },
+            {
+              "operation": "buffered-sequential",
+              "size": 16384,
+              "concurrency": 1,
+              "samples": 8,
+              "p95_ms": 0.15209999401122332,
+              "bytes_per_second": 87538903.79906932,
+              "write_amplification": null
+            },
+            {
+              "operation": "mmap",
+              "size": 16384,
+              "concurrency": 1,
+              "samples": 8,
+              "p95_ms": 0.21729996660724282,
+              "bytes_per_second": 65716721.150494136,
+              "write_amplification": null
+            },
+            {
+              "operation": "buffered-random",
+              "size": 65536,
+              "concurrency": 1,
+              "samples": 8,
+              "p95_ms": 0.19700004486367106,
+              "bytes_per_second": 285637708.9356513,
+              "write_amplification": null
+            },
+            {
+              "operation": "buffered-sequential",
+              "size": 65536,
+              "concurrency": 1,
+              "samples": 8,
+              "p95_ms": 0.1691999495960772,
+              "bytes_per_second": 314642021.4787768,
+              "write_amplification": null
+            },
+            {
+              "operation": "mmap",
+              "size": 65536,
+              "concurrency": 1,
+              "samples": 8,
+              "p95_ms": 0.21080003352835774,
+              "bytes_per_second": 258716012.09711134,
+              "write_amplification": null
+            },
+            {
+              "operation": "buffered-random",
+              "size": 262144,
+              "concurrency": 1,
+              "samples": 8,
+              "p95_ms": 0.1982000540010631,
+              "bytes_per_second": 1237403835.9138787,
+              "write_amplification": null
+            },
+            {
+              "operation": "buffered-sequential",
+              "size": 262144,
+              "concurrency": 1,
+              "samples": 8,
+              "p95_ms": 0.1944000250659883,
+              "bytes_per_second": 1225401389.1190848,
+              "write_amplification": null
+            },
+            {
+              "operation": "mmap",
+              "size": 262144,
+              "concurrency": 1,
+              "samples": 8,
+              "p95_ms": 0.2626000205054879,
+              "bytes_per_second": 892443095.8481202,
+              "write_amplification": null
+            },
+            {
+              "operation": "buffered-random",
+              "size": 1048576,
+              "concurrency": 1,
+              "samples": 8,
+              "p95_ms": 0.4265999887138605,
+              "bytes_per_second": 1967171169.5877724,
+              "write_amplification": null
+            },
+            {
+              "operation": "buffered-sequential",
+              "size": 1048576,
+              "concurrency": 1,
+              "samples": 8,
+              "p95_ms": 0.41560002136975527,
+              "bytes_per_second": 2026086980.9380193,
+              "write_amplification": null
+            },
+            {
+              "operation": "mmap",
+              "size": 1048576,
+              "concurrency": 1,
+              "samples": 8,
+              "p95_ms": 0.6973000126890838,
+              "bytes_per_second": 1294318558.99289,
+              "write_amplification": null
+            }
+          ],
+          "scratch_bytes": 1048576,
+          "wall_seconds": 0.12136049999389797,
+          "cache_state": "warm-or-os-managed; cold unavailable",
+          "schema": 1
+        },
+        "storage_profile_id": "21308639e65881e9866388866d8d135b4c57ebd99703e5a75004c74f0d17f790",
+        "placement": {
+          "target_id": "local-dbe6741f6c14ac9886f9",
+          "object_sha256": "148974cecd3ed8c2b35bba8b7a2f697e42415454d7b5d96aa1c848c66a5db44e",
+          "bytes": 4992
+        },
+        "io_telemetry": {
+          "target_id": "local-dbe6741f6c14ac9886f9",
+          "bytes_requested": 4992,
+          "bytes_read": 4992,
+          "bytes_written": 0,
+          "transfer_seconds": 0.00015029998030513525,
+          "access_mode": "buffered",
+          "staging_seconds": null,
+          "cache_level": null,
+          "placement_miss": false,
+          "migration_bytes": 0,
+          "read_amplification": 1.0,
+          "derived_write_amplification": null
+        },
+        "hardware_acceptance": false
+      }
+    },
+    "LLM-agent-outcome": {
+      "status": "not-run",
+      "generation_calls": 0,
+      "judge_calls": 0,
+      "answer_accuracy": null,
+      "environment_success": null
+    }
+  },
+  "coverage": {
+    "executed_tasks": 1,
+    "truncated": false,
+    "scope": "retrieval-only; agent/environment outcome not executed"
+  },
+  "schema": "thm-evaluation/1",
+  "full_dataset_acceptance": false,
+  "receipt_sha256": "a4d829b0808b868a40f8dcfb91c91de39aaeabfd4e50218ac08060094803254f"
+}

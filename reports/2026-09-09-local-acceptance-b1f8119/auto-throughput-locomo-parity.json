@@ -1,0 +1,1541 @@
+{
+  "aggregate_metric_fields_compared": 1680,
+  "aggregate_semantic_metrics_available": true,
+  "aggregate_semantic_metrics_equivalent": true,
+  "aggregate_summary_coverage_errors": {
+    "cpu": [],
+    "gpu": []
+  },
+  "diagnostic_mismatch_row_count": 1,
+  "equivalent": false,
+  "excluded_from_parity": [
+    "timing_ms",
+    "query_embedding_ms",
+    "build/index seconds",
+    "environment strings",
+    "wall-clock throughput"
+  ],
+  "feature_experiment": null,
+  "float_abs_tolerance": 0.0,
+  "grid_cohort_errors": {
+    "cpu": [],
+    "gpu": []
+  },
+  "identity_complete": true,
+  "interpretation": "Strict parity includes selected IDs and ranked order across all rows, including category 5. Aggregate parity compares only explicit retrieval-quality summary fields. Rank-only requires ordering to be the sole semantic drift; mixed changes are other-semantic rows unless the selected set differs. Protocol 2 requires ranked IDs; LME requires ordered IDs with aligned source identities. Missing summaries do not establish aggregate parity.",
+  "kind": "thm-hardware-semantic-parity",
+  "main_category_mismatch_row_count": 4,
+  "max_semantic_numeric_abs_diff": 0.0,
+  "mismatch_count_capped": 10,
+  "mismatch_counts_by_field": {
+    "packed_selections": 5,
+    "selected_ranked_ids": 5
+  },
+  "mismatch_preview_count": 10,
+  "mismatch_preview_limit": 50,
+  "mismatch_preview_truncated": false,
+  "mismatch_rows_by_mode_budget_category": {
+    "dense@1200/category=4": {
+      "mismatching_rows": 2,
+      "other_semantic_rows": 2,
+      "rank_only_rows": 0,
+      "selection_set_rows": 0
+    },
+    "dense@1200/category=5": {
+      "mismatching_rows": 1,
+      "other_semantic_rows": 1,
+      "rank_only_rows": 0,
+      "selection_set_rows": 0
+    },
+    "dense@600/category=4": {
+      "mismatching_rows": 1,
+      "other_semantic_rows": 1,
+      "rank_only_rows": 0,
+      "selection_set_rows": 0
+    },
+    "hybrid@1200/category=1": {
+      "mismatching_rows": 1,
+      "other_semantic_rows": 1,
+      "rank_only_rows": 0,
+      "selection_set_rows": 0
+    }
+  },
+  "mismatches": [
+    {
+      "cpu": [
+        "D24:6",
+        "D14:10",
+        "D25:16",
+        "D28:8",
+        "D31:18",
+        "D29:9",
+        "D2:17",
+        "D24:11",
+        "D24:12",
+        "D25:2",
+        "D24:10",
+        "D18:1",
+        "D27:16",
+        "D4:1",
+        "D25:17",
+        "D8:10",
+        "D14:11",
+        "D26:8",
+        "D8:11"
+      ],
+      "field": "selected_ranked_ids",
+      "gpu": [
+        "D24:6",
+        "D14:10",
+        "D25:16",
+        "D28:8",
+        "D31:18",
+        "D29:9",
+        "D2:17",
+        "D24:11",
+        "D24:12",
+        "D25:2",
+        "D18:1",
+        "D24:10",
+        "D27:16",
+        "D4:1",
+        "D25:17",
+        "D8:10",
+        "D14:11",
+        "D26:8",
+        "D8:11"
+      ],
+      "kind": "row_field",
+      "row": "(('scope', 'conv-41'), ('question_index', 44), ('split', 'held_out'), ('mode', 'hybrid'), ('budget', 1200), ('category', 1))"
+    },
+    {
+      "cpu": [
+        {
+          "complete": true,
+          "id": "D24:6",
+          "span_end": null,
+          "span_start": null
+        },
+        {
+          "complete": true,
+          "id": "D14:10",
+          "span_end": null,
+          "span_start": null
+        },
+        {
+          "complete": true,
+          "id": "D25:16",
+          "span_end": null,
+          "span_start": null
+        },
+        {
+          "complete": true,
+          "id": "D28:8",
+          "span_end": null,
+          "span_start": null
+        },
+        {
+          "complete": true,
+          "id": "D31:18",
+          "span_end": null,
+          "span_start": null
+        },
+        {
+          "complete": true,
+          "id": "D29:9",
+          "span_end": null,
+          "span_start": null
+        },
+        {
+          "complete": true,
+          "id": "D2:17",
+          "span_end": null,
+          "span_start": null
+        },
+        {
+          "complete": true,
+          "id": "D24:11",
+          "span_end": null,
+          "span_start": null
+        },
+        {
+          "complete": true,
+          "id": "D24:12",
+          "span_end": null,
+          "span_start": null
+        },
+        {
+          "complete": true,
+          "id": "D25:2",
+          "span_end": null,
+          "span_start": null
+        },
+        {
+          "complete": true,
+          "id": "D24:10",
+          "span_end": null,
+          "span_start": null
+        },
+        {
+          "complete": true,
+          "id": "D18:1",
+          "span_end": null,
+          "span_start": null
+        },
+        {
+          "complete": true,
+          "id": "D27:16",
+          "span_end": null,
+          "span_start": null
+        },
+        {
+          "complete": true,
+          "id": "D4:1",
+          "span_end": null,
+          "span_start": null
+        },
+        {
+          "complete": true,
+          "id": "D25:17",
+          "span_end": null,
+          "span_start": null
+        },
+        {
+          "complete": true,
+          "id": "D8:10",
+          "span_end": null,
+          "span_start": null
+        },
+        {
+          "complete": true,
+          "id": "D14:11",
+          "span_end": null,
+          "span_start": null
+        },
+        {
+          "complete": true,
+          "id": "D26:8",
+          "span_end": null,
+          "span_start": null
+        },
+        {
+          "complete": true,
+          "id": "D8:11",
+          "span_end": null,
+          "span_start": null
+        }
+      ],
+      "field": "packed_selections",
+      "gpu": [
+        {
+          "complete": true,
+          "id": "D24:6",
+          "span_end": null,
+          "span_start": null
+        },
+        {
+          "complete": true,
+          "id": "D14:10",
+          "span_end": null,
+          "span_start": null
+        },
+        {
+          "complete": true,
+          "id": "D25:16",
+          "span_end": null,
+          "span_start": null
+        },
+        {
+          "complete": true,
+          "id": "D28:8",
+          "span_end": null,
+          "span_start": null
+        },
+        {
+          "complete": true,
+          "id": "D31:18",
+          "span_end": null,
+          "span_start": null
+        },
+        {
+          "complete": true,
+          "id": "D29:9",
+          "span_end": null,
+          "span_start": null
+        },
+        {
+          "complete": true,
+          "id": "D2:17",
+          "span_end": null,
+          "span_start": null
+        },
+        {
+          "complete": true,
+          "id": "D24:11",
+          "span_end": null,
+          "span_start": null
+        },
+        {
+          "complete": true,
+          "id": "D24:12",
+          "span_end": null,
+          "span_start": null
+        },
+        {
+          "complete": true,
+          "id": "D25:2",
+          "span_end": null,
+          "span_start": null
+        },
+        {
+          "complete": true,
+          "id": "D18:1",
+          "span_end": null,
+          "span_start": null
+        },
+        {
+          "complete": true,
+          "id": "D24:10",
+          "span_end": null,
+          "span_start": null
+        },
+        {
+          "complete": true,
+          "id": "D27:16",
+          "span_end": null,
+          "span_start": null
+        },
+        {
+          "complete": true,
+          "id": "D4:1",
+          "span_end": null,
+          "span_start": null
+        },
+        {
+          "complete": true,
+          "id": "D25:17",
+          "span_end": null,
+          "span_start": null
+        },
+        {
+          "complete": true,
+          "id": "D8:10",
+          "span_end": null,
+          "span_start": null
+        },
+        {
+          "complete": true,
+          "id": "D14:11",
+          "span_end": null,
+          "span_start": null
+        },
+        {
+          "complete": true,
+          "id": "D26:8",
+          "span_end": null,
+          "span_start": null
+        },
+        {
+          "complete": true,
+          "id": "D8:11",
+          "span_end": null,
+          "span_start": null
+        }
+      ],
+      "kind": "row_field",
+      "row": "(('scope', 'conv-41'), ('question_index', 44), ('split', 'held_out'), ('mode', 'hybrid'), ('budget', 1200), ('category', 1))"
+    },
+    {
+      "cpu": [
+        "D29:6",
+        "D11:2",
+        "D25:15",
+        "D14:14",
+        "D8:13",
+        "D3:22",
+        "D17:15",
+        "D7:13",
+        "D11:6",
+        "D14:26",
+        "D29:4",
+        "D14:22",
+        "D7:7",
+        "D11:20",
+        "D28:21",
+        "D1:4",
+        "D23:19",
+        "D25:17",
+        "D29:1",
+        "D23:30",
+        "D25:29",
+        "D12:2",
+        "D1:1",
+        "D28:33"
+      ],
+      "field": "selected_ranked_ids",
+      "gpu": [
+        "D29:6",
+        "D11:2",
+        "D25:15",
+        "D14:14",
+        "D8:13",
+        "D3:22",
+        "D17:15",
+        "D7:13",
+        "D11:6",
+        "D14:26",
+        "D29:4",
+        "D14:22",
+        "D7:7",
+        "D11:20",
+        "D28:21",
+        "D23:19",
+        "D1:4",
+        "D25:17",
+        "D29:1",
+        "D23:30",
+        "D25:29",
+        "D12:2",
+        "D1:1",
+        "D28:33"
+      ],
+      "kind": "row_field",
+      "row": "(('scope', 'conv-42'), ('question_index', 196), ('split', 'held_out'), ('mode', 'dense'), ('budget', 1200), ('category', 4))"
+    },
+    {
+      "cpu": [
+        {
+          "complete": true,
+          "id": "D29:6",
+          "span_end": null,
+          "span_start": null
+        },
+        {
+          "complete": true,
+          "id": "D11:2",
+          "span_end": null,
+          "span_start": null
+        },
+        {
+          "complete": true,
+          "id": "D25:15",
+          "span_end": null,
+          "span_start": null
+        },
+        {
+          "complete": true,
+          "id": "D14:14",
+          "span_end": null,
+          "span_start": null
+        },
+        {
+          "complete": true,
+          "id": "D8:13",
+          "span_end": null,
+          "span_start": null
+        },
+        {
+          "complete": true,
+          "id": "D3:22",
+          "span_end": null,
+          "span_start": null
+        },
+        {
+          "complete": true,
+          "id": "D17:15",
+          "span_end": null,
+          "span_start": null
+        },
+        {
+          "complete": true,
+          "id": "D7:13",
+          "span_end": null,
+          "span_start": null
+        },
+        {
+          "complete": true,
+          "id": "D11:6",
+          "span_end": null,
+          "span_start": null
+        },
+        {
+          "complete": true,
+          "id": "D14:26",
+          "span_end": null,
+          "span_start": null
+        },
+        {
+          "complete": true,
+          "id": "D29:4",
+          "span_end": null,
+          "span_start": null
+        },
+        {
+          "complete": true,
+          "id": "D14:22",
+          "span_end": null,
+          "span_start": null
+        },
+        {
+          "complete": true,
+          "id": "D7:7",
+          "span_end": null,
+          "span_start": null
+        },
+        {
+          "complete": true,
+          "id": "D11:20",
+          "span_end": null,
+          "span_start": null
+        },
+        {
+          "complete": true,
+          "id": "D28:21",
+          "span_end": null,
+          "span_start": null
+        },
+        {
+          "complete": true,
+          "id": "D1:4",
+          "span_end": null,
+          "span_start": null
+        },
+        {
+          "complete": true,
+          "id": "D23:19",
+          "span_end": null,
+          "span_start": null
+        },
+        {
+          "complete": true,
+          "id": "D25:17",
+          "span_end": null,
+          "span_start": null
+        },
+        {
+          "complete": true,
+          "id": "D29:1",
+          "span_end": null,
+          "span_start": null
+        },
+        {
+          "complete": true,
+          "id": "D23:30",
+          "span_end": null,
+          "span_start": null
+        },
+        {
+          "complete": true,
+          "id": "D25:29",
+          "span_end": null,
+          "span_start": null
+        },
+        {
+          "complete": true,
+          "id": "D12:2",
+          "span_end": null,
+          "span_start": null
+        },
+        {
+          "complete": true,
+          "id": "D1:1",
+          "span_end": null,
+          "span_start": null
+        },
+        {
+          "complete": true,
+          "id": "D28:33",
+          "span_end": null,
+          "span_start": null
+        }
+      ],
+      "field": "packed_selections",
+      "gpu": [
+        {
+          "complete": true,
+          "id": "D29:6",
+          "span_end": null,
+          "span_start": null
+        },
+        {
+          "complete": true,
+          "id": "D11:2",
+          "span_end": null,
+          "span_start": null
+        },
+        {
+          "complete": true,
+          "id": "D25:15",
+          "span_end": null,
+          "span_start": null
+        },
+        {
+          "complete": true,
+          "id": "D14:14",
+          "span_end": null,
+          "span_start": null
+        },
+        {
+          "complete": true,
+          "id": "D8:13",
+          "span_end": null,
+          "span_start": null
+        },
+        {
+          "complete": true,
+          "id": "D3:22",
+          "span_end": null,
+          "span_start": null
+        },
+        {
+          "complete": true,
+          "id": "D17:15",
+          "span_end": null,
+          "span_start": null
+        },
+        {
+          "complete": true,
+          "id": "D7:13",
+          "span_end": null,
+          "span_start": null
+        },
+        {
+          "complete": true,
+          "id": "D11:6",
+          "span_end": null,
+          "span_start": null
+        },
+        {
+          "complete": true,
+          "id": "D14:26",
+          "span_end": null,
+          "span_start": null
+        },
+        {
+          "complete": true,
+          "id": "D29:4",
+          "span_end": null,
+          "span_start": null
+        },
+        {
+          "complete": true,
+          "id": "D14:22",
+          "span_end": null,
+          "span_start": null
+        },
+        {
+          "complete": true,
+          "id": "D7:7",
+          "span_end": null,
+          "span_start": null
+        },
+        {
+          "complete": true,
+          "id": "D11:20",
+          "span_end": null,
+          "span_start": null
+        },
+        {
+          "complete": true,
+          "id": "D28:21",
+          "span_end": null,
+          "span_start": null
+        },
+        {
+          "complete": true,
+          "id": "D23:19",
+          "span_end": null,
+          "span_start": null
+        },
+        {
+          "complete": true,
+          "id": "D1:4",
+          "span_end": null,
+          "span_start": null
+        },
+        {
+          "complete": true,
+          "id": "D25:17",
+          "span_end": null,
+          "span_start": null
+        },
+        {
+          "complete": true,
+          "id": "D29:1",
+          "span_end": null,
+          "span_start": null
+        },
+        {
+          "complete": true,
+          "id": "D23:30",
+          "span_end": null,
+          "span_start": null
+        },
+        {
+          "complete": true,
+          "id": "D25:29",
+          "span_end": null,
+          "span_start": null
+        },
+        {
+          "complete": true,
+          "id": "D12:2",
+          "span_end": null,
+          "span_start": null
+        },
+        {
+          "complete": true,
+          "id": "D1:1",
+          "span_end": null,
+          "span_start": null
+        },
+        {
+          "complete": true,
+          "id": "D28:33",
+          "span_end": null,
+          "span_start": null
+        }
+      ],
+      "kind": "row_field",
+      "row": "(('scope', 'conv-42'), ('question_index', 196), ('split', 'held_out'), ('mode', 'dense'), ('budget', 1200), ('category', 4))"
+    },
+    {
+      "cpu": [
+        "D10:10",
+        "D11:13",
+        "D15:10",
+        "D11:5",
+        "D11:9",
+        "D28:9",
+        "D28:8",
+        "D10:5",
+        "D6:3",
+        "D20:5",
+        "D9:3",
+        "D31:3",
+        "D11:6",
+        "D8:4",
+        "D10:12",
+        "D15:14",
+        "D12:10",
+        "D1:19",
+        "D25:17",
+        "D2:14"
+      ],
+      "field": "selected_ranked_ids",
+      "gpu": [
+        "D10:10",
+        "D11:13",
+        "D15:10",
+        "D11:5",
+        "D11:9",
+        "D28:8",
+        "D28:9",
+        "D10:5",
+        "D6:3",
+        "D20:5",
+        "D9:3",
+        "D31:3",
+        "D11:6",
+        "D8:4",
+        "D10:12",
+        "D15:14",
+        "D12:10",
+        "D1:19",
+        "D25:17",
+        "D2:14"
+      ],
+      "kind": "row_field",
+      "row": "(('scope', 'conv-47'), ('question_index', 92), ('split', 'held_out'), ('mode', 'dense'), ('budget', 1200), ('category', 4))"
+    },
+    {
+      "cpu": [
+        {
+          "complete": true,
+          "id": "D10:10",
+          "span_end": null,
+          "span_start": null
+        },
+        {
+          "complete": true,
+          "id": "D11:13",
+          "span_end": null,
+          "span_start": null
+        },
+        {
+          "complete": true,
+          "id": "D15:10",
+          "span_end": null,
+          "span_start": null
+        },
+        {
+          "complete": true,
+          "id": "D11:5",
+          "span_end": null,
+          "span_start": null
+        },
+        {
+          "complete": true,
+          "id": "D11:9",
+          "span_end": null,
+          "span_start": null
+        },
+        {
+          "complete": true,
+          "id": "D28:9",
+          "span_end": null,
+          "span_start": null
+        },
+        {
+          "complete": true,
+          "id": "D28:8",
+          "span_end": null,
+          "span_start": null
+        },
+        {
+          "complete": true,
+          "id": "D10:5",
+          "span_end": null,
+          "span_start": null
+        },
+        {
+          "complete": true,
+          "id": "D6:3",
+          "span_end": null,
+          "span_start": null
+        },
+        {
+          "complete": true,
+          "id": "D20:5",
+          "span_end": null,
+          "span_start": null
+        },
+        {
+          "complete": true,
+          "id": "D9:3",
+          "span_end": null,
+          "span_start": null
+        },
+        {
+          "complete": true,
+          "id": "D31:3",
+          "span_end": null,
+          "span_start": null
+        },
+        {
+          "complete": true,
+          "id": "D11:6",
+          "span_end": null,
+          "span_start": null
+        },
+        {
+          "complete": true,
+          "id": "D8:4",
+          "span_end": null,
+          "span_start": null
+        },
+        {
+          "complete": true,
+          "id": "D10:12",
+          "span_end": null,
+          "span_start": null
+        },
+        {
+          "complete": true,
+          "id": "D15:14",
+          "span_end": null,
+          "span_start": null
+        },
+        {
+          "complete": true,
+          "id": "D12:10",
+          "span_end": null,
+          "span_start": null
+        },
+        {
+          "complete": true,
+          "id": "D1:19",
+          "span_end": null,
+          "span_start": null
+        },
+        {
+          "complete": true,
+          "id": "D25:17",
+          "span_end": null,
+          "span_start": null
+        },
+        {
+          "complete": true,
+          "id": "D2:14",
+          "span_end": null,
+          "span_start": null
+        }
+      ],
+      "field": "packed_selections",
+      "gpu": [
+        {
+          "complete": true,
+          "id": "D10:10",
+          "span_end": null,
+          "span_start": null
+        },
+        {
+          "complete": true,
+          "id": "D11:13",
+          "span_end": null,
+          "span_start": null
+        },
+        {
+          "complete": true,
+          "id": "D15:10",
+          "span_end": null,
+          "span_start": null
+        },
+        {
+          "complete": true,
+          "id": "D11:5",
+          "span_end": null,
+          "span_start": null
+        },
+        {
+          "complete": true,
+          "id": "D11:9",
+          "span_end": null,
+          "span_start": null
+        },
+        {
+          "complete": true,
+          "id": "D28:8",
+          "span_end": null,
+          "span_start": null
+        },
+        {
+          "complete": true,
+          "id": "D28:9",
+          "span_end": null,
+          "span_start": null
+        },
+        {
+          "complete": true,
+          "id": "D10:5",
+          "span_end": null,
+          "span_start": null
+        },
+        {
+          "complete": true,
+          "id": "D6:3",
+          "span_end": null,
+          "span_start": null
+        },
+        {
+          "complete": true,
+          "id": "D20:5",
+          "span_end": null,
+          "span_start": null
+        },
+        {
+          "complete": true,
+          "id": "D9:3",
+          "span_end": null,
+          "span_start": null
+        },
+        {
+          "complete": true,
+          "id": "D31:3",
+          "span_end": null,
+          "span_start": null
+        },
+        {
+          "complete": true,
+          "id": "D11:6",
+          "span_end": null,
+          "span_start": null
+        },
+        {
+          "complete": true,
+          "id": "D8:4",
+          "span_end": null,
+          "span_start": null
+        },
+        {
+          "complete": true,
+          "id": "D10:12",
+          "span_end": null,
+          "span_start": null
+        },
+        {
+          "complete": true,
+          "id": "D15:14",
+          "span_end": null,
+          "span_start": null
+        },
+        {
+          "complete": true,
+          "id": "D12:10",
+          "span_end": null,
+          "span_start": null
+        },
+        {
+          "complete": true,
+          "id": "D1:19",
+          "span_end": null,
+          "span_start": null
+        },
+        {
+          "complete": true,
+          "id": "D25:17",
+          "span_end": null,
+          "span_start": null
+        },
+        {
+          "complete": true,
+          "id": "D2:14",
+          "span_end": null,
+          "span_start": null
+        }
+      ],
+      "kind": "row_field",
+      "row": "(('scope', 'conv-47'), ('question_index', 92), ('split', 'held_out'), ('mode', 'dense'), ('budget', 1200), ('category', 4))"
+    },
+    {
+      "cpu": [
+        "D10:10",
+        "D11:13",
+        "D15:10",
+        "D11:5",
+        "D11:9",
+        "D28:9",
+        "D28:8",
+        "D10:5",
+        "D6:3"
+      ],
+      "field": "selected_ranked_ids",
+      "gpu": [
+        "D10:10",
+        "D11:13",
+        "D15:10",
+        "D11:5",
+        "D11:9",
+        "D28:8",
+        "D28:9",
+        "D10:5",
+        "D6:3"
+      ],
+      "kind": "row_field",
+      "row": "(('scope', 'conv-47'), ('question_index', 92), ('split', 'held_out'), ('mode', 'dense'), ('budget', 600), ('category', 4))"
+    },
+    {
+      "cpu": [
+        {
+          "complete": true,
+          "id": "D10:10",
+          "span_end": null,
+          "span_start": null
+        },
+        {
+          "complete": true,
+          "id": "D11:13",
+          "span_end": null,
+          "span_start": null
+        },
+        {
+          "complete": true,
+          "id": "D15:10",
+          "span_end": null,
+          "span_start": null
+        },
+        {
+          "complete": true,
+          "id": "D11:5",
+          "span_end": null,
+          "span_start": null
+        },
+        {
+          "complete": true,
+          "id": "D11:9",
+          "span_end": null,
+          "span_start": null
+        },
+        {
+          "complete": true,
+          "id": "D28:9",
+          "span_end": null,
+          "span_start": null
+        },
+        {
+          "complete": true,
+          "id": "D28:8",
+          "span_end": null,
+          "span_start": null
+        },
+        {
+          "complete": true,
+          "id": "D10:5",
+          "span_end": null,
+          "span_start": null
+        },
+        {
+          "complete": true,
+          "id": "D6:3",
+          "span_end": null,
+          "span_start": null
+        }
+      ],
+      "field": "packed_selections",
+      "gpu": [
+        {
+          "complete": true,
+          "id": "D10:10",
+          "span_end": null,
+          "span_start": null
+        },
+        {
+          "complete": true,
+          "id": "D11:13",
+          "span_end": null,
+          "span_start": null
+        },
+        {
+          "complete": true,
+          "id": "D15:10",
+          "span_end": null,
+          "span_start": null
+        },
+        {
+          "complete": true,
+          "id": "D11:5",
+          "span_end": null,
+          "span_start": null
+        },
+        {
+          "complete": true,
+          "id": "D11:9",
+          "span_end": null,
+          "span_start": null
+        },
+        {
+          "complete": true,
+          "id": "D28:8",
+          "span_end": null,
+          "span_start": null
+        },
+        {
+          "complete": true,
+          "id": "D28:9",
+          "span_end": null,
+          "span_start": null
+        },
+        {
+          "complete": true,
+          "id": "D10:5",
+          "span_end": null,
+          "span_start": null
+        },
+        {
+          "complete": true,
+          "id": "D6:3",
+          "span_end": null,
+          "span_start": null
+        }
+      ],
+      "kind": "row_field",
+      "row": "(('scope', 'conv-47'), ('question_index', 92), ('split', 'held_out'), ('mode', 'dense'), ('budget', 600), ('category', 4))"
+    },
+    {
+      "cpu": [
+        "D22:28",
+        "D22:24",
+        "D14:6",
+        "D22:22",
+        "D22:30",
+        "D22:25",
+        "D2:12",
+        "D16:6",
+        "D2:4",
+        "D3:5",
+        "D15:22",
+        "D7:19",
+        "D23:5",
+        "D2:25",
+        "D2:18",
+        "D20:5",
+        "D28:12",
+        "D10:10",
+        "D22:20",
+        "D12:14",
+        "D2:22",
+        "D4:17",
+        "D29:16",
+        "D9:4",
+        "D28:28"
+      ],
+      "field": "selected_ranked_ids",
+      "gpu": [
+        "D22:28",
+        "D22:24",
+        "D14:6",
+        "D22:22",
+        "D22:30",
+        "D22:25",
+        "D2:12",
+        "D16:6",
+        "D2:4",
+        "D3:5",
+        "D15:22",
+        "D7:19",
+        "D23:5",
+        "D2:25",
+        "D2:18",
+        "D20:5",
+        "D28:12",
+        "D10:10",
+        "D22:20",
+        "D12:14",
+        "D2:22",
+        "D29:16",
+        "D4:17",
+        "D9:4",
+        "D28:28"
+      ],
+      "kind": "row_field",
+      "row": "(('scope', 'conv-48'), ('question_index', 226), ('split', 'held_out'), ('mode', 'dense'), ('budget', 1200), ('category', 5))"
+    },
+    {
+      "cpu": [
+        {
+          "complete": true,
+          "id": "D22:28",
+          "span_end": null,
+          "span_start": null
+        },
+        {
+          "complete": true,
+          "id": "D22:24",
+          "span_end": null,
+          "span_start": null
+        },
+        {
+          "complete": true,
+          "id": "D14:6",
+          "span_end": null,
+          "span_start": null
+        },
+        {
+          "complete": true,
+          "id": "D22:22",
+          "span_end": null,
+          "span_start": null
+        },
+        {
+          "complete": true,
+          "id": "D22:30",
+          "span_end": null,
+          "span_start": null
+        },
+        {
+          "complete": true,
+          "id": "D22:25",
+          "span_end": null,
+          "span_start": null
+        },
+        {
+          "complete": true,
+          "id": "D2:12",
+          "span_end": null,
+          "span_start": null
+        },
+        {
+          "complete": true,
+          "id": "D16:6",
+          "span_end": null,
+          "span_start": null
+        },
+        {
+          "complete": true,
+          "id": "D2:4",
+          "span_end": null,
+          "span_start": null
+        },
+        {
+          "complete": true,
+          "id": "D3:5",
+          "span_end": null,
+          "span_start": null
+        },
+        {
+          "complete": true,
+          "id": "D15:22",
+          "span_end": null,
+          "span_start": null
+        },
+        {
+          "complete": true,
+          "id": "D7:19",
+          "span_end": null,
+          "span_start": null
+        },
+        {
+          "complete": true,
+          "id": "D23:5",
+          "span_end": null,
+          "span_start": null
+        },
+        {
+          "complete": true,
+          "id": "D2:25",
+          "span_end": null,
+          "span_start": null
+        },
+        {
+          "complete": true,
+          "id": "D2:18",
+          "span_end": null,
+          "span_start": null
+        },
+        {
+          "complete": true,
+          "id": "D20:5",
+          "span_end": null,
+          "span_start": null
+        },
+        {
+          "complete": true,
+          "id": "D28:12",
+          "span_end": null,
+          "span_start": null
+        },
+        {
+          "complete": true,
+          "id": "D10:10",
+          "span_end": null,
+          "span_start": null
+        },
+        {
+          "complete": true,
+          "id": "D22:20",
+          "span_end": null,
+          "span_start": null
+        },
+        {
+          "complete": true,
+          "id": "D12:14",
+          "span_end": null,
+          "span_start": null
+        },
+        {
+          "complete": true,
+          "id": "D2:22",
+          "span_end": null,
+          "span_start": null
+        },
+        {
+          "complete": true,
+          "id": "D4:17",
+          "span_end": null,
+          "span_start": null
+        },
+        {
+          "complete": true,
+          "id": "D29:16",
+          "span_end": null,
+          "span_start": null
+        },
+        {
+          "complete": true,
+          "id": "D9:4",
+          "span_end": null,
+          "span_start": null
+        },
+        {
+          "complete": true,
+          "id": "D28:28",
+          "span_end": null,
+          "span_start": null
+        }
+      ],
+      "field": "packed_selections",
+      "gpu": [
+        {
+          "complete": true,
+          "id": "D22:28",
+          "span_end": null,
+          "span_start": null
+        },
+        {
+          "complete": true,
+          "id": "D22:24",
+          "span_end": null,
+          "span_start": null
+        },
+        {
+          "complete": true,
+          "id": "D14:6",
+          "span_end": null,
+          "span_start": null
+        },
+        {
+          "complete": true,
+          "id": "D22:22",
+          "span_end": null,
+          "span_start": null
+        },
+        {
+          "complete": true,
+          "id": "D22:30",
+          "span_end": null,
+          "span_start": null
+        },
+        {
+          "complete": true,
+          "id": "D22:25",
+          "span_end": null,
+          "span_start": null
+        },
+        {
+          "complete": true,
+          "id": "D2:12",
+          "span_end": null,
+          "span_start": null
+        },
+        {
+          "complete": true,
+          "id": "D16:6",
+          "span_end": null,
+          "span_start": null
+        },
+        {
+          "complete": true,
+          "id": "D2:4",
+          "span_end": null,
+          "span_start": null
+        },
+        {
+          "complete": true,
+          "id": "D3:5",
+          "span_end": null,
+          "span_start": null
+        },
+        {
+          "complete": true,
+          "id": "D15:22",
+          "span_end": null,
+          "span_start": null
+        },
+        {
+          "complete": true,
+          "id": "D7:19",
+          "span_end": null,
+          "span_start": null
+        },
+        {
+          "complete": true,
+          "id": "D23:5",
+          "span_end": null,
+          "span_start": null
+        },
+        {
+          "complete": true,
+          "id": "D2:25",
+          "span_end": null,
+          "span_start": null
+        },
+        {
+          "complete": true,
+          "id": "D2:18",
+          "span_end": null,
+          "span_start": null
+        },
+        {
+          "complete": true,
+          "id": "D20:5",
+          "span_end": null,
+          "span_start": null
+        },
+        {
+          "complete": true,
+          "id": "D28:12",
+          "span_end": null,
+          "span_start": null
+        },
+        {
+          "complete": true,
+          "id": "D10:10",
+          "span_end": null,
+          "span_start": null
+        },
+        {
+          "complete": true,
+          "id": "D22:20",
+          "span_end": null,
+          "span_start": null
+        },
+        {
+          "complete": true,
+          "id": "D12:14",
+          "span_end": null,
+          "span_start": null
+        },
+        {
+          "complete": true,
+          "id": "D2:22",
+          "span_end": null,
+          "span_start": null
+        },
+        {
+          "complete": true,
+          "id": "D29:16",
+          "span_end": null,
+          "span_start": null
+        },
+        {
+          "complete": true,
+          "id": "D4:17",
+          "span_end": null,
+          "span_start": null
+        },
+        {
+          "complete": true,
+          "id": "D9:4",
+          "span_end": null,
+          "span_start": null
+        },
+        {
+          "complete": true,
+          "id": "D28:28",
+          "span_end": null,
+          "span_start": null
+        }
+      ],
+      "kind": "row_field",
+      "row": "(('scope', 'conv-48'), ('question_index', 226), ('split', 'held_out'), ('mode', 'dense'), ('budget', 1200), ('category', 5))"
+    }
+  ],
+  "mismatching_row_count": 5,
+  "other_category_mismatch_row_count": 0,
+  "other_semantic_mismatch_row_count": 5,
+  "rank_only_mismatch_row_count": 0,
+  "rows_compared": 23832,
+  "rows_cpu": 23832,
+  "rows_gpu": 23832,
+  "selection_set_mismatch_row_count": 0,
+  "source_artifacts": {
+    "candidate": {
+      "file": "auto-throughput-locomo.json",
+      "sha256": "7f08b46beb32916557dcc1032db2c046739fcb329a7dcc1521395d8733c2c60f"
+    },
+    "cpu": {
+      "file": "cpu-reference-locomo.json",
+      "sha256": "7d1dcc26c4cb8bde8a616cd019bdfce9f5a1abb7d5f1ec0b2e3030deb67398f2"
+    }
+  },
+  "strict_row_coverage_errors": {
+    "cpu": {},
+    "gpu": {}
+  },
+  "strict_semantic_equivalent": false,
+  "top_level_coverage_errors": {
+    "cpu": [],
+    "gpu": []
+  },
+  "total_mismatch_count": 10
+}
