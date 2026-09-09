@@ -33,6 +33,20 @@ class ModelFabricTests(unittest.TestCase):
         encoder = FakeEncoder(); encoder.profile = replace(self.encoder.profile,backend=backend)
         return encoder
 
+    def model_proof(self, service, key, generation):
+        reference = self.index.search('scope','Beijing',encoder=self.encoder,model_id=self.encoder.model_id,mode='dense',diagnostics=True)
+        profile = replace(self.encoder.profile,backend='fixture-native',device='cuda').identity()
+        proof = {'generation':generation,'reference':signature(reference),'result':signature(reference),
+            'baseline':[10]*5,'candidate':[1]*5,'cpu_samples':{'baseline':[.01]*5,'candidate':[.001]*5},
+            'startup_ms':2,'embedding_profile':profile,'vram_bytes':100}
+        worker = mock.Mock(); worker.preempted = False; worker.prepare.return_value = proof
+        worker.memory = 1024; worker.budget.last = {'ram_bytes':100}
+        worker.task = {'generation':generation}
+        worker.search.return_value = {'results':[reference],'cpu_seconds':.002,'embedding_profile':profile}
+        description = service.registry.describe('nvidia.inference')
+        service.models.add('nvidia.inference',description,{'availability':'available'})
+        return worker, profile, reference
+
     def test_private_reindex_keeps_source_authority_and_serves_new_profile(self):
         from thm.runtime.fabric.model_worker import run
         target = self.root/'private'; target.mkdir()
@@ -58,20 +72,11 @@ class ModelFabricTests(unittest.TestCase):
         self.assertEqual(manifest(self.bundle)['sha256'],self.encoder.profile.source_manifest_sha256)
 
     def test_background_admission_waits_for_session_and_returns_actual_identity(self):
-        service = RuntimeService(self.index,encoder=self.encoder,model_id=self.encoder.model_id,background=False)
+        service = RuntimeService(self.index,encoder=self.encoder,model_id=self.encoder.model_id,
+                                 policy='auto-throughput',background=False)
         try:
             key,generation,_ = service._key('scope','interactive',{'mode':'dense'})
-            reference = self.index.search('scope','Beijing',encoder=self.encoder,model_id=self.encoder.model_id,mode='dense',diagnostics=True)
-            profile = replace(self.encoder.profile,backend='fixture-native',device='cuda').identity()
-            proof = {'generation':generation,'reference':signature(reference),'result':signature(reference),
-                'baseline':[10]*5,'candidate':[1]*5,'cpu_samples':{'baseline':[.01]*5,'candidate':[.001]*5},
-                'startup_ms':2,'embedding_profile':profile,'vram_bytes':100}
-            worker = mock.Mock(); worker.preempted = False; worker.prepare.return_value = proof
-            worker.memory = 1024; worker.budget.last = {'ram_bytes':100}
-            worker.task = {'generation':generation}
-            worker.search.return_value = {'results':[reference],'cpu_seconds':.002,'embedding_profile':profile}
-            description = service.registry.describe('nvidia.inference')
-            service.models.add('nvidia.inference',description,{'availability':'available'})
+            worker, profile, reference = self.model_proof(service,key,generation)
             with mock.patch('thm.runtime.fabric.models.WarmModelWorker',return_value=worker):
                 self.assertTrue(service.models.maybe_start(key,{'generation':generation}))
                 service.models.thread.join(timeout=2)
@@ -89,6 +94,23 @@ class ModelFabricTests(unittest.TestCase):
             self.assertEqual(result['execution_plan']['inference_provider'],'reference')
             self.assertTrue(result['runtime_receipt']['fallback'].startswith('provider-failed'))
             self.assertIsNone(service.models.active)
+        finally:
+            service.close()
+
+    def test_auto_safe_records_but_does_not_promote_observed_request_model_evidence(self):
+        service = RuntimeService(self.index,encoder=self.encoder,model_id=self.encoder.model_id,background=False)
+        try:
+            key,generation,_ = service._key('scope','interactive',{'mode':'dense'})
+            worker, _, _ = self.model_proof(service,key,generation)
+            with mock.patch('thm.runtime.fabric.models.WarmModelWorker',return_value=worker):
+                self.assertTrue(service.models.maybe_start(key,{'generation':generation}))
+                service.models.thread.join(timeout=2)
+            self.assertIsNone(service.models.ready)
+            self.assertEqual(service.models.last['status'],'measured-only')
+            self.assertFalse(service.models.last['automatic_activation_allowed'])
+            service.new_session()
+            self.assertIsNone(service.models.select(key))
+            worker.search.assert_not_called()
         finally:
             service.close()
 
