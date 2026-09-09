@@ -154,7 +154,7 @@ class SearchIndex:
             tables = {r[0] for r in self.db.execute("SELECT name FROM sqlite_master WHERE type='table'")}
             expected = {'docs', 'literal', 'lexical', 'scopes', 'vectors'}
             if tables and (not expected <= tables or any(
-                    t not in expected | {'embedding_profiles','vector_generations','vectors_v2'} and not t.startswith(('literal_', 'lexical_', 'sqlite_')) for t in tables)):
+                    t not in expected | {'embedding_profiles','vector_generations','vectors_v2','physical_placements'} and not t.startswith(('literal_', 'lexical_', 'sqlite_')) for t in tables)):
                 raise ValueError('not a THM retrieval database; native or unrelated databases are refused')
             if readonly and not tables:
                 raise ValueError('empty read-only retrieval database')
@@ -257,6 +257,8 @@ class SearchIndex:
         self.db.execute('DELETE FROM vectors WHERE scope=?', (scope,))
         self.db.execute('DELETE FROM vectors_v2 WHERE scope=?', (scope,))
         self.db.execute('DELETE FROM vector_generations WHERE scope=?', (scope,))
+        if self.db.execute("SELECT 1 FROM sqlite_master WHERE name='physical_placements'").fetchone():
+            self.db.execute('DELETE FROM physical_placements WHERE scope=?', (scope,))
         for pos, d in enumerate(docs):
             # Unsupervised adjacent-turn context; no labels or generated summaries.
             context = ' '.join(x.text for x in docs[max(0, pos - 1):pos + 2]
@@ -379,6 +381,8 @@ class SearchIndex:
                 previous=self.db.execute('SELECT identity FROM embedding_profiles WHERE profile=?',(profile.id,)).fetchone()
                 if previous and previous[0]!=identity: raise ValueError('embedding profile collision')
                 self.db.execute('INSERT OR IGNORE INTO embedding_profiles VALUES(?,?)',(profile.id,identity))
+                if self.db.execute("SELECT 1 FROM sqlite_master WHERE name='physical_placements'").fetchone():
+                    self.db.execute('DELETE FROM physical_placements WHERE scope=? AND profile=?',(scope,profile.id))
                 self.db.execute('DELETE FROM vectors_v2 WHERE scope=? AND profile=?',(scope,profile.id))
                 self.db.executemany('INSERT INTO vectors_v2 VALUES(?,?,?,?,?,?,?)',
                     [(scope,r['id'],r['hash'],profile.id,profile.dimension,'f32le' if storage=='blob' else 'json',
@@ -398,6 +402,12 @@ class SearchIndex:
         generation=self.db.execute('SELECT generation FROM scopes WHERE scope=?',(scope,)).fetchone()
         if not generation: raise ValueError('scope not indexed')
         key=(scope,identity,generation[0])
+        if key not in self._dense and profile:
+            from .physical.segments import load
+            external=load(self,scope,profile,generation[0])
+            if external is not None:
+                ids,values=external
+                self._dense[key]=(ids,np.asarray(normalize_vectors(values,len(ids)),dtype=np.float32))
         if key not in self._dense:
             count=self.db.execute('SELECT COUNT(*) FROM docs WHERE scope=?',(scope,)).fetchone()[0]
             if profile:

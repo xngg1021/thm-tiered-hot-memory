@@ -1,5 +1,18 @@
 # Changelog
 
+## Unreleased — repository reconciliation
+
+- Integrates PR #15's transactional scope vector/generation cleanup into the physical storage successor and clears stale physical pointers without deleting immutable objects.
+- Binds reference reuse protocol 3 to the transitive runner/worker import manifest and tiktoken version; storage probes, physical microbenchmarks, docs and unrelated scheduler code stay outside the semantic key.
+- Classifies positively observed Windows local storage buses for local-only placement while retaining unknown/remote evidence for ambiguous and network transports.
+- Applies the same conservative local-bus admission to macOS and prevents immutable export from publishing a snapshot superseded by same-generation re-embedding.
+- Resolves macOS containing volumes before disk probing, bases Linux locality on transport evidence rather than filesystem type, and requires exclusive index ownership before retiring physical objects; legacy shared roots retain copy/read support without source deletion.
+- Separates post-merge hardware/performance evidence from correctness merge gates. See the [reconciliation receipt](reports/2026-09-09-open-pr-reconciliation-closeout.md); no stable/version promotion.
+
+## Unreleased — orthogonal physical storage successor
+
+Bounded smoke/acceptance/full-research verification, exact reference reuse, public storage topology, immutable vector segments, explicit migration recovery and receipt-first execution planning. Package 1.4.0 and stable archive remain unchanged. See [architecture and evidence limits](docs/physical-storage-fabric.md).
+
 This changelog is reconstructed from the repository's existing Git history. It does not invent retrospective semantic versions for commits that did not carry an explicit version identity.
 
 ## Unreleased — zero-LLM heterogeneous runtime

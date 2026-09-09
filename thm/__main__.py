@@ -53,6 +53,9 @@ def _resident_unit_cost(counter: TokenCounter, source_text: dict[str, str]):
 
 def main(argv=None):
     argv = list(sys.argv[1:] if argv is None else argv)
+    if argv[:1] == ["storage"]:
+        from .physical.cli import main as storage_main
+        return storage_main(argv[1:])
     if argv[:1] == ["runtime"]:
         from .runtime.cli import main as runtime_main
         return runtime_main(argv[1:])
@@ -68,6 +71,7 @@ def main(argv=None):
             p.add_argument("--mode",choices=["literal","sparse","hybrid","dense"],default="sparse"); p.add_argument("--neighbors",type=int,choices=[0,1,2],default=0)
     p=sub.add_parser("scan"); p.add_argument("--state-db",required=True); p.add_argument("--scope",required=True); p.add_argument("--anchors",required=True); p.add_argument("--now",required=True); p.add_argument("--days",type=int,default=7); p.add_argument("--save-observations")
     sub.add_parser("curves")
+    sub.add_parser("storage",help="probe/profile/plan/export/migrate/verify physical data")
     sub.add_parser("runtime",help="doctor/probe/autotune/status/prepare runtime profiles")
     p=sub.add_parser("plan"); _add_engine_paths(p); p.add_argument("--date",required=True); p.add_argument("--budget",type=int,required=True); p.add_argument("--counter",default="utf8_bytes"); p.add_argument("--kernel",default="bounded_power"); p.add_argument("--half-life",type=float,default=30)
     p=sub.add_parser("residency-telemetry"); p.add_argument("trace")

@@ -241,7 +241,7 @@ class RuntimeIntegrationTests(unittest.TestCase):
         from argparse import Namespace
         from research.runtime.verify import execute
         with tempfile.TemporaryDirectory() as temp:
-            args=Namespace(model_path='local-model',model_id='local',locomo_dataset='locomo',lme_dataset='lme',output_dir=str(Path(temp)/'new'),plan_only=True,include_approximate=True,retrieval_ab=True,max_candidates=12)
+            args=Namespace(model_path='local-model',model_id='local',locomo_dataset='locomo',lme_dataset='lme',output_dir=str(Path(temp)/'new'),plan_only=True,full_campaign=True,acknowledge_multi_hour_run=True,include_approximate=True,retrieval_ab=True,max_candidates=12)
             p=execute(args);self.assertEqual(p['document_batch_candidates'],[16,32,64,128,256])
             with self.assertRaises(FileExistsError):execute(args)
     def test_census_uses_actual_speaker_prefixed_input(self):
@@ -484,13 +484,18 @@ class RuntimeReviewRegressionTests(unittest.TestCase):
         def process(command,**kwargs):
             if command[:2]==['git','rev-parse']:return SimpleNamespace(stdout='a'*40,returncode=0)
             if command[:2]==['git','status']:return SimpleNamespace(stdout='',returncode=0)
+            if '-S' in command:return SimpleNamespace(returncode=0)
+            if 'lme_retrieval.py' in command[1] and not approximate:
+                self.assertIn('--limit',command)
+                self.assertLessEqual(int(command[command.index('--limit')+1]),5)
             Path(command[command.index('--output')+1]).write_text(json.dumps({'rows':[],'builds':[],'summaries':{}}))
             return SimpleNamespace(returncode=0)
+        (self.root/'locomo.json').write_text('[{}]');(self.root/'lme.json').write_text('[{}]')
         cases=[({'auto-safe'},False),({'auto-throughput'},False),({'auto-safe','auto-throughput'},False),({'approximate-performance'},True),(set(),False)]
         for number,(failed,approximate) in enumerate(cases):
-            args=SimpleNamespace(output_dir=str(self.root/('verify-'+str(number))),model_path='local',model_id='test',locomo_dataset='locomo',lme_dataset='lme',include_approximate=approximate,plan_only=False,retrieval_ab=False,max_candidates=2)
+            args=SimpleNamespace(output_dir=str(self.root/('verify-'+str(number))),model_path='local',model_id='test',locomo_dataset=str(self.root/'locomo.json'),lme_dataset=str(self.root/'lme.json'),full_campaign=approximate,acknowledge_multi_hour_run=approximate,include_approximate=approximate,plan_only=False,retrieval_ab=False,max_candidates=2)
             def tune(*a,**kw):return {'status':'failed','reason':'no-candidate-passed'} if kw['policy'] in failed else {'status':'calibrated','runtime_profile':profile}
-            with patch.object(verify,'load_dataset',return_value=[]),patch.object(verify,'manifest',return_value={'sha256':'a'*64}),patch.object(verify,'backend_probe',return_value=[]),patch.object(verify,'available',return_value={}),patch.object(verify,'census',return_value={}),patch.object(verify,'TokenCounter',return_value=TokenCounter()),patch.object(verify,'autotune',side_effect=tune),patch.object(verify.subprocess,'run',side_effect=process),patch('research.recall.hardware_parity.compare',return_value={'strict_semantic_equivalent':True,'aggregate_semantic_metrics_equivalent':True}):
+            with patch.object(verify,'load_dataset',return_value=[{}]),patch.object(verify,'manifest',return_value={'sha256':'a'*64}),patch.object(verify,'backend_probe',return_value=[]),patch.object(verify,'available',return_value={}),patch.object(verify,'census',return_value={}),patch.object(verify,'TokenCounter',return_value=TokenCounter()),patch.object(verify,'autotune',side_effect=tune),patch.object(verify.subprocess,'run',side_effect=process),patch('research.recall.hardware_parity.compare',return_value={'strict_semantic_equivalent':True,'aggregate_semantic_metrics_equivalent':True}):
                 result=verify.execute(args)
             self.assertEqual(set(result['missing_required_winners']),failed)
             self.assertEqual(result['status'],'incomplete-local-run' if failed else 'measured-needs-acceptance')

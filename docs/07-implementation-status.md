@@ -78,4 +78,8 @@ The opt-in Python entity projection and its Protocol 2 evidence are documented i
 
 ## Unreleased runtime integration
 
-The canonical SearchIndex now exposes typed default-off RetrievalFeatures and bounded search_many; existing search/entity and residency behavior remain compatible. Optional runtime setup, profile/vector identity, isolated calibration and the final local experiment contract are described in [runtime architecture](17-zero-llm-heterogeneous-runtime.md). Runtime-dependent hardware performance remains pending-real-local-runtime.
+The canonical SearchIndex now exposes typed default-off RetrievalFeatures and bounded search_many; existing search/entity and residency behavior remain compatible. Optional runtime setup, profile/vector identity, isolated calibration and the final local experiment contract are described in [runtime architecture](17-zero-llm-heterogeneous-runtime.md). Runtime-dependent hardware performance remains pending-real-local-runtime; this is a performance evidence boundary, not a correctness merge blocker.
+
+## 2026-09-09 repository reconciliation
+
+PR #15 preserves scope-replacement cleanup of every profile's vectors and generation. Its normal merge is incorporated into PR #16, which extends the same transaction to physical placement pointers, fixes Windows local-bus admission and closes transitive reference semantic dependencies. The bounded acceptance and physical storage capabilities remain **Unreleased**; package version 1.4.0 and the stable archive do not move. The [closeout receipt](../reports/2026-09-09-open-pr-reconciliation-closeout.md) records exact lineage, review/CI evidence and remaining measurements; the [physical storage contract](physical-storage-fabric.md) is the current short acceptance entrypoint.

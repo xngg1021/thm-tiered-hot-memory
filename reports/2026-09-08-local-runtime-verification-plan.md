@@ -1,5 +1,9 @@
 # One-shot local runtime verification — pending-real-local-runtime
 
+2026-09-09 forward correction: this is the historical PR14 pre-merge plan. PR14 is merged, and the repository-wide reconciliation authorization explicitly cancels the old NOT MERGED/hardware stopping condition below. Use current main, the [bounded acceptance contract](../docs/physical-storage-fabric.md) and the [repository closeout](2026-09-09-open-pr-reconciliation-closeout.md). Hardware and full-dataset results remain optional post-merge evidence; prior receipts remain unchanged.
+
+2026-09-09 amendment: the original multi-hour default is withdrawn. See [bounded local acceptance](../docs/physical-storage-fabric.md). Full research requires both explicit campaign and acknowledgement flags.
+
 Predecessor main: `9eb904c21fd25aa0a77d2420ed080702fac17e59`. Successor branch: `work/zero-llm-heterogeneous-runtime-autotune-20260908`. Use the final exact PR head recorded in its closeout comment. This plan does not authorize merge or certify any performance result.
 
 ## One command package
@@ -12,13 +16,13 @@ $model = (Read-Host 'Existing local model directory').Trim('"')
 $locomo = (Read-Host 'Pinned locomo10.json full path').Trim('"')
 $lme = (Read-Host 'Pinned longmemeval_s JSON full path').Trim('"')
 $output = (Read-Host 'Fresh report directory outside the checkout').Trim('"')
-python research/runtime/verify.py --model-path "$model" --model-id sentence-transformers/all-MiniLM-L6-v2 --locomo-dataset "$locomo" --lme-dataset "$lme" --output-dir "$output" --include-approximate --retrieval-ab
+python research/runtime/verify.py --model-path "$model" --model-id sentence-transformers/all-MiniLM-L6-v2 --locomo-dataset "$locomo" --lme-dataset "$lme" --output-dir "$output" --mode acceptance --wall-seconds 3600
 if ($LASTEXITCODE -ne 0) { throw 'Verification incomplete; inspect retained receipts and use a fresh directory for retry' }
 ```
 
 Optional dependencies must already be installed explicitly. Core: `pip install .`. Torch: `pip install '.[semantic-torch]'`. ORT/OpenVINO: corresponding `semantic-onnx` / `semantic-openvino` extras. The runner never installs packages or downloads models. CUDA-enabled Torch availability is verified by the explicit backend probe. Model files and private logs stay local; share JSON receipts after inspecting them, not the derived-model directory or embedding cache.
 
-Add `--plan-only` for a no-model planning run in a fresh directory. `--max-candidates 12` bounds calibration. Document candidates span 16/32/64/128/256 and query candidates 1/4/8/32; resource constraints and cap can prune them. Full matrices run reference and measured policy winners, not the full Cartesian product. The package retains failed/unsupported candidate receipts. Missing any requested calibration winner (including approximate when requested) marks comparison.json incomplete and makes the command fail, even when the executed reference arms succeeded. It does not require the user to rerun a benchmark during implementation.
+Add `--plan-only` for a no-model planning run in a fresh directory. `--max-candidates 12` bounds calibration. Document candidates span 16/32/64/128/256 and query candidates 1/4/8/32; resource constraints and cap can prune them. Default runs use five fixed LME instances and bounded LoCoMo reference/winners, guarded by measured projection and a process-tree deadline. Extended matrices require --full-campaign --acknowledge-multi-hour-run. The package retains failed/unsupported candidate receipts. Missing any requested calibration winner (including approximate when requested) marks comparison.json incomplete and makes the command fail, even when the executed reference arms succeeded. It does not require the user to rerun a benchmark during implementation.
 
 ## Stages and artifacts
 

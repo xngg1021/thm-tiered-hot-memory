@@ -68,3 +68,6 @@ The opt-in Python entity projection and its Protocol 2 evidence are documented i
 ## Unreleased runtime successor
 
 The optional zero-LLM hardware/profile/AutoTune runtime, identity-safe vector storage, batching and default-off deterministic retrieval experiments are implemented for local acceptance. Core installation stays model-free; no performance or feature admission is implied. See [runtime architecture](17-zero-llm-heterogeneous-runtime.md) and [local verification package](../reports/2026-09-08-local-runtime-verification-plan.md). Stable remains unchanged.
+
+- [Unreleased physical storage fabric and bounded verification](physical-storage-fabric.md)
+- [2026-09-09 repository reconciliation and forward-only closeout](../reports/2026-09-09-open-pr-reconciliation-closeout.md)
