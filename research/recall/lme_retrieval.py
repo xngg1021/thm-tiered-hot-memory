@@ -173,7 +173,9 @@ def run(dataset, counter, modes, budgets, *, model_path=None, model_id=None, lim
                 "development": aggregate([r for r in rows if r["split"] == "development"]),
                 "held_out": aggregate([r for r in rows if r["split"] == "held_out"]),
             }
+    from thm.evaluation.legacy import project
     return {
+        "evaluation_fabric": project("longmemeval-s", all_rows, dataset),
         "benchmark": "LongMemEval-S retrieval coverage (session-level evidence)",
         "protocol": 1,"runtime":runtime_receipt, "counter": counter.name, "modes": modes, "budgets": budgets,
         "idf_scope": "one_database_per_instance",
@@ -205,7 +207,11 @@ def main():
     ap.add_argument("--batch-size", type=int, default=64)
     from thm.runtime.research import add_arguments,config_from_args
     add_arguments(ap)
+    ap.add_argument('--full-research', action='store_true', help='Explicit full native research runner; otherwise use bounded Evaluation Fabric')
     args = ap.parse_args()
+    require_new_output(args.output)
+    if not args.full_research:
+        ap.error('Native research runner requires --full-research; bounded default: python -m thm.evaluation --output NEW_DIRECTORY')
     require_new_output(args.output)
     raw = Path(args.dataset).read_bytes()
     dataset = json.loads(raw)

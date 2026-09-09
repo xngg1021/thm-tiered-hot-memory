@@ -6,16 +6,16 @@
 
 作者：Junfu Shi（SJF，xngg1021）· 授權條款：[MIT](LICENSE)
 
-## 為什麼需要 THM
+<!-- section:architecture -->
+## 三平面架構
 
-長時間運行的 Agent 會累積遠多於每輪 prompt 應該攜帶的狀態。兩個最直覺的方案都很昂貴：把所有內容永久塞進上下文，會反覆支付 carry cost；全部丟掉，又會不斷重新搜尋與取得。THM 把這件事視為一個**駐留、檢索與固定預算分配問題**。
+THM 將邏輯記憶、計算執行和實體儲存分開。Evaluation Fabric 在三個平面上統一量測，不引入新的記憶演算法。原始來源身分和 scope 在各種表示之間始終保持權威。
 
-核心問題是：
+架構與證據契約
 
-> **在不再呼叫另一個 LLM 的前提下，Agent Memory 到底能走多遠？**
+穩定 package 與 archive 保持 1.4.0。Runtime、Physical Storage Fabric 與 Evaluation Fabric 繼續標為 Unreleased。既有量測保留原始 protocol、source SHA 和適用範圍，未執行的 benchmark 與硬體不計入 accepted evidence。
 
-因此 THM 優先使用確定性訊號、本地索引、顯式 provenance、有界 evidence budget 與可重放控制規則。生成式抽取、摘要或記憶重寫都不是核心 dataplane 的前置條件。
-
+<!-- section:philosophy -->
 ## 設計理念
 
 ### 1. 原始來源始終具有權威性
@@ -54,6 +54,12 @@ THM 可以先產生 residency、prefetch 與 budget 的 shadow recommendation，
 
 THM 的 retrieval semantics 屬於統一 core，不為每個宿主複製一套實作。Hermes 有最深的 lifecycle integration；OpenAI Agents 與 LangChain 使用原生 SDK adapter；MCP 提供多個 CLI/harness 可共用的標準協定面。
 
+<!-- section:logical -->
+## 邏輯記憶平面
+
+帶 scope 的 SearchIndex 檢索、預算內證據打包和影子駐留控制共用一個記憶核心。T0–T3 表示邏輯駐留與存取方式。活動、有效性、固定約束和檢索分別記錄；自動提升和預算回寫繼續關閉。
+
+<!-- section:tiers -->
 ## T0–T3 四個 Tier
 
 | Tier | 角色 | 典型用途 |
@@ -65,24 +71,36 @@ THM 的 retrieval semantics 屬於統一 core，不為每個宿主複製一套�
 
 T0–T3 是 **THM 的 memory Tier**，不是另一個獨立專案 Context Economics 的 L0–L6 Layer。
 
-## 目前已實作能力
+<!-- section:compute -->
+## 計算執行平面
 
-THM 目前包括：
+RuntimeProfile 綁定編碼器與 backend、精度、裝置、scorer、批次大小和執行緒設定。可選排程器與有界 AutoTune 選擇明確的執行配置。CPU/CUDA 等 backend 描述需要獨立 runtime 證據；fixture 通過不能證明實際 dispatch 或加速。
 
-- profile/scope 隔離的本地索引，以及 fail-closed source/database 檢查；
-- SQLite FTS5 sparse retrieval、可選本地 sentence embedding 與確定性 rank fusion；
-- token-budgeted evidence packing 與完整 source traceability；
-- 顯式 activity / validity / pin 語義與可重現 decay diagnostics；
-- harness-neutral 的唯讀 recall core；
-- Hermes `MemoryProvider`、OpenAI Agents `FunctionTool`、LangChain/LangGraph `BaseRetriever`、MCP v2，以及面向特定 CLI host 的 pinned compatibility bridge；
-- resident/hard-miss 與 planned-retrieval telemetry；
-- locator-only T1 warm directory 與預設關閉、session-frozen 的 Hermes locator snapshot；
-- 基於 miss cost 與 resident carry cost 的 shadow T0 recommendation，並使用有界 exact 0/1 packing；
-- bounded anti-self-training prefetch 與 shadow resident-budget feedback；
-- 可選的 zero-generative-LLM entity projection：只重排既有 sparse/hybrid candidate，不改變 canonical T0–T3 模型。
+[Runtime](docs/17-zero-llm-heterogeneous-runtime.md)
 
-穩定 package line 仍為 **1.4.0**。zero-LLM entity projection 已合入 main 作為 opt-in research successor，但**沒有登記為 1.5 stable**。歷史版本、PR、Review 與施工 chronology 統一放在 [CHANGELOG.md](CHANGELOG.md) 與 [版本歷史](docs/12-version-history.md)，不再堆在首頁。
+<!-- section:physical -->
+## 實體儲存平面
 
+StorageProfile 描述實測存取成本，placement 將資料表示綁定到目標，PhysicalTelemetry 記錄實際 extent I/O。已實作經過驗證的本機檔案系統 buffered/mmap 路徑；CXL、DAX、SPDK、GDS 和遠端傳輸項目仍是擴充描述，硬體效能未經驗收。
+
+[Physical Storage Fabric](docs/physical-storage-fabric.md)
+
+<!-- section:evaluation -->
+## Evaluation Fabric 評估體系
+
+Adapter 將原生輸入統一為 Task、僅評分器可見的 GroundTruth、Result 和 SHA 綁定的 Receipt。LoCoMo Protocol 2 與 LongMemEval-S 共用 dataplane 指標，同時保留文件級和工作階段級證據差異。LongMemEval-V2 接入公開 trajectory states 與 insert/query；BEAM 接入原生 batches/turns 和 probing questions；MemoryArena 接入原生子任務以及跨工作階段 add/wrap_user_prompt。
+
+Fixture 只驗證介面與確定性檢索。V2 目前採用純文字配置，拒絕影像查詢。缺少 gold locator 時召回率為 null。解析 MemoryArena 任務不等於執行環境。答案與 rubric 不進入檢索文件。
+
+| 證據層 | 回執契約 |
+| --- | --- |
+| memory-dataplane | any/all-gold、宏觀/微觀召回率、父定位覆蓋、預算、延遲 |
+| systems-runtime | 計算配置、StorageProfile、placement、I/O 遙測 |
+| LLM-agent-outcome | 生成與評分呼叫、答案準確率、環境成功率；預設 not-run |
+
+[Evaluation Fabric](docs/18-evaluation-fabric.md)
+
+<!-- section:evidence -->
 ## 已量測的檢索證據
 
 THM 始終把 retrieval evidence 與 answer-generation claim 分開。
@@ -100,6 +118,7 @@ Canonical LoCoMo Protocol 2 使用 1,532 道證據完全解析的非對抗問題
 
 這些數字只衡量**最終打包進去的檢索證據**，不等於最終回答正確率、使用者滿意度或普適優越性。詳見 [Protocol 2](reports/2026-09-06-recall-protocol2.md) 與 [zero-LLM frontier](docs/16-zero-llm-retrieval-frontier.md)。
 
+<!-- section:harness -->
 ## Harness 整合
 
 | Surface | 整合深度 |
@@ -113,6 +132,7 @@ Canonical LoCoMo Protocol 2 使用 1,532 道證據完全解析的非對抗問題
 
 多 Harness 支援不表示 THM 是「萬能 memory database」。不同宿主的 lifecycle depth 不同，Hermes 仍是最深的 native integration。
 
+<!-- section:quickstart -->
 ## 快速開始
 
 ```bash
@@ -147,6 +167,18 @@ thm-mcp --db /absolute/path/recall.sqlite3 --scope demo --budget 600
 thm-mcp-legacy --db /absolute/path/recall.sqlite3 --scope demo --budget 600
 ```
 
+<!-- section:acceptance -->
+## 有界本機驗收
+
+在儲存庫根目錄使用 Python 3.10 或更新版本執行。無需下載模型或資料集，也不需要 provider key。程序樹限時 3300 秒，為 60 分鐘以內的退出清理留出餘量。逾時或失敗會寫入未完成回執並傳回非零結束碼，不會記為通過。
+
+```powershell
+python -m thm.evaluation --mode acceptance --wall-seconds 3300 --output .thm-evaluation/acceptance-01
+```
+
+完整 campaign 必須獨立使用 --mode full-research --full-research --benchmark NAME --dataset FILE 明確啟用，輸入為外部準備的原生資料，agent、環境和 judge 需另行配置。此命令僅量測檢索，不會啟動真實 agent，也不會自動授予 benchmark 驗收。
+
+<!-- section:invariants -->
 ## 必須保持的系統不變量
 
 THM 對狀態改變刻意保持保守：
@@ -161,6 +193,7 @@ THM 對狀態改變刻意保持保守：
 - 一般 mid-session memory write 不會悄悄重建 Hermes 已凍結的 prompt snapshot；
 - 沒有 held-out task evidence 時，自動 tier movement 與自動 budget write-back 保持關閉。
 
+<!-- section:boundary -->
 ## 證據邊界
 
 THM 目前已支援較強的 deterministic/local retrieval 與 shadow control experiment，但不宣稱：
@@ -174,6 +207,7 @@ THM 目前已支援較強的 deterministic/local retrieval 與 shadow control ex
 
 unit/invariant、retrieval benchmark、harness lifecycle 與 real task outcome 是不同類型的證據，不能互相冒充。
 
+<!-- section:documentation -->
 ## 文件
 
 - [文件目錄](docs/README.md)

@@ -1,5 +1,9 @@
 # Implementation status and evidence boundaries
 
+## Evaluation Fabric implementation boundary
+
+[Evaluation Fabric](18-evaluation-fabric.md) now supplies typed contracts, five native input projections, V2 and MemoryArena memory interfaces, deterministic fixtures, shared dataplane metrics, physical probe receipts and bounded offline acceptance. Three-layer evidence and all eight README section identities are checked. Full V2/BEAM/MemoryArena campaigns and real hardware performance remain unrun. Package/stable remains 1.4.0; the fabric is Unreleased. CI and exact-head review results belong to the successor PR receipt, not to prospective claims in this status document.
+
 Date: 2026-09-07. Package line: **1.4.0 accepted/stable implementation milestone** at `e6e4dda5835e3cb345207457d5491131c6959b2c`, recovery pointer `archive/v1.4.0-stable`. Historical design remains in [architecture](02-架构设计.md); broader targets remain in the [validation contract](03-validation-contract.md). A design requirement, benchmark result or old private report is not automatically an implementation claim.
 
 | Area | Current public state | Evidence / remaining boundary |

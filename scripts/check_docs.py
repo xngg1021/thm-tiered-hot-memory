@@ -152,6 +152,8 @@ def check(root: Path) -> dict:
             '1.4.0', 'T0', 'T1', 'T2', 'T3', '72.52%', '69.39%',
             'Claude Code', 'Codex CLI', 'Gemini CLI', 'MCP v2', 'CHANGELOG.md',
             'docs/12-version-history.md', 'docs/16-zero-llm-retrieval-frontier.md',
+            'Evaluation Fabric', 'LongMemEval-V2', 'BEAM', 'MemoryArena', 'StorageProfile',
+            'docs/18-evaluation-fabric.md', '--wall-seconds 3300',
         )
         for name in ALL_READMES:
             text = texts.get(name, '')
@@ -173,10 +175,26 @@ def check(root: Path) -> dict:
                 if transient in text:
                     errors.append(f'{name}: transient/development chronology leaked onto product homepage: {transient}')
 
-        for marker in ('Design philosophy', 'How far can agent memory go without another LLM call?',
-                       '1.4.0', '72.52%', 'Version history and recovery'):
-            if marker not in homepage:
-                errors.append(f'README.md: missing productized homepage marker {marker}')
+        expected_sections = ('architecture', 'philosophy', 'logical', 'tiers', 'compute',
+            'physical', 'evaluation', 'evidence', 'harness', 'quickstart', 'acceptance',
+            'invariants', 'boundary', 'documentation')
+        def structure(text):
+            chunks = re.split(r'<!-- section:([a-z]+) -->\n', text)
+            ids = tuple(chunks[1::2])
+            shapes = []
+            for chunk in chunks[2::2]:
+                headings = tuple(len(x) for x in re.findall(r'^(#{2,6}) ', chunk, re.M))
+                fences = tuple(re.findall(r'^```([^\n]*)', chunk, re.M))
+                tables = tuple(line.count('|') for line in chunk.splitlines() if line.startswith('|'))
+                shapes.append((headings, fences, tables))
+            return ids, shapes
+        canonical_ids, canonical_shapes = structure(homepage)
+        if canonical_ids != expected_sections:
+            errors.append('README.md: invalid canonical section identities/order')
+        for name in ALL_READMES:
+            ids, shapes = structure(texts.get(name, ''))
+            if ids != expected_sections or shapes != canonical_shapes:
+                errors.append(f'{name}: README structural parity mismatch (sections/headings/fences/tables)')
 
     return {'status': 'FAIL' if errors else 'PASS', 'markdown_files': len(markdown),
             'relative_links_checked': links, 'json_fences_parsed': fences,

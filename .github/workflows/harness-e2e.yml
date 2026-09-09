@@ -4,6 +4,7 @@ on:
   workflow_dispatch:
   push:
     paths:
+      - "thm/evaluation/**"
       - "thm/harness.py"
       - "thm/adapters/**"
       - "thm/mcp_server.py"

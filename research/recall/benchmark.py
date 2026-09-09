@@ -31,20 +31,7 @@ DATASET_SHA256 = '79fa87e90f04081343b8c8debecb80a9a6842b76a7aa537dc9fdf651ea698f
 CATEGORY = {1: 'multi_hop', 2: 'temporal', 3: 'open_domain', 4: 'single_hop', 5: 'adversarial'}
 
 
-def evidence_ids(value):
-    if not isinstance(value, list):
-        raise ValueError('evidence must be a list')
-    found, malformed = set(), []
-    for item in value:
-        if not isinstance(item, str):
-            malformed.append(str(type(item)))
-            continue
-        matches = re.findall(r'D\s*(\d+)\s*:\s*(\d+)', item)
-        found.update(f'D{int(s)}:{int(t)}' for s, t in matches)
-        remainder = re.sub(r'D\s*\d+\s*:\s*\d+', '', item)
-        if not matches or re.sub(r'[\s,;\[\]()]+', '', remainder):
-            malformed.append(item)
-    return found, malformed
+from thm.evaluation.parsing import evidence_ids
 
 
 def percentile(values, q):
@@ -169,7 +156,8 @@ def run(dataset, counter, modes, budgets, *, model_path=None, model_id=None, nei
                 'development': aggregate([r for r in rows if r['split']=='development' and r['category']!=5]),
                 'held_out': aggregate([r for r in rows if r['split']=='held_out' and r['category']!=5]),
                 'by_category': {CATEGORY[c]: aggregate([r for r in rows if r['category']==c]) for c in CATEGORY}}
-    return {'protocol': 2, 'runtime':runtime_receipt, 'counter': counter.name, 'modes': modes, 'budgets': budgets,
+    from thm.evaluation.legacy import project
+    return {'evaluation_fabric': project('locomo', all_rows, dataset), 'protocol': 2, 'runtime':runtime_receipt, 'counter': counter.name, 'modes': modes, 'budgets': budgets,
             'neighbor_turns': neighbors, 'idf_scope': 'one_database_per_conversation', 'summaries': summaries, 'builds': builds,
             'corpus_fingerprints': generations, 'rows': all_rows,
             'generation_calls': 0, 'judge_calls': 0,
@@ -197,7 +185,11 @@ def main():
     parser.add_argument('--threads',type=int,default=1)
     from thm.runtime.research import add_arguments,config_from_args
     add_arguments(parser)
+    parser.add_argument('--full-research', action='store_true', help='Explicit full native research runner; otherwise use bounded Evaluation Fabric')
     args = parser.parse_args()
+    require_new_output(args.output)
+    if not args.full_research:
+        parser.error('Native research runner requires --full-research; bounded default: python -m thm.evaluation --output NEW_DIRECTORY')
     require_new_output(args.output)
     raw = Path(args.dataset).read_bytes()
     dataset = json.loads(raw)

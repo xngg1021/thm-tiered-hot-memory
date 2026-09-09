@@ -6,16 +6,16 @@
 
 Autor: Junfu Shi (SJF, xngg1021) · Licencia: [MIT](LICENSE)
 
-## Por qué existe THM
+<!-- section:architecture -->
+## Arquitectura de tres planos
 
-Un agente de larga duración acumula más estado del que conviene inyectar en cada prompt. Mantenerlo todo residente genera un carry cost repetido; descartarlo todo genera costes repetidos de search, retrieval y reacquisition. THM trata el problema como **residency, retrieval y asignación de presupuesto acotado**.
+THM separa memoria lógica, ejecución de cómputo y almacenamiento físico. Evaluation Fabric mide estos planos sin añadir un algoritmo de memoria nuevo. La identidad de la fuente y el scope mantienen su autoridad en toda representación.
 
-La pregunta central es:
+Contratos de arquitectura y evidencia
 
-> **¿Hasta dónde puede llegar la memoria de un agente sin otra llamada a un LLM?**
+El package estable y el archivo siguen en 1.4.0. Runtime, Physical Storage Fabric y Evaluation Fabric permanecen Unreleased. Las mediciones existentes conservan protocolo, SHA de fuente y alcance; ningún benchmark sin ejecutar ni hardware sin medir cuenta como accepted evidence.
 
-Por eso THM prioriza señales deterministas, índices locales, provenance explícita, evidence budgets acotados y reglas de control reproducibles. Generative extraction, summary o memory rewriting no son requisitos del core dataplane.
-
+<!-- section:philosophy -->
 ## Filosofía de diseño
 
 ### 1. La fuente sigue siendo autoritativa
@@ -54,6 +54,12 @@ THM puede producir recomendaciones shadow de residency, prefetch y budget, pero 
 
 La semántica de retrieval vive en el core de THM. Hermes tiene la integración lifecycle más profunda; OpenAI Agents y LangChain usan adapters SDK nativos; MCP ofrece una superficie de protocolo reutilizada por varios CLI/harnesses.
 
+<!-- section:logical -->
+## Plano de memoria lógica
+
+SearchIndex limitado por scope, empaquetado de evidencia bajo presupuesto y control de residencia en observación comparten un núcleo. T0–T3 describen residencia y acceso lógicos. Actividad, validez, fijación y búsqueda se registran por separado; promoción automática y escritura de presupuestos siguen desactivadas.
+
+<!-- section:tiers -->
 ## T0–T3 Memory Tiers
 
 | Tier | Rol | Uso típico |
@@ -65,24 +71,36 @@ La semántica de retrieval vive en el core de THM. Hermes tiene la integración 
 
 T0–T3 son **Memory Tiers de THM**. Son independientes de las L0–L6 Layers del proyecto separado Context Economics.
 
-## Qué está implementado
+<!-- section:compute -->
+## Plano de ejecución de cómputo
 
-THM ofrece actualmente:
+RuntimeProfile vincula encoder/backend, precisión, dispositivo, scorer, tamaños de lote e hilos. El scheduler opcional y AutoTune acotado eligen configuraciones explícitas. Las descripciones CPU/CUDA requieren evidencia runtime propia; pasar fixtures no demuestra dispatch ni aceleración.
 
-- índices locales aislados por profile/scope con validaciones fail-closed de source/database;
-- sparse retrieval con SQLite FTS5, embeddings locales opcionales y deterministic rank fusion;
-- token-budgeted evidence packing con source traceability;
-- semántica explícita de activity / validity / pin y reproducible decay diagnostics;
-- un recall core read-only independiente del harness;
-- Hermes `MemoryProvider`, OpenAI Agents `FunctionTool`, LangChain/LangGraph `BaseRetriever`, MCP v2 y una pinned compatibility bridge para determinados CLI hosts;
-- telemetry de resident/hard-miss y planned-retrieval;
-- T1 warm directory locator-only y snapshot Hermes session-frozen opt-in;
-- shadow T0 recommendation basada en miss cost y resident carry cost con bounded exact 0/1 packing;
-- bounded anti-self-training prefetch y shadow resident-budget feedback;
-- una opt-in zero-generative-LLM entity projection que solo reordena candidates sparse/hybrid existentes sin cambiar el modelo canónico T0–T3.
+[Runtime](docs/17-zero-llm-heterogeneous-runtime.md)
 
-La línea estable del paquete sigue siendo **1.4.0**. La zero-LLM entity projection está integrada en main como opt-in research successor, pero **no se declara 1.5 stable**. Las versiones históricas, PRs, reviews y cronología de desarrollo se mantienen en [CHANGELOG.md](CHANGELOG.md) y [version history](docs/12-version-history.md), no en la homepage.
+<!-- section:physical -->
+## Plano de almacenamiento físico
 
+StorageProfile describe costes de acceso medidos; placement vincula una representación con un destino. PhysicalTelemetry registra I/O real de extents. Están implementadas y verificadas las rutas buffered/mmap del sistema de archivos local. CXL, DAX, SPDK, GDS y transportes remotos siguen siendo descriptores de extensión sin rendimiento de hardware validado.
+
+[Physical Storage Fabric](docs/physical-storage-fabric.md)
+
+<!-- section:evaluation -->
+## Evaluation Fabric
+
+Los adapters normalizan entradas nativas como Task, GroundTruth exclusiva del evaluador, Result y Receipt vinculado por SHA. LoCoMo Protocol 2 y LongMemEval-S comparten métricas dataplane conservando unidades de documento y sesión. LongMemEval-V2 admite trajectory states públicos e insert/query; BEAM, batches/turns y probing questions nativos; MemoryArena, subtareas nativas y add/wrap_user_prompt entre sesiones.
+
+Los fixtures solo verifican interfaces y búsqueda determinista. V2 funciona con texto y rechaza consultas con imágenes. Sin gold locators, recall es null. Analizar tareas MemoryArena no ejecuta el entorno. Respuestas y rubrics nunca entran en los documentos de búsqueda.
+
+| Capa de evidencia | Contrato del receipt |
+| --- | --- |
+| memory-dataplane | any/all-gold, recall macro/micro, cobertura padre, presupuesto, latencia |
+| systems-runtime | Perfil de cómputo, StorageProfile, placement, telemetría I/O |
+| LLM-agent-outcome | Llamadas generación/judge, exactitud, éxito del entorno; not-run por defecto |
+
+[Evaluation Fabric](docs/18-evaluation-fabric.md)
+
+<!-- section:evidence -->
 ## Evidencia de retrieval medida
 
 THM mantiene separada la retrieval evidence de las afirmaciones sobre generación de respuestas.
@@ -100,6 +118,7 @@ La opt-in deterministic entity projection actual eleva sparse any-gold en el con
 
 Estas cifras miden **packed retrieval evidence**, no precisión final de respuesta, satisfacción de usuario ni superioridad universal. Véanse [Protocol 2](reports/2026-09-06-recall-protocol2.md) y [zero-LLM frontier](docs/16-zero-llm-retrieval-frontier.md).
 
+<!-- section:harness -->
 ## Integración con Harness
 
 | Surface | Profundidad de integración |
@@ -113,6 +132,7 @@ Estas cifras miden **packed retrieval evidence**, no precisión final de respues
 
 El soporte multi-harness no convierte THM en una memory database universal. La profundidad del lifecycle depende del host; Hermes sigue siendo la integración nativa más profunda.
 
+<!-- section:quickstart -->
 ## Quick start
 
 ```bash
@@ -139,6 +159,18 @@ thm-mcp --db /absolute/path/recall.sqlite3 --scope demo --budget 600
 thm-mcp-legacy --db /absolute/path/recall.sqlite3 --scope demo --budget 600
 ```
 
+<!-- section:acceptance -->
+## Validación local acotada
+
+Ejecutar desde la raíz del repositorio con Python 3.10 o posterior. No requiere descargar modelos o datasets ni claves provider. El límite del árbol de procesos es 3300 segundos y deja margen de limpieza por debajo de 60 minutos. Un timeout o fallo genera un receipt incompleto y un código distinto de cero.
+
+```powershell
+python -m thm.evaluation --mode acceptance --wall-seconds 3300 --output .thm-evaluation/acceptance-01
+```
+
+Las campañas completas se habilitan por separado con --mode full-research --full-research --benchmark NAME --dataset FILE. Requieren entradas nativas preparadas externamente y agentes, entornos y judges configurados aparte. Este comando solo mide búsqueda; no inicia agentes reales ni acepta automáticamente benchmarks.
+
+<!-- section:invariants -->
 ## Invariantes importantes
 
 - read-only retrieval no modifica native memory;
@@ -151,12 +183,14 @@ thm-mcp-legacy --db /absolute/path/recall.sqlite3 --scope demo --budget 600
 - ordinary mid-session memory write no rebuild silenciosamente un frozen Hermes prompt snapshot;
 - automatic tier movement y budget write-back siguen desactivados sin held-out task evidence.
 
+<!-- section:boundary -->
 ## Evidence boundary
 
 THM admite experimentos sólidos de deterministic/local retrieval y shadow control, pero no afirma una mejora universal de answer quality, una decay curve óptima para todos, automatic T0–T3 movement production-ready, propagación automática de borrado segura, mejoras de prompt-cache/user-latency deducidas de métricas de retrieval, ni uso garantizado por el modelo de un evidence item recuperado.
 
 Unit/invariant evidence, retrieval benchmark, harness lifecycle y real task outcome son evidence classes diferentes.
 
+<!-- section:documentation -->
 ## Documentación
 
 - [Documentation index](docs/README.md)

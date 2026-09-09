@@ -101,7 +101,7 @@ def execute(args):
     sampling=True
     def run_arm(arm,dataset,label,features=None):
         output=root/(arm['name']+'-'+label+'.json')
-        command=[sys.executable,'research/recall/'+('benchmark.py' if label=='locomo' else 'lme_retrieval.py'),'--dataset',str(dataset),'--output',str(output),
+        command=[sys.executable,'research/recall/'+('benchmark.py' if label=='locomo' else 'lme_retrieval.py'),'--full-research','--dataset',str(dataset),'--output',str(output),
             '--model-path',backend_paths[arm['backend']],'--model-id',args.model_id,'--counter','cl100k_base','--modes','literal','sparse','dense','hybrid',
             '--budgets','300','600','1200','--device',arm['device'],'--runtime-policy',arm['policy'],'--backend',arm['backend'],
             '--scorer',arm.get('scorer','numpy_reference'),'--batch-size',str(arm['batch']),'--query-batch-size',str(arm['query_batch']),'--threads',str(arm.get('threads',1))]

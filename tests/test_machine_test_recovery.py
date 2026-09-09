@@ -306,7 +306,7 @@ class V2R1RegressionTests(unittest.TestCase):
                 def concurrent_output(*args,**kwargs):
                     output.write_text("other-writer-evidence")
                     return {"rows":[]}
-                argv = ["runner","--dataset",str(dataset),"--output",str(output),"--counter","utf8_bytes"]
+                argv = ["runner","--full-research","--dataset",str(dataset),"--output",str(output),"--counter","utf8_bytes"]
                 with patch.object(sys,"argv",argv), patch.object(runner,"run",side_effect=concurrent_output):
                     with self.assertRaises(FileExistsError): runner.main()
                 self.assertEqual(output.read_text(),"other-writer-evidence")

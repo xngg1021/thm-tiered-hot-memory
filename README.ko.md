@@ -6,16 +6,16 @@
 
 작성자: Junfu Shi (SJF, xngg1021) · License: [MIT](LICENSE)
 
-## 왜 THM이 필요한가
+<!-- section:architecture -->
+## 세 평면 아키텍처
 
-장기 실행 Agent는 매 요청의 prompt에 항상 포함하기에는 너무 많은 상태를 축적합니다. 전부 상주시켜 두면 반복적인 carry cost를 내야 하고, 전부 버리면 search / retrieval / reacquisition을 반복해야 합니다. THM은 이 문제를 **residency, retrieval, bounded budget allocation** 문제로 다룹니다.
+THM은 논리 메모리, 계산 실행, 물리 저장소를 분리합니다. Evaluation Fabric은 새 메모리 알고리즘을 추가하지 않고 세 평면을 측정합니다. 모든 표현에서 원본 식별자와 scope가 기준으로 유지됩니다.
 
-핵심 질문은 다음과 같습니다.
+아키텍처 및 증거 계약
 
-> **다른 LLM 호출 없이 Agent Memory는 어디까지 갈 수 있는가?**
+안정 package와 archive는 1.4.0을 유지합니다. Runtime, Physical Storage Fabric, Evaluation Fabric은 Unreleased입니다. 기존 측정은 원래 protocol, source SHA, 범위를 유지하며 실행하지 않은 benchmark나 하드웨어는 accepted evidence가 아닙니다.
 
-그래서 THM은 deterministic signal, local index, explicit provenance, 고정 evidence budget, replayable control rule을 우선합니다. Generative extraction, summary, memory rewrite는 core dataplane의 필수 전제가 아닙니다.
-
+<!-- section:philosophy -->
 ## Design philosophy
 
 ### 1. Source authority를 유지한다
@@ -54,6 +54,12 @@ THM은 residency, prefetch, budget에 대한 shadow recommendation을 만들 수
 
 Retrieval semantics는 THM core에 둡니다. Hermes는 가장 깊은 lifecycle integration을 가지며, OpenAI Agents와 LangChain은 native SDK adapter를 사용하고, MCP는 여러 CLI/harness가 공유하는 protocol surface를 제공합니다.
 
+<!-- section:logical -->
+## 논리 메모리 평면
+
+scope 기반 SearchIndex, 예산 내 증거 패킹, shadow 상주 제어는 같은 코어를 사용합니다. T0–T3는 논리적 상주 및 접근 방식을 나타냅니다. 활동, 유효성, 고정, 검색은 각각 기록하며 자동 승격과 예산 쓰기 반영은 꺼져 있습니다.
+
+<!-- section:tiers -->
 ## T0–T3 memory Tiers
 
 | Tier | 역할 | 대표 사용처 |
@@ -65,24 +71,36 @@ Retrieval semantics는 THM core에 둡니다. Hermes는 가장 깊은 lifecycle 
 
 T0–T3는 **THM memory Tier**입니다. 별도 프로젝트인 Context Economics의 L0–L6 Layer와는 독립된 taxonomy입니다.
 
-## 현재 구현된 기능
+<!-- section:compute -->
+## 계산 실행 평면
 
-THM은 현재 다음을 제공합니다.
+RuntimeProfile은 encoder/backend, 정밀도, 장치, scorer, 배치 크기와 스레드를 결합합니다. 선택적 스케줄러와 bounded AutoTune이 실행 설정을 선택합니다. CPU/CUDA 등의 설명에는 별도 runtime 증거가 필요하며 fixture 통과는 실제 dispatch나 속도 향상을 입증하지 않습니다.
 
-- profile/scope isolated local index와 fail-closed source/database validation
-- SQLite FTS5 sparse retrieval, optional local sentence embedding, deterministic rank fusion
-- token-budgeted evidence packing과 source traceability
-- explicit activity / validity / pin semantics와 reproducible decay diagnostics
-- harness-neutral read-only recall core
-- Hermes `MemoryProvider`, OpenAI Agents `FunctionTool`, LangChain/LangGraph `BaseRetriever`, MCP v2, selected CLI host용 pinned compatibility bridge
-- resident/hard-miss 및 planned-retrieval telemetry
-- locator-only T1 warm directory와 opt-in session-frozen Hermes locator snapshot
-- miss cost와 resident carry cost를 사용하는 shadow T0 recommendation 및 bounded exact 0/1 packing
-- bounded anti-self-training prefetch와 shadow resident-budget feedback
-- 기존 sparse/hybrid candidate만 re-rank하는 opt-in zero-generative-LLM entity projection
+[Runtime](docs/17-zero-llm-heterogeneous-runtime.md)
 
-Stable package line은 **1.4.0**입니다. Zero-LLM entity projection은 opt-in research successor로 main에 병합되어 있지만 **1.5 stable로 선언되지 않았습니다**. 과거 version/PR/review/implementation chronology는 [CHANGELOG.md](CHANGELOG.md)와 [version history](docs/12-version-history.md)에 두고 homepage에는 현재 설계와 capability만 둡니다.
+<!-- section:physical -->
+## 물리 저장소 평면
 
+StorageProfile은 실측 접근 비용, placement는 표현과 대상의 연결, PhysicalTelemetry는 실제 extent I/O를 기록합니다. 검증된 로컬 파일 시스템의 buffered/mmap 경로가 구현되어 있습니다. CXL, DAX, SPDK, GDS와 원격 전송은 확장 설명이며 하드웨어 성능은 검증되지 않았습니다.
+
+[Physical Storage Fabric](docs/physical-storage-fabric.md)
+
+<!-- section:evaluation -->
+## Evaluation Fabric
+
+Adapter는 원시 입력을 Task, 평가기 전용 GroundTruth, Result, SHA 기반 Receipt로 변환합니다. LoCoMo Protocol 2와 LongMemEval-S는 dataplane 지표를 공유하며 문서 및 세션 단위 차이를 유지합니다. LongMemEval-V2는 공개 trajectory states와 insert/query, BEAM은 batches/turns와 probing questions, MemoryArena는 하위 작업 및 세션 간 add/wrap_user_prompt를 지원합니다.
+
+Fixture는 인터페이스와 결정론적 검색만 검증합니다. V2는 텍스트 전용이며 이미지 질의를 거부합니다. gold locator가 없으면 recall은 null입니다. MemoryArena 작업 파싱은 환경 실행을 뜻하지 않습니다. 정답과 rubric은 검색 문서에 들어가지 않습니다.
+
+| 증거 계층 | Receipt 계약 |
+| --- | --- |
+| memory-dataplane | any/all-gold, macro/micro recall, 부모 위치 커버리지, 예산, 지연 |
+| systems-runtime | 계산 프로필, StorageProfile, placement, I/O 측정 |
+| LLM-agent-outcome | 생성/judge 호출, 정답률, 환경 성공률; 기본 not-run |
+
+[Evaluation Fabric](docs/18-evaluation-fabric.md)
+
+<!-- section:evidence -->
 ## Measured retrieval evidence
 
 THM은 retrieval evidence와 answer-generation claim을 분리합니다.
@@ -100,6 +118,7 @@ Canonical LoCoMo Protocol 2는 1,532 fully resolved non-adversarial questions와
 
 이 수치는 final answer accuracy, user satisfaction, universal superiority가 아니라 **packed retrieval evidence**를 측정합니다. [Protocol 2](reports/2026-09-06-recall-protocol2.md)와 [zero-LLM frontier](docs/16-zero-llm-retrieval-frontier.md)를 참고하십시오.
 
+<!-- section:harness -->
 ## Harness integration
 
 | Surface | Integration depth |
@@ -113,6 +132,7 @@ Canonical LoCoMo Protocol 2는 1,532 fully resolved non-adversarial questions와
 
 Multi-harness support가 universal memory database를 의미하지는 않습니다. Lifecycle integration의 깊이는 host마다 다르고 Hermes가 가장 깊은 native integration입니다.
 
+<!-- section:quickstart -->
 ## Quick start
 
 ```bash
@@ -139,6 +159,18 @@ thm-mcp --db /absolute/path/recall.sqlite3 --scope demo --budget 600
 thm-mcp-legacy --db /absolute/path/recall.sqlite3 --scope demo --budget 600
 ```
 
+<!-- section:acceptance -->
+## 시간 제한 로컬 검증
+
+저장소 루트에서 Python 3.10 이상으로 실행합니다. 모델이나 데이터셋 다운로드, provider key가 필요하지 않습니다. 프로세스 트리 제한은 3300초이며 60분 내 종료 정리 시간을 남깁니다. 시간 초과나 실패는 미완료 receipt와 0이 아닌 종료 코드로 기록됩니다.
+
+```powershell
+python -m thm.evaluation --mode acceptance --wall-seconds 3300 --output .thm-evaluation/acceptance-01
+```
+
+전체 campaign은 --mode full-research --full-research --benchmark NAME --dataset FILE로 별도 활성화합니다. 외부에서 준비한 원시 입력과 별도로 설정한 agent, 환경, judge가 필요합니다. 이 명령은 검색만 측정하며 실제 agent를 실행하거나 benchmark를 자동 승인하지 않습니다.
+
+<!-- section:invariants -->
 ## 반드시 지켜야 할 invariants
 
 - read-only retrieval은 native memory를 mutate하지 않는다
@@ -151,12 +183,14 @@ thm-mcp-legacy --db /absolute/path/recall.sqlite3 --scope demo --budget 600
 - ordinary mid-session memory write는 frozen Hermes prompt snapshot을 암묵적으로 rebuild하지 않는다
 - held-out task evidence가 없으면 automatic tier movement와 budget write-back은 disabled 상태를 유지한다
 
+<!-- section:boundary -->
 ## Evidence boundary
 
 THM은 deterministic/local retrieval과 shadow-control experiment를 제공하지만 universal answer-quality improvement, universal optimal decay curve, production-ready automatic T0–T3 movement, 안전한 automatic delete propagation, retrieval metric에서 자동으로 추론한 prompt-cache/user-latency 개선, retrieved evidence의 실제 model usage를 주장하지 않습니다.
 
 Unit/invariant evidence, retrieval benchmark, harness lifecycle, real task outcome은 서로 다른 evidence class입니다.
 
+<!-- section:documentation -->
 ## Documentation
 
 - [Documentation index](docs/README.md)

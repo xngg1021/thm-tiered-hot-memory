@@ -1,5 +1,9 @@
 # THM 项目文档总目录
 
+## Current architecture and evaluation
+
+Start with the [Evaluation Fabric](18-evaluation-fabric.md): logical memory, compute execution and physical storage are independent planes. The fabric binds all three to typed tasks, ground truth, results and receipts. Read [runtime](17-zero-llm-heterogeneous-runtime.md) and [physical storage](physical-storage-fabric.md) for execution details. Default acceptance is bounded and offline; full datasets require explicit full-research. Package/stable remains 1.4.0.
+
 <!-- current-v1.4-status:start -->
 > **Current release status — THM 1.4.0 accepted/stable implementation milestone.** Stable code/content milestone: `e6e4dda5835e3cb345207457d5491131c6959b2c`; immutable recovery pointer: `archive/v1.4.0-stable`. This document retains its original research/design/1.2/1.3 scope as historical foundation rather than rewriting old evidence as a new result. Current implementation state is tracked in [07-implementation-status.md](07-implementation-status.md), the 1.4 shadow control plane in [14-residency-control-plane.md](14-residency-control-plane.md), the opt-in Hermes T1 surface in [15-hermes-warm-directory.md](15-hermes-warm-directory.md), and the exact acceptance record in [the 1.4 closeout](../reports/2026-09-07-v1.4-closeout.md).
 <!-- current-v1.4-status:end -->

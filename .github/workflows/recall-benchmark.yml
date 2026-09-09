@@ -1,16 +1,17 @@
 name: THM retrieval benchmark
 on:
   workflow_dispatch:
-  push:
-    paths:
-      - 'thm/**'
-      - 'research/recall/**'
-      - '.github/workflows/recall-benchmark.yml'
+    inputs:
+      full_research:
+        description: 'Explicitly enable the full research dataset campaign'
+        required: true
+        type: boolean
+        default: false
 permissions:
   contents: read
 jobs:
   retrieval:
-    if: github.event_name == 'workflow_dispatch' || contains(github.event.head_commit.message, '[benchmark]')
+    if: inputs.full_research == true
     runs-on: ubuntu-latest
     timeout-minutes: 20
     env:
@@ -34,7 +35,7 @@ jobs:
           curl --fail --retry 3 --location https://raw.githubusercontent.com/snap-research/locomo/3eb6f2c585f5e1699204e3c3bdf7adc5c28cb376/data/locomo10.json --output "$RUNNER_TEMP/locomo10.json"
       - name: Lexical and context-budget ablations (protocol 2)
         run: |
-          python research/recall/benchmark.py --dataset "$RUNNER_TEMP/locomo10.json" --counter cl100k_base --modes literal sparse --budgets 300 600 1200 --output benchmark-output/lexical.json
+          python research/recall/benchmark.py --full-research --dataset "$RUNNER_TEMP/locomo10.json" --counter cl100k_base --modes literal sparse --budgets 300 600 1200 --output benchmark-output/lexical.json
           python - <<'PY'
           import json
           d=json.load(open('benchmark-output/lexical.json', encoding='utf-8'))
@@ -57,7 +58,7 @@ jobs:
           PY
       - name: Dense and hybrid budget-matched evaluation (protocol 2)
         run: |
-          python research/recall/benchmark.py --dataset "$RUNNER_TEMP/locomo10.json" --counter cl100k_base --modes dense hybrid --budgets 600 --model-path "$RUNNER_TEMP/minilm" --model-id sentence-transformers/all-MiniLM-L6-v2@1110a243fdf4706b3f48f1d95db1a4f5529b4d41 --output benchmark-output/semantic.json
+          python research/recall/benchmark.py --full-research --dataset "$RUNNER_TEMP/locomo10.json" --counter cl100k_base --modes dense hybrid --budgets 600 --model-path "$RUNNER_TEMP/minilm" --model-id sentence-transformers/all-MiniLM-L6-v2@1110a243fdf4706b3f48f1d95db1a4f5529b4d41 --output benchmark-output/semantic.json
           python - <<'PY'
           import json
           d=json.load(open('benchmark-output/semantic.json', encoding='utf-8'))

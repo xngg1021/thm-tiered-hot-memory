@@ -1,5 +1,9 @@
 # THM retrieval, observation, decay and measurement — 1.2 foundation, current in 1.4
 
+## Unified dataplane metrics
+
+[Evaluation Fabric](18-evaluation-fabric.md) projects LoCoMo Protocol 2 and LongMemEval-S into shared any/all-gold, macro/micro recall, parent coverage, budget and latency metrics. Evidence units and protocol identities remain explicit; native results remain available. Unresolved/no-gold/diagnostic tasks do not earn main recall credit. New default fixtures use utf8_bytes, not cl100k_base; their values are not comparable with the historical 600-token benchmark. No answer/rubric enters the source index.
+
 <!-- current-v1.4-status:start -->
 > **Current release status — THM 1.4.0 accepted/stable implementation milestone.** Stable code/content milestone: `e6e4dda5835e3cb345207457d5491131c6959b2c`; immutable recovery pointer: `archive/v1.4.0-stable`. This document retains its original research/design/1.2/1.3 scope as historical foundation rather than rewriting old evidence as a new result. Current implementation state is tracked in [07-implementation-status.md](07-implementation-status.md), the 1.4 shadow control plane in [14-residency-control-plane.md](14-residency-control-plane.md), the opt-in Hermes T1 surface in [15-hermes-warm-directory.md](15-hermes-warm-directory.md), and the exact acceptance record in [the 1.4 closeout](../reports/2026-09-07-v1.4-closeout.md).
 <!-- current-v1.4-status:end -->
