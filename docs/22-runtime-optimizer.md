@@ -6,13 +6,13 @@ The optimizer seeks a material execution improvement within semantic and resourc
 
 A `ProfileKey` binds hardware/allocation, OS build, driver/runtime, provider versions, source/compiled model identities, embedding dimension/precision, index implementation/generation, corpus scale, index configuration, physical placement, workload, semantic policy and implementation identity. Placement changes and source-generation changes invalidate reuse. Unknown native driver identity restricts reuse to the current process. Corrupt, stale, future-clock or unsupported-schema evidence cannot become a selected point.
 
-The SQLite profile store preserves checksummed observations, first/last validation, semantic class, material-gain decision and quarantine. It stores bounded whitelisted numeric measurements and sample provenance. Unsupported/corrupt stores produce a volatile safe fallback without rewriting the original file. Failure cooldowns grow with repeated failures and remain bounded. Explicit invalidation is a refusal marker, not source deletion.
+The SQLite profile store preserves checksummed observations, first/last validation, semantic class, material-gain decision and quarantine. It stores bounded whitelisted numeric measurements and sample provenance. `observed-request` is a distinct semantic status: it means an alternate model matched the paired request that was actually tested, not that it has a provider-wide strict-equivalence certificate. Unsupported/corrupt stores produce a volatile safe fallback without rewriting the original file. Failure cooldowns grow with repeated failures and remain bounded. Explicit invalidation is a refusal marker, not source deletion.
 
 | Evidence | Measured scope | Limit |
 | --- | --- | --- |
 | Passive request | Real queue entry to completed result; amortized process CPU and stage clocks | Workload observations do not by themselves prove a better alternative |
 | Vector replay | Cached query vector, actual source index and complete retrieval/packing, plus an observed encode-cost floor | Encode cost is an explicit estimate; not a fresh encoder benchmark |
-| Model replay | Fresh encoding, scoring, ranking and packing inside the isolated worker | Queue/IPC and long-run workload behavior require passive validation |
+| Model replay | Fresh encoding, scoring, ranking and packing inside the isolated worker | Semantic evidence is observed-request-only; it does not globally certify an alternate embedding implementation |
 | SDK fixture | Public-call shape, lifecycle, receipts, identity/failure behavior | No hardware speed, operator placement or license acceptance |
 | Prior bb16760 retest | Exact historical source/compiled/runtime receipts | Not performance evidence for this new implementation |
 
@@ -33,9 +33,9 @@ Pareto comparison separates workload and semantic class. It includes p50/p95/p99
 | Policy / workload | Selection |
 | --- | --- |
 | reference | Fixed explicit reference; no automatic exploration |
-| auto-safe | FP32 exact candidates with observed strict structural/numeric parity |
-| auto-throughput | Strict eligible execution candidates; throughput preference does not admit ANN/low precision |
-| approximate-performance | Explicit ANN/approximate candidates with separate quality deltas |
+| auto-safe | FP32 exact vector-index candidates with strict structural/numeric admission; observed-request alternate-model evidence cannot activate |
+| auto-throughput | Strict eligible vector-index execution candidates; throughput preference does not admit ANN/low precision or observed-request alternate-model promotion |
+| approximate-performance | Explicit ANN/approximate candidates; observed-request alternate-model points may activate only here and retain their limited evidence scope |
 | interactive | Predicted completion/p95 within SLO, including queue and measured cold staging |
 | bulk | Throughput within semantic/resource constraints |
 | background | Measured energy/CPU efficiency where available, then throughput |
@@ -46,7 +46,9 @@ The selector reads actual resident-handle state and queue depth. Unknown cold st
 
 Compatible scope/workload/settings share a FIFO queue. A singleton is served immediately at low arrival. Real arrivals and queue depth increase batch size within deadline, wait and pending-count bounds. Expired requests do not execute. Receipts separate queue wait, compute, actual batch, fill ratio, arrival estimate and deadline misses.
 
-Strict online retrieval keeps singleton query encoding. Once an exact provider/profile/generation is admitted, a known FP32 accumulation contract permits a bounded top-k plus cutoff-witness check. Separated numeric intervals require only k+1 host row scores; ambiguous ties/order, exceeded numeric bounds or unknown accumulation use the full stable singleton fallback. Guard cost is included in shadow candidate timings before performance admission. An unadmitted profile cannot use the certificate. Model workers currently serve singleton query-embedding chunks; their inference acceleration is independent of request coalescing.
+Strict online vector retrieval keeps singleton query encoding. Once an exact provider/profile/generation is admitted, a known FP32 accumulation contract permits a bounded top-k plus cutoff-witness check. Separated numeric intervals require only k+1 host row scores; ambiguous ties/order, exceeded numeric bounds or unknown accumulation use the full stable singleton fallback. Guard cost is included in shadow candidate timings before performance admission. An unadmitted profile cannot use the certificate.
+
+Model workers currently serve singleton query-embedding chunks. A one-query paired model replay remains `observed-request` evidence even when all repeated outputs match. It cannot be promoted by `reference`, `auto-safe` or `auto-throughput`; only explicit `approximate-performance` may activate such a point at a later session boundary. A future provider-wide equivalence certificate would require a separate evidence contract rather than silently widening the scope of one observed query.
 
 Execution failure quarantines the relevant provider and regenerates a reference execution plan/receipt. A concurrent source or placement change triggers one replan; repeated change fails explicitly. Source data, activity, hits and retrieval feature settings never change as a side effect of optimization. The retrieval-budget advisor emits shadow recommendations only.
 
