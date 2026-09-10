@@ -44,13 +44,24 @@ class BoundedShadowExplorer:
             return True
 
     def preempt(self):
-        """Foreground arrival requests cancellation without waiting for teardown."""
+        """Foreground arrival requests cancellation without waiting for teardown.
+
+        The request is sticky even while the worker thread is between submit() and
+        publishing its child process. _run() checks the flag while holding the same
+        lock before Popen, so an early foreground arrival cannot be lost.
+        """
         with self.lock:
-            if self.preempted or not self.process or self.process.poll() is not None:
+            if self.preempted:
+                return
+            process = self.process
+            pending = bool(self.thread and self.thread.is_alive())
+            if process is None and not pending:
+                return
+            if process is not None and process.poll() is not None and not pending:
                 return
             self.preempted = True
-            process = self.process
-        threading.Thread(target=self._kill, args=(process,), name='thm-shadow-preempt', daemon=True).start()
+        if process is not None and process.poll() is None:
+            threading.Thread(target=self._kill, args=(process,), name='thm-shadow-preempt', daemon=True).start()
 
     def _kill(self, process):
         if process.poll() is not None:
@@ -78,6 +89,8 @@ class BoundedShadowExplorer:
             with self.lock:
                 if self.cancelled.is_set():
                     return
+                if self.preempted:
+                    raise InterruptedError('foreground preempted before child launch')
                 self.process = subprocess.Popen([sys.executable, '-m', 'thm.runtime.fabric.shadow_worker'],
                     stdin=subprocess.PIPE, stdout=output_file, stderr=subprocess.DEVNULL,
                     text=True, env=env, start_new_session=os.name == 'posix')
@@ -94,6 +107,9 @@ class BoundedShadowExplorer:
                     break
                 except subprocess.TimeoutExpired:
                     payload = None
+            # A helper may consume its final resource slice immediately before exit.
+            # Recheck the complete child budget before accepting the worker output.
+            budget.check()
             output_file.seek(0); output = output_file.read(1024*1024).decode('utf-8')
             if process.returncode:
                 errors = [s[10:] for s in output.splitlines() if s.startswith('THM_ERROR:')]
