@@ -51,6 +51,11 @@ class WarmModelWorker:
                 continue
             if result.get('status') == 'failed':
                 raise RuntimeError('model worker failed: '+result['error'])
+            # A retained worker can cross a CPU/I/O ceiling after the previous
+            # polling check and immediately enqueue a successful response. Do not
+            # persist or promote that output until the complete child budget has
+            # been sampled once more.
+            self.budget.check()
             return result
         raise TimeoutError('bounded model operation deferred')
 
