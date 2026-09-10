@@ -17,12 +17,44 @@ class ResidentExecutor:
         self.registry = registry; self.provider_id = provider; self.device = device
         self.manager = ResidentHandleManager({device: memory_budget}); self.last = {}
         self.description = registry.describe(provider); self.admission = None
+        self._snapshot_refs = {}; self._snapshot_seq = 0
+
+    def _vector_snapshot_revision(self, matrix, ids):
+        """Return a process-local revision for the exact loaded vector snapshot.
+
+        SearchIndex clears and rebuilds its dense matrix object whenever the
+        vector store is republished. A resident handle must therefore be bound to
+        that concrete matrix snapshot, not merely to scope/source generation and
+        embedding-profile identity. Weak references prevent Python object-id reuse
+        from reviving an old revision; non-weakrefable test inputs are retained in
+        the small bounded map for the same reason.
+        """
+        import weakref
+        marker = id(matrix); ids_tuple = tuple(ids)
+        cached = self._snapshot_refs.get(marker)
+        if cached is not None:
+            ref, previous_ids, revision = cached
+            if ref() is matrix and previous_ids == ids_tuple:
+                return revision
+        self._snapshot_seq += 1
+        revision = identity({'process_vector_snapshot_revision': self._snapshot_seq,
+                             'row_ids': ids_tuple})
+        try:
+            ref = weakref.ref(matrix)
+        except TypeError:
+            ref = lambda matrix=matrix: matrix
+        if len(self._snapshot_refs) >= 16:
+            self._snapshot_refs.pop(next(iter(self._snapshot_refs)))
+        self._snapshot_refs[marker] = (ref, ids_tuple, revision)
+        return revision
 
     def search(self, *, scope, generation, embedding_profile, ids, matrix, queries, top_k, placement='dram'):
         provider = self.registry.get(self.provider_id)
         description = self.description
+        vector_snapshot = self._vector_snapshot_revision(matrix, ids)
         key = IndexIdentity(scope, generation, embedding_profile, self.provider_id,
-                            identity(description['versions']), identity({'metric': 'inner_product'}),
+                            identity(description['versions']),
+                            identity({'metric': 'inner_product', 'vector_snapshot': vector_snapshot}),
                             device=self.device, placement=placement, runtime=identity(description))
         with self.manager.lock:
             self.manager.invalidate(scope=scope, generation=generation)
@@ -51,11 +83,11 @@ class ResidentExecutor:
                     'semantic_guard_ms':(time.perf_counter()-guard_started)*1000}
                 receipt['search_ms'] += receipt['semantic_guard_ms']
             self.last = {**receipt, 'resident_hit': hit, 'load_ms': 0 if hit else handle.load_ms,
-                         'resident_bytes': handle.bytes}
+                         'resident_bytes': handle.bytes, 'vector_snapshot_revision': vector_snapshot}
         return result, dict(self.last)
 
     def close(self):
-        self.manager.close()
+        self.manager.close(); self._snapshot_refs.clear()
 
 
 class SafeBootstrapPolicy:
@@ -370,10 +402,18 @@ class RuntimeService:
             for row in result.get('providers', ()):
                 name = row['provider']
                 description = self.registry.describe(name)
-                self.discovery[name] = {k: row.get(k) for k in ('availability', 'version', 'driver_runtime', 'devices')}
+                dependency_versions = {k: v for k, v in description.get('versions', {}).items() if v is not None}
+                observed_version = row.get('version')
+                if observed_version is None and len(dependency_versions) == 1:
+                    observed_version = next(iter(dependency_versions.values()))
+                self.discovery[name] = {
+                    'availability': row.get('availability'), 'version': observed_version,
+                    'driver_runtime': row.get('driver_runtime'), 'devices': row.get('devices'),
+                    'dependency_versions': dependency_versions,
+                }
                 native = row.get('driver_runtime')
                 known_driver = native.get('driver') if isinstance(native, dict) else native
-                if name != 'host.hnsw' and not known_driver:
+                if not known_driver and not observed_version and not dependency_versions:
                     self.discovery[name]['freshness_epoch'] = self.discovery_epoch
                 self.models.add(name, description, row)
                 if row.get('availability') != 'available':
@@ -387,7 +427,7 @@ class RuntimeService:
                     continue
                 device = device or ('cpu' if name == 'host.hnsw' else (row.get('devices') or ['cuda'])[0])
                 self.graph.nodes.append(DeviceNode('provider:'+name, 'npu' if device == 'npu' else 'gpu',
-                    True, True, True, {'vendor': description['vendor'], 'runtime': row.get('version'),
+                    True, True, True, {'vendor': description['vendor'], 'runtime': observed_version,
                                       'driver': row.get('driver_runtime'), 'vram_total': row.get('memory_bytes')}))
                 self.graph.edges.append(('provider:'+name, 'dram', 'explicit-copy'))
                 for workload in ('interactive', 'bulk', 'background'):
