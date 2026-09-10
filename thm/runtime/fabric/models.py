@@ -53,9 +53,10 @@ class WarmModelWorker:
                 raise RuntimeError('model worker failed: '+result['error'])
             # A retained worker can cross a CPU/I/O ceiling after the previous
             # polling check and immediately enqueue a successful response. Do not
-            # persist or promote that output until the complete child budget has
-            # been sampled once more.
+            # persist or promote that output until both the live tree and the
+            # worker-published lifetime evidence have been checked.
             self.budget.check()
+            self.budget.check_lifetime(result.pop('_resource_lifetime', None))
             return result
         raise TimeoutError('bounded model operation deferred')
 
@@ -92,7 +93,6 @@ class WarmModelWorker:
         with self.lock:
             self.closed = True
             if self.process:
-                # The same process-tree lifecycle is used for discovery and serving.
                 BoundedShadowExplorer._kill(self, self.process)
                 self.process.wait(timeout=5)
             if self.budget:
@@ -125,9 +125,6 @@ class ModelPortfolio:
         service = self.service; source = self.source(); profile = getattr(service.encoder, 'profile', None)
         if not source or not profile or profile.backend != 'torch_fp32' or not self.providers:
             return False
-        # A live session may have an active alternate model point. Do not close or
-        # replace it because another workload/settings key appeared mid-session;
-        # new preparation waits for an explicit session boundary or a failure.
         with self.lock:
             if self.active is not None:
                 return False
@@ -184,11 +181,6 @@ class ModelPortfolio:
             measurement = {'p50':statistics.median(values),'p95':percentile(values,.95),'p99':percentile(values,.99),
                 'throughput':1000/statistics.median(values),'startup':result['startup_ms'],
                 'cpu_seconds':candidate_cpu,'ram':ram,'vram':result.get('vram_bytes'),'sample_count':len(values),'noise':gain.get('noise_floor',0)}
-            # A paired replay over one observed query is useful evidence but it is
-            # not a global equivalence certificate for an alternate embedding
-            # implementation. Reference, auto-safe and auto-throughput therefore
-            # record the point without promoting it. Only explicit approximate-
-            # performance may accept observed-request-only inference evidence.
             activation_allowed = self.service.policy == 'approximate-performance'
             with self.lock:
                 if self.closed or worker.preempted:
@@ -240,8 +232,6 @@ class ModelPortfolio:
     def fail(self, key, candidate):
         with self.lock:
             point = self.active; self.active = None; self.ready = None
-            # RuntimeService records this serving failure once in the common
-            # fallback path; do not double-count the quarantine event here.
             self.last = {'status':'fallback','inference_provider':candidate.inference_provider}
         if point:
             point[1].close()
