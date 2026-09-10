@@ -413,7 +413,14 @@ class RuntimeService:
                 }
                 native = row.get('driver_runtime')
                 known_driver = native.get('driver') if isinstance(native, dict) else native
-                if not known_driver and not observed_version and not dependency_versions:
+                if name == 'host.hnsw':
+                    if not observed_version and not dependency_versions:
+                        self.discovery[name]['freshness_epoch'] = self.discovery_epoch
+                elif not known_driver:
+                    # Runtime/package version does not substitute for a driver
+                    # identity on native accelerators. Unknown driver state stays
+                    # process-local so persisted observations cannot cross a
+                    # process boundary under a potentially different driver.
                     self.discovery[name]['freshness_epoch'] = self.discovery_epoch
                 self.models.add(name, description, row)
                 if row.get('availability') != 'available':
