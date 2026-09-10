@@ -104,6 +104,10 @@ def main():
         result = replay(task)
     else:
         raise ValueError('unknown bounded shadow operation')
+    from .resources import linux_worker_lifetime
+    lifetime = linux_worker_lifetime()
+    if lifetime is not None:
+        result = {**result, '_resource_lifetime': lifetime}
     print('THM_RESULT:' + json.dumps(result, allow_nan=False))
 
 
