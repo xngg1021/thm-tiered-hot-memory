@@ -105,8 +105,13 @@ class LinuxTreeBudgetTests(unittest.TestCase):
         target.joinpath('io').write_text(f'rchar: {read}\nwchar: {written}\n')
 
     def test_linux_accounting_aggregates_helper_process_group(self):
-        process = SimpleNamespace(pid=100)
-        budget = ChildBudget(process, memory=10**9, cpu=100, io=10**9)
+        # Exercise the Linux /proc parser on every CI OS without invoking the
+        # host-specific ChildBudget constructor (Windows would otherwise create
+        # a real Job Object for this synthetic process fixture).
+        budget = ChildBudget.__new__(ChildBudget)
+        budget.process = SimpleNamespace(pid=100)
+        budget.memory = 10**9; budget.cpu = 100; budget.io = 10**9
+        budget.job = None; budget.last = {}
         with tempfile.TemporaryDirectory() as temp:
             root = Path(temp)
             self._proc(root, 100, 100, 100, 10, 5, 10, 20)
