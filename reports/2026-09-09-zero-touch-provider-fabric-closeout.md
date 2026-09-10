@@ -1,18 +1,18 @@
 # Zero-touch heterogeneous provider fabric — engineering closeout
 
-This Unreleased implementation is published in [PR #20](https://github.com/xngg1021/thm-tiered-hot-memory/pull/20). The runtime/provider implementation and the subsequent Chat corrective pass are engineering-validated; release closure still requires a valid exact-head Codex review of the final PR head, a normal expected-head merge, and successful post-merge `main` CI. A review-service failure is not review approval.
+This Unreleased implementation is published in [PR #20](https://github.com/xngg1021/thm-tiered-hot-memory/pull/20). Runtime/provider engineering and the Chat corrective pass are validated at the implementation head below. Release closure still requires a valid exact-head Codex review of the final PR head, a normal expected-head merge, and successful post-merge `main` CI. A review-service failure is not review approval.
 
 ## Identity and scope
 
 | Identity | Value |
 | --- | --- |
 | Base main | `2d5c2adcf994edd8b7bb3c0546983ba9531af392` |
-| Validated corrective implementation head | `6b309c42d28bbeafc40a23bbc0bfab89702aad0f` |
+| Validated corrective implementation head | `90fe108639fa62c23703a0f7f5e43c1f7c5fb904` |
 | Historical post-fix hardware head | `bb1676007b0f86dec0267585c56136c82157ae54` |
 | Unchanged stable archive | `archive/v1.4.0-stable@e6e4dda5835e3cb345207457d5491131c6959b2c` |
 | Package version | `1.4.0`; no promotion |
 
-The implementation adds lazy provider contracts and catalog discovery, public hardware/driver observations, checksummed profiles and immutable compiled artifacts, safe bootstrap, passive telemetry, bounded online queues, material-gain/Pareto admission, session pinning, preemptible isolated exploration, resident indexes/transfers, local-model preparation in retained workers with private index replicas, and harness/MCP/Hermes lifecycle integration. Physical plans bind the actual placement and regenerate on fallback.
+The implementation adds lazy provider contracts and catalog discovery, public hardware/driver observations, checksummed profiles and immutable compiled artifacts, safe bootstrap, passive telemetry, bounded online queues, material-gain/Pareto admission, session pinning, preemptible isolated exploration, resident indexes/transfers, local-model preparation in retained workers with private index replicas, and harness/MCP/Hermes lifecycle integration. Physical plans bind actual placement and regenerate on fallback.
 
 The catalog has 71 entries: 51 L4, one L2, 12 L1 and seven L0. **There are no L5 hardware-accepted entries.** L4 is implemented lifecycle/fixture evidence, not a claim that every vendor SDK or accelerator ran here. The [provider matrix](../docs/provider-matrix.md) and [source registry](../docs/provider-sources.json) retain per-provider API, platform, license and executable-boundary provenance.
 
@@ -23,14 +23,15 @@ After the original Work execution stopped making progress, the successor was rev
 - retained Windows warm workers renew the Job Object CPU ceiling **cumulatively**, matching `JOB_OBJECT_LIMIT_JOB_TIME` semantics;
 - a paired replay over one observed query is explicitly **observed-request-only evidence**, not a provider-wide equivalence certificate for a different embedding implementation;
 - `reference`, `auto-safe` and `auto-throughput` do not activate an alternate model from observed-request-only evidence; only explicit `approximate-performance` may do so after a session boundary;
-- an active alternate-model session pin cannot be replaced merely because a different workload/settings key appears mid-session;
-- one model-serving failure produces one quarantine increment rather than duplicate failure accounting;
+- active alternate-model session pins cannot be replaced merely because a different workload/settings key appears mid-session;
+- model-serving failure quarantine is counted once;
 - alternate-model receipts distinguish authority embedding identity from the private runtime profile and expose their limited evidence scope;
 - resident vector handles bind the concrete vector snapshot revision, so same-generation vector republication cannot reuse stale embeddings;
 - HNSW persisted observations bind `hnswlib` package identity, while native accelerators with unknown driver identity remain process-local;
-- shadow preemption is sticky across the thread-start/child-publication race;
-- successful model-worker responses are rechecked against the complete resource budget before publication;
-- Linux shadow accounting aggregates the worker process group rather than only the leader PID;
+- foreground shadow preemption is sticky across the thread-start/child-publication race;
+- successful model-worker responses are rechecked against live-tree and lifetime resource evidence before publication;
+- Linux live accounting aggregates the process group and retains the PGID after leader exit; helpers that outlive the leader are rejected;
+- Linux workers publish durable lifetime evidence using self `getrusage`, `RUSAGE_CHILDREN` and `/proc/self/io`. Because reaped-child byte-exact I/O cannot be proven from those APIs, observed reaped-child activity is deliberately **fail-closed** rather than accepted;
 - the previously proposed provider-supplied top-k+1 cutoff witness was rejected by review as insufficient. Strict admitted ranking now uses an **independent complete reference verification**. No bounded-cutoff performance claim remains.
 
 ## Ledger A: retrieval engineering
@@ -46,21 +47,21 @@ After the original Work execution stopped making progress, the successor was rev
 | Ranking optimization boundary | The rejected top-k+1 cutoff certificate is not used as proof. Any future bounded certificate requires a provider-independent coverage bound and separate evidence. |
 | Packing/source semantics | Exact final counting, stable order, selected/ranked/source identities and generation-bound retrieval remain checked. |
 
-These are deterministic engineering observations. They are **not** native-device latency, throughput, power, end-to-end dataset quality or agent-outcome evidence. In particular, the strict ranking guard currently prioritizes correctness over accelerated steady-state speed.
+These are deterministic engineering observations. They are **not** native-device latency, throughput, power, end-to-end dataset quality or agent-outcome evidence. The strict ranking guard currently prioritizes correctness over accelerated steady-state speed.
 
 ## Ledger B: fabric correctness and integration
 
-The current corrective implementation suite contains **561 tests**. Core-only ignition has zero native-provider, network and generation calls. Numeric auditing passes ten historical specification checks. Document/version-history checks and bounded evaluation smoke pass; evaluation smoke performs zero generation/judge calls and does not claim full-dataset acceptance.
+The current corrective implementation suite contains **565 tests**. Core-only ignition has zero native-provider, network and generation calls. Numeric auditing passes ten historical specification checks. Document/version-history checks and bounded evaluation smoke pass; evaluation smoke performs zero generation/judge calls and does not claim full-dataset acceptance.
 
-The corrective regressions additionally verify vector-snapshot invalidation, HNSW dependency freshness, sticky preemption, post-response resource checks, Linux process-group accounting, independent ranking verification and cross-platform test portability.
+The corrective regressions verify vector-snapshot invalidation, HNSW dependency freshness, sticky preemption, post-response resource checks, Linux live process-group accounting, Linux lifetime-evidence gating, reaped-helper fail-closed behavior, surviving-helper rejection, independent ranking verification and cross-platform test portability.
 
 | Tested head | Workflow | Result |
 | --- | --- | --- |
-| `6b309c4` | [Correctness 34435176859](https://github.com/xngg1021/thm-tiered-hot-memory/actions/runs/34435176859) | Success: Ubuntu, Windows, macOS and all tokenizer rows |
-| `ca4d5f1` | [Harness 34401841275](https://github.com/xngg1021/thm-tiered-hot-memory/actions/runs/34401841275) | Success on implementation source |
-| `ca4d5f1` | [Hermes 34401841296](https://github.com/xngg1021/thm-tiered-hot-memory/actions/runs/34401841296) | Success on implementation source |
+| `90fe108` | [Correctness 34440633964](https://github.com/xngg1021/thm-tiered-hot-memory/actions/runs/34440633964) | Success: Ubuntu, Windows, macOS, 565 tests and all tokenizer rows |
+| `ca4d5f1` | [Harness 34401841275](https://github.com/xngg1021/thm-tiered-hot-memory/actions/runs/34401841275) | Success on earlier implementation source |
+| `ca4d5f1` | [Hermes 34401841296](https://github.com/xngg1021/thm-tiered-hot-memory/actions/runs/34401841296) | Success on earlier implementation source |
 
-The final closeout/documentation commit that follows `6b309c4` must pass its own exact-head correctness gate. The implementation-source integration results retain their own exact identity rather than being relabeled as later runs.
+The final closeout/documentation head that follows `90fe108` must pass its own exact-head correctness gate. Because resource/lifecycle code changed after the earlier harness/Hermes runs, those integration workflows must also be rerun before merge rather than relabeled as current-head evidence.
 
 ## Ledger C: real-hardware performance
 
@@ -70,14 +71,14 @@ The earlier [post-fix bb16760 retest](2026-09-09-post-fix-retest-bb16760.md) rem
 
 ## Review and release gates
 
-All six actionable Codex threads found during the takeover review have been answered with forward fixes and regressions and are resolved. The earlier service failures that never produced a valid review are not counted as approval.
+Seven actionable Codex threads were found during the takeover review. All seven have been answered with forward fixes and regressions and are resolved. The review on `181063a` completed successfully as a service operation but produced the seventh P2, so it is not a clean approval. Earlier ref-resolution failures are likewise not approval.
 
 Required final sequence:
 
-1. the final closeout/documentation head passes correctness/documentation checks;
-2. a **valid exact-head Codex review** completes with no actionable unresolved P1/P2 findings;
-3. PR #20 is merged by normal merge with an expected-head guard;
-4. post-merge `main` CI is green;
-5. any post-merge closure record retains the exact merge/main identities.
+1. this final closeout/documentation head passes correctness/documentation checks;
+2. current-head Hermes and harness integration gates pass;
+3. a **valid exact-head Codex review** completes with no actionable unresolved P1/P2 findings;
+4. PR #20 is merged by normal merge with an expected-head guard;
+5. post-merge `main` CI is green and the merge/main identities are recorded.
 
 Activity, hit, confirmation, validity, tier and memory-authority semantics remain unchanged. Stable/package promotion and new hardware/full-dataset acceptance remain outside this closeout.
