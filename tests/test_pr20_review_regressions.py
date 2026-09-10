@@ -92,26 +92,38 @@ class ModelBudgetTests(unittest.TestCase):
         finally:
             worker.workspace.cleanup()
 
+    def test_successful_response_requires_lifetime_evidence_gate(self):
+        worker = WarmModelWorker({}, memory=1024, cpu=1, io=1024, wall=1)
+        budget = mock.Mock()
+        worker.budget = budget
+        lifetime = {'source': 'linux-getrusage-self-children+proc-self-io'}
+        worker.responses.put({'status': 'ok', 'value': 1, '_resource_lifetime': lifetime})
+        try:
+            self.assertEqual(worker._receive(1), {'status': 'ok', 'value': 1})
+            budget.check_lifetime.assert_called_once_with(lifetime)
+        finally:
+            worker.workspace.cleanup()
+
 
 class LinuxTreeBudgetTests(unittest.TestCase):
     @staticmethod
     def _proc(root, pid, pgrp, rss_kib, utime, stime, read, written):
         target = root / str(pid); target.mkdir()
-        # After the closing ')' the indices used by ChildBudget are:
-        # state[0], ppid[1], pgrp[2], ... utime[11], stime[12].
         target.joinpath('stat').write_text(
             f'{pid} (worker {pid}) S 1 {pgrp} {pgrp} 0 0 0 0 0 0 0 {utime} {stime}\n')
         target.joinpath('status').write_text(f'Name:\tworker\nVmRSS:\t{rss_kib} kB\n')
         target.joinpath('io').write_text(f'rchar: {read}\nwchar: {written}\n')
 
-    def test_linux_accounting_aggregates_helper_process_group(self):
-        # Exercise the Linux /proc parser on every CI OS without invoking the
-        # host-specific ChildBudget constructor (Windows would otherwise create
-        # a real Job Object for this synthetic process fixture).
+    @staticmethod
+    def _budget():
         budget = ChildBudget.__new__(ChildBudget)
-        budget.process = SimpleNamespace(pid=100)
+        budget.process = SimpleNamespace(pid=100, poll=lambda: None)
         budget.memory = 10**9; budget.cpu = 100; budget.io = 10**9
-        budget.job = None; budget.last = {}
+        budget.job = None; budget.last = {}; budget.pgid = 100
+        return budget
+
+    def test_linux_accounting_aggregates_helper_process_group(self):
+        budget = self._budget()
         with tempfile.TemporaryDirectory() as temp:
             root = Path(temp)
             self._proc(root, 100, 100, 100, 10, 5, 10, 20)
@@ -124,7 +136,38 @@ class LinuxTreeBudgetTests(unittest.TestCase):
         self.assertAlmostEqual(observed['cpu_seconds'], .45)
         self.assertEqual(observed['bytes_read'], 40)
         self.assertEqual(observed['bytes_written'], 60)
-        self.assertEqual(observed['resource_source'], 'procfs-process-group')
+        self.assertEqual(observed['resource_source'], 'procfs-process-group-live')
+
+    def test_reaped_helper_activity_fails_closed_in_lifetime_gate(self):
+        budget = self._budget()
+        evidence = {
+            'source': 'linux-getrusage-self-children+proc-self-io',
+            'self_cpu_seconds': .2, 'self_maxrss_bytes': 1024,
+            'self_bytes_read': 10, 'self_bytes_written': 20,
+            'child_cpu_seconds': .01, 'child_maxrss_bytes': 2048,
+            'child_block_reads': 0, 'child_block_writes': 0,
+            'child_activity': True,
+        }
+        with mock.patch('thm.runtime.fabric.resources.sys.platform', 'linux'):
+            with self.assertRaisesRegex(RuntimeError, 'reaped-helper'):
+                budget.check_lifetime(evidence)
+        self.assertTrue(budget.last['reaped_child_activity'])
+
+    def test_missing_linux_lifetime_evidence_fails_closed(self):
+        budget = self._budget()
+        with mock.patch('thm.runtime.fabric.resources.sys.platform', 'linux'):
+            with self.assertRaisesRegex(RuntimeError, 'lifetime resource evidence missing'):
+                budget.check_lifetime(None)
+
+    def test_surviving_helper_after_leader_exit_fails_closed(self):
+        budget = self._budget()
+        budget.process = SimpleNamespace(pid=100, poll=lambda: 0)
+        observed = {'ram_bytes': 1, 'cpu_seconds': 0, 'bytes_read': 0, 'bytes_written': 0,
+                    'processes': 1, 'resource_source': 'procfs-process-group-live'}
+        with mock.patch('thm.runtime.fabric.resources.sys.platform', 'linux'), \
+             mock.patch.object(budget, '_linux_usage', return_value=observed):
+            with self.assertRaisesRegex(RuntimeError, 'helper survived'):
+                budget.check()
 
 
 if __name__ == '__main__':
