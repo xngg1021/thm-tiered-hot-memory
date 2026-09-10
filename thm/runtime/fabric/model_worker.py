@@ -40,8 +40,6 @@ def prepare_encoder(task, root):
                 registry.close()
         encoder = Encoder(); encoder.profile = profile
         return encoder
-    # SentenceTransformer's own exporter/pooling/tokenizer contract bridges
-    # supported tensor runtimes. Arbitrary raw ONNX/CoreML inputs remain explicit.
     from ..prepare import convert
     from ..backends import create
     options = dict(provider.spec.options)
@@ -138,10 +136,13 @@ def run(task, wire):
 
 
 def main():
-    # Native libraries writing directly to stdout cannot corrupt the private RPC.
     protocol = os.fdopen(os.dup(sys.stdout.fileno()), 'w', encoding='utf-8', buffering=1)
     os.dup2(sys.stderr.fileno(), sys.stdout.fileno())
+    from .resources import linux_worker_lifetime
     def wire(value):
+        lifetime = linux_worker_lifetime()
+        if lifetime is not None:
+            value = {**value, '_resource_lifetime': lifetime}
         protocol.write(json.dumps(value, allow_nan=False, ensure_ascii=True)+'\n'); protocol.flush()
     try:
         task = json.loads(sys.stdin.readline(2*1024*1024))
