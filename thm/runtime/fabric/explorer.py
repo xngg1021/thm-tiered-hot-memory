@@ -44,12 +44,7 @@ class BoundedShadowExplorer:
             return True
 
     def preempt(self):
-        """Foreground arrival requests cancellation without waiting for teardown.
-
-        The request is sticky even while the worker thread is between submit() and
-        publishing its child process. _run() checks the flag while holding the same
-        lock before Popen, so an early foreground arrival cannot be lost.
-        """
+        """Foreground arrival requests cancellation without waiting for teardown."""
         with self.lock:
             if self.preempted:
                 return
@@ -64,24 +59,26 @@ class BoundedShadowExplorer:
             threading.Thread(target=self._kill, args=(process,), name='thm-shadow-preempt', daemon=True).start()
 
     def _kill(self, process):
-        if process.poll() is not None:
-            return
         if os.name == 'posix':
+            # The session/process-group identity survives the leader.  Kill the
+            # group even if Popen has already observed the leader's exit, because
+            # a helper may still be alive.
             try:
                 os.killpg(process.pid, signal.SIGKILL)
             except ProcessLookupError:
                 pass
-        else:
-            subprocess.run(['taskkill', '/PID', str(process.pid), '/T', '/F'], capture_output=True, timeout=5)
-            if process.poll() is None:
-                process.kill()
+            return
+        if process.poll() is not None:
+            return
+        subprocess.run(['taskkill', '/PID', str(process.pid), '/T', '/F'], capture_output=True, timeout=5)
+        if process.poll() is None:
+            process.kill()
 
     def _run(self, task, callback):
         start = self.clock()
         budget = None; worker_error = None
         envelope = {'task': task, 'limits': {'memory': self.memory, 'io': self.io, 'cpu': self.cpu}}
         env = dict(os.environ)
-        # Child-only limits; never alter the host process or global environment.
         env.update(OMP_NUM_THREADS='1', MKL_NUM_THREADS='1', OPENBLAS_NUM_THREADS='1',
                    HF_HUB_OFFLINE='1', TRANSFORMERS_OFFLINE='1', HF_DATASETS_OFFLINE='1')
         try:
@@ -96,7 +93,6 @@ class BoundedShadowExplorer:
                     text=True, env=env, start_new_session=os.name == 'posix')
                 process = self.process
             budget = ChildBudget(process, memory=self.memory+128*1024**2, cpu=self.cpu, io=self.io)
-            # Deliver work only after the parent's limits are in place.
             payload = json.dumps(envelope)
             while True:
                 budget.check()
@@ -107,8 +103,9 @@ class BoundedShadowExplorer:
                     break
                 except subprocess.TimeoutExpired:
                     payload = None
-            # A helper may consume its final resource slice immediately before exit.
-            # Recheck the complete child budget before accepting the worker output.
+            # The retained PGID lets this final live-tree check catch helpers that
+            # outlive the leader.  The worker-published lifetime evidence below
+            # closes the opposite gap: helpers already reaped between samples.
             budget.check()
             output_file.seek(0); output = output_file.read(1024*1024).decode('utf-8')
             if process.returncode:
@@ -117,6 +114,7 @@ class BoundedShadowExplorer:
                 raise RuntimeError('shadow worker failed')
             line = next(s[11:] for s in reversed(output.splitlines()) if s.startswith('THM_RESULT:'))
             result = json.loads(line)
+            budget.check_lifetime(result.pop('_resource_lifetime', None))
             if not self.cancelled.is_set():
                 callback(result)
             self.last_receipt = {'status': 'completed', 'wall_ms': (self.clock()-start)*1000,
@@ -134,7 +132,7 @@ class BoundedShadowExplorer:
                     callback({**self.last_receipt, **{k: task.get(k) for k in ('key','candidate_id','provider','cursor')},
                               'operation': task.get('operation')})
                 except Exception:
-                    pass  # A failed observer cannot escape the isolated worker.
+                    pass
         finally:
             if budget:
                 budget.close()
