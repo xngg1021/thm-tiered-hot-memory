@@ -1,4 +1,4 @@
-"""Read-only process accounting and a Windows Job Object for shadow children."""
+"""Read-only process-tree accounting and a Windows Job Object for bounded children."""
 import os
 from pathlib import Path
 import sys
@@ -60,22 +60,53 @@ class ChildBudget:
                 'bytes_read': usage.diskio_bytesread, 'bytes_written': usage.diskio_byteswritten,
                 'resource_source': 'darwin-proc-pid-rusage-v2-physical-io'}
 
+    def _linux_usage(self, proc_root=Path('/proc'), pgid=None):
+        """Aggregate every observable member of the child's process group.
+
+        Workers are created with ``start_new_session=True`` on POSIX, so normal
+        helper processes inherit the worker's process group. Summed RSS can
+        double-count shared pages; that conservative bias is preferable to
+        allowing helper processes to escape the advertised resource envelope.
+        """
+        if pgid is None:
+            try:
+                pgid = os.getpgid(self.process.pid)
+            except ProcessLookupError:
+                return None
+        ticks = os.sysconf('SC_CLK_TCK')
+        rss = 0; cpu = 0.0; read = 0; written = 0; members = 0
+        try:
+            entries = list(proc_root.iterdir())
+        except FileNotFoundError:
+            return None
+        for root in entries:
+            if not root.name.isdigit():
+                continue
+            try:
+                fields = (root/'stat').read_text().rsplit(')', 1)[1].split()
+                if len(fields) < 13 or int(fields[2]) != int(pgid):
+                    continue
+                status = dict(line.split(':', 1) for line in (root/'status').read_text().splitlines() if ':' in line)
+                io = dict(line.split(':', 1) for line in (root/'io').read_text().splitlines() if ':' in line)
+            except FileNotFoundError:
+                continue
+            members += 1
+            rss += int(status.get('VmRSS', '0 kB').split()[0])*1024
+            cpu += (int(fields[11])+int(fields[12]))/ticks
+            read += int(io.get('rchar', 0)); written += int(io.get('wchar', 0))
+        if not members:
+            return None
+        return {'ram_bytes': rss, 'cpu_seconds': cpu, 'bytes_read': read, 'bytes_written': written,
+                'processes': members, 'resource_source': 'procfs-process-group'}
+
     def check(self):
         if sys.platform.startswith('linux'):
-            root = Path('/proc') / str(self.process.pid)
-            try:
-                status = dict(line.split(':', 1) for line in (root/'status').read_text().splitlines() if ':' in line)
-                rss = int(status.get('VmRSS', '0 kB').split()[0])*1024
-                # rchar includes cached filesystem reads; read_bytes alone hides them.
-                io = dict(line.split(':', 1) for line in (root/'io').read_text().splitlines())
-                read = int(io.get('rchar', 0)); written = int(io.get('wchar', 0))
-                fields = (root/'stat').read_text().rsplit(')', 1)[1].split()
-                cpu = (int(fields[11])+int(fields[12]))/os.sysconf('SC_CLK_TCK')
-            except FileNotFoundError:
+            observed = self._linux_usage()
+            if observed is None:
                 return
-            self.last = {'ram_bytes': rss, 'cpu_seconds': cpu, 'bytes_read': read, 'bytes_written': written,
-                         'resource_source': 'procfs-child'}
-            if rss > self.memory or cpu > self.cpu or read+written > self.io:
+            self.last = observed
+            if (observed['ram_bytes'] > self.memory or observed['cpu_seconds'] > self.cpu
+                    or observed['bytes_read'] + observed['bytes_written'] > self.io):
                 raise RuntimeError('shadow observed resource budget exceeded')
         elif sys.platform == 'darwin':
             observed = self._darwin_usage()
