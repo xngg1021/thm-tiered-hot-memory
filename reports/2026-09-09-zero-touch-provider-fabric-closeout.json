@@ -1,13 +1,12 @@
 {
-  "schema_version": 2,
+  "schema_version": 3,
   "date": "2026-09-09",
   "repository": "xngg1021/thm-tiered-hot-memory",
   "implementation_pr": 20,
-  "status": "engineering-validated-release-review-pending",
+  "status": "corrective-engineering-validated-final-review-pending",
   "base_head": "2d5c2adcf994edd8b7bb3c0546983ba9531af392",
   "base_tree": "2fcad509e0566c25202a1ce99936e306af62a4fd",
-  "implementation_head": "ca4d5f14d088ab9be0e53b01595143182b2072eb",
-  "implementation_tree": "ff7126959c337af4719f1ab9e4696589c36de1d9",
+  "corrective_implementation_head": "6b309c42d28bbeafc40a23bbc0bfab89702aad0f",
   "package_version": "1.4.0",
   "stable_archive": {
     "ref": "archive/v1.4.0-stable",
@@ -17,12 +16,19 @@
   "historical_hardware_head": "bb1676007b0f86dec0267585c56136c82157ae54",
   "chat_takeover_fixes": [
     "Windows retained warm-worker Job Object CPU ceilings renew cumulatively",
-    "observed-request alternate-model evidence is not promoted by reference, auto-safe or auto-throughput",
+    "observed-request alternate-model evidence is nonactivating under reference, auto-safe and auto-throughput",
     "only explicit approximate-performance may activate observed-request-only alternate-model evidence",
-    "active alternate-model session pins are not replaced by a new workload/settings key",
+    "active alternate-model session pins survive workload/settings-key changes",
     "model serving failures are counted once in provider quarantine",
-    "alternate-model runtime receipts expose semantic_class=observed-request and quality_evidence_scope=observed-request-only",
-    "final-newline hygiene restored after docs gate detected generated-wheel copy drift"
+    "alternate-model receipts expose observed-request evidence scope",
+    "resident handles bind the concrete vector snapshot revision",
+    "host.hnsw discovery binds hnswlib dependency version",
+    "native accelerators with unknown driver identity remain process-local",
+    "foreground preemption is sticky before child publication",
+    "successful model-worker responses receive a final complete budget check",
+    "Linux resource accounting aggregates the worker process group",
+    "strict resident ranking uses independent complete reference verification; provider-supplied top-k+1 cutoff proof was withdrawn",
+    "Linux process-tree regression is platform-neutral"
   ],
   "catalog": {
     "entries": 71,
@@ -31,7 +37,7 @@
   },
   "evidence_ledgers": {
     "retrieval_engineering": {
-      "scope": "deterministic SQL, tokenizer, row-count and semantic fixtures",
+      "scope": "deterministic SQL, tokenizer, call-count and semantic fixtures",
       "speaker_sql_queries": {"same_generation_two_searches": 1, "after_replacement_total": 2},
       "tokenizer": {
         "api": "public encode_ordinary via exact whole-prefix cache",
@@ -41,23 +47,26 @@
         "ci_versions": ["0.7.0", "0.8.0", "0.9.0", "0.10.0", "0.11.0", "0.12.0", "0.13.0", "0.14.0"]
       },
       "ranking": {
-        "source_rows": 500,
-        "online_cohort_top_k": 5,
-        "online_cohort_host_rows_scored": [6, 6],
-        "ambiguous_top_k": 1,
-        "ambiguous_host_rows_scored": [2, 500],
-        "guard_cost_in_shadow_admission": true
+        "strict_verification": "provider-independent-complete-reference",
+        "provider_supplied_cutoff_certificate": false,
+        "omitted_true_top_row_regression": true,
+        "bounded_cutoff_speed_claim": false
       },
       "hardware_speedup_claim": false
     },
     "fabric_correctness": {
-      "test_count": 556,
+      "test_count": 561,
       "core_only_ignition": {"native_provider_calls": 0, "network_calls": 0, "generation_calls": 0},
       "numeric_audit_checks": 10,
       "offline_evaluation_smoke": {"generation_calls": 0, "judge_calls": 0, "full_dataset_acceptance": false},
       "alternate_model_semantic_scope": "observed-request-only",
       "auto_safe_alternate_model_activation": false,
-      "auto_throughput_alternate_model_activation": false
+      "auto_throughput_alternate_model_activation": false,
+      "vector_snapshot_invalidation_regression": true,
+      "hnsw_dependency_freshness_regression": true,
+      "sticky_preemption_regression": true,
+      "post_response_budget_regression": true,
+      "linux_process_group_accounting_regression": true
     },
     "real_hardware_performance": {
       "status": "not-accepted-for-new-fabric",
@@ -72,16 +81,17 @@
     }
   },
   "ci": [
-    {"run_id": 34401841245, "workflow": "THM correctness", "event": "push", "head": "ca4d5f14d088ab9be0e53b01595143182b2072eb", "conclusion": "success"},
+    {"run_id": 34435176859, "workflow": "THM correctness", "event": "pull_request", "head": "6b309c42d28bbeafc40a23bbc0bfab89702aad0f", "conclusion": "success"},
     {"run_id": 34401841275, "workflow": "THM harness integrations", "event": "push", "head": "ca4d5f14d088ab9be0e53b01595143182b2072eb", "conclusion": "success"},
     {"run_id": 34401841296, "workflow": "THM Hermes integration", "event": "push", "head": "ca4d5f14d088ab9be0e53b01595143182b2072eb", "conclusion": "success"}
   ],
   "review": {
     "targeted_user_review_id": 5156589002,
-    "prior_codex_attempts": "service-failed-ref-not-found",
-    "valid_exact_head_review": false,
-    "empty_threads_are_not_approval": true,
-    "next_required_action": "request exact-head Codex review on the final closeout-document head"
+    "actionable_codex_threads_found": 6,
+    "actionable_codex_threads_resolved": 6,
+    "prior_codex_attempts": "service-failed-ref-not-found-or-pre-corrective",
+    "valid_exact_head_review_after_final_closeout": false,
+    "next_required_action": "request exact-head Codex review on the final PR head"
   },
   "release_gates": {
     "exact_head_codex_review": "pending",
