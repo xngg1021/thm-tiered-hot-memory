@@ -19,6 +19,7 @@ class THMLangChainRetriever(BaseRetriever):
     neighbors: int = 0
     model_path: str | None = None
     model_id: str | None = None
+    features: dict | None = None
 
     model_config = ConfigDict(arbitrary_types_allowed=True)
     _adapter: THMHarnessAdapter | None = PrivateAttr(default=None)
@@ -34,6 +35,7 @@ class THMLangChainRetriever(BaseRetriever):
                 neighbors=self.neighbors,
                 model_path=self.model_path,
                 model_id=self.model_id,
+                features=self.features,
             ))
         return self._adapter
 
@@ -46,15 +48,24 @@ class THMLangChainRetriever(BaseRetriever):
             "thm_budget": result["budget"],
             "thm_budget_used": result["budget_used"],
             "thm_usefulness": "unverified",
+            "runtime_receipt": result.get("runtime_receipt"),
+            "execution_plan": result.get("execution_plan"),
         }
         return [
             Document(
                 id=row["id"],
                 page_content=row["text"],
-                metadata={**common, "source": row["source"], "sha256": row["hash"]},
+                metadata={**common, "source": row["source"], "sha256": row["hash"],
+                          **{k: row.get(k) for k in ('complete', 'parent_id', 'span_start', 'span_end', 'locator_kind')}},
             )
             for row in result["sources"]
         ]
+
+    def runtime_status(self):
+        return self._core().runtime_status()
+
+    def new_session(self):
+        return self._core().new_session()
 
     def close(self) -> None:
         if self._adapter is not None:

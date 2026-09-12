@@ -66,6 +66,35 @@ class AgentMemory:
         with self.lock:
             self.closed = True
 
+    def save(self, output_dir):
+        from dataclasses import asdict
+        import json
+        from .contracts import digest
+        root = Path(output_dir)
+        root.mkdir(parents=True, exist_ok=True)
+        with self.lock:
+            if self.closed:
+                raise ValueError('memory interface closed')
+            body = {'schema': 'thm-agent-memory/1', 'scope': self.scope, 'budget': self.budget,
+                    'documents': [asdict(d) for d in self.documents]}
+            with (root/'thm-memory.json').open('x', encoding='utf-8') as handle:
+                json.dump({**body, 'receipt_sha256': digest(body)}, handle, ensure_ascii=False, allow_nan=False)
+
+    def restore(self, input_dir):
+        import json
+        from .contracts import digest
+        path = Path(input_dir)/'thm-memory.json'
+        if path.is_symlink() or path.stat().st_size > 16_000_000:
+            raise ValueError('bounded memory snapshot required')
+        value = json.loads(path.read_text(encoding='utf-8'))
+        checksum = value.pop('receipt_sha256', None)
+        if checksum != digest(value) or value.get('schema') != 'thm-agent-memory/1' or value.get('scope') != self.scope or value.get('budget') != self.budget:
+            raise ValueError('memory snapshot identity mismatch')
+        documents = [Document(**row) for row in value['documents']]
+        with self.connection() as index:
+            index.replace_scope(self.scope, documents)
+            self.documents = documents
+
 
 class V2Memory(AgentMemory):
     """LongMemEval-V2 insert/query contract; explicit text-only operating point."""
@@ -110,9 +139,9 @@ def register_longmemeval_v2():
             self._temp.cleanup()
 
         def _save_backend(self, output_dir):
-            raise NotImplementedError('prebuilt persistence is not supported by thm_text')
+            self.backend.save(output_dir)
 
         def _load_backend(self, input_dir):
-            raise NotImplementedError('prebuilt persistence is not supported by thm_text')
+            self.backend.restore(input_dir)
 
     return THMMemory

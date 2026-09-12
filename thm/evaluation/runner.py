@@ -14,7 +14,13 @@ from .identity import implementation_identity
 
 
 def run(adapter, source, root, *, mode='acceptance', provenance='external-dataset',
-        full_research=False, budget=600, logical_tier='T3'):
+        full_research=False, budget=600, logical_tier='T3', features=None, retrieval_mode='sparse', encoder=None, model_id=None):
+    from thm.features import RetrievalFeatures
+    features = RetrievalFeatures.parse(features)
+    if retrieval_mode not in ('literal', 'sparse', 'dense', 'hybrid'):
+        raise ValueError('invalid retrieval operating point')
+    if retrieval_mode in ('dense', 'hybrid') and (encoder is None or not model_id):
+        raise ValueError('explicit local encoder/model identity required for Track B')
     if mode not in ('smoke', 'acceptance', 'full-research'):
         raise ValueError('invalid mode')
     if (mode == 'full-research') != full_research:
@@ -46,7 +52,10 @@ def run(adapter, source, root, *, mode='acceptance', provenance='external-datase
         index = SearchIndex(root / f'{len(rows)}.sqlite', TokenCounter('utf8_bytes'))
         try:
             index.replace_scope(task.scope, docs)
-            out = index.search(task.scope, task.query, mode='sparse', budget=budget)
+            if retrieval_mode in ('dense', 'hybrid'):
+                index.embed(task.scope, encoder, model_id)
+            out = index.search(task.scope, task.query, mode=retrieval_mode, budget=budget,
+                               features=features, encoder=encoder, model_id=model_id)
         finally:
             index.close()
         selected = tuple(x['id'] for x in out['selected'] if x['complete'])
@@ -58,10 +67,12 @@ def run(adapter, source, root, *, mode='acceptance', provenance='external-datase
         rows.append(result.public())
     if not rows:
         raise ValueError('empty campaign')
-    taxonomy = Taxonomy(logical_tier=logical_tier)
+    taxonomy = Taxonomy(logical_tier=logical_tier, compute_profile=(
+        'explicit-encoder-' + digest(model_id) if retrieval_mode in ('dense', 'hybrid') else 'python-' + retrieval_mode + '-cpu'))
     layers = {
         'memory-dataplane': {'status': 'measured', 'metrics': summarize(rows), 'rows': rows,
-                             'counter': 'utf8_bytes', 'budget': budget, 'mode': 'sparse'},
+                             'counter': 'utf8_bytes', 'budget': budget, 'mode': retrieval_mode,
+                             'features': features.identity()},
         'systems-runtime': {'status': 'measured', 'wall_seconds': time.perf_counter() - start,
             'python': sys.version.split()[0], 'os': platform.platform(), 'sqlite': sqlite3.sqlite_version,
             'compute_profile': taxonomy.compute_profile,

@@ -178,10 +178,10 @@ class PolicySelector:
         if p95 is None:
             return None
         queue = max(0, state.get('queue_depth', 0)) * p95 / max(1, state.get('concurrency', 1))
-        cold = (point.get('startup') or 0) if not state.get('model_warm', True) else 0
-        compile_ms = (point.get('compile') or 0) if not state.get('provider_ready', True) else 0
+        cold = point.get('startup') if not state.get('model_warm', True) else 0
+        compile_ms = point.get('compile') if not state.get('provider_ready', True) else 0
         transfer = 0 if state.get('index_resident', True) else state.get('stage_ms')
-        if transfer is None:
+        if transfer is None or cold is None or compile_ms is None:
             return None
         return p95 + queue + cold + compile_ms + transfer
 

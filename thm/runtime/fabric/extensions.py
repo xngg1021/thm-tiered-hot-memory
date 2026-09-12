@@ -89,9 +89,11 @@ class ExtensionSession:
         self.lock = threading.RLock()
         self.events = deque(maxlen=128)
         self.calls, self.failure, self.started = 0, None, clock()
+        self.sequence = 0
 
     def _event(self, stage, **fields):
-        self.events.append({'stage': stage, 'sequence': len(self.events), **fields})
+        self.events.append({'stage': stage, 'sequence': self.sequence, **fields})
+        self.sequence += 1
 
     def _fresh(self, generation=None, driver_identity=None, dependency_version=None):
         if self.state in ('closed', 'invalidated', 'quarantined'):
@@ -118,7 +120,7 @@ class ExtensionSession:
                 self.binding.close()
             except Exception:
                 self._event('cleanup', status='failed')
-            self.handle = None
+            self.handle = self.artifact = None
             raise
         self._event(stage, status='completed', elapsed_ms=(self.clock()-start)*1000)
         return value
@@ -181,10 +183,12 @@ class ExtensionSession:
         with self.lock:
             if self.state == 'closed':
                 return
-            self.binding.close()
-            self.handle = None
-            self.state = 'invalidated'
-            self._event('invalidate', reason=reason)
+            try:
+                self.binding.close()
+            finally:
+                self.handle = self.artifact = None
+                self.state = 'invalidated'
+                self._event('invalidate', reason=reason)
 
     def receipt(self):
         with self.lock:
@@ -201,7 +205,7 @@ class ExtensionSession:
                 try:
                     self.binding.close()
                 finally:
-                    self.handle, self.state = None, 'closed'
+                    self.handle, self.artifact, self.state = None, None, 'closed'
                     self._event('close')
 
 
