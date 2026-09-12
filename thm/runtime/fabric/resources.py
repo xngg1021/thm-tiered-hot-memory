@@ -257,7 +257,42 @@ class ChildBudget:
 
     def close(self):
         if self.job:
-            self.kernel.CloseHandle(self.job); self.job = None
+            import ctypes as c
+            import time
+            from ctypes import wintypes as w
+            class Accounting(c.Structure):
+                _fields_ = [(k, c.c_longlong) for k in ('user','kernel','period_user','period_kernel')] + [(k, c.c_uint32) for k in ('faults','total','active','terminated')]
+            self.kernel.TerminateJobObject.argtypes = [w.HANDLE, w.UINT]
+            try:
+                if not self.kernel.TerminateJobObject(self.job, 1):
+                    raise OSError('owned job termination unavailable')
+                deadline = time.monotonic() + 5
+                while True:
+                    accounting = Accounting()
+                    if not self.kernel.QueryInformationJobObject(self.job, 1, c.byref(accounting), c.sizeof(accounting), None):
+                        raise OSError('owned job exit accounting unavailable')
+                    if not accounting.active:
+                        break
+                    if time.monotonic() >= deadline:
+                        raise RuntimeError('owned job descendants did not terminate')
+                    time.sleep(.01)
+            finally:
+                self.kernel.CloseHandle(self.job); self.job = None
+
+
+def _linux_group_live(pgid):
+    for root in Path('/proc').iterdir():
+        if not root.name.isdigit():
+            continue
+        try:
+            if os.getpgid(int(root.name)) != pgid:
+                continue
+            fields = (root/'stat').read_text().rsplit(')', 1)[1].split()
+            if int(fields[2]) == pgid and fields[0] not in ('Z', 'X', 'x'):
+                return True
+        except (FileNotFoundError, ProcessLookupError):
+            continue
+    return False
 
 
 def stop_owned_process_tree(process, budget):
@@ -290,5 +325,12 @@ def stop_owned_process_tree(process, budget):
     if process.poll() is None:
         process.kill()
     process.wait(timeout=5)
+    if sys.platform.startswith('linux'):
+        import time
+        deadline = time.monotonic() + 5
+        while _linux_group_live(process.pid):
+            if time.monotonic() >= deadline:
+                raise RuntimeError('owned process-group descendants did not terminate')
+            time.sleep(.01)
     if process.stdin and not process.stdin.closed:
         process.stdin.close()

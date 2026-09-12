@@ -4,7 +4,7 @@
   "repository": "xngg1021/thm-tiered-hot-memory",
   "version": "1.5.0",
   "implementation_status": "implemented",
-  "implementation_sha256": "deae5c1f0ebe213ba6a523f1f0c85374c61d18848330b73b0510e4ac3823efbc",
+  "implementation_sha256": "3328d22298a93fa134b5055780af40090d1c50c5fb0b025166fbfb923aaa5426",
   "archive_branch": "archive/v1.5.0-stable",
   "accepted_merge_commit": null,
   "historical": {
@@ -68,7 +68,9 @@
       "Contain exhaustive old-shard retirement failures after publication and retain failed handles for bounded retry",
       "Historical intermediate repair, superseded by unconditional deferral on denied accounting: Capture process-group membership before accounting reads; refuse unavailable leader accounting when helpers could disappear during an exit wait",
       "Never accept denied process-group accounting through a leader wait or state recheck; explicitly defer unprovable probes with no acceptance credit, including helpers joining after enumeration",
-      "Install kernel descendant containment before deserializing environment/storage callbacks: inherited Linux group/session/namespace restrictions, Darwin no-fork Seatbelt, Windows no-breakaway Job Object"
+      "Install kernel descendant containment before deserializing environment/storage callbacks: inherited Linux group/session/namespace restrictions, Darwin no-fork Seatbelt, Windows no-breakaway Job Object",
+      "Preserve containment, evidence, sequence and commit-budget metadata when oversized callback output becomes a bounded ValueError response",
+      "Reject executable or subclassed custom transport response objects before pickle serialization so reply reconstruction cannot escape the owned worker"
     ],
     "ci_repairs": [
       "Preserve concurrent d00b237 Darwin EPERM cleanup fix; live-worker permission failures remain errors",
@@ -78,7 +80,8 @@
       "Reject exhausted environment deadlines before Windows Job Object creation",
       "Historical intermediate repair, superseded by unconditional deferral on denied accounting: Confirm leader termination with a bounded wait when procfs I/O permissions disappear during exit; live leader/helper failures remain closed",
       "Close the quarantined mounted worker before its test temporary directory is removed on Windows",
-      "Assert mounted timeout worker/parent handles are released before temporary-root deletion, with a one-second Windows sharing-violation retry that still rejects persistent handles"
+      "Assert mounted timeout worker/parent handles are released before temporary-root deletion, with a one-second Windows sharing-violation retry that still rejects persistent handles",
+      "Confirm all Linux group members/Windows Job processes have exited after termination, with bounded failure if descendants remain"
     ]
   },
   "domains": [
@@ -1901,7 +1904,7 @@
     }
   ],
   "validation": {
-    "local_unit_tests": 651,
+    "local_unit_tests": 654,
     "local_unit_skipped": 3,
     "numeric_audit_tests": 10,
     "benchmark_fixtures": 5,

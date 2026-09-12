@@ -88,6 +88,44 @@ class DetachedTransport(FixtureTransport):
         return super().stage(*args)
 
 
+class OversizedReplyTransport(FixtureTransport):
+    def __init__(self, oversized):
+        super().__init__(); self.oversized = oversized
+
+    def _result(self, method):
+        return b'x' * 2_000_000 if method == self.oversized else None
+
+    def stage(self, *args):
+        super().stage(*args); return self._result('stage')
+
+    def commit(self, *args):
+        super().commit(*args); return self._result('commit')
+
+    def abort(self, *args):
+        super().abort(*args); return self._result('abort')
+
+    def close(self):
+        super().close(); return self._result('close')
+
+
+class ExecutableReply:
+    def __init__(self, marker):
+        self.marker = marker
+
+    def __reduce__(self):
+        Path(self.marker).write_text('serialized executable reply')
+        return str, ('unwanted reconstruction',)
+
+
+class ObjectReplyTransport(FixtureTransport):
+    def __init__(self, marker):
+        super().__init__(); self.marker = marker
+
+    def stage(self, *args):
+        super().stage(*args)
+        return ExecutableReply(self.marker)
+
+
 class LostMountedAcknowledgement(MountedFilesystemTransport):
     def commit(self, transaction):
         super().commit(transaction)
@@ -424,6 +462,52 @@ class TransportDeadlineTests(unittest.TestCase):
         self.addCleanup(backend.worker.stop)
         return backend
 
+    @unittest.skipUnless(sys.platform.startswith('linux'), 'Linux group exit accounting')
+    def test_cleanup_waits_for_group_exit_and_rejects_persistent_descendants(self):
+        from thm.runtime.fabric import resources
+        process = mock.Mock(pid=123456789)
+        process.poll.return_value = 0
+        with mock.patch.object(os, 'killpg'), \
+             mock.patch.object(resources, '_linux_group_live', side_effect=[True, False]) as live, \
+             mock.patch('time.sleep') as pause:
+            resources.stop_owned_process_tree(process, None)
+            self.assertEqual(live.call_count, 2)
+            pause.assert_called_once_with(.01)
+        with mock.patch.object(os, 'killpg'), \
+             mock.patch.object(resources, '_linux_group_live', return_value=True), \
+             mock.patch('time.monotonic', side_effect=[0, 5]):
+            with self.assertRaisesRegex(RuntimeError, 'descendants did not terminate'):
+                resources.stop_owned_process_tree(process, None)
+
+    def test_oversized_callback_response_preserves_error_envelope_metadata(self):
+        from thm.physical.transport_worker import TransportWorker
+        key = hashlib.sha256(b'abc').hexdigest()
+        for method in ('stage', 'commit', 'abort', 'close'):
+            with self.subTest(method=method):
+                worker = TransportWorker(OversizedReplyTransport(method), 64)
+                try:
+                    if method != 'stage':
+                        worker.call('stage', ('tx', key, b'abc'), time.monotonic()+3)
+                    args = ('tx', key, b'abc') if method == 'stage' else (() if method == 'close' else ('tx',))
+                    with self.assertRaisesRegex(ValueError, 'storage transport '+method+' failed'):
+                        worker.call(method, args, time.monotonic()+3)
+                    self.assertEqual(worker.evidence, 'fixture-validated')
+                    self.assertIn(worker.containment, ('linux-inherited-seccomp-pgid',
+                                  'darwin-seatbelt-no-fork', 'windows-job-no-breakaway'))
+                finally:
+                    worker.stop()
+
+    def test_callback_result_cannot_execute_pickle_reconstruction_in_parent(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            marker = Path(tmp)/'serialized'
+            backend = self.backend(ObjectReplyTransport(str(marker)), 3)
+            try:
+                with self.assertRaises(ValueError): backend.write(b'abc', generation='g')
+                self.assertEqual(backend.bytes_written, 0)
+                self.assertFalse(marker.exists())
+            finally:
+                backend.close()
+
     @unittest.skipUnless(os.name == 'posix', 'POSIX session escape prevention')
     def test_storage_cannot_launch_a_detached_helper(self):
         with tempfile.TemporaryDirectory() as tmp:
@@ -551,10 +635,19 @@ class TransportDeadlineTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as tmp:
             marker=Path(tmp)/'helper'
             b=self.backend(BlockingTransport('stage',str(marker)),1)
-            with self.assertRaises(TimeoutError): b.write(b'abc',generation='g')
+            from thm.physical import transport_worker
+            stop = transport_worker.stop_tree; stopped = []
+            def observe_stop(process, budget):
+                stopped.append({'pid': process.pid, 'group': os.getpgid(process.pid)})
+                return stop(process, budget)
+            with mock.patch.object(transport_worker, 'stop_tree', observe_stop):
+                with self.assertRaises(TimeoutError): b.write(b'abc',generation='g')
             self.assertTrue(marker.exists())
             status=Path('/proc')/marker.read_text()/'stat'
-            if status.exists(): self.assertEqual(status.read_text().rsplit(')',1)[1].split()[0],'Z')
+            if status.exists():
+                observed = status.read_text()
+                self.assertEqual(observed.rsplit(')',1)[1].split()[0], 'Z',
+                                 {'helper': observed, 'stopped': stopped, 'journal': b.journal})
             b.close()
 
 

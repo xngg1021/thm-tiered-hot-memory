@@ -143,7 +143,9 @@ def main():
             if method not in ('stage', 'commit', 'abort', 'size', 'read', 'close'):
                 raise ValueError('storage method not allowed')
             result = getattr(transport, method)(*args)
-            if method == 'read' and (not isinstance(result, bytes) or len(result) > maximum - 1_000_000):
+            if type(result) not in (type(None), bool, int, float, str, bytes):
+                raise ValueError('transport response must be plain data')
+            if method == 'read' and (type(result) is not bytes or len(result) > maximum - 1_000_000):
                 raise ValueError('storage read result bound')
             value = dict(sequence=sequence, result=result)
         except Exception as exc:
@@ -154,7 +156,7 @@ def main():
         value['commit_seconds'] = 1 if isinstance(transport, MountedFilesystemTransport) else None
         raw = pickle.dumps(value)
         if len(raw) > maximum:
-            raw = pickle.dumps(dict(sequence=sequence, error='ValueError', evidence=transport.evidence))
+            raw = pickle.dumps({**{k: v for k, v in value.items() if k != 'result'}, 'error': 'ValueError'})
         pending = root / 'response.pending'
         pending.write_bytes(raw)
         os.replace(pending, response)
