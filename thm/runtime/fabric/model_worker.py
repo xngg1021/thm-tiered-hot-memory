@@ -54,7 +54,7 @@ def prepare_encoder(task, root):
         raise ValueError('bounded local text-model export unavailable')
     device = options.get('device', 'AUTO') if family.startswith('openvino') else options['ep']
     return create(derived, task['model_id'], backend=family, device=device, threads=1,
-                  document_batch_size=8, query_batch_size=1, isolated=True)
+                  document_batch_size=8, query_batch_size=1, isolated=sys.platform != 'darwin')
 
 
 def run(task, wire):
@@ -74,7 +74,7 @@ def run(task, wire):
         started = time.perf_counter()
         baseline = create(task['model_source'], task['model_id'], backend='torch_fp32',
                           device=task['reference_profile']['device'], threads=task.get('reference_threads',1),
-                          document_batch_size=8, query_batch_size=1, isolated=True)
+                          document_batch_size=8, query_batch_size=1, isolated=sys.platform != 'darwin')
         if baseline.profile.identity() != {**task['reference_profile'], 'embedding_profile_id': baseline.profile.id}:
             raise ValueError('reference encoder contract changed')
         candidate = prepare_encoder(task, root)
@@ -139,13 +139,18 @@ def main():
     protocol = os.fdopen(os.dup(sys.stdout.fileno()), 'w', encoding='utf-8', buffering=1)
     os.dup2(sys.stderr.fileno(), sys.stdout.fileno())
     from .resources import linux_worker_lifetime
+    containment = None
     def wire(value):
+        if containment is not None:
+            value = {**value, 'descendant_containment': containment}
         lifetime = linux_worker_lifetime()
         if lifetime is not None:
             value = {**value, '_resource_lifetime': lifetime}
         protocol.write(json.dumps(value, allow_nan=False, ensure_ascii=True)+'\n'); protocol.flush()
     try:
         task = json.loads(sys.stdin.readline(2*1024*1024))
+        from thm._process_containment import install_descendant_containment
+        containment = install_descendant_containment()
         from ..worker import configure
         configure({'threads': 1})
         run(task, wire)
