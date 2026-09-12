@@ -178,14 +178,30 @@ class NativeExtensionSeam:
     pretends symbol presence is a runnable Python implementation.
     """
     def __init__(self, spec):
-        self.spec = spec; self.bridge = None
+        self.spec = spec; self.bridge = None; self.session = None
 
     def probe(self):
+        from .extensions import discover_extension
         libraries = dict(self.spec.options).get('libraries', ())
         observed = {name: bool(ctypes.util.find_library(name)) for name in libraries}
-        return {'provider': self.spec.provider_id, 'availability': 'library-discovered' if any(observed.values()) else 'unavailable',
+        discovery = discover_extension(self.spec.provider_id)
+        return {**discovery, 'provider': self.spec.provider_id, 'availability': 'library-discovered' if any(observed.values()) or discovery['module_present'] else 'unavailable',
                 'libraries': observed, 'devices': [], 'maturity': self.spec.maturity,
-                'execution': 'extension-contract-only', 'observed_kernel_dispatch': None}
+                'execution': 'configured-binding' if self.session else 'extension-contract-only',
+                'contract_maturity': 4, 'observed_kernel_dispatch': None}
+
+    def configure(self, config, binding):
+        from .extensions import ExtensionSession
+        if config.provider_id != self.spec.provider_id:
+            raise ValueError('extension provider identity mismatch')
+        if self.session is not None:
+            self.session.close()
+        self.session = ExtensionSession(config, binding)
+        return self
+
+    def capabilities(self):
+        return {**self.spec.public(), 'contract_maturity': 4, 'schema': 'thm-extension/1',
+                'automatic_install': False, 'hardware_accepted': False}
 
     def attach(self, bridge):
         if not all(callable(getattr(bridge, name, None)) for name in ('prepare', 'execute', 'receipt', 'close')):
@@ -193,18 +209,40 @@ class NativeExtensionSeam:
         self.bridge = bridge
 
     def prepare(self, artifact, **options):
+        if self.session is not None:
+            return self.session.prepare(artifact)
         if self.bridge is None:
             raise ProviderUnavailable('native SDK bridge not registered')
         return self.bridge.prepare(artifact, **options)
 
     def execute(self, *args, **kwargs):
+        if self.session is not None:
+            return self.session.execute(*args, **kwargs)
         if self.bridge is None:
             raise ProviderUnavailable('native SDK bridge not registered')
         return self.bridge.execute(*args, **kwargs)
 
     def telemetry(self):
+        if self.session is not None:
+            return self.session.receipt()
         return self.bridge.receipt() if self.bridge else {'hardware_validation': 'unvalidated', 'execution': 'unavailable'}
 
+    def compile(self):
+        if self.session is None:
+            raise ProviderUnavailable('configured extension session required')
+        return self.session.compile()
+
+    def load(self):
+        if self.session is None:
+            raise ProviderUnavailable('configured extension session required')
+        return self.session.load()
+
+    def invalidate(self, reason='source-generation-changed'):
+        if self.session is not None:
+            self.session.invalidate(reason)
+
     def close(self):
+        if self.session is not None:
+            self.session.close()
         if self.bridge:
             self.bridge.close()

@@ -7,6 +7,9 @@ from .adapters import trajectory_documents
 from .contracts import nonempty
 
 
+SNAPSHOT_MAX_BYTES = 16_000_000
+
+
 class AgentMemory:
     """MemoryArena MemoryClient-compatible add/wrap_user_prompt interface.
 
@@ -66,6 +69,47 @@ class AgentMemory:
         with self.lock:
             self.closed = True
 
+    def save(self, output_dir):
+        from dataclasses import asdict
+        import json
+        from .contracts import digest
+        root = Path(output_dir)
+        with self.lock:
+            if self.closed:
+                raise ValueError('memory interface closed')
+            body = {'schema': 'thm-agent-memory/1', 'scope': self.scope, 'budget': self.budget,
+                    'documents': [asdict(d) for d in self.documents]}
+            encoded = json.dumps({**body, 'receipt_sha256': digest(body)}, ensure_ascii=False, allow_nan=False).encode('utf-8')
+            if len(encoded) > SNAPSHOT_MAX_BYTES:
+                raise ValueError('bounded memory snapshot required')
+            root.mkdir(parents=True, exist_ok=True)
+            import os
+            import tempfile
+            fd, temporary = tempfile.mkstemp(prefix='.thm-memory-', suffix='.pending', dir=root)
+            try:
+                with os.fdopen(fd, 'wb') as handle:
+                    if handle.write(encoded) != len(encoded):
+                        raise OSError('short snapshot write')
+                    handle.flush()
+                    os.fsync(handle.fileno())
+                os.link(temporary, root/'thm-memory.json')  # atomic create-only publication
+            finally:
+                Path(temporary).unlink(missing_ok=True)
+
+    def restore(self, input_dir):
+        import json
+        from .contracts import digest
+        path = Path(input_dir)/'thm-memory.json'
+        from thm._bounded_files import bounded_file_bytes
+        value = json.loads(bounded_file_bytes(path, SNAPSHOT_MAX_BYTES).decode('utf-8'))
+        checksum = value.pop('receipt_sha256', None)
+        if checksum != digest(value) or value.get('schema') != 'thm-agent-memory/1' or value.get('scope') != self.scope or value.get('budget') != self.budget:
+            raise ValueError('memory snapshot identity mismatch')
+        documents = [Document(**row) for row in value['documents']]
+        with self.connection() as index:
+            index.replace_scope(self.scope, documents)
+            self.documents = documents
+
 
 class V2Memory(AgentMemory):
     """LongMemEval-V2 insert/query contract; explicit text-only operating point."""
@@ -110,9 +154,9 @@ def register_longmemeval_v2():
             self._temp.cleanup()
 
         def _save_backend(self, output_dir):
-            raise NotImplementedError('prebuilt persistence is not supported by thm_text')
+            self.backend.save(output_dir)
 
         def _load_backend(self, input_dir):
-            raise NotImplementedError('prebuilt persistence is not supported by thm_text')
+            self.backend.restore(input_dir)
 
     return THMMemory

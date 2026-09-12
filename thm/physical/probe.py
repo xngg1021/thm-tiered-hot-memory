@@ -127,7 +127,11 @@ def linux(root, *, sysroot=Path('/sys'), mountinfo=None):
     for kind,base,pattern in [('persistent-memory','bus/nd/devices','namespace*'),('cxl-memory','bus/cxl/devices','mem*'),
                               ('dax-device','class/dax','dax*'),('nic','class/net','*')]:
         for i,entry in enumerate(sorted((sysroot/base).glob(pattern))):
-            nodes.append(TopologyNode(kind+'-'+str(i),kind,{'observation':'sysfs-presence; performance unvalidated'}))
+            properties = {'observation':'sysfs-presence; performance unvalidated',
+                          'region_identity':digest(str(entry.resolve())),
+                          'size_bytes':integer(read(entry/'size')), 'numa_node':integer(read(entry/'numa_node')),
+                          'mode':read(entry/'mode'), 'allocation_executed':False}
+            nodes.append(TopologyNode(kind+'-'+str(i),kind,properties))
     if fields.get('pcie_bdf'):
         pci='pci-'+fields['pcie_bdf'];nodes.append(TopologyNode(pci,'pcie-device'))
         if any(n.node_id=='block' for n in nodes):edges.append(TopologyEdge(pci,'block','pcie-relation'))

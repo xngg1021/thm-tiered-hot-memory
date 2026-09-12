@@ -33,6 +33,47 @@ class JointExecutionPlan:
 
 
 class JointComputeDataPlanner:
+    def choose(self, candidates, *, objective, constraints, current_generation, profile_identity, expected_reuses=1):
+        """Hard constraints followed by named lexicographic costs, never a weighted score."""
+        import math
+        if objective not in ('interactive', 'bulk', 'background') or type(expected_reuses) is not int or expected_reuses < 1:
+            raise ValueError('valid objective/reuse horizon required')
+        required = ('logical_object', 'representation', 'compute_profile', 'placement', 'transfer_plan', 'resident_index', 'runtime_provider')
+        admitted, rejected = [], []
+        for candidate in candidates:
+            reasons = []
+            if any(not candidate.get(k) for k in required):
+                reasons.append('incomplete-joint-identity')
+            if candidate.get('generation') != current_generation or candidate.get('profile_identity') != profile_identity:
+                reasons.append('stale-profile-or-generation')
+            if candidate.get('semantic_safe') is not True:
+                reasons.append('semantic-evidence')
+            metrics = candidate.get('metrics', {})
+            for key, (relation, limit) in constraints.items():
+                value = metrics.get(key)
+                if relation not in ('max', 'min', 'equal'):
+                    raise ValueError('unknown constraint relation')
+                if relation != 'equal' and (type(limit) not in (int, float) or not math.isfinite(limit)):
+                    raise ValueError('finite numeric constraint limit required')
+                if value is None or (relation != 'equal' and (type(value) not in (int, float) or not math.isfinite(value))) or (relation == 'max' and value > limit) or (relation == 'min' and value < limit) or (relation == 'equal' and value != limit):
+                    reasons.append('constraint:' + key)
+            costs = ('latency_ms', 'transfer_ms', 'startup_ms', 'compile_ms', 'throughput', 'cpu_seconds')
+            if any(type(metrics.get(k)) not in (int, float) or not math.isfinite(metrics[k]) or metrics[k] < 0 for k in costs):
+                reasons.append('unknown-cost')
+            if reasons:
+                rejected.append({'candidate_id': identity(candidate), 'reasons': reasons})
+                continue
+            latency = metrics['latency_ms'] + (metrics['transfer_ms']+metrics['startup_ms']+metrics['compile_ms'])/expected_reuses
+            key = ((latency, -metrics['throughput']) if objective == 'interactive' else
+                   (-metrics['throughput'], latency) if objective == 'bulk' else
+                   (metrics['cpu_seconds'], latency))
+            admitted.append((key, identity(candidate), candidate, latency))
+        admitted.sort(key=lambda row: (row[0], row[1]))
+        return {'schema': 'thm-joint-selection/1', 'selected': admitted[0][2] if admitted else None,
+                'predicted_latency_ms': admitted[0][3] if admitted else None, 'objective': objective,
+                'ordering': 'latency,throughput' if objective == 'interactive' else 'throughput,latency' if objective == 'bulk' else 'cpu-seconds,latency',
+                'rejected': rejected, 'fallback': 'validated-reference-local', 'automatic_relocation': False}
+
     def plan(self, index, scope, *, embedding_profile=None, candidate=None, workload='interactive',
              policy='auto-safe', observations=None, resident=False, expected_reuses=1):
         with index._lock:

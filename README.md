@@ -9,11 +9,7 @@ Author: Junfu Shi (SJF, xngg1021) · License: [MIT](LICENSE)
 <!-- section:architecture -->
 ## Three-plane architecture
 
-THM separates logical memory, compute execution and physical storage. Evaluation Fabric measures these planes without introducing a new memory algorithm. Source identity and scope remain authoritative across every representation.
-
-Architecture and evidence contracts
-
-The stable package and archive remain 1.4.0. Runtime, Physical Storage Fabric and Evaluation Fabric stay Unreleased. Existing measured results retain their original protocol, source SHA and scope; no unrun benchmark or hardware is accepted.
+THM separates logical memory, compute execution and physical storage. Version 1.5.0 brings these planes, Evaluation Fabric, explicit residency actuation and the independent Context Economics bridge into one implementation surface. Source identity and scope remain authoritative. Historical 1.4.0 evidence retains its original protocol and SHA; implementation stability does not grant hardware or task acceptance.
 
 <!-- section:philosophy -->
 ## Design philosophy
@@ -59,6 +55,8 @@ Retrieval semantics live in THM rather than being reimplemented for every host. 
 
 Scoped SearchIndex retrieval, budgeted evidence packing and shadow residency control share one memory core. T0–T3 describe logical residency/access. Activity, validity, pinning and retrieval remain distinct; automatic promotion and budget write-back stay off.
 
+The explicit actuator supports dry-run, replay, exact-plan approval, transactional placement updates, rollback and audit. Automatic mutation remains false by default; source validity, pinning, demand, capacity and evidence gates apply.
+
 <!-- section:tiers -->
 ## The four tiers
 
@@ -81,7 +79,7 @@ The zero-touch runtime starts with a safe available path, observes real requests
 <!-- section:physical -->
 ## Physical storage plane
 
-StorageProfile describes measured access costs; placement binds a representation to a target. PhysicalTelemetry records actual extent I/O. Verified local-filesystem buffered/mmap paths are implemented; CXL, DAX, SPDK, GDS and remote transport entries remain extension descriptors with unvalidated hardware performance.
+StorageProfile describes measured access costs; placement binds a representation to a target. PhysicalTelemetry records extent I/O. Buffered/mmap files, transactional configured transports, S3, allocation ownership and joint placement have executable paths and fixtures. CXL, DAX, SPDK, GDS and remote families share bounded lifecycle contracts; native transport execution and hardware performance require separate evidence.
 
 [Physical Storage Fabric](docs/physical-storage-fabric.md)
 
@@ -99,6 +97,8 @@ Fixtures validate interfaces and deterministic retrieval only. V2 is a text-only
 | LLM-agent-outcome | generation/judge calls, answer accuracy, environment success; not-run by default |
 
 [Evaluation Fabric](docs/18-evaluation-fabric.md)
+
+EnvironmentRunner supplies a bounded environment lifecycle and OfficialScorerBridge keeps evaluator-only answers separate. Outcome attachment binds executed task IDs and trace SHA, supports partial coverage, missing scores, macro/micro results and observed latency/cost. THM exports unit- and denominator-bound evidence to Context Economics and accepts explicit budget/envelope advice without merging THM T0–T3 with CE L0–L6.
 
 <!-- section:evidence -->
 ## Measured retrieval evidence
@@ -125,7 +125,7 @@ These numbers measure **packed retrieval evidence**, not final answer accuracy, 
 | --- | --- |
 | **Hermes Agent** | Native `MemoryProvider`; setup/config, prefetch, optional live-turn synchronization, session boundary hooks and memory-write refresh semantics |
 | **OpenAI Agents SDK** | Native read-only `FunctionTool` |
-| **LangChain / LangGraph / Deep Agents** | Native `BaseRetriever` surface |
+| **LangChain / LangGraph / Deep Agents** | Native BaseRetriever, executable LangGraph node, Deep Agents recall/status tools and graph construction |
 | **MCP v2** | Typed read-only `thm_recall` and `thm_status` over stdio |
 | **OpenClaw** | Pinned compatibility probe through the legacy MCP bridge |
 | **Claude Code / Codex CLI / Gemini CLI** | Pinned real-CLI discovery/call lifecycle through the same read-only recall core |
@@ -157,6 +157,7 @@ python -m pip install -e '.[tokenizer,semantic]'
 python -m pip install -e '.[openai]'
 python -m pip install -e '.[langchain]'
 python -m pip install -e '.[mcp]'
+# Deep Agents: Python >= 3.11
 python -m pip install -e '.[harnesses]'
 ```
 
@@ -220,4 +221,4 @@ The evidence ladder stays explicit: unit/invariant evidence, retrieval benchmark
 - [Zero-LLM retrieval frontier](docs/16-zero-llm-retrieval-frontier.md)
 - [Changelog](CHANGELOG.md)
 
-THM is research software with an accepted 1.4.0 stable implementation milestone and an explicitly unreleased retrieval frontier. Version identity never substitutes for evidence class.
+THM 1.5.0 is an implementation milestone with separate integration, hardware, benchmark and task evidence. Rejected retrieval experiments remain reproducible and default-off.

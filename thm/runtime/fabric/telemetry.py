@@ -44,6 +44,34 @@ class NVMLTelemetry:
         if self.api:
             self.api.nvmlShutdown(); self.api = None
 
+    def topology(self):
+        """Public NVML parent/partition observations; no raw UUIDs leave this API."""
+        from .contracts import identity
+        if self.api is None:
+            self.probe()
+        api = self.api; nodes, edges = [], []
+        for i in range(api.nvmlDeviceGetCount()):
+            handle = api.nvmlDeviceGetHandleByIndex(i)
+            parent = 'nvml:' + str(i)
+            nodes.append({'id': parent, 'kind': 'physical-device'})
+            try:
+                mode, pending = api.nvmlDeviceGetMigMode(handle)
+                maximum = api.nvmlDeviceGetMaxMigDeviceCount(handle) if mode else 0
+            except Exception:
+                nodes[-1]['partition_observation'] = 'unknown'
+                continue
+            nodes[-1].update(partition_mode=bool(mode), pending_mode=bool(pending))
+            for slot in range(maximum):
+                try:
+                    child = api.nvmlDeviceGetMigDeviceHandleByIndex(handle, slot)
+                    raw = api.nvmlDeviceGetUUID(child)
+                    cid = identity(raw.decode() if isinstance(raw, bytes) else str(raw))
+                    nodes.append({'id': cid, 'kind': 'observed-MIG-partition'})
+                    edges.append({'source': parent, 'target': cid, 'relation': 'partition'})
+                except Exception:
+                    continue
+        return {'nodes': nodes, 'edges': edges, 'resource_isolation_accepted': False}
+
 
 class AMDSystemTelemetry:
     def __init__(self, spec=None):
@@ -53,8 +81,13 @@ class AMDSystemTelemetry:
         import amdsmi
         self.api = amdsmi; amdsmi.amdsmi_init()
         self.handles = amdsmi.amdsmi_get_processor_handles()
+        try:
+            driver = str(amdsmi.amdsmi_get_gpu_driver_info(self.handles[0]).get('driver_version')) if self.handles else None
+        except Exception:
+            driver = None
         return {'availability': 'available' if self.handles else 'device-unavailable',
                 'provider': 'amd.smi', 'devices': ['amdsmi:'+str(i) for i in range(len(self.handles))],
+                'driver_identity': driver,
                 'observed_kernel_dispatch': None}
 
     def telemetry(self, device_index=0):

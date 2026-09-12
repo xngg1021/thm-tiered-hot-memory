@@ -9,11 +9,7 @@
 <!-- section:architecture -->
 ## 三平面架構
 
-THM 將邏輯記憶、計算執行和實體儲存分開。Evaluation Fabric 在三個平面上統一量測，不引入新的記憶演算法。原始來源身分和 scope 在各種表示之間始終保持權威。
-
-架構與證據契約
-
-穩定 package 與 archive 保持 1.4.0。Runtime、Physical Storage Fabric 與 Evaluation Fabric 繼續標為 Unreleased。既有量測保留原始 protocol、source SHA 和適用範圍，未執行的 benchmark 與硬體不計入 accepted evidence。
+THM 將邏輯記憶、計算執行和實體儲存分開。1.5.0 將這些平面、Evaluation Fabric、顯式駐留執行器與獨立的 Context Economics bridge 納入統一實作範圍。來源身分與作用域始終具有權威。歷史 1.4.0 證據保留原始協定和 SHA；實作穩定不代表硬體或任務驗收。
 
 <!-- section:philosophy -->
 ## 設計理念
@@ -59,6 +55,8 @@ THM 的 retrieval semantics 屬於統一 core，不為每個宿主複製一套�
 
 帶 scope 的 SearchIndex 檢索、預算內證據打包和影子駐留控制共用一個記憶核心。T0–T3 表示邏輯駐留與存取方式。活動、有效性、固定約束和檢索分別記錄；自動提升和預算回寫繼續關閉。
 
+顯式執行器支援 dry-run、回放、精確計畫批准、交易式放置更新、回復和稽核。自動變更預設 false；來源有效性、pin、需求、容量與證據門控持續生效。
+
 <!-- section:tiers -->
 ## T0–T3 四個 Tier
 
@@ -81,7 +79,7 @@ T0–T3 是 **THM 的 memory Tier**，不是另一個獨立專案 Context Econom
 <!-- section:physical -->
 ## 實體儲存平面
 
-StorageProfile 描述實測存取成本，placement 將資料表示綁定到目標，PhysicalTelemetry 記錄實際 extent I/O。已實作經過驗證的本機檔案系統 buffered/mmap 路徑；CXL、DAX、SPDK、GDS 和遠端傳輸項目仍是擴充描述，硬體效能未經驗收。
+StorageProfile 描述實測存取成本，placement 將表示綁定至目標，PhysicalTelemetry 記錄區段 I/O。緩衝/mmap 檔案、交易式設定傳輸、S3、配置所有權和聯合放置均有可執行路徑及 fixture。CXL、DAX、SPDK、GDS 與遠端家族共享有界生命週期契約；原生傳輸執行及硬體效能需要獨立證據。
 
 [Physical Storage Fabric](docs/physical-storage-fabric.md)
 
@@ -99,6 +97,8 @@ Fixture 只驗證介面與確定性檢索。V2 目前採用純文字配置，拒
 | LLM-agent-outcome | 生成與評分呼叫、答案準確率、環境成功率；預設 not-run |
 
 [Evaluation Fabric](docs/18-evaluation-fabric.md)
+
+EnvironmentRunner 提供有界環境生命週期，OfficialScorerBridge 隔離僅供評估器使用的答案。Outcome 附加綁定已執行任務 ID 和 trace SHA，支援部分覆蓋、缺失評分、宏/微彙總及已觀測延遲/成本。THM 向 Context Economics 匯出含單位與分母的證據，並接受顯式預算及約束建議；THM T0–T3 與 CE L0–L6 保持獨立。
 
 <!-- section:evidence -->
 ## 已量測的檢索證據
@@ -125,7 +125,7 @@ Canonical LoCoMo Protocol 2 使用 1,532 道證據完全解析的非對抗問題
 | --- | --- |
 | **Hermes Agent** | 原生 `MemoryProvider`；setup/config、prefetch、可選 live-turn sync、session boundary hooks、memory-write refresh semantics |
 | **OpenAI Agents SDK** | 原生唯讀 `FunctionTool` |
-| **LangChain / LangGraph / Deep Agents** | 原生 `BaseRetriever` surface |
+| **LangChain / LangGraph / Deep Agents** | 原生 BaseRetriever、可執行 LangGraph 節點、Deep Agents recall/status 工具及圖建構 |
 | **MCP v2** | 透過 stdio 提供有型別的 `thm_recall` 與 `thm_status` |
 | **OpenClaw** | 透過 legacy MCP bridge 做 pinned compatibility probe |
 | **Claude Code / Codex CLI / Gemini CLI** | 真實固定版本 CLI discovery/call lifecycle，共用同一唯讀 recall core |
@@ -157,6 +157,7 @@ python -m pip install -e '.[tokenizer,semantic]'
 python -m pip install -e '.[openai]'
 python -m pip install -e '.[langchain]'
 python -m pip install -e '.[mcp]'
+# Deep Agents: Python >= 3.11
 python -m pip install -e '.[harnesses]'
 ```
 
@@ -220,4 +221,4 @@ unit/invariant、retrieval benchmark、harness lifecycle 與 real task outcome �
 - [Zero-LLM retrieval frontier](docs/16-zero-llm-retrieval-frontier.md)
 - [Changelog](CHANGELOG.md)
 
-THM 仍是研究軟體：1.4.0 是 accepted/stable implementation milestone，之後的 retrieval frontier 明確保持 unreleased。版本號永遠不能替代 evidence class。
+THM 1.5.0 是實作里程碑，整合、硬體、benchmark 與任務證據分別記錄。遭否決的檢索實驗保留重現能力並預設關閉。

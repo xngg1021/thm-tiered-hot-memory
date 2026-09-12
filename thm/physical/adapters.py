@@ -14,7 +14,8 @@ EXTENSIONS = ('dram','unified-memory','vram','pmem','dax','cxl-type3','far-memor
 def capabilities():
     return {'local-filesystem':{'adapter':'implemented','buffered':True,'mmap':True,
                 'hardware_performance':'pending-real-hardware'},
-        **{name:{'adapter':'unavailable','contract':'extension-descriptor',
+        **{name:{'adapter':'configured-transport','contract':'thm-storage-backend/1',
+                'factory':'thm.physical.backends:StorageBackend', 'fixture':'thm.physical.backends:FixtureTransport',
                 'hardware_performance':'unvalidated'} for name in EXTENSIONS}}
 
 class LocalFilesystemAdapter:

@@ -1,0 +1,263 @@
+from dataclasses import asdict, replace
+import hashlib
+import json
+from pathlib import Path
+import tempfile
+import types
+import unittest
+from unittest import mock
+import numpy as np
+
+from thm.economics_bridge import Measurement, EconomicAdvice, export_evidence, import_advice
+from thm.evaluation.contracts import Task, GroundTruth, digest
+from thm.evaluation.outcomes import AgentOutcome, attach_outcomes
+from thm.evaluation.environment import EnvironmentIdentity, EnvironmentRunner, OfficialScorerBridge
+from thm.evaluation.memory import AgentMemory
+from thm.physical.allocation import AllocationPool, KINDS
+from thm.physical.joint import JointComputeDataPlanner
+from thm.runtime.fabric.contracts import IndexIdentity
+from thm.runtime.fabric.indexes import ExactHost
+from thm.runtime.fabric.multidevice import MultiDeviceIndex
+from thm.runtime.fabric.extensions import ExtensionConfig, FunctionBinding, ExtensionSession
+from thm.runtime.fabric.native import NativeExtensionSeam
+from thm.runtime.fabric.catalog import BUILTINS
+from thm.runtime.fabric.sdk_extensions import PJRTBinding
+
+
+def receipt():
+    out = {'provenance': 'external-dataset', 'source_sha256': 'a'*64, 'implementation_sha256': 'b'*64,
+           'layers': {'memory-dataplane': {'rows': [dict(task_id=i, budget_used=10, latency_ms=1, scorable=True, gold_count=2, hits=1) for i in ('a','b')]},
+                      'LLM-agent-outcome': {'status': 'not-run'}}}
+    return {**out, 'receipt_sha256': digest(out)}
+
+
+class OutcomeBridgeTests(unittest.TestCase):
+    def test_partial_attach_merge_denominators_cost_and_tamper(self):
+        raw = b'trace'; h = hashlib.sha256(raw).hexdigest()
+        a = AgentOutcome('a', 'model', 'judge', h, 1, 0, .5, environment_id='env', latency_ms=12,
+                         cost_usd=.1, answer_numerator=1, answer_denominator=2)
+        partial = attach_outcomes(receipt(), [a], trace_bytes=raw, allow_partial=True)
+        self.assertEqual(partial['layers']['LLM-agent-outcome']['missing_task_ids'], ['b'])
+        with self.assertRaises(ValueError):
+            attach_outcomes(partial, [a], trace_bytes=raw, allow_partial=True)
+        b = replace(a, task_id='b', answer_accuracy=1, answer_numerator=3, answer_denominator=3)
+        final = attach_outcomes(partial, [b], trace_bytes=raw, allow_partial=True)
+        layer = final['layers']['LLM-agent-outcome']
+        self.assertEqual(layer['answer_accuracy'], .75)
+        self.assertEqual(layer['answer_micro_accuracy'], .8)
+        self.assertEqual(layer['cost_usd_observed_sum'], .2)
+        self.assertEqual(layer['coverage_status'], 'complete')
+        final['provenance'] = 'changed'
+        with self.assertRaises(ValueError):
+            attach_outcomes(final, [], trace_bytes=raw, allow_partial=True)
+
+    def test_bridge_is_standalone_and_denominator_bound(self):
+        evidence = export_evidence(receipt(), source_commit='c'*40)
+        self.assertEqual(evidence['measurements']['retrieval_recall']['denominator'], 4)
+        self.assertIsNone(evidence['measurements']['full_history_tokens']['value'])
+        advice = EconomicAdvice('Context Economics', 'd'*40, evidence['receipt_sha256'], 10, 800, 500)
+        self.assertEqual(import_advice(advice.public(), expected_evidence_sha256=evidence['receipt_sha256']), advice)
+        with self.assertRaises(ValueError):
+            import_advice(advice.public(), expected_evidence_sha256='e'*64)
+        with self.assertRaises(ValueError):
+            export_evidence(receipt(), source_commit='c'*40, observations={'physical_read': Measurement(1, 'ms', 1, 'sum', 'a'*64)})
+
+    def test_fake_environment_and_official_scorer_are_separate(self):
+        from thm.evaluation.fixtures import DeterministicEnvironment, deterministic_environment_policy
+        env = DeterministicEnvironment()
+        task = Task('a', 'scope', 'query', ())
+        r, trace = EnvironmentRunner(env, EnvironmentIdentity('memoryarena','fixture','a'*64)).run(task, deterministic_environment_policy)
+        self.assertTrue(r['environment_success']); self.assertFalse(r['task_outcome_accepted']); self.assertTrue(r['environment_closed']); self.assertEqual(r['execution_boundary'],'owned-process-tree')
+        scorer = OfficialScorerBridge(lambda answer,ground_truth,rubric:float(answer==ground_truth),evaluator_id='official-fixture',implementation_sha256='b'*64)
+        score = scorer.score(task, GroundTruth('a', answer='gold'), 'gold', trace_sha256=hashlib.sha256(trace).hexdigest())
+        self.assertEqual(score['answer_accuracy'],1)
+
+    def test_bridge_observations_require_this_receipt_identity(self):
+        source = receipt()
+        valid = Measurement(12, 'token', 1, 'sum', source['receipt_sha256'])
+        for value in (valid, asdict(valid)):
+            exported = export_evidence(source, source_commit='c'*40,
+                                       observations={'full_history_tokens': value})
+            self.assertEqual(exported['measurements']['full_history_tokens']['value'], 12)
+        foreign = replace(valid, source_sha256='f'*64)
+        for value in (foreign, asdict(foreign)):
+            with self.assertRaisesRegex(ValueError, 'different source receipt'):
+                export_evidence(source, source_commit='c'*40,
+                                observations={'full_history_tokens': value})
+
+    def test_all_benchmarks_accept_independent_feature_ab_and_track_b(self):
+        from thm.evaluation.adapters import ADAPTERS
+        from thm.evaluation.fixtures import FIXTURES
+        from thm.evaluation.runner import run
+        from thm.features import RetrievalFeatures
+        class Encoder:
+            def __call__(self, texts, **kwargs):
+                return [[len(t)+1, sum(map(ord,t))%19+1] for t in texts]
+        with tempfile.TemporaryDirectory() as tmp:
+            for name,adapter in ADAPTERS.items():
+                for flag in ('entity','explicit_alias','temporal','query_grammar','segment','association'):
+                    result=run(adapter,FIXTURES[name],Path(tmp)/(name+flag),features={flag:True},provenance='deterministic-fixture')
+                    self.assertTrue(result['layers']['memory-dataplane']['features'][flag])
+                    self.assertEqual(result['layers']['LLM-agent-outcome']['status'],'not-run')
+            for mode in ('dense','hybrid'):
+                result=run(ADAPTERS['locomo'],FIXTURES['locomo'],Path(tmp)/mode,retrieval_mode=mode,encoder=Encoder(),model_id='fixture-encoder',provenance='deterministic-fixture')
+                self.assertTrue(result['taxonomy']['compute_profile'].startswith('explicit-encoder-'))
+            self.assertFalse(RetrievalFeatures().entity)
+
+    def test_snapshot_save_rejects_utf8_overflow_before_publication(self):
+        from thm.evaluation import memory as module
+        with tempfile.TemporaryDirectory() as tmp:
+            root=Path(tmp);a=AgentMemory(root/'a.db','scope');a.add('漢字'*100)
+            with mock.patch.object(module,'SNAPSHOT_MAX_BYTES',700):
+                with self.assertRaises(ValueError):a.save(root/'oversized')
+            self.assertFalse((root/'oversized'/'thm-memory.json').exists())
+            a.save(root/'accepted');b=AgentMemory(root/'b.db','scope');b.restore(root/'accepted')
+            self.assertEqual(a.documents,b.documents);a.close();b.close()
+
+    def test_snapshot_atomic_failure_retry_and_existing_destination(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root=Path(tmp);memory=AgentMemory(root/'source.db','scope');memory.add('database port 5439')
+            with mock.patch('os.fsync',side_effect=OSError('disk full')):
+                with self.assertRaises(OSError):memory.save(root/'snapshot')
+            self.assertFalse((root/'snapshot'/'thm-memory.json').exists())
+            self.assertEqual(list((root/'snapshot').glob('*.pending')),[])
+            memory.save(root/'snapshot');original=(root/'snapshot'/'thm-memory.json').read_bytes()
+            with self.assertRaises(FileExistsError):memory.save(root/'snapshot')
+            self.assertEqual((root/'snapshot'/'thm-memory.json').read_bytes(),original)
+            memory.close()
+
+    def test_environment_reset_policy_step_and_close_are_interruptible(self):
+        import time
+        from thm.evaluation.fixtures import DeterministicEnvironment, deterministic_environment_policy
+        task=Task('a','scope','query',())
+        for stage in ('reset','policy','step','close'):
+            with self.subTest(stage=stage):
+                runner=EnvironmentRunner(DeterministicEnvironment(stage),EnvironmentIdentity('memoryarena','fixture','a'*64),wall_seconds=1)
+                start=time.monotonic()
+                with self.assertRaises(TimeoutError):runner.run(task,deterministic_environment_policy)
+                self.assertLess(time.monotonic()-start,7)
+
+    def test_empty_partial_outcome_never_becomes_measured(self):
+        original=receipt()
+        with self.assertRaises(ValueError):attach_outcomes(original,[],trace_bytes=b'arbitrary',allow_partial=True)
+        self.assertEqual(original['layers']['LLM-agent-outcome']['status'],'not-run')
+
+    def test_memory_snapshot_reopen_and_corruption(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp); a = AgentMemory(root/'a.db','scope'); a.add('database port is 5439'); a.save(root/'saved'); a.close()
+            b = AgentMemory(root/'b.db','scope'); b.restore(root/'saved'); self.assertIn('5439',b.query('database port')); b.close()
+            p=root/'saved'/'thm-memory.json'; v=json.loads(p.read_text()); v['documents'][0]['text']='changed'; p.write_text(json.dumps(v))
+            c=AgentMemory(root/'c.db','scope')
+            with self.assertRaises(ValueError):c.restore(root/'saved')
+            c.close()
+
+
+class PhysicalComputeTests(unittest.TestCase):
+    def test_memory_kinds_preserve_owner_and_deferred_eviction(self):
+        for kind in KINDS:
+            released=[]; p=AllocationPool(32)
+            a=p.allocate(representation_sha256='a'*64,generation='g',kind=kind,device='d',size=16,owner='o',
+                         allocator=lambda n:(bytearray(n),lambda:released.append(True)))
+            with p.acquire(a.allocation_id,generation='g',owner='o') as data:
+                p.evict(a.allocation_id); self.assertEqual(len(data),16); self.assertEqual(released,[])
+            self.assertEqual(released,[True]); self.assertEqual(p.allocations,{})
+            p.close()
+
+    def test_multidevice_exact_global_ties_and_failed_rebuild(self):
+        providers=[ExactHost(),ExactHost()]; p=MultiDeviceIndex(providers,budgets=[64,64])
+        ident=IndexIdentity('s','g','ep','multi','1','cfg')
+        p.build([[1,0],[1,0],[0,1]],['a','b','c'],ident)
+        rows,_=p.search([[1,0]],2,generation='g'); self.assertEqual(rows[0][0],['a','b'])
+        with self.assertRaises(MemoryError):p.build(np.ones((100,2)),list(range(100)),replace(ident,generation='new'))
+        rows,_=p.search([[1,0]],2,generation='g'); self.assertEqual(rows[0][0],['a','b'])
+        p.close()
+
+    def test_multidevice_capacity_refuses_before_advanced_index_copy(self):
+        class NoCopy(np.ndarray):
+            def __getitem__(self, key):
+                if isinstance(key, list):
+                    raise AssertionError('over-budget shard copied before admission')
+                return super().__getitem__(key)
+        matrix=np.ones((8,2),dtype=np.float32).view(NoCopy)
+        provider=mock.Mock();index=MultiDeviceIndex([provider],budgets=[1])
+        ident=IndexIdentity('s','g','ep','multi','1','cfg')
+        with mock.patch('numpy.asarray',return_value=matrix):
+            with self.assertRaisesRegex(MemoryError,'shard capacity'):
+                index.build(matrix,list(range(8)),ident)
+        provider.build.assert_not_called();index.close()
+
+    def test_joint_unknown_fails_closed_and_named_order(self):
+        c={k:k for k in ('logical_object','representation','compute_profile','placement','transfer_plan','resident_index','runtime_provider')}
+        c.update(generation='g',profile_identity='p',semantic_safe=True,
+                 metrics=dict(latency_ms=1,transfer_ms=20,startup_ms=20,compile_ms=20,throughput=10,cpu_seconds=2,replicas=2))
+        planner=JointComputeDataPlanner()
+        r=planner.choose([c],objective='interactive',constraints={'replicas':('min',2)},current_generation='g',profile_identity='p',expected_reuses=10)
+        self.assertEqual(r['predicted_latency_ms'],7)
+        c['metrics']['transfer_ms']=None
+        self.assertIsNone(planner.choose([c],objective='bulk',constraints={},current_generation='g',profile_identity='p')['selected'])
+
+    def test_multidevice_budget_precedes_float32_normalization(self):
+        ident = IndexIdentity('s','g','ep','multi','1','cfg')
+        index = MultiDeviceIndex([ExactHost(), ExactHost()], budgets=[8, 8])
+        for matrix in (np.ones((8, 2), dtype=np.float64), [[1, 1]]*8):
+            with mock.patch('numpy.asarray', side_effect=AssertionError('allocated before admission')) as convert:
+                with self.assertRaisesRegex(MemoryError, 'before normalization'):
+                    index.build(matrix, list(range(8)), ident)
+                convert.assert_not_called()
+        for matrix in (np.eye(2, dtype=np.float64), [[1, 0], [0, 1]]):
+            index.build(matrix, ['a', 'b'], ident)
+            self.assertEqual(index.search([[1, 0]], 1, generation='g')[0][0][0], ['a'])
+        index.close()
+
+    def test_multidevice_published_generation_survives_exhaustive_retirement(self):
+        ident = IndexIdentity('s','g','ep','multi','1','cfg')
+        index = MultiDeviceIndex([ExactHost(), ExactHost()], budgets=[64, 64])
+        index.build([[1, 0], [0, 1]], ['a', 'b'], ident)
+        attempts = []
+        failing = [True]
+        def retire_first():
+            attempts.append('first')
+            if failing[0]:
+                raise OSError('device close failed')
+        index.shards[0][1].close_callback = retire_first
+        index.shards[1][1].close_callback = lambda: attempts.append('second')
+        index.build([[0, 1], [1, 0]], ['a', 'b'], replace(ident, generation='new'))
+        self.assertEqual(attempts, ['first', 'second'])
+        rows, evidence = index.search([[1, 0]], 1, generation='new')
+        self.assertEqual(rows[0][0], ['b'])
+        self.assertEqual(evidence['retirement_errors'], [{'stage': 'retire', 'error': 'OSError'}])
+        with self.assertRaisesRegex(RuntimeError, 'retirement incomplete'):
+            index.build([[1, 0], [0, 1]], ['a', 'b'], ident)
+        self.assertEqual(index.generation, 'new')
+        self.assertEqual(len(index.retired), 1)
+        failing[0] = False
+        index.close()
+        self.assertEqual(index.retired, [])
+        self.assertEqual(attempts, ['first', 'second', 'first', 'first'])
+
+    def test_all_native_seams_have_executable_configured_lifecycle(self):
+        for spec in BUILTINS:
+            if not spec.factory.endswith(':NativeExtensionSeam'):continue
+            with self.subTest(provider=spec.provider_id):
+                cfg=ExtensionConfig(spec.provider_id,'g',hashlib.sha256(b'source').hexdigest(),'sdk','1','d',evidence='fixture-validated')
+                binding=FunctionBinding(operations=('transfer',),prepare=lambda x,c:x,compile=lambda x,c:x,
+                                        load=lambda x,c:x,execute=lambda h,o,x:bytes(x[::-1]),close=lambda:None)
+                p=NativeExtensionSeam(spec).configure(cfg,binding)
+                p.prepare(b'source');p.compile();p.load()
+                self.assertEqual(p.execute('transfer',b'abc',generation='g'),b'cba')
+                self.assertEqual(p.telemetry()['config']['evidence'],'fixture-validated');p.close()
+
+    def test_pjrt_public_compile_path_with_fake_sdk(self):
+        class Jit:
+            def __init__(self, f):self.f=f
+            def lower(self,x):return self
+            def compile(self):return self.f
+        jax=types.SimpleNamespace(devices=lambda b:['fixture'],device_put=lambda x,d:x,jit=Jit)
+        matrix=np.array([[1,2],[3,4]],dtype=np.float32)
+        cfg=ExtensionConfig('google.pjrt','g',hashlib.sha256(matrix.tobytes()).hexdigest(),'jax','fixture','cpu',evidence='fixture-validated')
+        with mock.patch.dict('sys.modules',{'jax':jax}):
+            session=ExtensionSession(cfg,PJRTBinding()); session.prepare(matrix);session.compile();session.load()
+            np.testing.assert_array_equal(session.execute('score',np.array([1,0],dtype=np.float32),generation='g'),[1,3]);session.close()
+
+
+if __name__ == '__main__':unittest.main()

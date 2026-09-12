@@ -1,14 +1,16 @@
 # Implementation status and evidence boundaries
 
-## Current Unreleased zero-touch implementation
+## Current 1.5 zero-touch implementation
+
+Configured extension sessions, five public Python SDK bindings, 42 physical family lifecycles, owned allocations, sharded indexes, joint selection, explicit actuator transactions, environment/outcome attachment and the independent CE bridge are implemented. All 28 design domains have source and test mappings in the completion ledger. The catalog preserves native/automatic maturity separately from configured L4 lifecycle fixtures.
 
 [Zero-touch runtime](20-zero-touch-runtime.md), [Provider Fabric](21-provider-fabric.md), [optimizer](22-runtime-optimizer.md) and [vector indexes](23-vector-index-providers.md) are implemented with host/SDK-fixture and cross-platform correctness gates. Background local text-model preparation uses independent vector profiles and can retain a warm worker after admission. Unsupported or over-budget preparation defers to the reference. The [matrix](provider-matrix.md) explicitly retains L0/L1/L2 boundaries and no L5 vendor acceptance. The [bb16760 post-fix retest](../reports/2026-09-09-post-fix-retest-bb16760.md) completed the earlier auto-safe/reference-fallback and CPU batch 1/4/8/32 acceptance; ISA dispatch and optional ORT/OpenVINO hardware outcomes remain separate.
 
 ## Evaluation Fabric implementation boundary
 
-[Evaluation Fabric](18-evaluation-fabric.md) now supplies typed contracts, five native input projections, V2 and MemoryArena memory interfaces, deterministic fixtures, shared dataplane metrics, physical probe receipts and bounded offline acceptance. Three-layer evidence and all eight README section identities are checked. Full V2/BEAM/MemoryArena campaigns and real hardware performance remain unrun. Package/stable remains 1.4.0; the fabric is Unreleased. CI and exact-head review results belong to the successor PR receipt, not to prospective claims in this status document.
+[Evaluation Fabric](18-evaluation-fabric.md) now supplies typed contracts, five native input projections, V2 and MemoryArena memory interfaces, deterministic fixtures, shared dataplane metrics, physical probe receipts and bounded offline acceptance. Three-layer evidence and all eight README section identities are checked. Full V2/BEAM/MemoryArena campaigns and real hardware performance remain unrun. Package version is 1.5.0; exact release acceptance is recorded in the completion ledger. CI and exact-head review results belong to the successor PR receipt, not to prospective claims in this status document.
 
-Date: 2026-09-07. Package line: **1.4.0 accepted/stable implementation milestone** at `e6e4dda5835e3cb345207457d5491131c6959b2c`, recovery pointer `archive/v1.4.0-stable`. Historical design remains in [architecture](02-架构设计.md); broader targets remain in the [validation contract](03-validation-contract.md). A design requirement, benchmark result or old private report is not automatically an implementation claim.
+Historical 1.4 acceptance baseline (2026-09-07). Package line: **1.4.0 accepted/stable implementation milestone** at `e6e4dda5835e3cb345207457d5491131c6959b2c`, recovery pointer `archive/v1.4.0-stable`. Historical design remains in [architecture](02-架构设计.md); broader targets remain in the [validation contract](03-validation-contract.md). A design requirement, benchmark result or old private report is not automatically an implementation claim.
 
 | Area | Current public state | Evidence / remaining boundary |
 | --- | --- | --- |
@@ -98,3 +100,7 @@ The bounded acceptance and physical storage capabilities remain **Unreleased**; 
 ## Post-local corrective evidence
 
 See the [current corrective contract and short retest](19-post-local-corrective.md). Z6 CPU/CUDA/auto-throughput and local NTFS/NVMe are machine-observed at b1f8119. Aggregate parity, strict parity, calibrated policy and post-fix acceptance remain separate claims. Auto-safe now allows a measured reference fallback; lack of acceleration does not itself fail correctness. No version/stable promotion or full-dataset acceptance is implied.
+
+## 1.5 implementation and evidence contract
+
+[1.5 implementation surface](24-full-power-implementation.md) defines the executable configured provider/storage lifecycle, allocation and joint-planning APIs, explicit actuator, five benchmark/environment/outcome interfaces, independent CE bridge, and LangGraph/Deep Agents lifecycle. Automatic memory mutation remains false and rejected features remain default-off. Hardware, full-research and real task evidence are separately recorded in the [completion ledger](../reports/2026-09-12-thm-full-power-completion.md).

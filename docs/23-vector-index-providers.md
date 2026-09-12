@@ -1,4 +1,4 @@
-# Vector index providers — Unreleased
+# Vector index providers — 1.5 implementation
 
 Vector index choice is independent of model inference and physical source placement. The provider owns an immutable profile/generation-specific replica; canonical scope/source identity remains in THM. Default strict policies require exact FP32 candidates.
 
@@ -40,3 +40,7 @@ Buffered/mmap local storage, immutable segments and explicit migrations retain t
 Strict comparison includes finite dimension-aware score tolerances, exact ranked/selected IDs, hashes, sources, completeness, generation, budget and packed context. ANN candidates record exact-neighbor overlap, recall against exact, selected/rank deltas and packed-context change. These measurements do not establish agent outcomes or universal semantic equivalence.
 
 Validation uses SDK-shaped lifecycle fixtures and bounded real host execution. Native GPU/NPU hardware validation remains separate and explicitly unaccepted. Historical local CPU/CUDA receipts in the repository retain their original commit identities; they are not relabeled as native cuVS/mcFaiss/RTX measurements.
+
+## 1.5 implementation and evidence contract
+
+[1.5 implementation surface](24-full-power-implementation.md) defines the executable configured provider/storage lifecycle, allocation and joint-planning APIs, explicit actuator, five benchmark/environment/outcome interfaces, independent CE bridge, and LangGraph/Deep Agents lifecycle. Automatic memory mutation remains false and rejected features remain default-off. Hardware, full-research and real task evidence are separately recorded in the [completion ledger](../reports/2026-09-12-thm-full-power-completion.md).

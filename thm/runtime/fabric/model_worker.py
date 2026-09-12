@@ -2,6 +2,8 @@
 
 The worker owns a disposable database copy and its own embedding profile. It
 never publishes vectors into the source index or invents tensor preprocessing.
+LocalEncoder's isolated=True declares this existing worker boundary and permits
+explicit thread settings; it constructs the encoder in process on every OS.
 """
 import json
 import os
@@ -139,13 +141,18 @@ def main():
     protocol = os.fdopen(os.dup(sys.stdout.fileno()), 'w', encoding='utf-8', buffering=1)
     os.dup2(sys.stderr.fileno(), sys.stdout.fileno())
     from .resources import linux_worker_lifetime
+    containment = None
     def wire(value):
+        if containment is not None:
+            value = {**value, 'descendant_containment': containment}
         lifetime = linux_worker_lifetime()
         if lifetime is not None:
             value = {**value, '_resource_lifetime': lifetime}
         protocol.write(json.dumps(value, allow_nan=False, ensure_ascii=True)+'\n'); protocol.flush()
     try:
         task = json.loads(sys.stdin.readline(2*1024*1024))
+        from thm._process_containment import install_descendant_containment
+        containment = install_descendant_containment()
         from ..worker import configure
         configure({'threads': 1})
         run(task, wire)

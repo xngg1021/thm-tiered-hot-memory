@@ -9,11 +9,7 @@
 <!-- section:architecture -->
 ## 三つのプレーンによるアーキテクチャ
 
-THM は論理メモリ、計算実行、物理ストレージを分離します。Evaluation Fabric は新しいメモリアルゴリズムを追加せず、三つのプレーンを計測します。どの表現でも元のソース識別子と scope が基準です。
-
-アーキテクチャと証拠の契約
-
-安定 package と archive は 1.4.0 を維持します。Runtime、Physical Storage Fabric、Evaluation Fabric は Unreleased です。既存の測定は元の protocol、source SHA、範囲を保持し、未実行の benchmark やハードウェアを accepted evidence に含めません。
+THM は論理メモリ、計算実行、物理ストレージを分離します。1.5.0 は各プレーン、Evaluation Fabric、明示的な常駐アクチュエータ、独立した Context Economics bridge を実装範囲に統合します。ソースの識別子とスコープが常に権威を持ちます。1.4.0 の過去の証拠は元のプロトコルと SHA を保持し、実装の安定性はハードウェアやタスクの検証を意味しません。
 
 <!-- section:philosophy -->
 ## Design philosophy
@@ -59,6 +55,8 @@ Retrieval semantics は THM core に集約します。Hermes は最も深い lif
 
 scope 付き SearchIndex、予算内の証拠パッキング、シャドー常駐制御は同じコアを使います。T0–T3 は論理的な常駐とアクセスを表します。活動、有効性、固定、検索は別々に記録し、自動昇格と予算書き戻しは無効のままです。
 
+明示的アクチュエータは dry-run、リプレイ、厳密な計画承認、トランザクション配置更新、ロールバック、監査に対応します。自動変更は既定で false。ソースの有効性、pin、需要、容量、証拠のゲートを維持します。
+
 <!-- section:tiers -->
 ## T0–T3 memory Tiers
 
@@ -81,7 +79,7 @@ T0–T3 は **THM の memory Tier** です。別プロジェクト Context Econo
 <!-- section:physical -->
 ## 物理ストレージプレーン
 
-StorageProfile は実測アクセスコスト、placement は表現とターゲットの対応、PhysicalTelemetry は実際の extent I/O を記録します。検証済みローカルファイルシステムの buffered/mmap を実装しています。CXL、DAX、SPDK、GDS、リモート転送は拡張記述であり、ハードウェア性能は未検証です。
+StorageProfile は実測アクセスコスト、placement は表現と配置先の対応、PhysicalTelemetry は区間 I/O を記録します。バッファ/mmap ファイル、トランザクション対応の設定済み転送、S3、割り当て所有権、共同配置には実行経路と fixture があります。CXL、DAX、SPDK、GDS、リモート系は有界ライフサイクル契約を共有し、ネイティブ転送実行と実機性能の証拠は別途扱います。
 
 [Physical Storage Fabric](docs/physical-storage-fabric.md)
 
@@ -99,6 +97,8 @@ Fixture はインターフェースと決定論的検索だけを検証します
 | LLM-agent-outcome | 生成・judge 呼び出し、回答精度、環境成功率；既定は not-run |
 
 [Evaluation Fabric](docs/18-evaluation-fabric.md)
+
+EnvironmentRunner は有界の環境ライフサイクルを提供し、OfficialScorerBridge は評価器専用の回答を分離します。Outcome の添付は実行済みタスク ID と trace SHA に結び付き、部分的な結果、欠損スコア、マクロ/マイクロ集計、観測済み遅延/コストを扱います。THM は単位と分母を持つ証拠を Context Economics に渡し、明示的な予算・制約の助言を受け取ります。THM T0–T3 と CE L0–L6 は独立です。
 
 <!-- section:evidence -->
 ## Measured retrieval evidence
@@ -125,7 +125,7 @@ Canonical LoCoMo Protocol 2 は 1,532 fully resolved non-adversarial questions �
 | --- | --- |
 | **Hermes Agent** | Native `MemoryProvider`; setup/config, prefetch, optional live-turn sync, session boundary hooks, memory-write refresh semantics |
 | **OpenAI Agents SDK** | Native read-only `FunctionTool` |
-| **LangChain / LangGraph / Deep Agents** | Native `BaseRetriever` surface |
+| **LangChain / LangGraph / Deep Agents** | ネイティブ BaseRetriever、実行可能な LangGraph ノード、Deep Agents recall/status ツールとグラフ構築 |
 | **MCP v2** | Typed read-only `thm_recall` / `thm_status` over stdio |
 | **OpenClaw** | Legacy MCP bridge を使う pinned compatibility probe |
 | **Claude Code / Codex CLI / Gemini CLI** | Pinned real-CLI discovery/call lifecycle、同一 read-only recall core を利用 |
@@ -157,6 +157,7 @@ python -m pip install -e '.[tokenizer,semantic]'
 python -m pip install -e '.[openai]'
 python -m pip install -e '.[langchain]'
 python -m pip install -e '.[mcp]'
+# Deep Agents: Python >= 3.11
 python -m pip install -e '.[harnesses]'
 ```
 
@@ -211,4 +212,4 @@ Unit/invariant evidence、retrieval benchmark、harness lifecycle、real task ou
 - [Zero-LLM retrieval frontier](docs/16-zero-llm-retrieval-frontier.md)
 - [Changelog](CHANGELOG.md)
 
-THM は research software です。1.4.0 は accepted/stable implementation milestone、後続 retrieval frontier は明示的に unreleased です。Version identity は evidence class の代わりにはなりません。
+THM 1.5.0 は実装のマイルストーンです。統合、ハードウェア、benchmark、タスクの証拠は個別に記録します。却下された検索実験も再現可能な形で保持し、既定では無効です。

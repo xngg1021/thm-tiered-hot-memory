@@ -110,3 +110,7 @@ This separation is intentional: version history answers **what bytes can be reco
 ## Unreleased retrieval successor
 
 The opt-in Python entity projection and its Protocol 2 evidence are documented in [the zero-LLM frontier](16-zero-llm-retrieval-frontier.md). It does not enable a harness option, change residency/activity/validity semantics, or move the 1.4 stable pointer.
+
+## 1.5 implementation milestone
+
+Package 1.5.0 completes the provider/storage/evaluation/actuator/CE implementation surface and extends the host integration matrix. Its immutable archive is `archive/v1.5.0-stable`, bound to the normally merged implementation commit after main correctness, Hermes and harness acceptance. The [full-power completion ledger](../reports/2026-09-12-thm-full-power-completion.json) records the exact feature head, merge tree/parents, workflow identities and evidence boundaries. `versions/history.json` receives the new snapshot in the forward-only post-merge closeout; the 1.4 archive and bb16760 machine evidence retain their original meaning.

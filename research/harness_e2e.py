@@ -62,6 +62,41 @@ def langchain_check(config):
         retriever.close()
 
 
+def graph_check(config):
+    from typing import TypedDict
+    from langgraph.graph import StateGraph, START, END
+    from thm.adapters.langgraph import THMGraphNode, deep_agents_tools
+    from deepagents import create_deep_agent
+    from langchain_core.language_models.fake_chat_models import FakeListChatModel
+    class State(TypedDict):
+        query: str
+        memory_evidence: dict
+        thm_runtime_status: dict
+    node = THMGraphNode(config)
+    tools, lifecycle = deep_agents_tools(config)
+    try:
+        graph = StateGraph(State)
+        graph.add_node('recall', node); graph.add_edge(START, 'recall'); graph.add_edge('recall', END)
+        result = graph.compile().invoke({'query': 'Which database port?'})
+        if '5439' not in result['memory_evidence']['context']:
+            raise RuntimeError('LangGraph lost canonical evidence')
+        output = tools[0].invoke({'query': 'Which database port?'})
+        if '5439' not in output['context']:
+            raise RuntimeError('Deep Agents tool adapter lost canonical evidence')
+        # Construct a real Deep Agents graph with a non-network model. Invoking
+        # the tools above validates memory plumbing without claiming model outcome.
+        class LocalModel(FakeListChatModel):
+            def bind_tools(self, tools, **kwargs):
+                return self
+        agent = create_deep_agent(model=LocalModel(responses=['fixture']), tools=tools)
+        if not callable(getattr(agent, 'invoke', None)):
+            raise RuntimeError('Deep Agents graph construction failed')
+        return {'langgraph': 'executed', 'deepagents': 'graph-constructed-and-tools-executed',
+                'generation_calls': 0, 'agent_outcome': 'not-run'}
+    finally:
+        lifecycle.close(); node.close()
+
+
 async def mcp_check(config):
     from mcp import Client
     from thm.mcp_server import build_server
@@ -103,6 +138,7 @@ def main() -> int:
             "status": "PASS",
             "openai_agents": openai_agents_check(config),
             "langchain": langchain_check(config),
+            "langgraph_deepagents": graph_check(config),
             "mcp_v2": asyncio.run(mcp_check(config)),
             "model_calls": 0,
             "source_memory_writes": 0,

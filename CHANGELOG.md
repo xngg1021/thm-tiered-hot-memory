@@ -1,13 +1,19 @@
 # Changelog
 
-## Unreleased — zero-touch heterogeneous Provider Fabric
+## 1.5.0 — implementation surface, 2026-09-12
 
 - Add lazy device/inference/vector/transfer contracts, public hardware/driver observations and versioned local profile evidence.
 - Serve safely while observing real requests; run bounded, preemptible background exploration, material-gain/semantic/resource gates and session-boundary adoption.
 - Add resident native/framework vector indexes, deadline-aware online queues, joint compute/placement plans and source-preserving local model preparation with warm workers and independent vector profiles.
 - Add public SDK lifecycles and receipts for the documented NVIDIA, AMD, Intel, Apple, Qualcomm/Windows, Ascend, MUSA, Cambricon and MetaX families; explicitly retain lower extension/build-only maturity.
 - Reuse exact retrieval source semantics while bounding row/neighbor/tokenizer work; synchronize harness/MCP status, provider tests, source/license audit and eight product homepages.
-- Preserve package/stable 1.4.0 and historical bb16760 evidence. No automatic SDK/model downloads, full dataset run, hardware acceptance or memory-policy mutation. See [runtime](docs/20-zero-touch-runtime.md) and [provider matrix](docs/provider-matrix.md).
+- Preserve the immutable 1.4.0 archive and historical bb16760 evidence. No automatic SDK/model downloads, full dataset run, hardware acceptance or memory-policy mutation. See [runtime](docs/20-zero-touch-runtime.md) and [provider matrix](docs/provider-matrix.md).
+
+- Complete 19 configured extension lifecycles, concrete PJRT/Neuron/TTNN/OpenCL/DiskANN bindings, 42 physical family contracts, S3 transport, owned allocation, sharded indexes and constrained joint selection.
+- Add explicit dry-run/approval/evidence-gated actuator transactions and rollback audit; retain automatic mutation off.
+- Add benchmark feature A/B and Track B, environment/scorer lifecycle, persisted V2 memory, partial outcomes with trace/denominator/cost binding, and a standalone bidirectional CE bridge.
+- Execute LangGraph and Deep Agents tools in harness CI; expand Linux Python 3.10–3.14 while retaining Windows/macOS and tokenizer matrices. Add an offline exact-head merge gate.
+- Synchronize eight homepages and current docs. Implementation/integration stability is separate from L5 hardware, full-research and task outcomes; see [the full completion ledger](reports/2026-09-12-thm-full-power-completion.md).
 
 ## Unreleased — post-local corrective policy
 

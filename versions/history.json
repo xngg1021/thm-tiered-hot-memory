@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "repository": "xngg1021/thm-tiered-hot-memory",
-  "generated_from_commit": "1880211f75b016e2234cbef702573022f6f983f1",
+  "generated_from_commit": "214fa960000c2c8b71ede1f23eefbd24b40ebdff",
   "generated_on": "2026-09-07",
   "policy": {
     "authoritative_history": "git commits",
@@ -149,6 +149,10 @@
       "name": "v1.4 accepted stable implementation",
       "commit": "e6e4dda5835e3cb345207457d5491131c6959b2c",
       "note": "PR #5 merge; main correctness, Hermes and harness workflows succeeded; retrieval benchmark correctly skipped because retrieval-path code was unchanged"
+    },
+    {
+      "commit": "b96b82f027ca128072e3c0b3899331af1155b39e",
+      "description": "PR #20 normally merged: zero-touch Provider Fabric with exact-head correctness, Hermes and harness."
     }
   ],
   "not_exactly_recoverable_from_this_repository": [

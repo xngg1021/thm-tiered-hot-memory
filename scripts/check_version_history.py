@@ -169,6 +169,16 @@ def verify_acceptance(snapshot: dict[str, object]) -> None:
         return
     if not isinstance(acceptance, dict):
         raise HistoryError(f"{snapshot['id']}: acceptance must be an object")
+    if acceptance.get("schema") == "thm-implementation-acceptance/1":
+        for field in ("feature_pr", "correctness_run", "hermes_run", "harness_run"):
+            value = acceptance.get(field)
+            if type(value) is not int or value <= 0:
+                raise HistoryError(f"{snapshot['id']}: positive {field} required")
+        if acceptance.get("evidence_class") != "implementation-and-integration" or acceptance.get("hardware_accepted") is not False:
+            raise HistoryError(f"{snapshot['id']}: implementation evidence boundary required")
+        if acceptance.get("retrieval_validation") != "bounded-five-benchmark-feature-ab-and-track-b":
+            raise HistoryError(f"{snapshot['id']}: explicit changed-path retrieval validation required")
+        return
     required_ints = ("feature_pr", "correctness_run", "hermes_run", "harness_run", "retrieval_run")
     for field in required_ints:
         value = acceptance.get(field)

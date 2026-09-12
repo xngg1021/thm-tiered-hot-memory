@@ -290,7 +290,7 @@ def check(root: Path) -> dict:
         # intentionally remain language-neutral. Do not require English prose
         # vocabulary such as "cost" in translated homepages.
         common_markers = (
-            '1.4.0', 'T0', 'T1', 'T2', 'T3', '72.52%', '69.39%',
+            '1.4.0', '1.5.0', 'T0', 'T1', 'T2', 'T3', '72.52%', '69.39%',
             'Claude Code', 'Codex CLI', 'Gemini CLI', 'MCP v2', 'CHANGELOG.md',
             'docs/12-version-history.md', 'docs/16-zero-llm-retrieval-frontier.md',
             'Evaluation Fabric', 'LongMemEval-V2', 'BEAM', 'MemoryArena', 'StorageProfile',

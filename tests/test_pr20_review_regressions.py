@@ -12,7 +12,7 @@ import numpy as np
 from thm.runtime.fabric.explorer import BoundedShadowExplorer
 from thm.runtime.fabric.models import WarmModelWorker
 from thm.runtime.fabric.registry import builtin_registry
-from thm.runtime.fabric.resources import ChildBudget
+from thm.runtime.fabric.resources import ChildBudget, ProcessGroupAccountingUnavailable
 from thm.runtime.fabric.service import ResidentExecutor, RuntimeService
 
 
@@ -129,7 +129,8 @@ class LinuxTreeBudgetTests(unittest.TestCase):
             self._proc(root, 100, 100, 100, 10, 5, 10, 20)
             self._proc(root, 101, 100, 200, 20, 10, 30, 40)
             self._proc(root, 102, 999, 900, 90, 90, 900, 900)
-            with mock.patch.object(os, 'sysconf', return_value=100, create=True):
+            with mock.patch.object(os, 'sysconf', return_value=100, create=True), \
+                 mock.patch.object(os, 'getpgid', side_effect=lambda pid: 999 if pid == 102 else 100, create=True):
                 observed = budget._linux_usage(root, pgid=100)
         self.assertEqual(observed['processes'], 2)
         self.assertEqual(observed['ram_bytes'], 300 * 1024)
@@ -137,6 +138,69 @@ class LinuxTreeBudgetTests(unittest.TestCase):
         self.assertEqual(observed['bytes_read'], 40)
         self.assertEqual(observed['bytes_written'], 60)
         self.assertEqual(observed['resource_source'], 'procfs-process-group-live')
+
+    def test_unrelated_protected_proc_records_are_not_opened(self):
+        budget = self._budget()
+        with tempfile.TemporaryDirectory() as temp:
+            root = Path(temp)
+            self._proc(root, 100, 100, 100, 10, 5, 10, 20)
+            (root/'101').mkdir()  # unrelated protected process; no readable records
+            read_text = Path.read_text
+            def protected_read(path, *args, **kwargs):
+                if path.parent.name == '101':
+                    raise PermissionError('unrelated protected process')
+                return read_text(path, *args, **kwargs)
+            with mock.patch.object(os, 'sysconf', return_value=100, create=True), \
+                 mock.patch.object(os, 'getpgid', side_effect=lambda pid: 100 if pid == 100 else 999, create=True), \
+                 mock.patch.object(Path, 'read_text', protected_read):
+                observed = budget._linux_usage(root, pgid=100)
+            self.assertEqual(observed['processes'], 1)
+
+    def test_proc_permission_exit_race_always_rejects_unprovable_accounting(self):
+        import subprocess
+        for scenario in ('exited-leader', 'live-leader', 'helper'):
+            with self.subTest(scenario=scenario), tempfile.TemporaryDirectory() as temp:
+                budget = self._budget(); root = Path(temp)
+                pid = 101 if scenario == 'helper' else 100
+                self._proc(root, pid, 100, 100, 10, 5, 10, 20)
+                budget.process.wait = mock.Mock(return_value=0)
+                if scenario == 'live-leader':
+                    budget.process.wait.side_effect = subprocess.TimeoutExpired('worker', .2)
+                read_text = Path.read_text
+                def protected_read(path, *args, **kwargs):
+                    if path.name == 'io':
+                        raise PermissionError('I/O record unavailable during exit')
+                    return read_text(path, *args, **kwargs)
+                with mock.patch.object(os, 'sysconf', return_value=100, create=True), \
+                     mock.patch.object(os, 'getpgid', return_value=100, create=True), \
+                     mock.patch.object(Path, 'read_text', protected_read):
+                    with self.assertRaises(ProcessGroupAccountingUnavailable):
+                        budget._linux_usage(root, pgid=100)
+                budget.process.wait.assert_not_called()
+
+    def test_denied_leader_never_waits_away_a_captured_helper(self):
+        budget = self._budget()
+        with tempfile.TemporaryDirectory() as temp:
+            root = Path(temp)
+            self._proc(root, 100, 100, 100, 10, 5, 10, 20)
+            self._proc(root, 101, 100, 100, 10, 5, 10, 20)
+            def lose_helper(**kwargs):
+                for entry in (root/'101').iterdir(): entry.unlink()
+                (root/'101').rmdir()
+                return 0
+            budget.process.wait = mock.Mock(side_effect=lose_helper)
+            read_text = Path.read_text
+            def denied_leader(path, *args, **kwargs):
+                if path.parent.name == '100' and path.name == 'io':
+                    raise PermissionError('leader I/O unavailable')
+                return read_text(path, *args, **kwargs)
+            with mock.patch.object(os, 'sysconf', return_value=100, create=True), \
+                 mock.patch.object(os, 'getpgid', return_value=100, create=True), \
+                 mock.patch.object(Path, 'read_text', denied_leader):
+                with self.assertRaises(ProcessGroupAccountingUnavailable):
+                    budget._linux_usage(root, pgid=100)
+            budget.process.wait.assert_not_called()
+            self.assertTrue((root/'101').exists())
 
     def test_reaped_helper_activity_fails_closed_in_lifetime_gate(self):
         budget = self._budget()
@@ -158,6 +222,16 @@ class LinuxTreeBudgetTests(unittest.TestCase):
         with mock.patch('thm.runtime.fabric.resources.sys.platform', 'linux'):
             with self.assertRaisesRegex(RuntimeError, 'lifetime resource evidence missing'):
                 budget.check_lifetime(None)
+
+    def test_leader_exit_between_proc_sample_and_poll_is_not_a_helper(self):
+        budget = self._budget()
+        budget.process = SimpleNamespace(pid=100, poll=lambda: 0)
+        observed = {'ram_bytes': 1, 'cpu_seconds': 0, 'bytes_read': 0,
+                    'bytes_written': 0, 'processes': 1}
+        with mock.patch('sys.platform', 'linux'), mock.patch.object(
+                budget, '_linux_usage', side_effect=[observed, None]) as scan:
+            budget.check()
+        self.assertEqual(scan.call_count, 2)
 
     def test_surviving_helper_after_leader_exit_fails_closed(self):
         budget = self._budget()

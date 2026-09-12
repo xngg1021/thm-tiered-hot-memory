@@ -4,7 +4,7 @@
 
 The [zero-touch runtime](20-zero-touch-runtime.md) emits systems-runtime observations and preserves fixed research reference paths. Model/index profile changes, queue wait, physical placement, sample provenance, semantic class and fallback are explicit. [Vector replay](22-runtime-optimizer.md) includes a labeled observed encode-cost floor; model replay measures fresh encoding through packing inside its worker. Neither is a new dataset recall or LLM-agent outcome result. Full datasets remain explicit full-research work, never normal startup or background tuning.
 
-Evaluation Fabric is the measurement layer across THM's logical memory, compute execution and physical storage planes. It introduces no retrieval or memory algorithm. Package/version and stable archive remain 1.4.0; this fabric is Unreleased. Adapter availability, fixture correctness, dataset retrieval, runtime performance and agent outcome are separate claims.
+Evaluation Fabric is the measurement layer across THM's logical memory, compute execution and physical storage planes. It introduces no retrieval or memory algorithm. Package version is 1.5.0; the historical 1.4.0 archive remains immutable. Adapter availability, fixture correctness, dataset retrieval, runtime performance and agent outcome are separate claims.
 
 ## Contracts and ownership
 
@@ -84,3 +84,7 @@ See [validation contract](03-validation-contract.md), [runtime](17-zero-llm-hete
 ## Post-local corrective evidence
 
 See the [current corrective contract and short retest](19-post-local-corrective.md). Z6 CPU/CUDA/auto-throughput and local NTFS/NVMe are machine-observed at b1f8119. Aggregate parity, strict parity, calibrated policy and post-fix acceptance remain separate claims. Auto-safe now allows a measured reference fallback; lack of acceleration does not itself fail correctness. No version/stable promotion or full-dataset acceptance is implied.
+
+## 1.5 implementation and evidence contract
+
+[1.5 implementation surface](24-full-power-implementation.md) defines the executable configured provider/storage lifecycle, allocation and joint-planning APIs, explicit actuator, five benchmark/environment/outcome interfaces, independent CE bridge, and LangGraph/Deep Agents lifecycle. Automatic memory mutation remains false and rejected features remain default-off. Hardware, full-research and real task evidence are separately recorded in the [completion ledger](../reports/2026-09-12-thm-full-power-completion.md).
