@@ -1,6 +1,7 @@
 """A denied procfs read is tolerable only after verified process exit."""
 from pathlib import Path
 import os
+import subprocess
 import tempfile
 from types import SimpleNamespace
 import unittest
@@ -27,7 +28,7 @@ class ProcExitAccountingTests(unittest.TestCase):
                     return original(path, *args, **kwargs)
                 budget = ChildBudget.__new__(ChildBudget)
                 budget.pgid = 100
-                budget.process = SimpleNamespace(pid=100)
+                budget.process = SimpleNamespace(pid=100, wait=mock.Mock(side_effect=subprocess.TimeoutExpired('worker', .2)))
                 with mock.patch.object(os, 'sysconf', return_value=100, create=True), \
                      mock.patch.object(os, 'getpgid', return_value=100, create=True), \
                      mock.patch.object(Path, 'read_text', read):

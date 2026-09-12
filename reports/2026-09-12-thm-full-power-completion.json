@@ -4,7 +4,7 @@
   "repository": "xngg1021/thm-tiered-hot-memory",
   "version": "1.5.0",
   "implementation_status": "implemented",
-  "implementation_sha256": "ecd59ff25141dbee8b418d31570cb73b541b7a4918967007e25640fdca444b5d",
+  "implementation_sha256": "9c175f1bbd7671e9b2b6bae890c2283212758e6e7a12979cc1604a590a1a49ff",
   "archive_branch": "archive/v1.5.0-stable",
   "accepted_merge_commit": null,
   "historical": {
@@ -72,7 +72,8 @@
       "Preserve concurrent 2bd6e51 Windows os.stat identity repair with descriptor-relative POSIX stat",
       "Close Darwin exit/reap EPERM window using a bounded wait; live denied workers still fail",
       "Recheck Linux process-group membership after reaping a concurrently exiting leader",
-      "Reject exhausted environment deadlines before Windows Job Object creation"
+      "Reject exhausted environment deadlines before Windows Job Object creation",
+      "Confirm leader termination with a bounded wait when procfs I/O permissions disappear during exit; live leader/helper failures remain closed"
     ]
   },
   "domains": [
@@ -1895,7 +1896,7 @@
     }
   ],
   "validation": {
-    "local_unit_tests": 644,
+    "local_unit_tests": 646,
     "local_unit_skipped": 3,
     "numeric_audit_tests": 10,
     "benchmark_fixtures": 5,

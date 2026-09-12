@@ -156,6 +156,34 @@ class LinuxTreeBudgetTests(unittest.TestCase):
                 observed = budget._linux_usage(root, pgid=100)
             self.assertEqual(observed['processes'], 1)
 
+    def test_proc_permission_exit_race_requires_confirmed_leader_termination(self):
+        import subprocess
+        for scenario in ('exited-leader', 'live-leader', 'helper'):
+            with self.subTest(scenario=scenario), tempfile.TemporaryDirectory() as temp:
+                budget = self._budget(); root = Path(temp)
+                pid = 101 if scenario == 'helper' else 100
+                self._proc(root, pid, 100, 100, 10, 5, 10, 20)
+                budget.process.wait = mock.Mock(return_value=0)
+                if scenario == 'live-leader':
+                    budget.process.wait.side_effect = subprocess.TimeoutExpired('worker', .2)
+                read_text = Path.read_text
+                def protected_read(path, *args, **kwargs):
+                    if path.name == 'io':
+                        raise PermissionError('I/O record unavailable during exit')
+                    return read_text(path, *args, **kwargs)
+                with mock.patch.object(os, 'sysconf', return_value=100, create=True), \
+                     mock.patch.object(os, 'getpgid', return_value=100, create=True), \
+                     mock.patch.object(Path, 'read_text', protected_read):
+                    if scenario == 'exited-leader':
+                        self.assertIsNone(budget._linux_usage(root, pgid=100))
+                    else:
+                        with self.assertRaises(PermissionError):
+                            budget._linux_usage(root, pgid=100)
+                if scenario == 'helper':
+                    budget.process.wait.assert_not_called()
+                else:
+                    budget.process.wait.assert_called_once_with(timeout=.2)
+
     def test_reaped_helper_activity_fails_closed_in_lifetime_gate(self):
         budget = self._budget()
         evidence = {

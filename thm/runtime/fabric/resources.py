@@ -138,17 +138,27 @@ class ChildBudget:
                 io = dict(line.split(':', 1) for line in (root/'io').read_text().splitlines() if ':' in line)
             except (FileNotFoundError, ProcessLookupError):
                 continue
-            except PermissionError:
-                # Exit can remove access to /proc/PID/io after a live stat
-                # sample. Only an observed dead/disappeared process may be
-                # omitted; a live denied member still fails accounting closed.
+            except PermissionError as denied:
+                # Re-read state after a denied sample; exited entries do not
+                # represent live resource usage. Preserve the concurrent fix.
                 try:
                     current = (root/'stat').read_text().rsplit(')', 1)[1].split()
                 except (FileNotFoundError, ProcessLookupError):
                     continue
                 if current and current[0] in ('Z', 'X', 'x'):
                     continue
-                raise
+                # The leader can lose its /proc I/O access during exit before
+                # waitpid observes it. Confirm termination with a bounded wait;
+                # its trusted lifetime receipt is still mandatory on acceptance.
+                # Never waive accounting for a live leader or any helper.
+                if int(root.name) != self.process.pid:
+                    raise
+                import subprocess
+                try:
+                    self.process.wait(timeout=.2)
+                except subprocess.TimeoutExpired:
+                    raise denied
+                continue
             members += 1
             rss += int(status.get('VmRSS', '0 kB').split()[0])*1024
             cpu += (int(fields[11])+int(fields[12]))/ticks
