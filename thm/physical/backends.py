@@ -59,6 +59,13 @@ class FixtureTransport:
         self.fail_at = None
         self.lock = threading.RLock()
 
+    def __getstate__(self):
+        return {k: v for k, v in self.__dict__.items() if k != 'lock'}
+
+    def __setstate__(self, state):
+        self.__dict__.update(state)
+        self.lock = threading.RLock()
+
     def _fault(self, stage):
         if self.fail_at == stage:
             raise OSError('injected ' + stage)
@@ -108,12 +115,18 @@ class MountedFilesystemTransport:
             raise ValueError('symlink object refused')
         return path
 
+    def _pending_path(self, transaction):
+        if len(transaction) != 32 or any(c not in '0123456789abcdef' for c in transaction):
+            raise ValueError('owned transaction identity required')
+        return self.root / ('.thm-' + transaction + '.pending')
+
     def stage(self, transaction, key, data):
         check_sha(key)
-        path = self.root / ('.thm-' + uuid.uuid4().hex + '.pending')
+        path = self._pending_path(transaction)
         try:
             with path.open('xb') as f:
-                f.write(data)
+                if f.write(data) != len(data):
+                    raise OSError('short storage stage write')
                 f.flush()
                 os.fsync(f.fileno())
             self.pending[transaction] = (path, key)
@@ -136,8 +149,7 @@ class MountedFilesystemTransport:
 
     def abort(self, transaction):
         value = self.pending.pop(transaction, None)
-        if value:
-            value[0].unlink(missing_ok=True)
+        (value[0] if value else self._pending_path(transaction)).unlink(missing_ok=True)
 
     def read(self, key, offset, length):
         with self._path(key).open('rb') as f:
@@ -199,11 +211,13 @@ class StorageBackend:
         if not isinstance(config, BackendConfig):
             raise TypeError('BackendConfig required')
         for method in ('stage', 'commit', 'abort', 'read', 'size', 'close'):
-            if not callable(getattr(transport, method, None)):
+            if not callable(transport) and not callable(getattr(transport, method, None)):
                 raise TypeError('complete storage transport required')
         if getattr(transport, 'evidence', None) not in ('fixture-validated', 'environment-unvalidated'):
             raise ValueError('transport provenance required')
+        from .transport_worker import TransportWorker
         self.config, self.transport, self.clock = config, transport, clock
+        self.worker = TransportWorker(transport, config.max_object_bytes)
         self.lock, self.state = threading.RLock(), 'ready'
         self.journal = []
         self.bytes_read = self.bytes_written = self.bytes_requested = 0
@@ -211,6 +225,16 @@ class StorageBackend:
     def _guard(self, generation):
         if self.state != 'ready' or generation != self.config.generation:
             raise ValueError('closed/quarantined/stale storage backend')
+
+    def _call(self, method, *args, deadline):
+        try:
+            return self.worker.call(method, args, deadline)
+        except TimeoutError:
+            self.state = 'quarantined'
+            raise
+
+    def _deadline(self):
+        return time.monotonic() + self.config.timeout_seconds
 
     def write(self, data, *, generation):
         with self.lock:
@@ -221,16 +245,17 @@ class StorageBackend:
             if not 0 < len(data) <= self.config.max_object_bytes:
                 raise ValueError('storage object exceeds budget')
             key, transaction, start = sha(data), uuid.uuid4().hex, self.clock()
+            deadline = self._deadline()
             row = {'transaction': transaction, 'object_sha256': key, 'state': 'staging'}
             self.journal.append(row)
             self.journal[:] = self.journal[-128:]
             try:
-                self.transport.stage(transaction, key, data)
+                self._call('stage', transaction, key, data, deadline=deadline)
                 if self.clock()-start > self.config.timeout_seconds:
                     raise TimeoutError('storage stage deadline')
-                self.transport.commit(transaction)
+                self._call('commit', transaction, deadline=deadline)
                 row['state'] = 'published-unverified'
-                if not self.verify(key):
+                if not self.verify(key, _deadline=deadline):
                     raise ValueError('published content checksum mismatch')
                 if self.clock()-start > self.config.timeout_seconds:
                     raise TimeoutError('storage commit deadline')
@@ -238,7 +263,13 @@ class StorageBackend:
                 self.bytes_written += len(data)
                 return key
             except Exception as exc:
-                self.transport.abort(transaction)
+                if isinstance(exc, TimeoutError):
+                    row['state'] = 'indeterminate-timeout'
+                try:
+                    self._call('abort', transaction, deadline=time.monotonic() + min(1, self.config.timeout_seconds))
+                except Exception as cleanup:
+                    row['cleanup_error'] = type(cleanup).__name__
+                    self.worker.stop()
                 row['error'] = type(exc).__name__
                 if row['state'] == 'staging':
                     row['state'] = 'aborted'
@@ -246,23 +277,25 @@ class StorageBackend:
                 # no logical placement or source authority was published here.
                 raise
 
-    def _verified_data(self, key):
+    def _verified_data(self, key, deadline):
         check_sha(key)
-        size = self.transport.size(key)
+        size = self._call('size', key, deadline=deadline)
         if type(size) is not int or not 0 < size <= self.config.max_object_bytes:
             raise ValueError('object exceeds verification budget')
-        data = self.transport.read(key, 0, size)
+        data = self._call('read', key, 0, size, deadline=deadline)
         self.bytes_read += len(data)
         if len(data) != size or sha(data) != key:
             raise ValueError('content verification failed')
         return data
 
-    def verify(self, key):
-        try:
-            self._verified_data(key)
-            return True
-        except (ValueError, KeyError, FileNotFoundError):
-            return False
+    def verify(self, key, *, _deadline=None):
+        with self.lock:
+            self._guard(self.config.generation)
+            try:
+                self._verified_data(key, self._deadline() if _deadline is None else _deadline)
+                return True
+            except (ValueError, KeyError, FileNotFoundError):
+                return False
 
     def read(self, extent, *, generation):
         with self.lock:
@@ -272,7 +305,7 @@ class StorageBackend:
             check_sha(extent.object_sha256)
             start = self.clock()
             try:
-                whole = self._verified_data(extent.object_sha256)
+                whole = self._verified_data(extent.object_sha256, self._deadline())
             except ValueError:
                 self.state = 'quarantined'
                 raise ValueError('corrupt storage object')
@@ -299,14 +332,17 @@ class StorageBackend:
                  'state': self.state, 'evidence': self.transport.evidence, 'bytes_read': self.bytes_read,
                  'bytes_written': self.bytes_written, 'bytes_requested': self.bytes_requested, 'journal': list(self.journal),
                  'direct_dma': None, 'zero_copy': None, 'hardware_accepted': False,
+                 'execution_boundary': 'owned-process-tree', 'timeout_seconds': self.config.timeout_seconds,
                  'logical_mutation': False, 'fallback': 'local-filesystem', 'durability': self.config.durability}
         return {**value, 'receipt_sha256': identity(value)}
 
     def close(self):
         with self.lock:
             try:
-                self.transport.close()
+                if self.worker.process is not None:
+                    self._call('close', deadline=time.monotonic() + min(1, self.config.timeout_seconds))
             finally:
+                self.worker.stop()
                 self.state = 'closed'
 
 

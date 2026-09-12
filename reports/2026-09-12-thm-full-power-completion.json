@@ -4,7 +4,7 @@
   "repository": "xngg1021/thm-tiered-hot-memory",
   "version": "1.5.0",
   "implementation_status": "implemented",
-  "implementation_sha256": "e4375156b9f888cad5de8fd9f68131dd2175a7d2810908d487684e6e03ae78fc",
+  "implementation_sha256": "28388777c73ce82a99e94160f7f2968661e42cffc8c663d3a6623e5cc5541120",
   "archive_branch": "archive/v1.5.0-stable",
   "accepted_merge_commit": null,
   "historical": {
@@ -48,7 +48,10 @@
       "Resolve LangGraph/Deep Agents through the advertised harness extra and constraints",
       "Atomically publish snapshots with fsync and create-only link",
       "Load path artifacts from a bounded verified private copy",
-      "Enforce environment callback and cleanup deadlines in an owned process tree"
+      "Enforce environment callback and cleanup deadlines in an owned process tree",
+      "Open enumerated artifacts through no-follow validated descriptors before bounded staging",
+      "Restore snapshots from a single validated descriptor with bounded reads",
+      "Enforce transport operation and cleanup deadlines in an owned process tree"
     ]
   },
   "domains": [
@@ -1865,7 +1868,7 @@
     }
   ],
   "validation": {
-    "local_unit_tests": 603,
+    "local_unit_tests": 619,
     "local_unit_skipped": 2,
     "numeric_audit_tests": 10,
     "benchmark_fixtures": 5,

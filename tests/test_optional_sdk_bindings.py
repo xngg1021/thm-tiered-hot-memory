@@ -130,8 +130,12 @@ class SDKTests(unittest.TestCase):
         def get(**kw):
             a,b=map(int,kw['Range'][6:].split('-'));return {'Body':io.BytesIO(objects[kw['Key']][a:b+1])}
         client=types.SimpleNamespace(put_object=put,get_object=get,head_object=lambda **kw:dict(ContentLength=len(objects[kw['Key']])),close=lambda:closed.append(True))
-        b=StorageBackend(BackendConfig('s3','s3','g'),S3Transport(client,'fixture'))
-        key=b.write(b'abcdef',generation='g');self.assertEqual(b.read(TransferExtent(key,2,2),generation='g'),b'cd');b.close();self.assertEqual(closed,[])
+        # SDK call-shape/ownership test stays in the caller. Worker integration
+        # uses a top-level factory in test_pr21_closeout_regressions.
+        t=S3Transport(client,'fixture'); key=hashlib.sha256(b'abcdef').hexdigest()
+        t.stage('transaction',key,b'abcdef');t.commit('transaction')
+        self.assertEqual(t.size(key),6);self.assertEqual(t.read(key,2,2),b'cd')
+        t.close();self.assertEqual(closed,[])
 
     def test_unknown_cold_cost_is_never_free(self):
         p=PolicySelector()
