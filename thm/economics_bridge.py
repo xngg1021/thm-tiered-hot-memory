@@ -69,6 +69,8 @@ def export_evidence(receipt, *, source_commit, observations=None):
         measurement = supplied if isinstance(supplied, Measurement) else Measurement(**supplied)
         if measurement.unit != UNITS[name]:
             raise ValueError('bridge unit mismatch')
+        if measurement.source_sha256 != source_sha:
+            raise ValueError('measurement belongs to a different source receipt')
         measurements[name] = measurement
     value = {'schema': 'thm-ce-evidence/1', 'producer': 'THM', 'source_commit': source_commit,
              'source_receipt_sha256': source_sha, 'dataset_sha256': body.get('source_sha256'),
