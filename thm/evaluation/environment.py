@@ -70,6 +70,8 @@ class EnvironmentRunner:
                 if os.name=='nt':
                     from thm.runtime.fabric.resources import ChildBudget
                     budget=ChildBudget(process,memory=1024**3,cpu=self.wall_seconds,io=64*1024**2)
+                if time.monotonic()-start >= self.wall_seconds:
+                    raise TimeoutError('environment deadline exhausted before callbacks')
                 process.stdin.write(b'go\n');process.stdin.close()
                 try:
                     code=process.wait(timeout=max(.001,self.wall_seconds-(time.monotonic()-start)))
@@ -84,6 +86,8 @@ class EnvironmentRunner:
                 receipt=result['receipt']; checksum=receipt.pop('receipt_sha256',None)
                 if checksum != digest(receipt) or receipt['trace_sha256'] != hashlib.sha256(raw).hexdigest():
                     raise ValueError('environment worker receipt corrupt')
+                if time.monotonic()-start >= self.wall_seconds:
+                    raise TimeoutError('environment result deadline')
                 receipt['latency_ms']=(time.monotonic()-start)*1000
                 receipt['execution_boundary']='owned-process-tree'
                 return {**receipt,'receipt_sha256':digest(receipt)},raw
@@ -93,7 +97,6 @@ class EnvironmentRunner:
                     try:os.killpg(process.pid,signal.SIGKILL)
                     except ProcessLookupError:pass
                     except PermissionError:
-                        # Darwin can report EPERM when the group contains only zombies.
                         if process.poll() is None:raise
                 elif budget is not None:
                     budget.close()

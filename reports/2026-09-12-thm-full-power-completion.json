@@ -4,7 +4,7 @@
   "repository": "xngg1021/thm-tiered-hot-memory",
   "version": "1.5.0",
   "implementation_status": "implemented",
-  "implementation_sha256": "08cd0e914fbfd1500796a2d7620d7570a75246650a9edcdf15e9eb2f6b093111",
+  "implementation_sha256": "f6f3e9bbfef6831ad70dd4462073de625b595b8308bda55331267b8091acbea9",
   "archive_branch": "archive/v1.5.0-stable",
   "accepted_merge_commit": null,
   "historical": {
@@ -51,11 +51,14 @@
       "Enforce environment callback and cleanup deadlines in an owned process tree",
       "Bind artifact reads to non-following, nonblocking, size-checked regular-file descriptors",
       "Read restored snapshots through one checked descriptor with a growth bound",
-      "Interrupt all external storage callbacks through an owned process tree"
+      "Interrupt all external storage callbacks through an owned process tree",
+      "Retain directory descriptors across enumeration and freeze complete sibling bundles",
+      "Preserve explicit timeout transaction journals and bounded owned mounted-file cleanup",
+      "Reject environment launch/result deadline exhaustion and callback/close exceptions"
     ],
     "ci_repairs": [
-      "Handle Darwin EPERM for a reaped process group while preserving errors for live workers",
-      "Use os.stat device/inode identity instead of Windows DirEntry zero fields"
+      "Preserve concurrent d00b237 Darwin EPERM cleanup fix; live-worker permission failures remain errors",
+      "Preserve concurrent 2bd6e51 Windows os.stat identity repair with descriptor-relative POSIX stat"
     ]
   },
   "domains": [
@@ -231,7 +234,8 @@
       "validation_paths": [
         "tests/test_model_fabric.py",
         "tests/test_optional_sdk_bindings.py",
-        "tests/test_descriptor_and_transport_bounds.py"
+        "tests/test_descriptor_and_transport_bounds.py",
+        "tests/test_pr21_closeout_regressions.py"
       ],
       "behavior": "Local immutable artifact/compile/load identity, no automatic model/SDK download."
     },
@@ -284,7 +288,8 @@
       "validation_paths": [
         "tests/test_full_power_lifecycles.py",
         "tests/test_optional_sdk_bindings.py",
-        "tests/test_descriptor_and_transport_bounds.py"
+        "tests/test_descriptor_and_transport_bounds.py",
+        "tests/test_pr21_closeout_regressions.py"
       ],
       "behavior": "42 configured family lifecycles plus portable buffered/mmap, mounted files and S3; native transport distinct."
     },
@@ -337,7 +342,8 @@
       "validation_paths": [
         "tests/test_evaluation_fabric.py",
         "tests/test_full_power_protocols.py",
-        "tests/test_descriptor_and_transport_bounds.py"
+        "tests/test_descriptor_and_transport_bounds.py",
+        "tests/test_pr21_closeout_regressions.py"
       ],
       "behavior": "Three evidence layers, source/implementation hash, bounded fixture and explicit full-research paths."
     },
@@ -1875,7 +1881,7 @@
     }
   ],
   "validation": {
-    "local_unit_tests": 610,
+    "local_unit_tests": 626,
     "local_unit_skipped": 2,
     "numeric_audit_tests": 10,
     "benchmark_fixtures": 5,
