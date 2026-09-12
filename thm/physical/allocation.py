@@ -8,6 +8,15 @@ from thm.runtime.fabric.contracts import identity
 KINDS = ('host-dram', 'pinned-host', 'unified-memory', 'device-vram', 'staging', 'pmem', 'dax', 'cxl')
 
 
+class AllocationCleanupError(RuntimeError):
+    """All evictions were attempted; failed ownership remains quarantined."""
+
+    def __init__(self, failures):
+        self.failure_count = len(failures)
+        self.failures = tuple(failures[:128])
+        super().__init__(f'{self.failure_count} allocation releases failed')
+
+
 @dataclass
 class Allocation:
     allocation_id: str
@@ -77,11 +86,11 @@ class AllocationPool:
         return lease()
 
     def _release(self, allocation):
-        try:
-            allocation.release()
-        finally:
-            allocation.data = None
-            self.allocations.pop(allocation.allocation_id, None)
+        # A failed release retains ownership but cannot be acquired again.
+        # A subsequent explicit close/evict may retry the caller's callback.
+        allocation.release()
+        allocation.data = None
+        self.allocations.pop(allocation.allocation_id, None)
 
     def evict(self, allocation_id):
         with self.lock:
@@ -93,5 +102,11 @@ class AllocationPool:
     def close(self):
         with self.lock:
             self.closed = True
+            failures = []
             for key in list(self.allocations):
-                self.evict(key)
+                try:
+                    self.evict(key)
+                except Exception as exc:
+                    failures.append((key, type(exc).__name__))
+            if failures:
+                raise AllocationCleanupError(failures)
