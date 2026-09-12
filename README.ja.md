@@ -74,9 +74,9 @@ T0–T3 は **THM の memory Tier** です。別プロジェクト Context Econo
 <!-- section:compute -->
 ## 計算実行プレーン
 
-RuntimeProfile は encoder/backend、精度、デバイス、scorer、バッチサイズ、スレッドを固定します。任意のスケジューラーと有界 AutoTune が実行設定を選びます。CPU/CUDA などの記述には別途 runtime 証拠が必要で、fixture の成功は dispatch や高速化の証明にはなりません。
+ゼロタッチ実行環境は安全な利用可能経路で開始し、実際の要求を観測しながら、バックグラウンドの資源上限内でインストール済みプロバイダーを探索します。Provider Fabric は CPU・GPU・NPU の推論、常駐ベクトル索引、転送を分離します。意味的一致、実質的な改善、設定の有効性、セッション境界を確認して採用し、利用者による benchmark は不要です。プロファイルと実行記録は実際の処理とフォールバックを示します。SDK やモデルは自動取得せず、実装成熟度と実機検証を区別します。
 
-[Runtime](docs/17-zero-llm-heterogeneous-runtime.md)
+[Zero-touch runtime](docs/20-zero-touch-runtime.md) · [Provider Fabric](docs/21-provider-fabric.md) · [Runtime](docs/17-zero-llm-heterogeneous-runtime.md)
 
 <!-- section:physical -->
 ## 物理ストレージプレーン

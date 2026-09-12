@@ -1,5 +1,14 @@
 # Changelog
 
+## Unreleased — zero-touch heterogeneous Provider Fabric
+
+- Add lazy device/inference/vector/transfer contracts, public hardware/driver observations and versioned local profile evidence.
+- Serve safely while observing real requests; run bounded, preemptible background exploration, material-gain/semantic/resource gates and session-boundary adoption.
+- Add resident native/framework vector indexes, deadline-aware online queues, joint compute/placement plans and source-preserving local model preparation with warm workers and independent vector profiles.
+- Add public SDK lifecycles and receipts for the documented NVIDIA, AMD, Intel, Apple, Qualcomm/Windows, Ascend, MUSA, Cambricon and MetaX families; explicitly retain lower extension/build-only maturity.
+- Reuse exact retrieval source semantics while bounding row/neighbor/tokenizer work; synchronize harness/MCP status, provider tests, source/license audit and eight product homepages.
+- Preserve package/stable 1.4.0 and historical bb16760 evidence. No automatic SDK/model downloads, full dataset run, hardware acceptance or memory-policy mutation. See [runtime](docs/20-zero-touch-runtime.md) and [provider matrix](docs/provider-matrix.md).
+
 ## Unreleased — post-local corrective policy
 
 - Separate FP32 numeric sanity, exact retrieval structure and semantic admission; add measured reference fallback and explicit correctness/acceleration axes.

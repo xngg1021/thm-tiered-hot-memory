@@ -1,5 +1,9 @@
 # Testing, document publication and bounded release
 
+## Zero-touch provider gates
+
+Provider/model tests cover public SDK call lifecycles, exact resident reuse, failed allocation cleanup, independent embedding profiles, bounded warm-worker failure, session activation/fallback, queue growth/recycling, driver freshness, and public tokenizer API compatibility with exercised cache hits, and admitted steady-state cutoff guards that avoid full rescoring on separated rankings. Core-only ignition still precedes installation of test-only NumPy/tiktoken in CI. Required workflows include correctness on Linux/Windows/macOS, Hermes and relevant harness integrations. Review, source audit and [matrix](provider-matrix.md) must match the exact final head; hardware and full-dataset runs are not default merge gates.
+
 ## Evaluation Fabric release gates
 
 Run `python -m thm.evaluation --mode acceptance --wall-seconds 3300 --output .thm-evaluation/acceptance-01` for bounded offline local acceptance. [Full contract](18-evaluation-fabric.md). Correctness CI executes smoke on Linux/Windows/macOS, unit tests, README structural parity and existing documentation/history gates. Hermes and relevant harness gates remain separate. Full research workflows require manual full_research=true; no full dataset is a default gate. Clean exact-head Codex P1/P2 review and an expected-head normal merge precede post-merge CI. Package/stable remains 1.4.0.

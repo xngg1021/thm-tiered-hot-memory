@@ -103,6 +103,7 @@ class THMProvider(MemoryProvider):
         self.session_id = None
         self.encoder = None
         self._index = None
+        self._runtime = None
         self.scope = self.config.get("scope") or os.environ.get("THM_RECALL_SCOPE")
         self._agent_context = "primary"
         self._sync_turns = False
@@ -206,6 +207,8 @@ class THMProvider(MemoryProvider):
         if not home:
             raise ValueError("Hermes must supply profile-scoped hermes_home")
         with self._lock:
+            if self._runtime is not None:
+                self._runtime.close(); self._runtime = None
             cfg = self._merged_config(home)
             self.scope = (cfg.get("scope") or "").strip()
             if not self.scope:
@@ -247,8 +250,10 @@ class THMProvider(MemoryProvider):
         if budget <= 0 or self._index is None:
             return None
         try:
-            return self._index.search(scope, query, budget=budget, mode=self.mode,
-                                      encoder=self.encoder, model_id=self.model_id)
+            if self._runtime is None:
+                from .runtime.fabric.service import RuntimeService
+                self._runtime = RuntimeService(self._index, encoder=self.encoder, model_id=self.model_id)
+            return self._runtime.search(scope, query, budget=budget, mode=self.mode)
         except ValueError as exc:
             if "scope not indexed" in str(exc):
                 return None
@@ -355,6 +360,8 @@ class THMProvider(MemoryProvider):
 
     def on_session_switch(self, new_session_id, **kwargs):
         with self._lock:
+            if self._runtime is not None:
+                self._runtime.new_session()
             self.session_id = new_session_id
             self.last = None
             self.error = None
@@ -374,6 +381,7 @@ class THMProvider(MemoryProvider):
                 "budget_used": self.last["budget_used"] if self.last else 0,
                 "source_refresh_required": self._source_refresh_required,
                 "sync_turns": self._sync_turns,
+                "runtime": self._runtime.status() if self._runtime is not None else {'mode': 'zero-touch', 'profile_source': 'bootstrap'},
             })
 
     def on_memory_write(self, action, target, content, metadata=None):
@@ -383,6 +391,8 @@ class THMProvider(MemoryProvider):
 
     def shutdown(self):
         with self._lock:
+            if self._runtime is not None:
+                self._runtime.close(); self._runtime = None
             self.last = None
             self.encoder = None
             if self._index:

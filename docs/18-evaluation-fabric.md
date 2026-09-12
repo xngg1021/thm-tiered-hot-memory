@@ -1,5 +1,9 @@
 # Evaluation Fabric
 
+## Zero-touch runtime evidence integration
+
+The [zero-touch runtime](20-zero-touch-runtime.md) emits systems-runtime observations and preserves fixed research reference paths. Model/index profile changes, queue wait, physical placement, sample provenance, semantic class and fallback are explicit. [Vector replay](22-runtime-optimizer.md) includes a labeled observed encode-cost floor; model replay measures fresh encoding through packing inside its worker. Neither is a new dataset recall or LLM-agent outcome result. Full datasets remain explicit full-research work, never normal startup or background tuning.
+
 Evaluation Fabric is the measurement layer across THM's logical memory, compute execution and physical storage planes. It introduces no retrieval or memory algorithm. Package/version and stable archive remain 1.4.0; this fabric is Unreleased. Adapter availability, fixture correctness, dataset retrieval, runtime performance and agent outcome are separate claims.
 
 ## Contracts and ownership

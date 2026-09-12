@@ -1,5 +1,9 @@
 # Implementation status and evidence boundaries
 
+## Current Unreleased zero-touch implementation
+
+[Zero-touch runtime](20-zero-touch-runtime.md), [Provider Fabric](21-provider-fabric.md), [optimizer](22-runtime-optimizer.md) and [vector indexes](23-vector-index-providers.md) are implemented with host/SDK-fixture and cross-platform correctness gates. Background local text-model preparation uses independent vector profiles and can retain a warm worker after admission. Unsupported or over-budget preparation defers to the reference. The [matrix](provider-matrix.md) explicitly retains L0/L1/L2 boundaries and no L5 vendor acceptance. The [bb16760 post-fix retest](../reports/2026-09-09-post-fix-retest-bb16760.md) completed the earlier auto-safe/reference-fallback and CPU batch 1/4/8/32 acceptance; ISA dispatch and optional ORT/OpenVINO hardware outcomes remain separate.
+
 ## Evaluation Fabric implementation boundary
 
 [Evaluation Fabric](18-evaluation-fabric.md) now supplies typed contracts, five native input projections, V2 and MemoryArena memory interfaces, deterministic fixtures, shared dataplane metrics, physical probe receipts and bounded offline acceptance. Three-layer evidence and all eight README section identities are checked. Full V2/BEAM/MemoryArena campaigns and real hardware performance remain unrun. Package/stable remains 1.4.0; the fabric is Unreleased. CI and exact-head review results belong to the successor PR receipt, not to prospective claims in this status document.

@@ -74,9 +74,9 @@ T0–T3는 **THM memory Tier**입니다. 별도 프로젝트인 Context Economic
 <!-- section:compute -->
 ## 계산 실행 평면
 
-RuntimeProfile은 encoder/backend, 정밀도, 장치, scorer, 배치 크기와 스레드를 결합합니다. 선택적 스케줄러와 bounded AutoTune이 실행 설정을 선택합니다. CPU/CUDA 등의 설명에는 별도 runtime 증거가 필요하며 fixture 통과는 실제 dispatch나 속도 향상을 입증하지 않습니다.
+제로 터치 런타임은 안전하게 사용할 수 있는 경로로 시작하고 실제 요청을 관찰하며 백그라운드 자원 한도 안에서 설치된 공급자를 탐색합니다. Provider Fabric은 CPU·GPU·NPU의 추론, 상주 벡터 인덱스, 전송을 분리합니다. 의미적 일치, 실질적인 개선, 설정의 유효성, 세션 경계를 확인한 후 적용하므로 사용자가 먼저 benchmark를 실행할 필요가 없습니다. 프로필과 실행 기록은 실제 처리와 대체 경로를 보여 줍니다. SDK와 모델은 자동 다운로드하지 않으며 구현 성숙도와 실제 하드웨어 검증은 구분합니다.
 
-[Runtime](docs/17-zero-llm-heterogeneous-runtime.md)
+[Zero-touch runtime](docs/20-zero-touch-runtime.md) · [Provider Fabric](docs/21-provider-fabric.md) · [Runtime](docs/17-zero-llm-heterogeneous-runtime.md)
 
 <!-- section:physical -->
 ## 물리 저장소 평면

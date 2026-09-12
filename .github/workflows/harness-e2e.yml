@@ -3,22 +3,7 @@ name: THM harness integrations
 on:
   workflow_dispatch:
   push:
-    paths:
-      - "tests/test_post_local_corrective.py"
-      - "thm/evaluation/**"
-      - "thm/runtime/**"
-      - "research/runtime/**"
-      - "scripts/check_docs.py"
-      - "tests/test_document_checks.py"
-      - "thm/harness.py"
-      - "thm/adapters/**"
-      - "thm/mcp_server.py"
-      - "thm/mcp_legacy_server.py"
-      - "research/harness_e2e.py"
-      - "research/runtime_cli_e2e.py"
-      - "pyproject.toml"
-      - ".github/workflows/harness-e2e.yml"
-      - ".github/workflows/hermes-e2e.yml"
+  pull_request:
 
 permissions:
   contents: read
@@ -29,6 +14,8 @@ jobs:
     timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
       - uses: actions/setup-python@v5
         with:
           python-version: "3.11"
@@ -53,6 +40,8 @@ jobs:
     timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
       - uses: actions/setup-python@v5
         with:
           python-version: "3.11"
@@ -121,6 +110,8 @@ jobs:
             executable: gemini
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
       - uses: actions/setup-python@v5
         with:
           python-version: "3.11"

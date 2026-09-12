@@ -54,6 +54,7 @@ class THMHarnessAdapter:
         self._lock = threading.RLock()
         self._index: SearchIndex | None = None
         self._encoder = None
+        self._runtime = None
 
     def _ensure_open(self) -> None:
         if self._index is not None:
@@ -65,20 +66,20 @@ class THMHarnessAdapter:
         self._index = SearchIndex(path, counter, readonly=True)
         if self.config.mode in ("dense", "hybrid"):
             self._encoder = SentenceEncoder(self.config.model_path, self.config.model_id)
+        from .runtime.fabric.service import RuntimeService
+        self._runtime = RuntimeService(self._index, encoder=self._encoder, model_id=self.config.model_id)
 
     def recall(self, query: str) -> dict:
         if not isinstance(query, str) or not query.strip():
             raise ValueError("nonempty query required")
         with self._lock:
             self._ensure_open()
-            out = self._index.search(
+            out = self._runtime.search(
                 self.config.scope,
                 query,
                 budget=self.config.budget,
                 mode=self.config.mode,
                 neighbor_turns=self.config.neighbors,
-                encoder=self._encoder,
-                model_id=self.config.model_id,
                 features=RetrievalFeatures.parse(self.config.features),
             )
             return {
@@ -107,10 +108,27 @@ class THMHarnessAdapter:
                 "answer_generated": False,
                 "generation_calls":0,
                 "features":out.get("features"),
+                "runtime_receipt":out.get("runtime_receipt"),
+                "execution_plan":out.get("execution_plan"),
             }
+
+    def runtime_status(self):
+        with self._lock:
+            return self._runtime.status() if self._runtime is not None else {
+                'mode': 'zero-touch', 'profile_source': 'bootstrap', 'generation_calls': 0, 'user_benchmark_required': False}
+
+    def new_session(self):
+        with self._lock:
+            if self._runtime is not None:
+                return self._runtime.new_session()
 
     def close(self) -> None:
         with self._lock:
+            if self._runtime is not None:
+                self._runtime.close()
+                self._runtime = None
+            if self._encoder is not None:
+                self._encoder.close()
             if self._index is not None:
                 self._index.close()
                 self._index = None

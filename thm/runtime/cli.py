@@ -9,9 +9,17 @@ from .receipts import write_receipt
 
 
 def main(argv=None):
+    argv = list(sys.argv[1:] if argv is None else argv)
+    if (argv[:1] in (['providers'], ['profile'], ['explain'])
+            or (argv[:1] in (['status'], ['doctor']) and '--profile' not in argv)
+            or (argv[:1] == ['invalidate-profile'] and '--store' in argv)):
+        from .fabric.cli import main as fabric_main
+        return fabric_main(argv)
     parser=argparse.ArgumentParser(description=__doc__);sub=parser.add_subparsers(dest='command',required=True)
     for name in ('doctor','probe','status'):
         p=sub.add_parser(name);p.add_argument('--json',dest='output');p.add_argument('--profile');p.add_argument('--model-path')
+    for name in ('providers','profile','explain'):
+        sub.add_parser(name, help='zero-touch provider and profile diagnostics')
     p=sub.add_parser('autotune');p.add_argument('--model-path',required=True);p.add_argument('--model-id',required=True);p.add_argument('--output',required=True)
     p.add_argument('--policy',choices=['reference','auto-safe','auto-throughput','approximate-performance'],default='auto-safe')
     p.add_argument('--workload',choices=['interactive','bulk','background'],default='interactive');p.add_argument('--device',action='append',choices=['cpu','cuda','mps'])

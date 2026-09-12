@@ -1,5 +1,9 @@
 # Unreleased physical storage fabric and bounded verification
 
+## Joint provider execution — Unreleased
+
+The [joint optimizer](22-runtime-optimizer.md) binds actual source placement, target residency, inference/vector/transfer providers and current generation. [Resident handles](23-vector-index-providers.md) amortize document uploads while preserving source authority. Physical placement changes invalidate the execution profile and can trigger a bounded replan. Model candidates own private profile-specific replicas. A cuFile/native transfer seam does not relabel buffered/mmap execution as GDS; unknown native I/O remains unknown.
+
 ## Evaluation receipt integration
 
 [Evaluation Fabric](18-evaluation-fabric.md) carries serialized StorageProfile, profile ID, representation placement and extent I/O PhysicalTelemetry in a separate systems-runtime physical_probe. The probe uses bounded scratch with existing verify/read adapters. SQLite query I/O is unavailable and cannot inherit these microbenchmark counters. Logical T0–T3, compute profile and physical placement remain orthogonal; unknown capability observations and specialized hardware remain unvalidated.

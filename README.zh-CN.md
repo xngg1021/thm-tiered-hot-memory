@@ -74,9 +74,9 @@ T0–T3 是 **THM 的 memory Tier**，不是另一个独立项目 Context Econom
 <!-- section:compute -->
 ## 计算执行平面
 
-RuntimeProfile 绑定编码器与 backend、精度、设备、scorer、批大小和线程设置。可选调度器与有界 AutoTune 选择明确的运行配置。CPU/CUDA 等 backend 描述需要独立 runtime 证据；fixture 通过不能证明实际 dispatch 或加速。
+零接触运行时从安全可用的路径开始，观察真实请求，并在后台资源限额内探索已安装的供应商运行时。Provider Fabric 将推理、常驻向量索引和传输分开，支持 CPU、GPU 与 NPU。语义一致性、实质收益、配置新鲜度和会话边界共同控制启用，无需用户先跑 benchmark。配置与回执记录实际执行和回退；可选 SDK、模型不会自动下载，实现成熟度与硬件验收分别记录。
 
-[Runtime](docs/17-zero-llm-heterogeneous-runtime.md)
+[Zero-touch runtime](docs/20-zero-touch-runtime.md) · [Provider Fabric](docs/21-provider-fabric.md) · [Runtime](docs/17-zero-llm-heterogeneous-runtime.md)
 
 <!-- section:physical -->
 ## 物理存储平面

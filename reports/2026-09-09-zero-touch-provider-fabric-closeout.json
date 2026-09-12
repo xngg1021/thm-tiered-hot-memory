@@ -1,0 +1,114 @@
+{
+  "schema_version": 4,
+  "date": "2026-09-09",
+  "repository": "xngg1021/thm-tiered-hot-memory",
+  "implementation_pr": 20,
+  "status": "corrective-engineering-validated-final-review-pending",
+  "base_head": "2d5c2adcf994edd8b7bb3c0546983ba9531af392",
+  "base_tree": "2fcad509e0566c25202a1ce99936e306af62a4fd",
+  "corrective_implementation_head": "90fe108639fa62c23703a0f7f5e43c1f7c5fb904",
+  "package_version": "1.4.0",
+  "stable_archive": {
+    "ref": "archive/v1.4.0-stable",
+    "sha": "e6e4dda5835e3cb345207457d5491131c6959b2c",
+    "changed": false
+  },
+  "historical_hardware_head": "bb1676007b0f86dec0267585c56136c82157ae54",
+  "chat_takeover_fixes": [
+    "Windows retained warm-worker Job Object CPU ceilings renew cumulatively",
+    "observed-request alternate-model evidence is nonactivating under reference, auto-safe and auto-throughput",
+    "only explicit approximate-performance may activate observed-request-only alternate-model evidence",
+    "active alternate-model session pins survive workload/settings-key changes",
+    "model serving failures are counted once in provider quarantine",
+    "alternate-model receipts expose observed-request evidence scope",
+    "resident handles bind the concrete vector snapshot revision",
+    "host.hnsw discovery binds hnswlib dependency version",
+    "native accelerators with unknown driver identity remain process-local",
+    "foreground preemption is sticky before child publication",
+    "successful model-worker responses receive live-tree and lifetime budget checks",
+    "Linux live resource accounting aggregates the worker process group and retains PGID after leader exit",
+    "Linux workers publish self lifetime resource evidence and detect reaped-child activity",
+    "reaped-child activity fails closed when byte-exact helper I/O cannot be proven",
+    "strict resident ranking uses independent complete reference verification; provider-supplied top-k+1 cutoff proof was withdrawn",
+    "Linux process-tree regressions are platform-neutral"
+  ],
+  "catalog": {
+    "entries": 71,
+    "maturity_counts": {"L0": 7, "L1": 12, "L2": 1, "L3": 0, "L4": 51, "L5": 0},
+    "hardware_accepted_entries": 0
+  },
+  "evidence_ledgers": {
+    "retrieval_engineering": {
+      "scope": "deterministic SQL, tokenizer, call-count and semantic fixtures",
+      "speaker_sql_queries": {"same_generation_two_searches": 1, "after_replacement_total": 2},
+      "tokenizer": {
+        "api": "public encode_ordinary via exact whole-prefix cache",
+        "private_bpe_api": false,
+        "repeated_identical_prefix_additional_encode_calls": 0,
+        "max_cache_entries": 64,
+        "ci_versions": ["0.7.0", "0.8.0", "0.9.0", "0.10.0", "0.11.0", "0.12.0", "0.13.0", "0.14.0"]
+      },
+      "ranking": {
+        "strict_verification": "provider-independent-complete-reference",
+        "provider_supplied_cutoff_certificate": false,
+        "omitted_true_top_row_regression": true,
+        "bounded_cutoff_speed_claim": false
+      },
+      "hardware_speedup_claim": false
+    },
+    "fabric_correctness": {
+      "test_count": 565,
+      "core_only_ignition": {"native_provider_calls": 0, "network_calls": 0, "generation_calls": 0},
+      "numeric_audit_checks": 10,
+      "offline_evaluation_smoke": {"generation_calls": 0, "judge_calls": 0, "full_dataset_acceptance": false},
+      "alternate_model_semantic_scope": "observed-request-only",
+      "auto_safe_alternate_model_activation": false,
+      "auto_throughput_alternate_model_activation": false,
+      "vector_snapshot_invalidation_regression": true,
+      "hnsw_dependency_freshness_regression": true,
+      "sticky_preemption_regression": true,
+      "post_response_budget_regression": true,
+      "linux_process_group_accounting_regression": true,
+      "linux_lifetime_evidence_gate_regression": true,
+      "linux_reaped_helper_fail_closed_regression": true,
+      "linux_surviving_helper_rejection_regression": true
+    },
+    "real_hardware_performance": {
+      "status": "not-accepted-for-new-fabric",
+      "new_benchmark_run": false,
+      "new_model_or_vendor_sdk_installation": false,
+      "observed_isa_dispatch": null,
+      "ane_placement": null,
+      "query_energy_improvement": null,
+      "full_dataset_acceptance": false,
+      "issue": 13,
+      "historical_report": "reports/2026-09-09-post-fix-retest-bb16760.md"
+    }
+  },
+  "ci": [
+    {"run_id": 34440633964, "workflow": "THM correctness", "event": "pull_request", "head": "90fe108639fa62c23703a0f7f5e43c1f7c5fb904", "conclusion": "success"},
+    {"run_id": 34401841275, "workflow": "THM harness integrations", "event": "push", "head": "ca4d5f14d088ab9be0e53b01595143182b2072eb", "conclusion": "success", "stale_for_resource_changes": true},
+    {"run_id": 34401841296, "workflow": "THM Hermes integration", "event": "push", "head": "ca4d5f14d088ab9be0e53b01595143182b2072eb", "conclusion": "success", "stale_for_resource_changes": true}
+  ],
+  "review": {
+    "targeted_user_review_id": 5156589002,
+    "actionable_codex_threads_found": 7,
+    "actionable_codex_threads_resolved": 7,
+    "reviewed_head_181063": "completed-with-P2-not-clean",
+    "prior_codex_attempts": "service-failed-ref-not-found-or-pre-corrective",
+    "valid_exact_head_review_after_final_closeout": false,
+    "next_required_action": "run final-head correctness and integration gates, then request exact-head Codex review"
+  },
+  "release_gates": {
+    "final_closeout_correctness": "pending",
+    "current_head_harness": "pending",
+    "current_head_hermes": "pending",
+    "exact_head_codex_review": "pending",
+    "normal_expected_head_merge": "pending",
+    "merge_sha": null,
+    "main_ci": "pending",
+    "gate_waiver": false
+  },
+  "source_authority_mutation": false,
+  "version_promotion": false
+}

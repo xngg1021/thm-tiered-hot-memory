@@ -40,6 +40,7 @@ class LocalEncoder:
         if threads is not None and not isolated:
             raise ValueError('thread control requires an isolated worker; host policy is not mutated')
         if not isinstance(model_id,str) or not model_id.strip(): raise ValueError('model_id required')
+        self.local_model_source = str(Path(path).resolve())
         source = manifest(path)
         package, family, precision = REGISTRY[backend]
         installed = versions()

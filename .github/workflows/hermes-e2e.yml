@@ -3,20 +3,7 @@ name: THM Hermes integration
 on:
   workflow_dispatch:
   push:
-    paths:
-      - "tests/test_post_local_corrective.py"
-      - "thm/**"
-      - "plugins/**"
-      - "pyproject.toml"
-      - "research/hermes_e2e.py"
-      - "research/runtime_cli_e2e.py"
-      - "research/runtime/**"
-      - "README*.md"
-      - "docs/08-testing-and-release.md"
-      - "docs/11-harness-adapters.md"
-      - "CHANGELOG.md"
-      - ".github/workflows/hermes-e2e.yml"
-      - ".github/workflows/harness-e2e.yml"
+  pull_request:
 
 permissions:
   contents: read
@@ -38,6 +25,8 @@ jobs:
     steps:
       - name: Check out THM
         uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
       - name: Check out pinned Hermes upstream
         uses: actions/checkout@v4
         with:

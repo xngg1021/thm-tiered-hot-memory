@@ -1,5 +1,9 @@
 # 相关工作：分层记忆、上下文管理与验证边界
 
+## Execution SDKs and native index sources
+
+The [provider source audit](provider-sources.json) records the public API/version, OS, implementation maturity and license boundary for every registered provider. [Provider Fabric](21-provider-fabric.md) implements explicit native and framework lifecycles and marks lower C/ObjC bridges separately. Vendor heuristics and native indexing APIs are execution components; they do not constitute a new memory algorithm or a claim of LLM-agent outcome improvement.
+
 ## Current benchmark interfaces
 
 The [Evaluation Fabric source inventory](18-evaluation-fabric.md#upstream-interface-provenance) pins official LongMemEval-V2, BEAM and MemoryArena interface revisions. V2 uses trajectory insert/query; BEAM uses nested conversations and probing rubrics; MemoryArena couples sessions through actual agent/environment experience. These are evaluation interfaces, not additional memory algorithms or accepted THM dataset outcomes. LoCoMo and LongMemEval-S retain their respective document/session evidence units.

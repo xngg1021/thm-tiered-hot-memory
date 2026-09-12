@@ -82,12 +82,32 @@ class TokenCounter:
     def __init__(self, encoding: str = 'utf8_bytes'):
         self.name = encoding
         self.encode = None
+        self._prefix_cache = OrderedDict(); self._prefix_encoder = None
+        self.prefix_cache_hits = 0; self.prefix_cache_misses = 0
         if encoding != 'utf8_bytes':
             import tiktoken  # Optional; vocabulary cache may be populated by tiktoken on first use.
             self.encode = tiktoken.get_encoding(encoding).encode_ordinary
 
     def __call__(self, text: str) -> int:
         return len(self.encode(text)) if self.encode else len(text.encode('utf-8'))
+
+
+    def count_prefix(self, text):
+        """Cache exact whole-prefix counts through the public encoder callable."""
+        if self.encode is None:
+            return len(text.encode('utf-8'))
+        if self._prefix_encoder is not self.encode:
+            self._prefix_cache.clear(); self._prefix_encoder = self.encode
+        if text in self._prefix_cache:
+            self.prefix_cache_hits += 1; self._prefix_cache.move_to_end(text)
+            return self._prefix_cache[text]
+        self.prefix_cache_misses += 1
+        count = self(text)
+        if len(text.encode('utf-8')) <= 65536:
+            self._prefix_cache[text] = count
+            if len(self._prefix_cache) > 64:
+                self._prefix_cache.popitem(last=False)
+        return count
 
 
 class SentenceEncoder:
@@ -102,7 +122,7 @@ class SentenceEncoder:
         self._backend = create(path, model_id, backend=backend, device=device,
                                threads=threads, document_batch_size=batch_size, isolated=isolated)
         self.__dict__.update({k:getattr(self._backend,k) for k in
-                             ('model_id','device','batch_size','document_batch_size','query_batch_size','profile')})
+                             ('model_id','device','batch_size','document_batch_size','query_batch_size','profile','local_model_source')})
     def __call__(self,texts): return self._backend.encode_many(texts)
     def encode_many(self,texts): return self._backend.encode_many(texts)
     def encode_one(self,text): return self._backend.encode_one(text)
@@ -187,6 +207,9 @@ class SearchIndex:
         self.counter = counter or TokenCounter()
         self._cache, self._dense = OrderedDict(), {}
         self._results = OrderedDict()
+        self._speakers = OrderedDict()
+        self._row_cache = OrderedDict()
+        self._row_cache_bytes = 0
         self._batch_dense = None
         self._query_future = None
         self._last_dense_diagnostics = {}
@@ -200,6 +223,9 @@ class SearchIndex:
         self._cache.clear()
         self._dense.clear()
         self._results.clear()
+        self._speakers.clear()
+        self._row_cache.clear()
+        self._row_cache_bytes = 0
 
     def _refresh_caches(self):
         version = self.db.execute('PRAGMA data_version').fetchone()[0]
@@ -451,6 +477,17 @@ class SearchIndex:
         if vector.shape[0]!=matrix.shape[1]:raise ValueError('query/document embedding dimension mismatch')
         embed_ms=(time.perf_counter()-start)*1000;started=time.perf_counter()
         transfer=0.0
+        executor = getattr(self, '_vector_executor', None)
+        if executor is not None:
+            generation = self.db.execute('SELECT generation FROM scopes WHERE scope=?', (scope,)).fetchone()[0]
+            results, receipt = executor.search(scope=scope, generation=generation, embedding_profile=identity,
+                                               ids=ids, matrix=matrix, queries=[vector], top_k=limit)
+            ranked, values = results[0]
+            self._last_dense_diagnostics = {'dense_matrix_load': load_ms,
+                'dense_scoring': receipt['search_ms'], 'scorer': receipt['index_identity']['provider'],
+                'transfer': receipt.get('transfer_ms'), 'embedding_profile_id': identity,
+                'candidate_rowids': ranked, 'scores': values, 'resident_receipt': receipt}
+            return ranked, embed_ms, was_cached
         if scorer=='numpy_reference':scores=matrix @ vector
         else:
             from .runtime.scorers import score
@@ -461,7 +498,7 @@ class SearchIndex:
             'scores':[float(scores[int(i)]) for i in order]}
         return [ids[int(i)] for i in order],embed_ms,was_cached
 
-    def search_many(self,scope,queries,*,query_batch_size=32,scorer='numpy_reference',overlap=False,**kwargs):
+    def search_many(self,scope,queries,*,query_batch_size=32,scorer='numpy_reference',overlap=False,semantic_guard=False,**kwargs):
         """Production batch API: one scope snapshot, bounded encode_many and GEMM."""
         from .runtime.identity import bounded_int
         from .runtime.scorers import score
@@ -497,7 +534,7 @@ class SearchIndex:
                         if overlap_active:
                             from concurrent.futures import ThreadPoolExecutor
                             def encode_batch():
-                                at=time.perf_counter();raw=encoder(misses)
+                                at=time.perf_counter();raw=[encoder([q])[0] for q in misses] if semantic_guard else encoder(misses)
                                 return raw,(time.perf_counter()-at)*1000
                             with ThreadPoolExecutor(max_workers=1,thread_name_prefix='thm-batch-encoder') as pool:
                                 future=pool.submit(encode_batch);lexical_start=time.perf_counter()
@@ -505,7 +542,7 @@ class SearchIndex:
                                 lexical_ms=(time.perf_counter()-lexical_start)*1000
                                 raw,encoder_ms=future.result()
                         else:
-                            at=time.perf_counter();raw=encoder(misses);encoder_ms=(time.perf_counter()-at)*1000
+                            at=time.perf_counter();raw=[encoder([q])[0] for q in misses] if semantic_guard else encoder(misses);encoder_ms=(time.perf_counter()-at)*1000
                         if profile:
                             from .runtime.identity import validate_vectors
                             validate_vectors(raw,profile,len(misses))
@@ -514,25 +551,70 @@ class SearchIndex:
                             self._cache[(identity,q)]=v
                             if len(self._cache)>256:self._cache.popitem(last=False)
                     vectors=[vectors_by_query[q] for q in chunk];preparation_ms=(time.perf_counter()-started)*1000;embed_ms=encoder_ms
-                    values,timing=score(matrix,vectors,scorer);self._batch_dense={}
+                    executor = getattr(self, '_vector_executor', None)
+                    reference_ready = False; provider_verified = False
+                    if executor is not None:
+                        generation = self.db.execute('SELECT generation FROM scopes WHERE scope=?', (scope,)).fetchone()[0]
+                        rankings, receipt = executor.search(scope=scope, generation=generation, embedding_profile=identity,
+                            ids=ids, matrix=matrix, queries=vectors, top_k=limit)
+                        timing = {'dense_scoring': receipt['search_ms'], 'transfer': receipt.get('transfer_ms'), 'resident_receipt': receipt}
+                        provider_verified = bool(receipt.get('strict_verified'))
+                    elif semantic_guard and scorer == 'numpy_reference':
+                        scored = time.perf_counter()
+                        values = np.column_stack([matrix @ np.asarray(v,dtype=np.float32) for v in vectors])
+                        timing = {'dense_scoring':(time.perf_counter()-scored)*1000,'transfer':0}
+                        rankings = None; reference_ready = True
+                    else:
+                        values,timing=score(matrix,vectors,scorer)
+                        rankings = None
+                    ranking_times = []
+                    if rankings is None:
+                        rankings = []
+                        for col in range(len(chunk)):
+                            rank_start = time.perf_counter()
+                            order = np.argsort(-values[:,col], kind='stable')[:limit]
+                            rankings.append(([ids[int(i)] for i in order], [float(values[i,col]) for i in order]))
+                            ranking_times.append((time.perf_counter()-rank_start)*1000)
+                    else:
+                        ranking_times = [0.0]*len(chunk)  # included in provider search time
+                    # Admitted exact providers certify separated top-k/cutoff
+                    # intervals with bounded row checks inside ResidentExecutor.
+                    # Unadmitted math and ambiguous rankings retain full fallback.
+                    guard_start = time.perf_counter(); batch_fallback = False
+                    if semantic_guard and not (provider_verified or reference_ready):
+                        from .runtime.autotune import numeric_guard
+                        for col, vector in enumerate(vectors):
+                            ref_values = matrix @ np.asarray(vector, dtype=np.float32)
+                            ref_order = np.argsort(-ref_values, kind='stable')[:limit]
+                            ref_ids = [ids[int(i)] for i in ref_order]
+                            ref_scores = [float(ref_values[i]) for i in ref_order]
+                            ranked_ids, ranked_scores = rankings[col]
+                            tolerance = numeric_guard(matrix.shape[1])
+                            if ranked_ids != ref_ids or not np.allclose(ranked_scores, ref_scores, atol=tolerance, rtol=0):
+                                rankings[col] = (ref_ids, ref_scores); batch_fallback = True
+                    timing['semantic_guard_ms'] = (time.perf_counter()-guard_start)*1000 if semantic_guard else 0
+                    timing['batch_semantic_status'] = 'reference-fallback' if batch_fallback else 'strict' if semantic_guard else 'unvalidated'
+                    self._batch_dense={}
                     for column,q in enumerate(chunk):
                         row_start=time.perf_counter();ranking_start=row_start
-                        order=np.argsort(-values[:,column],kind='stable')[:limit]
-                        ranking_ms=(time.perf_counter()-ranking_start)*1000
-                        self._batch_dense={q:([ids[int(i)] for i in order],embed_ms/len(chunk),q in cached)}
+                        ranked_ids, ranked_scores = rankings[column]
+                        ranking_ms=(time.perf_counter()-ranking_start)*1000 + ranking_times[column]
+                        self._batch_dense={q:(ranked_ids,embed_ms/len(chunk),q in cached)}
                         result=self._search(scope,q,**kwargs)
                         result['timing_kind']='post-batch-search; embedding/scoring measured once in batch_receipt'
                         result['batch_receipt']={'query_batch_size':len(chunk),'embedding_ms':embed_ms,'batch_preparation_ms':preparation_ms,'lexical_preparation_ms':lexical_ms,'overlap_requested':overlap,'overlap_active':overlap_active,'encoded_queries':len(misses),'cached_queries':len(chunk)-sum(q not in cached for q in chunk),'dense_matrix_load':load_ms,**timing}
                         result['result_cache_hit']=False
+                        guards = timing.get('resident_receipt',{}).get('ranking_guards',[])
+                        result['provider_verification'] = guards[column] if column < len(guards) else None
                         if kwargs.get('diagnostics',False):
                             result['runtime_diagnostics']={'embedding_profile_id':getattr(getattr(encoder,'profile',None),'id',model_id),
-                                'scorer':scorer,'candidate_rowids':[ids[int(i)] for i in order],'candidate_ids':[candidate_ids[ids[int(i)]] for i in order],
+                                'scorer':scorer,'candidate_rowids':ranked_ids,'candidate_ids':[candidate_ids[i] for i in ranked_ids],
                                 'selected_ids':[r['id'] for r in result['selected']],'budget_cutoff':result['budget'],'budget_used':result['budget_used'],
-                                'feature_components':result.get('features'),'scores':[float(values[int(i),column]) for i in order]}
+                                'feature_components':result.get('features'),'scores':ranked_scores}
                         row_ms=(time.perf_counter()-row_start)*1000
                         result['timing_ms']['dense_ranking']=ranking_ms
                         result['timing_ms']['batch_row_overhead']=max(0.0,row_ms-result['timing_ms']['total'])
-                        result['timing_ms']['amortized_total']=row_ms+(preparation_ms+timing['dense_scoring'])/len(chunk)+load_ms/len(queries)
+                        result['timing_ms']['amortized_total']=row_ms+ranking_times[column]+(preparation_ms+timing['dense_scoring']+timing['semantic_guard_ms'])/len(chunk)+load_ms/len(queries)
                         if overlap:result['overlap']={'requested':True,'active':overlap_active,'cpu':'caller-thread SQLite/FTS','accelerator':'batched query embedding','microbatch_delay_ms':0}
                         out.append(result)
                 return out
@@ -592,7 +674,8 @@ class SearchIndex:
             if byte_counter:
                 units = used + len(block.encode('utf-8')) + (2 if blocks else 0)
             else:
-                units = self._count('\n\n'.join(blocks + [block]))
+                prefix = '\n\n'.join(blocks + [block])
+                units = self.counter.count_prefix(prefix) if type(self.counter) is TokenCounter else self._count(prefix)
             if units <= budget:
                 used = units
                 blocks.append(block)
@@ -607,9 +690,16 @@ class SearchIndex:
 
     def _lexical_channels(self,scope,query,mode,candidate_limit):
         tokens = terms(query)[:64]
-        speakers = set()
-        for row in self.db.execute('SELECT DISTINCT speaker FROM docs WHERE scope=?', (scope,)):
-            speakers.update(terms(row[0]))
+        generation = self.db.execute('SELECT generation FROM scopes WHERE scope=?', (scope,)).fetchone()
+        speaker_key = (scope, generation[0] if generation else None)
+        if speaker_key not in self._speakers:
+            speakers = set()
+            for row in self.db.execute('SELECT DISTINCT speaker FROM docs WHERE scope=?', (scope,)):
+                speakers.update(terms(row[0]))
+            self._speakers[speaker_key] = frozenset(speakers)
+            if len(self._speakers) > 64:
+                self._speakers.popitem(last=False)
+        speakers = self._speakers[speaker_key]
         focus = [t for t in tokens if t not in STOP and t not in speakers]
         focus = focus or [t for t in tokens if t not in STOP]
         channels = []
@@ -619,6 +709,45 @@ class SearchIndex:
             channels.append(self._fts('lexical', scope, focus, candidate_limit))
             channels.append(self._fts('lexical', scope, [t for t in tokens if t not in STOP], candidate_limit, True))
         return channels
+
+    def _materialize(self, scope, generation, rowids):
+        by_id = {}
+        missing = []
+        for rid in rowids:
+            key = (scope, generation, rid)
+            if key in self._row_cache:
+                by_id[rid] = dict(self._row_cache[key])
+                self._row_cache.move_to_end(key)
+            else:
+                missing.append(rid)
+        for offset in range(0, len(missing), 500):
+            batch = missing[offset:offset+500]
+            marks = ','.join('?' for _ in batch)
+            for raw in self.db.execute(f'SELECT * FROM docs WHERE scope=? AND rowid IN ({marks})', (scope, *batch)):
+                row = dict(raw); by_id[row['rowid']] = row
+                size = sum(len(v.encode('utf-8')) for v in row.values() if isinstance(v, str))
+                if size <= 1024*1024:
+                    while self._row_cache and (len(self._row_cache) >= 256 or self._row_cache_bytes+size > 4*1024*1024):
+                        _, old = self._row_cache.popitem(last=False)
+                        self._row_cache_bytes -= sum(len(v.encode('utf-8')) for v in old.values() if isinstance(v, str))
+                    self._row_cache[(scope, generation, row['rowid'])] = dict(row)
+                    self._row_cache_bytes += size
+        return by_id
+
+    def _prefetch_neighbors(self, scope, ranked, turns):
+        neighbors = {}
+        for offset in range(0, len(ranked), 100):
+            batch = ranked[offset:offset+100]
+            values = ','.join('(?,?,?)' for _ in batch)
+            args = [v for row in batch for v in (row['rowid'], row['session'], row['ord'])]
+            sql = f"""WITH wanted(origin,session,pos) AS (VALUES {values})
+                SELECT w.origin,d.* FROM wanted w JOIN docs d
+                ON d.scope=? AND d.session=w.session AND d.ord BETWEEN w.pos-? AND w.pos+?
+                AND d.rowid!=w.origin ORDER BY w.origin,ABS(d.ord-w.pos),d.ord,d.id"""
+            for raw in self.db.execute(sql, (*args, scope, turns, turns)):
+                row = dict(raw); origin = row.pop('origin')
+                neighbors.setdefault(origin, []).append(row)
+        return neighbors
 
     def _validate_search_options(self,scope,query,*,budget=600,mode='sparse',candidate_limit=100,
                                  neighbor_turns=0,encoder=None,model_id=None,entity_projection=False,features=None,diagnostics=False,scorer='numpy_reference'):
@@ -684,12 +813,7 @@ class SearchIndex:
         ordered = sorted(scores, key=lambda rid: (-scores[rid], rid))
         fusion_ms=(time.perf_counter()-fusion_start)*1000
         material_start=time.perf_counter()
-        by_rowid = {}
-        for offset in range(0, len(ordered), 500):
-            batch = ordered[offset:offset+500]
-            marks = ','.join('?' for _ in batch)
-            for row in self.db.execute(f'SELECT * FROM docs WHERE scope=? AND rowid IN ({marks})', (scope, *batch)):
-                by_rowid[row['rowid']] = dict(row)
+        by_rowid = self._materialize(scope, generation[0], ordered)
         ranked = [by_rowid[rid] for rid in ordered]
         material_ms=(time.perf_counter()-material_start)*1000
         ranked = self._rank_candidates(scope, query, ranked)
@@ -708,13 +832,9 @@ class SearchIndex:
         # Optional adjacent context is actual text, not automatic credit for unseen IDs.
         expansion_start=time.perf_counter()
         expanded, seen = [], set()
+        neighbors = self._prefetch_neighbors(scope, ranked, neighbor_turns) if neighbor_turns else {}
         for row in ranked:
-            candidates = [row]
-            if neighbor_turns:
-                candidates += [dict(r) for r in self.db.execute('''SELECT * FROM docs
-                   WHERE scope=? AND session=? AND ord BETWEEN ? AND ? AND rowid!=?
-                   ORDER BY ABS(ord-?),ord,id''', (scope, row['session'], row['ord']-neighbor_turns,
-                   row['ord']+neighbor_turns, row['rowid'], row['ord']))]
+            candidates = [row] + neighbors.get(row['rowid'], [])
             for item in candidates:
                 if item['rowid'] not in seen:
                     seen.add(item['rowid'])
@@ -735,6 +855,7 @@ class SearchIndex:
                 'parent_locator_ids':[r.get('parent_id',r['id']) for r in selected],
                 'complete_evidence_ids':[r['id'] for r in selected if r['complete']],
                 'runtime_diagnostics':dict(self._last_dense_diagnostics) if diagnostics else None,
+                'provider_verification':next(iter(self._last_dense_diagnostics.get('resident_receipt',{}).get('ranking_guards',[])),None),
                 'selected': selected, 'ranked_ids': ranked_ids, 'candidate_count': len(ranked),
                 'budget': budget, 'budget_used': final_units,
                 'counter': getattr(self.counter, 'name', 'caller_supplied'),
@@ -751,7 +872,7 @@ class SearchIndex:
         if type(self.counter) is not TokenCounter or not isinstance(scope,str) or not isinstance(query,str):return None
         # Type tags preserve the same validation boundary for search and overlap.
         settings=tuple(sorted((k,type(v).__name__,repr(v)) for k,v in kwargs.items() if k!='encoder'))
-        return (scope,query,settings,id(kwargs.get('encoder')),getattr(getattr(kwargs.get('encoder'),'profile',None),'id',None),id(self.counter),self.counter.name,id(self.counter.encode))
+        return (scope,query,settings,id(getattr(self, '_vector_executor', None)),id(kwargs.get('encoder')),getattr(getattr(kwargs.get('encoder'),'profile',None),'id',None),id(self.counter),self.counter.name,id(self.counter.encode))
 
     def search(self, scope, query, **kwargs):
         """One read snapshot; cache only deterministic native counters and explicit inputs."""

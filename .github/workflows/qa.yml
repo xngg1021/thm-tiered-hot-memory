@@ -21,13 +21,14 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
           fetch-depth: 0
       - uses: actions/setup-python@v5
         with:
           python-version: ${{ matrix.python }}
       - run: python -m pip install .
       - run: python -S scripts/runtime_headless_probe.py
-      - run: python -m pip install "numpy>=1.26,<3"
+      - run: python -m pip install "numpy>=1.26,<3" "tiktoken>=0.7,<1"
       - run: python -m unittest discover -s tests -v
       - run: python scripts/thm_numeric_audit.py
       - run: python -m thm.evaluation --mode smoke --wall-seconds 120 --output "${{ runner.temp }}/evaluation-smoke"
@@ -39,3 +40,21 @@ jobs:
           if git rev-parse --verify HEAD^ >/dev/null 2>&1; then
             git diff --check HEAD^ HEAD
           fi
+
+  tokenizer-compat:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    strategy:
+      fail-fast: false
+      matrix:
+        tiktoken: ['0.7.0', '0.8.0', '0.9.0', '0.10.0', '0.11.0', '0.12.0', '0.13.0', '0.14.0']
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.10'
+      - run: python -m pip install . "numpy>=1.26,<3" "tiktoken==${{ matrix.tiktoken }}"
+      - name: Exercise public tokenizer API and exact cache hits without vocabulary downloads
+        run: python -m unittest discover -s tests -p test_tokenizer_compat.py -v
