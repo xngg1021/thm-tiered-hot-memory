@@ -4,7 +4,7 @@
   "repository": "xngg1021/thm-tiered-hot-memory",
   "version": "1.5.0",
   "implementation_status": "implemented",
-  "implementation_sha256": "33c9315c3a5f667c2f7eeb823264069ec9627b0e873bf8c2f20d35a52301cf9f",
+  "implementation_sha256": "53265627719a81271f61e4f40665dd671bb5e44ce5bf2e0c347a4d38d12a07c9",
   "archive_branch": "archive/v1.5.0-stable",
   "accepted_merge_commit": null,
   "historical": {
@@ -72,7 +72,8 @@
       "Preserve containment, evidence, sequence and commit-budget metadata when oversized callback output becomes a bounded ValueError response",
       "Reject executable or subclassed custom transport response objects before pickle serialization so reply reconstruction cannot escape the owned worker",
       "Probe kernel process-group existence/permission before accepting cleanup; empty visible scans and hidepid/ambiguous procfs visibility cannot certify an extant group dead",
-      "Apply inherited descendant containment to model and shadow workers before provider execution; keep Darwin backend preparation within the already-owned worker"
+      "Apply inherited descendant containment to model and shadow workers before provider execution; keep Darwin backend preparation within the already-owned worker",
+      "Restore isolated=True on the already-owned model worker: LocalEncoder uses it to authorize explicit thread control and does not launch nested workers; exercise actual Torch/ORT/OpenVINO constructor paths with local fixtures"
     ],
     "ci_repairs": [
       "Preserve concurrent d00b237 Darwin EPERM cleanup fix; live-worker permission failures remain errors",
@@ -1908,7 +1909,7 @@
     }
   ],
   "validation": {
-    "local_unit_tests": 657,
+    "local_unit_tests": 659,
     "local_unit_skipped": 3,
     "numeric_audit_tests": 10,
     "benchmark_fixtures": 5,

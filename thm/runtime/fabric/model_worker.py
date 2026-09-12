@@ -2,6 +2,8 @@
 
 The worker owns a disposable database copy and its own embedding profile. It
 never publishes vectors into the source index or invents tensor preprocessing.
+LocalEncoder's isolated=True declares this existing worker boundary and permits
+explicit thread settings; it constructs the encoder in process on every OS.
 """
 import json
 import os
@@ -54,7 +56,7 @@ def prepare_encoder(task, root):
         raise ValueError('bounded local text-model export unavailable')
     device = options.get('device', 'AUTO') if family.startswith('openvino') else options['ep']
     return create(derived, task['model_id'], backend=family, device=device, threads=1,
-                  document_batch_size=8, query_batch_size=1, isolated=sys.platform != 'darwin')
+                  document_batch_size=8, query_batch_size=1, isolated=True)
 
 
 def run(task, wire):
@@ -74,7 +76,7 @@ def run(task, wire):
         started = time.perf_counter()
         baseline = create(task['model_source'], task['model_id'], backend='torch_fp32',
                           device=task['reference_profile']['device'], threads=task.get('reference_threads',1),
-                          document_batch_size=8, query_batch_size=1, isolated=sys.platform != 'darwin')
+                          document_batch_size=8, query_batch_size=1, isolated=True)
         if baseline.profile.identity() != {**task['reference_profile'], 'embedding_profile_id': baseline.profile.id}:
             raise ValueError('reference encoder contract changed')
         candidate = prepare_encoder(task, root)
