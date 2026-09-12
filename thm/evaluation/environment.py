@@ -92,6 +92,9 @@ class EnvironmentRunner:
                 if os.name=='posix':
                     try:os.killpg(process.pid,signal.SIGKILL)
                     except ProcessLookupError:pass
+                    except PermissionError:
+                        # Darwin can report EPERM when the group contains only zombies.
+                        if process.poll() is None:raise
                 elif budget is not None:
                     budget.close()
                 elif process.poll() is None:

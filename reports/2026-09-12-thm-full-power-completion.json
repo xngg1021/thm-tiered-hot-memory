@@ -4,7 +4,7 @@
   "repository": "xngg1021/thm-tiered-hot-memory",
   "version": "1.5.0",
   "implementation_status": "implemented",
-  "implementation_sha256": "657ecdf09ce37f7f11fc05116aa65ac2e47726523a15a411a7a561ff286b6797",
+  "implementation_sha256": "3fb86b357ac0d74dba261abb22a68a50f351131e02de2440c7a594bd633251e6",
   "archive_branch": "archive/v1.5.0-stable",
   "accepted_merge_commit": null,
   "historical": {
@@ -52,6 +52,9 @@
       "Bind artifact reads to non-following, nonblocking, size-checked regular-file descriptors",
       "Read restored snapshots through one checked descriptor with a growth bound",
       "Interrupt all external storage callbacks through an owned process tree"
+    ],
+    "ci_repairs": [
+      "Handle Darwin EPERM for a reaped process group while preserving errors for live workers"
     ]
   },
   "domains": [
@@ -1871,7 +1874,7 @@
     }
   ],
   "validation": {
-    "local_unit_tests": 608,
+    "local_unit_tests": 609,
     "local_unit_skipped": 2,
     "numeric_audit_tests": 10,
     "benchmark_fixtures": 5,

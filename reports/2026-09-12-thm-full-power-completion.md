@@ -99,3 +99,5 @@ Four actionable findings were repaired with regressions: path-based preparation 
 A second completed review added three lifecycle repairs: atomic snapshot publication and retry after failed fsync; session-owned verified artifact copies that survive source replacement; and process-tree deadlines covering environment reset, policy, step and close. Corresponding failure/race/timeout regressions bring the local suite to 603 tests (two platform/dependency skips).
 
 A third completed review tightened descriptor identity and byte bounds for artifact/snapshot reads, and placed all external storage callbacks behind an owned process deadline. FIFO/symlink replacement, post-stat growth and stage/commit/size/read/close timeout regressions pass. The full local suite now runs 608 tests (two platform/dependency skips).
+
+The macOS matrix exposed a process-group cleanup race after worker exit. Cleanup accepts EPERM only when the owned worker has exited; a live-worker permission failure still propagates. The added regression brings the local suite to 609 tests (two expected skips).

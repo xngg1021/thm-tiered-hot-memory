@@ -65,6 +65,20 @@ class TransportBoundsTests(unittest.TestCase):
                 self.assertTrue(backend._remote.closed)
                 backend.close()
 
+    @unittest.skipUnless(os.name=='posix','POSIX group cleanup')
+    def test_group_permission_error_only_ignored_after_worker_exit(self):
+        from thm.physical.backend_worker import BackendWorker
+        for exited in (True,False):
+            with self.subTest(exited=exited):
+                worker=BackendWorker.__new__(BackendWorker)
+                worker.closed=False;worker.directory=mock.Mock();worker.budget=None
+                worker.process=mock.Mock();worker.process.poll.return_value=0 if exited else None
+                with mock.patch('os.killpg',side_effect=PermissionError):
+                    if exited:worker.terminate()
+                    else:
+                        with self.assertRaises(PermissionError):worker.terminate()
+                worker.directory.cleanup.assert_called_once()
+
     def test_external_close_is_interruptible_too(self):
         backend=StorageBackend(BackendConfig('spdk','fixture','g',timeout_seconds=1),functools.partial(DelayedTransport,'close'))
         backend.write(b'abc',generation='g')

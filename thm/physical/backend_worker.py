@@ -86,6 +86,9 @@ class BackendWorker:
                 if os.name=='posix':
                     try:os.killpg(self.process.pid,signal.SIGKILL)
                     except ProcessLookupError:pass
+                    except PermissionError:
+                        # Darwin can report EPERM when the group contains only zombies.
+                        if self.process.poll() is None:raise
                 elif self.budget is not None:self.budget.close()
                 elif self.process.poll() is None:
                     subprocess.run(['taskkill','/PID',str(self.process.pid),'/T','/F'],capture_output=True,timeout=5)
