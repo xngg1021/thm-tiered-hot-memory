@@ -416,12 +416,24 @@ class ServiceTests(unittest.TestCase):
         explorer.close()
 
     def test_real_bounded_shadow_probe(self):
+        from thm.runtime.fabric.resources import ChildBudget
+        import traceback
+        accounting_errors = []
+        check = ChildBudget.check
+        def checked(budget):
+            try:
+                return check(budget)
+            except Exception:
+                accounting_errors.append(traceback.format_exc())
+                raise
         explorer = BoundedShadowExplorer(wall_seconds=5)
         done = threading.Event(); results = []
         try:
-            self.assertTrue(explorer.submit({'operation':'probe','provider':'host.device'},lambda r:(results.append(r),done.set())))
-            self.assertTrue(done.wait(6),explorer.last_receipt)
-            self.assertIn('availability', results[0], {'callback': results[0], 'receipt': explorer.last_receipt})
+            with mock.patch.object(ChildBudget, 'check', checked):
+                self.assertTrue(explorer.submit({'operation':'probe','provider':'host.device'},lambda r:(results.append(r),done.set())))
+                self.assertTrue(done.wait(6),explorer.last_receipt)
+            self.assertIn('availability', results[0], {'callback': results[0], 'receipt': explorer.last_receipt,
+                                                     'accounting_errors': accounting_errors})
             self.assertEqual(results[0]['availability'],'available')
         finally:
             explorer.close()

@@ -81,15 +81,15 @@ class StorageTests(unittest.TestCase):
                 self.assertNotIn('private-target', str(b.receipt()))
                 b.close()
 
-    def test_failure_aborts_without_publishing(self):
+    def test_commit_failure_remains_indeterminate_without_write_credit(self):
         t = FixtureTransport(); t.fail_at = 'commit'
         b = StorageBackend(BackendConfig('spdk', 'target', 'g'), t)
         self.addCleanup(b.close)
         with self.assertRaises(OSError):
             b.write(b'payload', generation='g')
-        self.assertEqual(t.pending, {})
-        self.assertEqual(t.objects, {})
-        self.assertEqual(b.journal[-1]['state'], 'aborted')
+        self.assertFalse(b.verify(hashlib.sha256(b'payload').hexdigest()))
+        self.assertEqual(b.bytes_written, 0)
+        self.assertEqual(b.journal[-1]['state'], 'indeterminate-commit')
 
     def test_corruption_and_generation_fail_closed(self):
         with tempfile.TemporaryDirectory() as tmp:

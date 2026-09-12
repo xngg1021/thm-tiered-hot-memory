@@ -4,7 +4,7 @@
   "repository": "xngg1021/thm-tiered-hot-memory",
   "version": "1.5.0",
   "implementation_status": "implemented",
-  "implementation_sha256": "199b524e505867dbed2e0c4db963748992e186b94a7ab0ac97428f2f5a98da54",
+  "implementation_sha256": "27f952ae6e25af82456c08fdf3730cb0a1e31d4f42778a2cf8881bc87ba94061",
   "archive_branch": "archive/v1.5.0-stable",
   "accepted_merge_commit": null,
   "historical": {
@@ -55,7 +55,9 @@
       "Retain directory descriptors across enumeration and freeze complete sibling bundles",
       "Preserve explicit timeout transaction journals and bounded owned mounted-file cleanup",
       "Reject environment launch/result deadline exhaustion and callback/close exceptions",
-      "Require process-group disappearance before suppressing EPERM; share cleanup across environment and storage"
+      "Require process-group disappearance before suppressing EPERM; share cleanup across environment and storage",
+      "Keep lost commit acknowledgements indeterminate until explicitly verified; abort cannot certify rollback",
+      "Filter unrelated Linux processes before reading protected accounting records"
     ],
     "ci_repairs": [
       "Preserve concurrent d00b237 Darwin EPERM cleanup fix; live-worker permission failures remain errors",
@@ -1885,7 +1887,7 @@
     }
   ],
   "validation": {
-    "local_unit_tests": 627,
+    "local_unit_tests": 629,
     "local_unit_skipped": 2,
     "numeric_audit_tests": 10,
     "benchmark_fixtures": 5,

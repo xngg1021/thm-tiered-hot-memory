@@ -65,6 +65,12 @@ class HangingMountedStage(MountedFilesystemTransport):
             time.sleep(.05)
 
 
+class LostMountedAcknowledgement(MountedFilesystemTransport):
+    def commit(self, transaction):
+        super().commit(transaction)
+        raise OSError('publication acknowledgement lost')
+
+
 class FakeS3Client:
     def __init__(self):
         self.objects = {}
@@ -80,6 +86,12 @@ class FakeS3Client:
 
     def head_object(self, **kw):
         return {'ContentLength': len(self.objects[kw['Key']])}
+
+
+class LostS3Acknowledgement(FakeS3Client):
+    def put_object(self, **kw):
+        super().put_object(**kw)
+        raise OSError('PUT acknowledgement lost')
 
 
 def s3_factory():
@@ -299,6 +311,23 @@ class TransportDeadlineTests(unittest.TestCase):
         self.assertEqual(b.read(TransferExtent(key,2,2),generation='g'),b'cd')
         self.assertEqual(b.receipt()['execution_boundary'],'owned-process-tree')
         b.close();self.assertIsNone(b.worker.process)
+
+    def test_lost_commit_acknowledgement_remains_indeterminate(self):
+        data = b'published before acknowledgement'
+        key = hashlib.sha256(data).hexdigest()
+        with tempfile.TemporaryDirectory() as tmp:
+            for transport in (LostMountedAcknowledgement(tmp),
+                              S3Transport(LostS3Acknowledgement(), 'bucket')):
+                with self.subTest(transport=type(transport).__name__):
+                    b = self.backend(transport, 3)
+                    with self.assertRaises(OSError):
+                        b.write(data, generation='g')
+                    self.assertEqual(b.receipt()['journal'][-1]['state'], 'indeterminate-commit')
+                    self.assertEqual(b.bytes_written, 0)
+                    self.assertTrue(b.recover(key, generation='g')['verified'])
+                    self.assertEqual(b.read(TransferExtent(key, 0, len(data)), generation='g'), data)
+                    self.assertEqual(b.receipt()['journal'][-1]['state'], 'indeterminate-commit')
+                    b.close()
 
     def test_nonpickleable_transport_fails_explicitly(self):
         with self.assertRaises(TypeError):

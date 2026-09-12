@@ -125,6 +125,10 @@ class ChildBudget:
             if not root.name.isdigit():
                 continue
             try:
+                # Filter with the public process-group syscall before opening
+                # potentially protected /proc records belonging to other users.
+                if os.getpgid(int(root.name)) != int(pgid):
+                    continue
                 fields = (root/'stat').read_text().rsplit(')', 1)[1].split()
                 if len(fields) < 13 or int(fields[2]) != int(pgid):
                     continue

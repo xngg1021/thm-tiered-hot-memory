@@ -254,6 +254,9 @@ class StorageBackend:
                 self._call('stage', transaction, key, data, deadline=deadline)
                 if self.clock()-start > self.config.timeout_seconds:
                     raise TimeoutError('storage stage deadline')
+                # Publication can succeed even when its acknowledgement fails.
+                # Abort only clears pending state; it cannot prove rollback.
+                row['state'] = 'indeterminate-commit'
                 self._call('commit', transaction, deadline=deadline)
                 row['state'] = 'published-unverified'
                 if not self.verify(key, _deadline=deadline):

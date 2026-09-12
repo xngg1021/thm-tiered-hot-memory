@@ -129,7 +129,8 @@ class LinuxTreeBudgetTests(unittest.TestCase):
             self._proc(root, 100, 100, 100, 10, 5, 10, 20)
             self._proc(root, 101, 100, 200, 20, 10, 30, 40)
             self._proc(root, 102, 999, 900, 90, 90, 900, 900)
-            with mock.patch.object(os, 'sysconf', return_value=100, create=True):
+            with mock.patch.object(os, 'sysconf', return_value=100, create=True), \
+                 mock.patch.object(os, 'getpgid', side_effect=lambda pid: 999 if pid == 102 else 100, create=True):
                 observed = budget._linux_usage(root, pgid=100)
         self.assertEqual(observed['processes'], 2)
         self.assertEqual(observed['ram_bytes'], 300 * 1024)
@@ -137,6 +138,23 @@ class LinuxTreeBudgetTests(unittest.TestCase):
         self.assertEqual(observed['bytes_read'], 40)
         self.assertEqual(observed['bytes_written'], 60)
         self.assertEqual(observed['resource_source'], 'procfs-process-group-live')
+
+    def test_unrelated_protected_proc_records_are_not_opened(self):
+        budget = self._budget()
+        with tempfile.TemporaryDirectory() as temp:
+            root = Path(temp)
+            self._proc(root, 100, 100, 100, 10, 5, 10, 20)
+            (root/'101').mkdir()  # unrelated protected process; no readable records
+            read_text = Path.read_text
+            def protected_read(path, *args, **kwargs):
+                if path.parent.name == '101':
+                    raise PermissionError('unrelated protected process')
+                return read_text(path, *args, **kwargs)
+            with mock.patch.object(os, 'sysconf', return_value=100, create=True), \
+                 mock.patch.object(os, 'getpgid', side_effect=lambda pid: 100 if pid == 100 else 999, create=True), \
+                 mock.patch.object(Path, 'read_text', protected_read):
+                observed = budget._linux_usage(root, pgid=100)
+            self.assertEqual(observed['processes'], 1)
 
     def test_reaped_helper_activity_fails_closed_in_lifetime_gate(self):
         budget = self._budget()
