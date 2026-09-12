@@ -9,6 +9,11 @@ import hashlib
 import json
 from pathlib import Path
 import re
+import sys
+
+# Support direct execution from any directory without requiring installation.
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+from thm._bounded_files import bounded_file_bytes
 
 REPOSITORY = 'xngg1021/thm-tiered-hot-memory'
 ARCHIVE = 'e6e4dda5835e3cb345207457d5491131c6959b2c'
@@ -66,9 +71,8 @@ def main():
     p=argparse.ArgumentParser(description=__doc__)
     p.add_argument('snapshot', type=Path);p.add_argument('--expected-head', required=True)
     args=p.parse_args()
-    if args.snapshot.is_symlink() or args.snapshot.stat().st_size > 8*1024*1024:
-        raise ValueError('bounded snapshot file required')
-    print(json.dumps(verify(json.loads(args.snapshot.read_text()),expected_head=args.expected_head),indent=2))
+    raw = bounded_file_bytes(args.snapshot, 8*1024*1024).decode('utf-8')
+    print(json.dumps(verify(json.loads(raw),expected_head=args.expected_head),indent=2))
 
 
 if __name__ == '__main__':main()
