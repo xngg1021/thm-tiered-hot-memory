@@ -4,7 +4,7 @@
   "repository": "xngg1021/thm-tiered-hot-memory",
   "version": "1.5.0",
   "implementation_status": "implemented",
-  "implementation_sha256": "3328d22298a93fa134b5055780af40090d1c50c5fb0b025166fbfb923aaa5426",
+  "implementation_sha256": "24f30a7c46ba0ef2a2982f0a4d96828211eb5db88ac4ca8e3b96ad943f95d056",
   "archive_branch": "archive/v1.5.0-stable",
   "accepted_merge_commit": null,
   "historical": {
@@ -70,7 +70,8 @@
       "Never accept denied process-group accounting through a leader wait or state recheck; explicitly defer unprovable probes with no acceptance credit, including helpers joining after enumeration",
       "Install kernel descendant containment before deserializing environment/storage callbacks: inherited Linux group/session/namespace restrictions, Darwin no-fork Seatbelt, Windows no-breakaway Job Object",
       "Preserve containment, evidence, sequence and commit-budget metadata when oversized callback output becomes a bounded ValueError response",
-      "Reject executable or subclassed custom transport response objects before pickle serialization so reply reconstruction cannot escape the owned worker"
+      "Reject executable or subclassed custom transport response objects before pickle serialization so reply reconstruction cannot escape the owned worker",
+      "Probe kernel process-group existence/permission before accepting cleanup; empty visible scans and hidepid/ambiguous procfs visibility cannot certify an extant group dead"
     ],
     "ci_repairs": [
       "Preserve concurrent d00b237 Darwin EPERM cleanup fix; live-worker permission failures remain errors",
@@ -81,7 +82,8 @@
       "Historical intermediate repair, superseded by unconditional deferral on denied accounting: Confirm leader termination with a bounded wait when procfs I/O permissions disappear during exit; live leader/helper failures remain closed",
       "Close the quarantined mounted worker before its test temporary directory is removed on Windows",
       "Assert mounted timeout worker/parent handles are released before temporary-root deletion, with a one-second Windows sharing-violation retry that still rejects persistent handles",
-      "Confirm all Linux group members/Windows Job processes have exited after termination, with bounded failure if descendants remain"
+      "Confirm all Linux group members/Windows Job processes have exited after termination, with bounded failure if descendants remain",
+      "Bind helper liveness checks to its own procfs PID/start time; local executor PID namespace differs from mounted procfs, which now cannot certify a live group empty"
     ]
   },
   "domains": [
@@ -1904,7 +1906,7 @@
     }
   ],
   "validation": {
-    "local_unit_tests": 654,
+    "local_unit_tests": 655,
     "local_unit_skipped": 3,
     "numeric_audit_tests": 10,
     "benchmark_fixtures": 5,

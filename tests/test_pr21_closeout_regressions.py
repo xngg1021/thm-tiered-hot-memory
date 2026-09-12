@@ -3,6 +3,7 @@ from contextlib import contextmanager, ExitStack
 from dataclasses import replace
 import hashlib
 import io
+import json
 import os
 from pathlib import Path
 import subprocess
@@ -31,8 +32,11 @@ class BlockingTransport(FixtureTransport):
     def pause(self, stage):
         if self.hang == stage:
             if self.marker:
-                helper = subprocess.Popen([sys.executable, '-c', 'import time; time.sleep(60)'])
-                Path(self.marker).write_text(str(helper.pid))
+                script = ('import os,json,sys,time;from pathlib import Path;'
+                          'stat=Path("/proc/self/stat").read_text();fields=stat.rsplit(")",1)[1].split();'
+                          'Path(sys.argv[1]).write_text(json.dumps({"pid":os.getpid(),"pgid":os.getpgrp(),'
+                          '"proc_pid":int(stat.split(" ",1)[0]),"start":fields[19]}));time.sleep(60)')
+                subprocess.Popen([sys.executable, '-c', script, self.marker])
             while True:
                 time.sleep(.05)
 
@@ -462,6 +466,32 @@ class TransportDeadlineTests(unittest.TestCase):
         self.addCleanup(backend.worker.stop)
         return backend
 
+    @unittest.skipUnless(sys.platform.startswith('linux'), 'Linux procfs visibility')
+    def test_hidden_group_members_never_certify_cleanup(self):
+        from thm.runtime.fabric import resources
+        with mock.patch.object(os, 'killpg', side_effect=PermissionError), \
+             mock.patch.object(Path, 'iterdir', return_value=iter(())):
+            with self.assertRaises(PermissionError): resources._linux_group_live(100)
+        with mock.patch.object(os, 'killpg'), \
+             mock.patch.object(Path, 'iterdir', return_value=iter(())):
+            self.assertTrue(resources._linux_group_live(100))
+        with mock.patch.object(os, 'killpg', side_effect=ProcessLookupError):
+            self.assertFalse(resources._linux_group_live(100))
+        zombie = Path('/proc/100')
+        plain = '1 0 0:1 / /proc rw - proc proc rw,hidepid=0'
+        hidden = '2 0 0:1 / /proc rw - proc proc rw,hidepid=2'
+        for mountinfo, expected in ((plain, False), (hidden, True), (plain+'\n'+hidden, True)):
+            with mock.patch.object(os, 'killpg'), \
+                 mock.patch.object(os, 'getpid', return_value=100), \
+                 mock.patch.object(os, 'getpgid', return_value=100), \
+                 mock.patch.object(Path, 'iterdir', return_value=iter((zombie,))), \
+                 mock.patch.object(Path, 'read_text', return_value='100 (worker) Z 1 100 100'), \
+                 mock.patch('builtins.open', mock.mock_open(read_data=mountinfo)):
+                self.assertEqual(resources._linux_group_live(100), expected)
+        with mock.patch.object(os, 'killpg'), mock.patch.object(os, 'getpid', return_value=200), \
+             mock.patch.object(Path, 'read_text', return_value='100 (self) S 1 100 100'):
+            self.assertTrue(resources._linux_group_live(100))
+
     @unittest.skipUnless(sys.platform.startswith('linux'), 'Linux group exit accounting')
     def test_cleanup_waits_for_group_exit_and_rejects_persistent_descendants(self):
         from thm.runtime.fabric import resources
@@ -643,11 +673,15 @@ class TransportDeadlineTests(unittest.TestCase):
             with mock.patch.object(transport_worker, 'stop_tree', observe_stop):
                 with self.assertRaises(TimeoutError): b.write(b'abc',generation='g')
             self.assertTrue(marker.exists())
-            status=Path('/proc')/marker.read_text()/'stat'
+            helper = json.loads(marker.read_text())
+            self.assertIn(helper['pgid'], [row['group'] for row in stopped])
+            status=Path('/proc')/str(helper['proc_pid'])/'stat'
             if status.exists():
                 observed = status.read_text()
-                self.assertEqual(observed.rsplit(')',1)[1].split()[0], 'Z',
-                                 {'helper': observed, 'stopped': stopped, 'journal': b.journal})
+                fields = observed.rsplit(')',1)[1].split()
+                if fields[19] == helper['start']:
+                    self.assertEqual(fields[0], 'Z',
+                                     {'helper': observed, 'identity': helper, 'stopped': stopped, 'journal': b.journal})
             b.close()
 
 

@@ -281,6 +281,15 @@ class ChildBudget:
 
 
 def _linux_group_live(pgid):
+    try:
+        os.killpg(pgid, 0)
+    except ProcessLookupError:
+        return False
+    # PermissionError must propagate: killpg(SIGKILL) can have signalled only
+    # the same-UID leader while an inaccessible member survived.
+    if int(Path('/proc/self/stat').read_text().split(' ', 1)[0]) != os.getpid():
+        return True  # procfs belongs to another PID namespace; await group exit
+    observed = False
     for root in Path('/proc').iterdir():
         if not root.name.isdigit():
             continue
@@ -288,21 +297,47 @@ def _linux_group_live(pgid):
             if os.getpgid(int(root.name)) != pgid:
                 continue
             fields = (root/'stat').read_text().rsplit(')', 1)[1].split()
-            if int(fields[2]) == pgid and fields[0] not in ('Z', 'X', 'x'):
-                return True
+            if int(fields[2]) == pgid:
+                observed = True
+                if fields[0] not in ('Z', 'X', 'x'):
+                    return True
         except (FileNotFoundError, ProcessLookupError):
             continue
-    return False
+    try:
+        os.killpg(pgid, 0)
+    except ProcessLookupError:
+        return False
+    if not observed:
+        return True  # existing group with no visible members is not proven dead
+    # Visible zombies can keep a group alive. They establish safe termination
+    # only when procfs is complete; hidepid could conceal another live member.
+    with open('/proc/self/mountinfo', encoding='utf-8') as stream:
+        mounts = stream.read(1024*1024 + 1)
+    if len(mounts) > 1024*1024:
+        raise RuntimeError('procfs visibility evidence exceeds bound')
+    visibility = []
+    for line in mounts.splitlines():
+        before, separator, after = line.partition(' - ')
+        fields = before.split()
+        if separator and len(fields) > 5 and fields[4] == '/proc':
+            filesystem = after.split()
+            options = (fields[5] + ',' + ','.join(filesystem[2:])).split(',')
+            visibility.append(not filesystem or filesystem[0] != 'proc' or
+                              any(option.startswith('hidepid=') and option != 'hidepid=0' for option in options))
+    if visibility:
+        return any(visibility)  # ambiguous stacked mounts cannot claim visibility
+    raise RuntimeError('procfs visibility evidence unavailable')
 
 
 def stop_owned_process_tree(process, budget):
     import signal
     import subprocess
+    group_gone = False
     if os.name == 'posix':
         try:
             os.killpg(process.pid, signal.SIGKILL)
         except ProcessLookupError:
-            pass
+            group_gone = True
         except PermissionError as denied:
             # Darwin may reject the group during the leader's exit/reap window.
             # A bounded wait distinguishes that race from a live denied worker.
@@ -313,7 +348,7 @@ def stop_owned_process_tree(process, budget):
             try:
                 os.killpg(process.pid, 0)
             except ProcessLookupError:
-                pass
+                group_gone = True
             except PermissionError:
                 raise denied
             else:
@@ -325,7 +360,7 @@ def stop_owned_process_tree(process, budget):
     if process.poll() is None:
         process.kill()
     process.wait(timeout=5)
-    if sys.platform.startswith('linux'):
+    if sys.platform.startswith('linux') and not group_gone:
         import time
         deadline = time.monotonic() + 5
         while _linux_group_live(process.pid):
