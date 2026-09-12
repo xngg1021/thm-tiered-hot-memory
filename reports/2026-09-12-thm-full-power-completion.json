@@ -4,7 +4,7 @@
   "repository": "xngg1021/thm-tiered-hot-memory",
   "version": "1.5.0",
   "implementation_status": "implemented",
-  "implementation_sha256": "1913eeee70271668df7f7701462ad1e153e216bc3656eab2c98dd134f2391d5c",
+  "implementation_sha256": "deae5c1f0ebe213ba6a523f1f0c85374c61d18848330b73b0510e4ac3823efbc",
   "archive_branch": "archive/v1.5.0-stable",
   "accepted_merge_commit": null,
   "historical": {
@@ -67,7 +67,8 @@
       "Retain mounted root descriptor identity across relative operations and reject replacements before worker activation",
       "Contain exhaustive old-shard retirement failures after publication and retain failed handles for bounded retry",
       "Historical intermediate repair, superseded by unconditional deferral on denied accounting: Capture process-group membership before accounting reads; refuse unavailable leader accounting when helpers could disappear during an exit wait",
-      "Never accept denied process-group accounting through a leader wait or state recheck; explicitly defer unprovable probes with no acceptance credit, including helpers joining after enumeration"
+      "Never accept denied process-group accounting through a leader wait or state recheck; explicitly defer unprovable probes with no acceptance credit, including helpers joining after enumeration",
+      "Install kernel descendant containment before deserializing environment/storage callbacks: inherited Linux group/session/namespace restrictions, Darwin no-fork Seatbelt, Windows no-breakaway Job Object"
     ],
     "ci_repairs": [
       "Preserve concurrent d00b237 Darwin EPERM cleanup fix; live-worker permission failures remain errors",
@@ -76,7 +77,8 @@
       "Recheck Linux process-group membership after reaping a concurrently exiting leader",
       "Reject exhausted environment deadlines before Windows Job Object creation",
       "Historical intermediate repair, superseded by unconditional deferral on denied accounting: Confirm leader termination with a bounded wait when procfs I/O permissions disappear during exit; live leader/helper failures remain closed",
-      "Close the quarantined mounted worker before its test temporary directory is removed on Windows"
+      "Close the quarantined mounted worker before its test temporary directory is removed on Windows",
+      "Assert mounted timeout worker/parent handles are released before temporary-root deletion, with a one-second Windows sharing-violation retry that still rejects persistent handles"
     ]
   },
   "domains": [
@@ -1899,7 +1901,7 @@
     }
   ],
   "validation": {
-    "local_unit_tests": 648,
+    "local_unit_tests": 651,
     "local_unit_skipped": 3,
     "numeric_audit_tests": 10,
     "benchmark_fixtures": 5,

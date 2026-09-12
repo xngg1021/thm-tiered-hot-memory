@@ -435,6 +435,7 @@ class StorageBackend:
                  'direct_dma': None, 'zero_copy': None, 'hardware_accepted': False,
                  'execution_boundary': 'owned-process-tree', 'timeout_enforcement': 'owned-process-tree', 'timeout_seconds': self.config.timeout_seconds,
                  'protected_mounted_commit_seconds': self.worker.commit_seconds,
+                 'descendant_containment': self.worker.containment,
                  'logical_mutation': False, 'fallback': 'local-filesystem', 'durability': self.config.durability}
         return {**value, 'receipt_sha256': identity(value)}
 

@@ -65,6 +65,29 @@ class HangingMountedStage(MountedFilesystemTransport):
             time.sleep(.05)
 
 
+def attempt_detached_helper(marker):
+    helper = subprocess.Popen([sys.executable, '-c', 'import time; time.sleep(2)'], start_new_session=True)
+    try:
+        Path(marker).write_text(str(helper.pid))
+    finally:
+        helper.terminate(); helper.wait(timeout=3)
+
+
+class DetachedEnvironment(DeterministicEnvironment):
+    def reset(self, task_id):
+        attempt_detached_helper(self.marker)
+        return super().reset(task_id)
+
+
+class DetachedTransport(FixtureTransport):
+    def __init__(self, marker):
+        super().__init__(); self.marker = marker
+
+    def stage(self, *args):
+        attempt_detached_helper(self.marker)
+        return super().stage(*args)
+
+
 class LostMountedAcknowledgement(MountedFilesystemTransport):
     def commit(self, transaction):
         super().commit(transaction)
@@ -245,6 +268,16 @@ def failing_policy(*args):
 
 
 class EnvironmentFailureTests(unittest.TestCase):
+    @unittest.skipUnless(os.name == 'posix', 'POSIX session escape prevention')
+    def test_environment_cannot_launch_a_detached_helper(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            marker = Path(tmp)/'escaped'
+            runner = EnvironmentRunner(DetachedEnvironment(marker=str(marker)),
+                EnvironmentIdentity('fixture','fixture','a'*64), wall_seconds=3)
+            with self.assertRaisesRegex(RuntimeError, 'PermissionError'):
+                runner.run(Task('a','scope','query',()), deterministic_environment_policy)
+            self.assertFalse(marker.exists())
+
     def test_callback_exceptions_and_close_failure_never_publish_success(self):
         for stage in ('reset','policy','step','close'):
             with self.subTest(stage=stage), tempfile.TemporaryDirectory() as tmp:
@@ -391,6 +424,27 @@ class TransportDeadlineTests(unittest.TestCase):
         self.addCleanup(backend.worker.stop)
         return backend
 
+    @unittest.skipUnless(os.name == 'posix', 'POSIX session escape prevention')
+    def test_storage_cannot_launch_a_detached_helper(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            marker = Path(tmp)/'escaped'
+            b = self.backend(DetachedTransport(str(marker)), 3)
+            with self.assertRaises(PermissionError): b.write(b'abc', generation='g')
+            self.assertEqual(b.bytes_written, 0)
+            self.assertFalse(marker.exists())
+            b.close()
+
+    @unittest.skipUnless(sys.platform.startswith('linux'), 'Linux inherited syscall filter')
+    def test_linux_descendants_inherit_group_and_session_restrictions(self):
+        child = "import os; denied=0\nfor call in (lambda:os.setsid(),lambda:os.setpgid(0,0)):\n try: call()\n except PermissionError: denied+=1\nassert denied==2\n"
+        parent = ('from thm._process_containment import install_descendant_containment\n'
+                  'import subprocess,sys,threading\n'
+                  'install_descendant_containment()\n'
+                  'thread=threading.Thread(target=lambda:None);thread.start();thread.join()\n'
+                  'subprocess.run([sys.executable,"-c",'+repr(child)+'],check=True)\n')
+        result = subprocess.run([sys.executable, '-c', parent], capture_output=True, timeout=5)
+        self.assertEqual(result.returncode, 0, result.stderr.decode())
+
     def test_all_transport_callbacks_are_interruptible(self):
         for stage in ('stage', 'commit', 'size', 'read', 'abort', 'close'):
             with self.subTest(stage=stage):
@@ -427,11 +481,28 @@ class TransportDeadlineTests(unittest.TestCase):
         self.assertIsNone(b.worker.process)
 
     def test_mounted_timeout_cleans_owned_pending_file(self):
-        with tempfile.TemporaryDirectory() as tmp:
+        with tempfile.TemporaryDirectory() as tmp, ExitStack() as cleanup:
             b=self.backend(HangingMountedStage(tmp))
+            cleanup.callback(b.close)
             with self.assertRaises(TimeoutError): b.write(b'abc',generation='g')
-            self.assertEqual(list(Path(tmp).iterdir()),[])
             b.close()
+            self.assertIsNone(b.worker.process)
+            self.assertIsNone(b.worker.budget)
+            self.assertIsNone(b.transport._root_fd)
+            self.assertEqual(list(Path(tmp).iterdir()),[])
+            if os.name == 'nt':
+                # Confirm the directory really becomes deletable after owned
+                # process termination. Only transient sharing violations retry;
+                # a persistent leaked handle still fails within one second.
+                deadline = time.monotonic() + 1
+                while True:
+                    try:
+                        os.rmdir(tmp)
+                        break
+                    except PermissionError as exc:
+                        if getattr(exc, 'winerror', None) != 32 or time.monotonic() >= deadline:
+                            raise
+                        time.sleep(.01)
 
     def test_s3_factory_preserves_state_and_receipt(self):
         b=self.backend(s3_factory,3)

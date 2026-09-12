@@ -30,6 +30,7 @@ class TransportWorker:
         self.sequence = 0
         self.evidence = None
         self.commit_seconds = None
+        self.containment = None
 
     def _start(self, deadline):
         from thm.runtime.fabric.resources import ChildBudget
@@ -80,6 +81,9 @@ class TransportWorker:
                     if time.monotonic() >= deadline:
                         break
                     self.evidence = value['evidence']
+                    self.containment = value['descendant_containment']
+                    if self.containment not in ('linux-inherited-seccomp-pgid', 'darwin-seatbelt-no-fork', 'windows-job-no-breakaway'):
+                        raise ValueError('invalid descendant containment')
                     self.commit_seconds = value.get('commit_seconds')
                     if self.commit_seconds not in (None, 1):
                         raise ValueError('invalid transport commit protection budget')
@@ -121,6 +125,8 @@ class TransportWorker:
 def main():
     if sys.stdin.buffer.readline(4) != b'go\n':
         return 2
+    from thm._process_containment import install_descendant_containment
+    containment = install_descendant_containment()
     root, maximum = Path(sys.argv[1]), int(sys.argv[2])
     definition = pickle.loads((root / 'definition').read_bytes())
     transport = definition() if callable(definition) else definition
@@ -143,6 +149,7 @@ def main():
         except Exception as exc:
             value = dict(sequence=sequence, error=type(exc).__name__)
         value['evidence'] = transport.evidence
+        value['descendant_containment'] = containment
         from .backends import MountedFilesystemTransport
         value['commit_seconds'] = 1 if isinstance(transport, MountedFilesystemTransport) else None
         raw = pickle.dumps(value)
