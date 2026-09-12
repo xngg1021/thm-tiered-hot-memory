@@ -4,7 +4,7 @@
   "repository": "xngg1021/thm-tiered-hot-memory",
   "version": "1.5.0",
   "implementation_status": "implemented",
-  "implementation_sha256": "3fb86b357ac0d74dba261abb22a68a50f351131e02de2440c7a594bd633251e6",
+  "implementation_sha256": "08cd0e914fbfd1500796a2d7620d7570a75246650a9edcdf15e9eb2f6b093111",
   "archive_branch": "archive/v1.5.0-stable",
   "accepted_merge_commit": null,
   "historical": {
@@ -54,7 +54,8 @@
       "Interrupt all external storage callbacks through an owned process tree"
     ],
     "ci_repairs": [
-      "Handle Darwin EPERM for a reaped process group while preserving errors for live workers"
+      "Handle Darwin EPERM for a reaped process group while preserving errors for live workers",
+      "Use os.stat device/inode identity instead of Windows DirEntry zero fields"
     ]
   },
   "domains": [
@@ -1874,7 +1875,7 @@
     }
   ],
   "validation": {
-    "local_unit_tests": 609,
+    "local_unit_tests": 610,
     "local_unit_skipped": 2,
     "numeric_audit_tests": 10,
     "benchmark_fixtures": 5,

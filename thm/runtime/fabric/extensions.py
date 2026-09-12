@@ -93,7 +93,9 @@ def bounded_artifact_digest(source, maximum_bytes, *, copy_root=None):
                 entries += 1
                 if entries > 4096:
                     raise MemoryError('extension artifact entry budget')
-                info = entry.stat(follow_symlinks=False)
+                # DirEntry.stat reports zero device/inode on Windows; use os.stat.
+                # https://docs.python.org/3/library/os.html#os.DirEntry.stat
+                info = os.stat(entry.path, follow_symlinks=False)
                 if stat.S_ISLNK(info.st_mode):
                     raise ValueError('symlink artifact content refused')
                 if stat.S_ISDIR(info.st_mode):

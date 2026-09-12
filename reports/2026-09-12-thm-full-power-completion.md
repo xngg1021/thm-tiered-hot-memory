@@ -101,3 +101,5 @@ A second completed review added three lifecycle repairs: atomic snapshot publica
 A third completed review tightened descriptor identity and byte bounds for artifact/snapshot reads, and placed all external storage callbacks behind an owned process deadline. FIFO/symlink replacement, post-stat growth and stage/commit/size/read/close timeout regressions pass. The full local suite now runs 608 tests (two platform/dependency skips).
 
 The macOS matrix exposed a process-group cleanup race after worker exit. Cleanup accepts EPERM only when the owned worker has exited; a live-worker permission failure still propagates. The added regression brings the local suite to 609 tests (two expected skips).
+
+Windows then exposed zero device/inode values from DirEntry.stat. Enumeration now uses os.stat identity before same-descriptor validation, as specified in Python documentation. Full local regression suite: 610 tests, two expected skips.

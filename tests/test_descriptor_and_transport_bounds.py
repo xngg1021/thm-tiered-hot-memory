@@ -31,6 +31,17 @@ class DescriptorTests(unittest.TestCase):
                     with self.assertRaises((ValueError,OSError)):bounded_artifact_digest(root,100)
                 self.assertLess(time.monotonic()-start,1)
 
+    def test_enumeration_uses_full_stat_identity(self):
+        from types import SimpleNamespace
+        with tempfile.TemporaryDirectory() as tmp:
+            root=Path(tmp);path=root/'model';path.write_bytes(b'abc')
+            expected=bounded_artifact_digest(root,100)
+            entry=SimpleNamespace(path=str(path),name='model',stat=mock.Mock(side_effect=AssertionError('DirEntry identity unavailable')))
+            scan=mock.MagicMock();scan.__enter__.return_value=iter([entry])
+            with mock.patch('os.scandir',return_value=scan):
+                self.assertEqual(bounded_artifact_digest(root,100),expected)
+            entry.stat.assert_not_called()
+
     def test_restore_size_checked_on_the_opened_descriptor(self):
         from thm import _bounded_files as bounded
         with tempfile.TemporaryDirectory() as tmp:
