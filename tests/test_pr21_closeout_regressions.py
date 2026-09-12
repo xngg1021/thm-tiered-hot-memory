@@ -3,6 +3,7 @@ from contextlib import contextmanager, ExitStack
 from dataclasses import replace
 import hashlib
 import io
+import json
 import os
 from pathlib import Path
 import subprocess
@@ -31,8 +32,12 @@ class BlockingTransport(FixtureTransport):
     def pause(self, stage):
         if self.hang == stage:
             if self.marker:
-                helper = subprocess.Popen([sys.executable, '-c', 'import time; time.sleep(60)'])
-                Path(self.marker).write_text(str(helper.pid))
+                subprocess.Popen([sys.executable, '-c',
+                    'import json,sys,time; from pathlib import Path; '
+                    'root=Path("/proc/self").resolve(); '
+                    'fields=(root/"stat").read_text().rsplit(")",1)[1].split(); '
+                    'Path(sys.argv[1]).write_text(json.dumps({"root":str(root),"start":fields[19]})); '
+                    'time.sleep(60)', self.marker])
             while True:
                 time.sleep(.05)
 
@@ -553,8 +558,12 @@ class TransportDeadlineTests(unittest.TestCase):
             b=self.backend(BlockingTransport('stage',str(marker)),1)
             with self.assertRaises(TimeoutError): b.write(b'abc',generation='g')
             self.assertTrue(marker.exists())
-            status=Path('/proc')/marker.read_text()/'stat'
-            if status.exists(): self.assertEqual(status.read_text().rsplit(')',1)[1].split()[0],'Z')
+            recorded=json.loads(marker.read_text())
+            status=Path(recorded['root'])/'stat'
+            if status.exists():
+                fields=status.read_text().rsplit(')',1)[1].split()
+                if fields[19] == recorded['start']:
+                    self.assertEqual(fields[0], 'Z')
             b.close()
 
 

@@ -112,6 +112,10 @@ class ChildBudget:
 
     def _linux_usage(self, proc_root=Path('/proc'), pgid=None):
         """Aggregate every *live* observable member of the worker process group."""
+        if proc_root == Path('/proc'):
+            own_pid = int((proc_root/'self'/'stat').read_text().split(' ', 1)[0])
+            if own_pid != os.getpid():
+                raise ProcessGroupAccountingUnavailable('procfs PID namespace mismatch')
         if pgid is None:
             pgid = self.pgid
         if pgid is None:
