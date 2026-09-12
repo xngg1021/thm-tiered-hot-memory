@@ -132,10 +132,23 @@ class ChildBudget:
                 fields = (root/'stat').read_text().rsplit(')', 1)[1].split()
                 if len(fields) < 13 or int(fields[2]) != int(pgid):
                     continue
+                if fields[0] in ('Z', 'X', 'x'):
+                    continue
                 status = dict(line.split(':', 1) for line in (root/'status').read_text().splitlines() if ':' in line)
                 io = dict(line.split(':', 1) for line in (root/'io').read_text().splitlines() if ':' in line)
             except (FileNotFoundError, ProcessLookupError):
                 continue
+            except PermissionError:
+                # Exit can remove access to /proc/PID/io after a live stat
+                # sample. Only an observed dead/disappeared process may be
+                # omitted; a live denied member still fails accounting closed.
+                try:
+                    current = (root/'stat').read_text().rsplit(')', 1)[1].split()
+                except (FileNotFoundError, ProcessLookupError):
+                    continue
+                if current and current[0] in ('Z', 'X', 'x'):
+                    continue
+                raise
             members += 1
             rss += int(status.get('VmRSS', '0 kB').split()[0])*1024
             cpu += (int(fields[11])+int(fields[12]))/ticks
