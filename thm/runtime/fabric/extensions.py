@@ -85,61 +85,71 @@ def bounded_artifact_digest(source, maximum_bytes, *, copy_root=None):
     root = source.parent if source.is_file() else source
     if not root.is_dir() or root.is_symlink():
         raise ValueError('local artifact bundle required')
-    pending, files, entries, total = [root], [], 0, 0
-    while pending:
-        directory = pending.pop()
-        with os.scandir(directory) as children:
-            for entry in children:
-                entries += 1
-                if entries > 4096:
-                    raise MemoryError('extension artifact entry budget')
-                info = entry.stat(follow_symlinks=False)
-                if stat.S_ISLNK(info.st_mode):
-                    raise ValueError('symlink artifact content refused')
-                if stat.S_ISDIR(info.st_mode):
-                    pending.append(Path(entry.path))
-                elif stat.S_ISREG(info.st_mode):
-                    if entry.name == 'thm-preparation.json':
-                        if Path(entry.path) == source:
-                            raise ValueError('preparation metadata is not a model artifact')
-                        continue
-                    total += info.st_size
-                    if total > maximum_bytes:
-                        raise MemoryError('extension artifact input budget')
-                    files.append((Path(entry.path), info.st_size, (info.st_dev, info.st_ino)))
-                else:
-                    raise ValueError('regular artifact files required')
-    if not files:
-        raise ValueError('empty artifact bundle')
-    rows, consumed = [], 0
-    for path, expected_size, expected_identity in sorted(files):
-        h, length = hashlib.sha256(), 0
-        from contextlib import ExitStack
-        with ExitStack() as stack:
-            from thm._bounded_files import open_regular
-            stream, opened = stack.enter_context(open_regular(path, maximum_bytes=maximum_bytes-consumed, expected_identity=expected_identity))
-            target = None
-            if copy_root is not None:
-                destination = Path(copy_root) / path.relative_to(root)
-                destination.parent.mkdir(parents=True, exist_ok=True)
-                target = stack.enter_context(destination.open('xb'))
-            while True:
-                block = stream.read(min(1024*1024, maximum_bytes-consumed+1))
-                if not block:
-                    break
-                consumed += len(block); length += len(block)
-                if consumed > maximum_bytes:
-                    raise MemoryError('artifact grew beyond preparation budget')
-                h.update(block)
-                if target is not None and target.write(block) != len(block):
-                    raise OSError('short artifact staging write')
-            if target is not None:
-                target.flush()
-                os.fsync(target.fileno())
-        if length != expected_size:
-            raise ValueError('artifact changed while hashing')
-        rows.append({'name': path.relative_to(root).as_posix(), 'sha256': h.hexdigest(), 'bytes': length})
-    return digest(rows)
+    from contextlib import ExitStack
+    from thm._bounded_files import validated_descriptor
+    # Hold directory descriptors until copying finishes. Enumeration and opens
+    # stay relative to those directories, even if their pathnames are replaced.
+    with ExitStack() as directories:
+        root_fd, _ = directories.enter_context(validated_descriptor(root, directory=True))
+        pending, files, entries, total = [(root, root_fd)], [], 0, 0
+        while pending:
+            directory, directory_fd = pending.pop()
+            with os.scandir(directory_fd if os.name == 'posix' else directory) as children:
+                for entry in children:
+                    entries += 1
+                    if entries > 4096:
+                        raise MemoryError('extension artifact entry budget')
+                    info = entry.stat(follow_symlinks=False)
+                    path = directory / entry.name
+                    if stat.S_ISLNK(info.st_mode) or getattr(info, 'st_file_attributes', 0) & 0x400:
+                        raise ValueError('symlink artifact content refused')
+                    if stat.S_ISDIR(info.st_mode):
+                        child_fd, _ = directories.enter_context(validated_descriptor(
+                            entry.name if os.name == 'posix' else path, directory=True,
+                            expected=info, dir_fd=directory_fd if os.name == 'posix' else None))
+                        pending.append((path, child_fd))
+                    elif stat.S_ISREG(info.st_mode):
+                        if entry.name == 'thm-preparation.json':
+                            if path == source:
+                                raise ValueError('preparation metadata is not a model artifact')
+                            continue
+                        total += info.st_size
+                        if total > maximum_bytes:
+                            raise MemoryError('extension artifact input budget')
+                        files.append((path, directory_fd, info))
+                    else:
+                        raise ValueError('regular artifact files required')
+        if not files:
+            raise ValueError('empty artifact bundle')
+        rows, consumed = [], 0
+        for path, directory_fd, expected in sorted(files):
+            h, length = hashlib.sha256(), 0
+            with ExitStack() as stack:
+                fd, _ = stack.enter_context(validated_descriptor(
+                    path.name if os.name == 'posix' else path, expected=expected,
+                    dir_fd=directory_fd if os.name == 'posix' else None))
+                target = None
+                if copy_root is not None:
+                    destination = Path(copy_root) / path.relative_to(root)
+                    destination.parent.mkdir(parents=True, exist_ok=True)
+                    target = stack.enter_context(destination.open('xb'))
+                while True:
+                    block = os.read(fd, min(1024*1024, maximum_bytes-consumed+1))
+                    if not block:
+                        break
+                    consumed += len(block); length += len(block)
+                    if consumed > maximum_bytes:
+                        raise MemoryError('artifact grew beyond preparation budget')
+                    h.update(block)
+                    if target is not None and target.write(block) != len(block):
+                        raise OSError('short artifact staging write')
+                if target is not None:
+                    target.flush()
+                    os.fsync(target.fileno())
+            if length != expected.st_size:
+                raise ValueError('artifact changed while hashing')
+            rows.append({'name': path.relative_to(root).as_posix(), 'sha256': h.hexdigest(), 'bytes': length})
+        return digest(rows)
 
 
 class ExtensionSession:

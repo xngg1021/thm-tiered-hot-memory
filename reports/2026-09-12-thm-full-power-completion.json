@@ -4,7 +4,7 @@
   "repository": "xngg1021/thm-tiered-hot-memory",
   "version": "1.5.0",
   "implementation_status": "implemented",
-  "implementation_sha256": "657ecdf09ce37f7f11fc05116aa65ac2e47726523a15a411a7a561ff286b6797",
+  "implementation_sha256": "0143436bf6826cdb3b91e5046bd891355f809086ff8c21aa8fe301b19ebdf3f5",
   "archive_branch": "archive/v1.5.0-stable",
   "accepted_merge_commit": null,
   "historical": {
@@ -51,7 +51,10 @@
       "Enforce environment callback and cleanup deadlines in an owned process tree",
       "Bind artifact reads to non-following, nonblocking, size-checked regular-file descriptors",
       "Read restored snapshots through one checked descriptor with a growth bound",
-      "Interrupt all external storage callbacks through an owned process tree"
+      "Interrupt all external storage callbacks through an owned process tree",
+      "Retain directory descriptors across enumeration and freeze complete sibling bundles",
+      "Preserve explicit timeout transaction journals and bounded owned mounted-file cleanup",
+      "Reject environment launch/result deadline exhaustion and callback/close exceptions"
     ]
   },
   "domains": [
@@ -227,7 +230,8 @@
       "validation_paths": [
         "tests/test_model_fabric.py",
         "tests/test_optional_sdk_bindings.py",
-        "tests/test_descriptor_and_transport_bounds.py"
+        "tests/test_descriptor_and_transport_bounds.py",
+        "tests/test_pr21_closeout_regressions.py"
       ],
       "behavior": "Local immutable artifact/compile/load identity, no automatic model/SDK download."
     },
@@ -280,7 +284,8 @@
       "validation_paths": [
         "tests/test_full_power_lifecycles.py",
         "tests/test_optional_sdk_bindings.py",
-        "tests/test_descriptor_and_transport_bounds.py"
+        "tests/test_descriptor_and_transport_bounds.py",
+        "tests/test_pr21_closeout_regressions.py"
       ],
       "behavior": "42 configured family lifecycles plus portable buffered/mmap, mounted files and S3; native transport distinct."
     },
@@ -333,7 +338,8 @@
       "validation_paths": [
         "tests/test_evaluation_fabric.py",
         "tests/test_full_power_protocols.py",
-        "tests/test_descriptor_and_transport_bounds.py"
+        "tests/test_descriptor_and_transport_bounds.py",
+        "tests/test_pr21_closeout_regressions.py"
       ],
       "behavior": "Three evidence layers, source/implementation hash, bounded fixture and explicit full-research paths."
     },
@@ -1871,7 +1877,7 @@
     }
   ],
   "validation": {
-    "local_unit_tests": 608,
+    "local_unit_tests": 624,
     "local_unit_skipped": 2,
     "numeric_audit_tests": 10,
     "benchmark_fixtures": 5,

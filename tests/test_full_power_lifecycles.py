@@ -84,6 +84,7 @@ class StorageTests(unittest.TestCase):
     def test_failure_aborts_without_publishing(self):
         t = FixtureTransport(); t.fail_at = 'commit'
         b = StorageBackend(BackendConfig('spdk', 'target', 'g'), t)
+        self.addCleanup(b.close)
         with self.assertRaises(OSError):
             b.write(b'payload', generation='g')
         self.assertEqual(t.pending, {})
@@ -91,14 +92,16 @@ class StorageTests(unittest.TestCase):
         self.assertEqual(b.journal[-1]['state'], 'aborted')
 
     def test_corruption_and_generation_fail_closed(self):
-        t = FixtureTransport(); b = StorageBackend(BackendConfig('cxl-type3', 'target', 'g'), t)
-        key = b.write(b'abc', generation='g')
-        with self.assertRaises(ValueError):
-            b.read(TransferExtent(key, 0, 1), generation='old')
-        t.objects[key] = b'xyz'
-        with self.assertRaises(ValueError):
-            b.read(TransferExtent(key, 0, 1), generation='g')
-        self.assertEqual(b.state, 'quarantined')
+        with tempfile.TemporaryDirectory() as tmp:
+            b = StorageBackend(BackendConfig('cxl-type3', 'target', 'g'), MountedFilesystemTransport(tmp))
+            self.addCleanup(b.close)
+            key = b.write(b'abc', generation='g')
+            with self.assertRaises(ValueError):
+                b.read(TransferExtent(key, 0, 1), generation='old')
+            (Path(tmp) / (key + '.seg')).write_bytes(b'xyz')
+            with self.assertRaises(ValueError):
+                b.read(TransferExtent(key, 0, 1), generation='g')
+            self.assertEqual(b.state, 'quarantined')
 
     def test_mounted_transport_reopen_and_checksum(self):
         with tempfile.TemporaryDirectory() as tmp:

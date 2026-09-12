@@ -21,11 +21,11 @@ class DescriptorTests(unittest.TestCase):
             with self.subTest(kind=kind),tempfile.TemporaryDirectory() as tmp:
                 root=Path(tmp);path=root/'model';path.write_bytes(b'abc')
                 real=bounded._open_fd
-                def swap(value):
+                def swap(value, **kwargs):
                     path.unlink()
                     if kind=='fifo':os.mkfifo(path)
                     else:path.symlink_to('/dev/zero')
-                    return real(value)
+                    return real(value, **kwargs)
                 start=time.monotonic()
                 with mock.patch.object(bounded,'_open_fd',side_effect=swap):
                     with self.assertRaises((ValueError,OSError)):bounded_artifact_digest(root,100)
@@ -37,7 +37,7 @@ class DescriptorTests(unittest.TestCase):
             root=Path(tmp);small=root/'snapshot';small.mkdir();(small/'thm-memory.json').write_bytes(b'{}')
             large=root/'large';large.write_bytes(b'x'*1024)
             memory=AgentMemory(root/'memory.db','scope');real=bounded._open_fd
-            with mock.patch('thm.evaluation.memory.SNAPSHOT_MAX_BYTES',100),mock.patch.object(bounded,'_open_fd',side_effect=lambda p:real(large)):
+            with mock.patch('thm.evaluation.memory.SNAPSHOT_MAX_BYTES',100),mock.patch.object(bounded,'_open_fd',side_effect=lambda p, **kwargs:real(large, **kwargs)):
                 with self.assertRaises(ValueError):memory.restore(small)
             memory.close()
 
@@ -62,14 +62,14 @@ class TransportBoundsTests(unittest.TestCase):
                 with self.assertRaises(TimeoutError):backend.write(b'abc',generation='g')
                 self.assertLess(time.monotonic()-start,7)
                 self.assertEqual(backend.state,'quarantined')
-                self.assertTrue(backend._remote.closed)
+                self.assertIsNone(backend.worker.process)
                 backend.close()
 
     def test_external_close_is_interruptible_too(self):
         backend=StorageBackend(BackendConfig('spdk','fixture','g',timeout_seconds=1),functools.partial(DelayedTransport,'close'))
         backend.write(b'abc',generation='g')
         with self.assertRaises(TimeoutError):backend.close()
-        self.assertEqual(backend.state,'closed');self.assertTrue(backend._remote.closed)
+        self.assertEqual(backend.state,'closed');self.assertTrue(backend.worker.process is None)
 
 
 if __name__=='__main__':unittest.main()
