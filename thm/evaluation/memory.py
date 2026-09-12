@@ -100,9 +100,8 @@ class AgentMemory:
         import json
         from .contracts import digest
         path = Path(input_dir)/'thm-memory.json'
-        if path.is_symlink() or path.stat().st_size > SNAPSHOT_MAX_BYTES:
-            raise ValueError('bounded memory snapshot required')
-        value = json.loads(path.read_text(encoding='utf-8'))
+        from thm._bounded_files import read_regular
+        value = json.loads(read_regular(path, maximum_bytes=SNAPSHOT_MAX_BYTES).decode('utf-8'))
         checksum = value.pop('receipt_sha256', None)
         if checksum != digest(value) or value.get('schema') != 'thm-agent-memory/1' or value.get('scope') != self.scope or value.get('budget') != self.budget:
             raise ValueError('memory snapshot identity mismatch')

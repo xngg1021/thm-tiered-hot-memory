@@ -124,14 +124,15 @@ class SDKTests(unittest.TestCase):
             self.assertEqual(len(released),3)
 
     def test_s3_conditional_publish_range_and_caller_ownership(self):
-        objects={};closed=[]
-        def put(**kw):
-            self.assertEqual(kw['IfNoneMatch'],'*');objects[kw['Key']]=kw['Body']
-        def get(**kw):
-            a,b=map(int,kw['Range'][6:].split('-'));return {'Body':io.BytesIO(objects[kw['Key']][a:b+1])}
-        client=types.SimpleNamespace(put_object=put,get_object=get,head_object=lambda **kw:dict(ContentLength=len(objects[kw['Key']])),close=lambda:closed.append(True))
-        b=StorageBackend(BackendConfig('s3','s3','g'),S3Transport(client,'fixture'))
-        key=b.write(b'abcdef',generation='g');self.assertEqual(b.read(TransferExtent(key,2,2),generation='g'),b'cd');b.close();self.assertEqual(closed,[])
+        from thm.physical.fixtures import FakeS3Client
+        with tempfile.TemporaryDirectory() as tmp:
+            marker=Path(tmp)/'client-close'
+            b=StorageBackend(BackendConfig('s3','s3','g'),S3Transport(FakeS3Client(marker),'fixture'))
+            key=b.write(b'abcdef',generation='g')
+            self.assertEqual(b.read(TransferExtent(key,2,2),generation='g'),b'cd')
+            self.assertEqual(b.receipt()['timeout_enforcement'],'owned-process-tree')
+            self.assertEqual(b.receipt()['evidence'],'fixture-validated')
+            b.close();self.assertFalse(marker.exists())
 
     def test_unknown_cold_cost_is_never_free(self):
         p=PolicySelector()

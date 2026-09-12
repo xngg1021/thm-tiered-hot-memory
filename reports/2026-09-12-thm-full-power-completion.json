@@ -4,7 +4,7 @@
   "repository": "xngg1021/thm-tiered-hot-memory",
   "version": "1.5.0",
   "implementation_status": "implemented",
-  "implementation_sha256": "e4375156b9f888cad5de8fd9f68131dd2175a7d2810908d487684e6e03ae78fc",
+  "implementation_sha256": "657ecdf09ce37f7f11fc05116aa65ac2e47726523a15a411a7a561ff286b6797",
   "archive_branch": "archive/v1.5.0-stable",
   "accepted_merge_commit": null,
   "historical": {
@@ -48,7 +48,10 @@
       "Resolve LangGraph/Deep Agents through the advertised harness extra and constraints",
       "Atomically publish snapshots with fsync and create-only link",
       "Load path artifacts from a bounded verified private copy",
-      "Enforce environment callback and cleanup deadlines in an owned process tree"
+      "Enforce environment callback and cleanup deadlines in an owned process tree",
+      "Bind artifact reads to non-following, nonblocking, size-checked regular-file descriptors",
+      "Read restored snapshots through one checked descriptor with a growth bound",
+      "Interrupt all external storage callbacks through an owned process tree"
     ]
   },
   "domains": [
@@ -223,7 +226,8 @@
       ],
       "validation_paths": [
         "tests/test_model_fabric.py",
-        "tests/test_optional_sdk_bindings.py"
+        "tests/test_optional_sdk_bindings.py",
+        "tests/test_descriptor_and_transport_bounds.py"
       ],
       "behavior": "Local immutable artifact/compile/load identity, no automatic model/SDK download."
     },
@@ -275,7 +279,8 @@
       ],
       "validation_paths": [
         "tests/test_full_power_lifecycles.py",
-        "tests/test_optional_sdk_bindings.py"
+        "tests/test_optional_sdk_bindings.py",
+        "tests/test_descriptor_and_transport_bounds.py"
       ],
       "behavior": "42 configured family lifecycles plus portable buffered/mmap, mounted files and S3; native transport distinct."
     },
@@ -327,7 +332,8 @@
       ],
       "validation_paths": [
         "tests/test_evaluation_fabric.py",
-        "tests/test_full_power_protocols.py"
+        "tests/test_full_power_protocols.py",
+        "tests/test_descriptor_and_transport_bounds.py"
       ],
       "behavior": "Three evidence layers, source/implementation hash, bounded fixture and explicit full-research paths."
     },
@@ -1865,7 +1871,7 @@
     }
   ],
   "validation": {
-    "local_unit_tests": 603,
+    "local_unit_tests": 608,
     "local_unit_skipped": 2,
     "numeric_audit_tests": 10,
     "benchmark_fixtures": 5,

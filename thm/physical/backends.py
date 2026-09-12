@@ -159,6 +159,7 @@ class S3Transport:
         if not bucket or prefix.startswith('/') or '..' in prefix.split('/'):
             raise ValueError('invalid S3 destination')
         self.client, self.bucket, self.prefix, self.pending = client, bucket, prefix, {}
+        self.evidence = 'fixture-validated' if getattr(client, 'evidence', None) == 'fixture-validated' else 'environment-unvalidated'
 
     def _key(self, key):
         check_sha(key)
@@ -195,24 +196,50 @@ class S3Transport:
 
 
 class StorageBackend:
-    def __init__(self, config, transport, *, clock=time.monotonic):
+    def __init__(self, config, transport, *, clock=time.monotonic, _worker=False):
         if not isinstance(config, BackendConfig):
             raise TypeError('BackendConfig required')
         for method in ('stage', 'commit', 'abort', 'read', 'size', 'close'):
-            if not callable(getattr(transport, method, None)):
+            if not callable(transport) and not callable(getattr(transport, method, None)):
                 raise TypeError('complete storage transport required')
-        if getattr(transport, 'evidence', None) not in ('fixture-validated', 'environment-unvalidated'):
+        if not callable(transport) and getattr(transport, 'evidence', None) not in ('fixture-validated', 'environment-unvalidated'):
             raise ValueError('transport provenance required')
         self.config, self.transport, self.clock = config, transport, clock
         self.lock, self.state = threading.RLock(), 'ready'
         self.journal = []
         self.bytes_read = self.bytes_written = self.bytes_requested = 0
+        self._remote = None
+        # The built-in deterministic in-memory fixture has no external callbacks.
+        # Every other transport runs behind an owned process deadline.
+        if not _worker and type(transport) is not FixtureTransport:
+            from .backend_worker import BackendWorker
+            self._remote = BackendWorker(config, transport)
+
+    def _remote_call(self, operation, *args, **kwargs):
+        with self.lock:
+            try:
+                return self._remote.call(operation, *args, **kwargs)
+            except TimeoutError:
+                self.state = 'quarantined'
+                raise
+            finally:
+                receipt = self._remote.receipt
+                if not self._remote.closed:self.state = receipt.get('state', self.state)
+                self.bytes_read = receipt.get('bytes_read', self.bytes_read)
+                self.bytes_written = receipt.get('bytes_written', self.bytes_written)
+                self.bytes_requested = receipt.get('bytes_requested', self.bytes_requested)
+                self.journal = receipt.get('journal', self.journal)
 
     def _guard(self, generation):
         if self.state != 'ready' or generation != self.config.generation:
             raise ValueError('closed/quarantined/stale storage backend')
 
     def write(self, data, *, generation):
+        if self._remote is not None:
+            self._guard(generation)
+            if self.config.readonly:raise PermissionError('read-only backend')
+            if not 0 < len(data) <= self.config.max_object_bytes:raise ValueError('storage object exceeds budget')
+            return self._remote_call('write', bytes(data), generation=generation)
         with self.lock:
             self._guard(generation)
             if self.config.readonly:
@@ -228,6 +255,7 @@ class StorageBackend:
                 self.transport.stage(transaction, key, data)
                 if self.clock()-start > self.config.timeout_seconds:
                     raise TimeoutError('storage stage deadline')
+                row['state'] = 'commit-requested'
                 self.transport.commit(transaction)
                 row['state'] = 'published-unverified'
                 if not self.verify(key):
@@ -238,10 +266,15 @@ class StorageBackend:
                 self.bytes_written += len(data)
                 return key
             except Exception as exc:
-                self.transport.abort(transaction)
+                try:
+                    self.transport.abort(transaction)
+                except Exception:
+                    row['cleanup_failed'] = True
                 row['error'] = type(exc).__name__
-                if row['state'] == 'staging':
+                if row['state'] == 'staging' or type(self.transport) is FixtureTransport:
                     row['state'] = 'aborted'
+                elif row['state'] == 'commit-requested':
+                    row['state'] = 'publication-unknown'
                 # A committed-but-unverified immutable object can be recovered;
                 # no logical placement or source authority was published here.
                 raise
@@ -258,6 +291,8 @@ class StorageBackend:
         return data
 
     def verify(self, key):
+        if self._remote is not None:
+            return self._remote_call('verify', key)
         try:
             self._verified_data(key)
             return True
@@ -265,6 +300,10 @@ class StorageBackend:
             return False
 
     def read(self, extent, *, generation):
+        if self._remote is not None:
+            self._guard(generation)
+            if not isinstance(extent, TransferExtent):raise TypeError('TransferExtent required')
+            return self._remote_call('read', asdict(extent), generation=generation)
         with self.lock:
             self._guard(generation)
             if not isinstance(extent, TransferExtent):
@@ -287,6 +326,9 @@ class StorageBackend:
             return data
 
     def recover(self, key, *, generation):
+        if self._remote is not None:
+            self._guard(generation)
+            return self._remote_call('recover', key, generation=generation)
         with self.lock:
             self._guard(generation)
             if not self.verify(key):
@@ -294,6 +336,10 @@ class StorageBackend:
             return {'object_sha256': key, 'verified': True, 'logical_placement_changed': False}
 
     def receipt(self):
+        if self._remote is not None:
+            value = {k:v for k,v in self._remote.receipt.items() if k != 'receipt_sha256'}
+            value.update(state=self.state, timeout_enforcement='owned-process-tree')
+            return {**value, 'receipt_sha256':identity(value)}
         value = {'schema': 'thm-storage-backend/1', 'family': self.config.family,
                  'target_identity': identity(self.config.target_identity), 'generation': identity(self.config.generation),
                  'state': self.state, 'evidence': self.transport.evidence, 'bytes_read': self.bytes_read,
@@ -305,7 +351,8 @@ class StorageBackend:
     def close(self):
         with self.lock:
             try:
-                self.transport.close()
+                if self._remote is not None:self._remote.close()
+                else:self.transport.close()
             finally:
                 self.state = 'closed'
 

@@ -106,17 +106,18 @@ def bounded_artifact_digest(source, maximum_bytes, *, copy_root=None):
                     total += info.st_size
                     if total > maximum_bytes:
                         raise MemoryError('extension artifact input budget')
-                    files.append((Path(entry.path), info.st_size))
+                    files.append((Path(entry.path), info.st_size, (info.st_dev, info.st_ino)))
                 else:
                     raise ValueError('regular artifact files required')
     if not files:
         raise ValueError('empty artifact bundle')
     rows, consumed = [], 0
-    for path, expected_size in sorted(files):
+    for path, expected_size, expected_identity in sorted(files):
         h, length = hashlib.sha256(), 0
         from contextlib import ExitStack
         with ExitStack() as stack:
-            stream = stack.enter_context(path.open('rb'))
+            from thm._bounded_files import open_regular
+            stream, opened = stack.enter_context(open_regular(path, maximum_bytes=maximum_bytes-consumed, expected_identity=expected_identity))
             target = None
             if copy_root is not None:
                 destination = Path(copy_root) / path.relative_to(root)
