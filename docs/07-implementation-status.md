@@ -94,7 +94,7 @@ The canonical SearchIndex now exposes typed default-off RetrievalFeatures and bo
 
 PR #15 merged normally at `70180dd4a319c62cc839ee1b7f39b5573b3a1f66`; PR #16 merged normally at `3512aa02015d6eb10e390e1fe7f06309fd84b6c6` after absorbing that main. Scope cleanup, transitive reference semantics, vector snapshot publication, conservative OS locality and exclusive physical-root ownership are integrated. Seven actionable review findings were forward-fixed, the exact final source received clean Codex review, 424 tests passed, and post-merge correctness on all three OSes plus Hermes/harness integrations passed. No Open/Draft/unmerged PR remains.
 
-The bounded acceptance and physical storage capabilities remain **Unreleased**; package version 1.4.0 and the stable archive do not move. The [closeout receipt](../reports/2026-09-09-open-pr-reconciliation-closeout.md) records exact lineage, review/CI evidence, the final documentation publication and remaining measurements; the [physical storage contract](physical-storage-fabric.md) is the current short acceptance entrypoint.
+At that 2026-09-09 reconciliation, bounded acceptance and physical storage were **Unreleased**; package version 1.4.0 and its stable archive did not move. Their implementation surface is now included in the 1.5 acceptance above. The [closeout receipt](../reports/2026-09-09-open-pr-reconciliation-closeout.md) records exact lineage, review/CI evidence, the final documentation publication and remaining measurements; the [physical storage contract](physical-storage-fabric.md) is the current short acceptance entrypoint.
 
 
 ## Post-local corrective evidence
@@ -104,3 +104,7 @@ See the [current corrective contract and short retest](19-post-local-corrective.
 ## 1.5 implementation and evidence contract
 
 [1.5 implementation surface](24-full-power-implementation.md) defines the executable configured provider/storage lifecycle, allocation and joint-planning APIs, explicit actuator, five benchmark/environment/outcome interfaces, independent CE bridge, and LangGraph/Deep Agents lifecycle. Automatic memory mutation remains false and rejected features remain default-off. Hardware, full-research and real task evidence are separately recorded in the [completion ledger](../reports/2026-09-12-thm-full-power-completion.md).
+
+## 1.5 accepted closeout
+
+THM 1.5.0 is implementation/integration stable at `de26865f36df2205c29a470e51c65d5bf9beca4e`, normally merged by PR #21 from `d33fc70677e61d6733fdbc8c0f71bced6168dff4`. The immutable `archive/v1.5.0-stable` pins that accepted implementation main. Exact-head and post-merge correctness, Hermes and harness workflows passed; 669 local unit tests ran with zero failures/errors and 3 expected skips. The 28 domains are implemented with zero external implementation gaps; remaining hardware, target-machine, full-research, private-workload and real-environment work is evidence-only. [Final acceptance receipt](../reports/2026-09-12-v1.5-closeout.json). Remote branch-protection administration remains an integration 403 governance limitation.

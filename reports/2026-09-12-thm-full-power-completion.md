@@ -1,10 +1,11 @@
 # THM 1.5 full-power implementation completion
 
-All 28 historical design domains have executable implementation and test mappings. Hardware/environment acceptance remains separate. This file and its [machine-readable ledger](2026-09-12-thm-full-power-completion.json) are updated with the exact accepted merge and post-merge gates before final closeout.
+All 28 historical design domains have executable implementation and test mappings. Hardware/environment acceptance remains separate. The [machine-readable ledger](2026-09-12-thm-full-power-completion.json) and [post-merge-only release receipt](2026-09-12-v1.5-closeout.json) bind the accepted merge, archive, review and successful workflows.
 
 ## Identity and evidence
 
-- Package: 1.5.0; archive: `archive/v1.5.0-stable` after accepted merge gates.
+- Package: 1.5.0; accepted implementation main/merge: `de26865f36df2205c29a470e51c65d5bf9beca4e`; immutable archive: `archive/v1.5.0-stable@de26865f36df2205c29a470e51c65d5bf9beca4e`.
+- PR #21: normally merged; exact feature head `d33fc70677e61d6733fdbc8c0f71bced6168dff4`; tree `e8521b03501a015e9f5fc8b94fa99ddb3b6080ab`; parents `b96b82f027ca128072e3c0b3899331af1155b39e, d33fc70677e61d6733fdbc8c0f71bced6168dff4`.
 - PR #20 merged normally: `b96b82f027ca128072e3c0b3899331af1155b39e`; accepted head: `62b616b0820749615a5dd3ab9bd9aa55abdc4d27`.
 - PR #20 exact-head runs: 34711488892 / 34711488961 / 34711488928. Main runs: 34712261941 / 34712261953 / 34712261948; all successful.
 - Immutable 1.4 archive: `e6e4dda5835e3cb345207457d5491131c6959b2c`. Historical machine evidence: `bb1676007b0f86dec0267585c56136c82157ae54`; never relabeled as new runtime acceptance.
@@ -82,7 +83,7 @@ All 28 historical design domains have executable implementation and test mapping
 
 ## External-only limitation
 
-GitHub integration returns 403 Resource not accessible by integration for branch protection; no supported protection mutation capability. Main is unprotected. Repo-local gates implemented.
+GitHub integration returns 403 Resource not accessible by integration for branch protection; no supported protection mutation capability. Remote enforcement could not be verified through the administration endpoint. Repo-local gates and expected-head guarded merge were verified.
 
 ## Validation and release discipline
 
@@ -143,3 +144,34 @@ The standalone merge-admission CLI uses the same checked-descriptor reader under
 Merge admission now requires a freshly and independently observed `--expected-base` and rejects snapshot/base mismatch. The caller rechecks head/main immediately before GitHub normal merge and verifies the actual ordered merge parents against the checksum-bound admission receipt before release/archive acceptance. The API has no atomic expected-base guard; any observed base movement requires renewed evidence and admission. Regressions reject changed bases, wrong merge parents and tampered receipts.
 
 Allocation close attempts every eviction before reporting cleanup failures. Successfully released allocations are removed once; failed callbacks retain evicted, non-acquirable ownership for explicit retry, and in-flight leases retain data until their normal release boundary. The independently prepared allocation commit `ec7373ea3d9e7f06bd0864c016f8bd7e095863b8` is preserved in the parent chain. Combined full validation passed 669 tests, zero failures/errors, three expected skips; numeric 10/10, five smoke fixtures and release guards passed.
+
+## Final exact-head and main gates
+
+| Stage | Workflow | Run | Conclusion |
+| --- | --- | --- | --- |
+| PR head | THM Hermes integration | [34726090606](https://github.com/xngg1021/thm-tiered-hot-memory/actions/runs/34726090606) | success |
+| PR head | THM harness integrations | [34726090612](https://github.com/xngg1021/thm-tiered-hot-memory/actions/runs/34726090612) | success |
+| PR head | THM correctness | [34726090623](https://github.com/xngg1021/thm-tiered-hot-memory/actions/runs/34726090623) | success |
+| Accepted main | THM harness integrations | [34726430677](https://github.com/xngg1021/thm-tiered-hot-memory/actions/runs/34726430677) | success |
+| Accepted main | THM Hermes integration | [34726430678](https://github.com/xngg1021/thm-tiered-hot-memory/actions/runs/34726430678) | success |
+| Accepted main | THM correctness | [34726430673](https://github.com/xngg1021/thm-tiered-hot-memory/actions/runs/34726430673) | success |
+
+Review status: reviewed. Actionable findings remaining: 0. The exact admission receipt is embedded in the JSON ledger. The archive pins accepted implementation bytes; this post-merge report is a forward-only documentation descendant.
+
+## Final release identities
+
+| Identity | Value |
+| --- | --- |
+| Base main | `b96b82f027ca128072e3c0b3899331af1155b39e` |
+| PR initial head | `bb6808467fcd076e264dbbdfe4aebd4984f0b73a` |
+| PR handoff head | `36b353ca51827a3a5b2f0c4c38972ab288e0c290` |
+| PR final head | `d33fc70677e61d6733fdbc8c0f71bced6168dff4` |
+| Accepted merge/main | `de26865f36df2205c29a470e51c65d5bf9beca4e` |
+| Accepted tree | `e8521b03501a015e9f5fc8b94fa99ddb3b6080ab` |
+| Normal merge parents | `b96b82f027ca128072e3c0b3899331af1155b39e, d33fc70677e61d6733fdbc8c0f71bced6168dff4` |
+| Stable archive | `de26865f36df2205c29a470e51c65d5bf9beca4e` |
+| Package | `1.5.0` |
+
+Exact review: {"clean_review_comment_id": 5649485866, "clean_review_url": "https://github.com/xngg1021/thm-tiered-hot-memory/pull/21#issuecomment-5649485866", "completed_at": "2026-09-12T23:48:00Z", "head_sha": "d33fc70677e61d6733fdbc8c0f71bced6168dff4", "request_comment_id": 5649457403, "resolved_threads": 30, "result": "Didn't find any major issues", "reviewer": "chatgpt-codex-connector[bot]", "status": "reviewed", "summary_comment_id": 5648110047, "unresolved_actionable": 0}
+
+The complete parent chain is in the JSON ledger. The documentation descendant is identified by Git history and the final PR conversation receipt.

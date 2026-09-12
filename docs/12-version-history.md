@@ -6,6 +6,12 @@ Machine-readable source: [`versions/history.json`](../versions/history.json).
 
 ## Current stable milestone
 
+THM **1.5.0** is accepted as an implementation/integration stable milestone at `de26865f36df2205c29a470e51c65d5bf9beca4e`.
+
+Recovery pointer: `archive/v1.5.0-stable`. PR #21 head `d33fc70677e61d6733fdbc8c0f71bced6168dff4` was normally merged and all three post-merge workflows passed. The [final closeout receipt](../reports/2026-09-12-v1.5-closeout.json) records exact review, workflow, tree and parent identities. Hardware, full-research and real task outcomes retain their separate evidence requirements.
+
+## Historical 1.4 stable milestone
+
 THM **1.4.0** is accepted as an implementation/integration stable milestone at:
 
 ```text
@@ -37,6 +43,7 @@ Formal evidence: [1.4 closeout](../reports/2026-09-07-v1.4-closeout.md) · [mach
 | 1.3.0 baseline | `1880211f75b016e2234cbef702573022f6f983f1` | `archive/v1.3.0-baseline` | Multi-harness package baseline; not itself a stable-integration claim |
 | Version-recovery closeout | `8e1f7f70b39386667ac00f47bb4f61ccc3f86b28` | `archive/20260907-version-recovery-merged` | Version-history and MCP/OpenClaw recovery merged by PR #1 |
 | **1.4.0 stable** | **`e6e4dda5835e3cb345207457d5491131c6959b2c`** | **`archive/v1.4.0-stable`** | Shadow residency/control + opt-in session-frozen Hermes T1 locator directory; main correctness/Hermes/harness acceptance passed |
+| **1.5.0 stable** | **`de26865f36df2205c29a470e51c65d5bf9beca4e`** | **`archive/v1.5.0-stable`** | 28 implementation domains; exact-head review and correctness/Hermes/harness plus post-merge acceptance passed |
 
 Archive branches are milestone pointers. Once published, they are not to be moved to a different commit. Later documentation closeout commits do not redefine the code/content snapshot represented by the archive pointer.
 
@@ -113,4 +120,6 @@ The opt-in Python entity projection and its Protocol 2 evidence are documented i
 
 ## 1.5 implementation milestone
 
-Package 1.5.0 completes the provider/storage/evaluation/actuator/CE implementation surface and extends the host integration matrix. Its immutable archive is `archive/v1.5.0-stable`, bound to the normally merged implementation commit after main correctness, Hermes and harness acceptance. The [full-power completion ledger](../reports/2026-09-12-thm-full-power-completion.json) records the exact feature head, merge tree/parents, workflow identities and evidence boundaries. `versions/history.json` receives the new snapshot in the forward-only post-merge closeout; the 1.4 archive and bb16760 machine evidence retain their original meaning.
+Package 1.5.0 completes the provider/storage/evaluation/actuator/CE implementation surface and extends the host integration matrix. Its immutable archive is `archive/v1.5.0-stable`, bound to the normally merged implementation commit after main correctness, Hermes and harness acceptance. The [full-power completion ledger](../reports/2026-09-12-thm-full-power-completion.json) records the exact feature head, merge tree/parents, workflow identities and evidence boundaries. `versions/history.json` records the accepted snapshot in this forward-only post-merge closeout; the 1.4 archive and bb16760 machine evidence retain their original meaning.
+
+Accepted 1.5 freeze: `archive/v1.5.0-stable@de26865f36df2205c29a470e51c65d5bf9beca4e`; feature head `d33fc70677e61d6733fdbc8c0f71bced6168dff4`. All three main workflows passed. The [post-merge-only receipt](../reports/2026-09-12-v1.5-closeout.json) binds package version, exact merge/archive and run IDs; `scripts/check_version_history.py` checks the frozen package and immutable refs.

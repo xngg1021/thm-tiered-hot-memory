@@ -1,6 +1,6 @@
-# Provider support matrix — Unreleased
+# Provider support matrix — THM 1.5 implementation/integration stable
 
-Catalog and source audit checked on 2026-09-09. Package/stable remains 1.4.0. Machine-readable provenance: [provider-sources.json](provider-sources.json). The matrix records callable implementation maturity; installed versions and observed devices are discovered locally. No row has hardware acceptance (L5).
+Catalog and source audit checked on 2026-09-09; configured lifecycle coverage is recorded for accepted THM 1.5.0. Package/stable is 1.5.0, frozen at `de26865f36df2205c29a470e51c65d5bf9beca4e`; see the [accepted release receipt](../reports/2026-09-12-v1.5-closeout.json). Machine-readable provenance: [provider-sources.json](provider-sources.json). The matrix records callable implementation maturity; installed versions and observed devices are discovered locally. No row has hardware acceptance (L5).
 
 | Level | Meaning |
 | --- | --- |

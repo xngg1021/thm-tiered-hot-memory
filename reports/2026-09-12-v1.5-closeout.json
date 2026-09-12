@@ -1,0 +1,441 @@
+{
+  "version": "1.5.0",
+  "accepted_merge_commit": "de26865f36df2205c29a470e51c65d5bf9beca4e",
+  "head": "d33fc70677e61d6733fdbc8c0f71bced6168dff4",
+  "exact_head_workflows": [
+    {
+      "conclusion": "success",
+      "event": "push",
+      "head_branch": "work/full-power-completion-20260912",
+      "head_sha": "d33fc70677e61d6733fdbc8c0f71bced6168dff4",
+      "id": 34726090606,
+      "name": "THM Hermes integration",
+      "run_attempt": 1,
+      "status": "completed",
+      "url": "https://github.com/xngg1021/thm-tiered-hot-memory/actions/runs/34726090606"
+    },
+    {
+      "conclusion": "success",
+      "event": "push",
+      "head_branch": "work/full-power-completion-20260912",
+      "head_sha": "d33fc70677e61d6733fdbc8c0f71bced6168dff4",
+      "id": 34726090612,
+      "name": "THM harness integrations",
+      "run_attempt": 1,
+      "status": "completed",
+      "url": "https://github.com/xngg1021/thm-tiered-hot-memory/actions/runs/34726090612"
+    },
+    {
+      "conclusion": "success",
+      "event": "push",
+      "head_branch": "work/full-power-completion-20260912",
+      "head_sha": "d33fc70677e61d6733fdbc8c0f71bced6168dff4",
+      "id": 34726090623,
+      "name": "THM correctness",
+      "run_attempt": 1,
+      "status": "completed",
+      "url": "https://github.com/xngg1021/thm-tiered-hot-memory/actions/runs/34726090623"
+    }
+  ],
+  "post_merge_workflows": [
+    {
+      "name": "THM harness integrations",
+      "id": 34726430677,
+      "event": "push",
+      "status": "completed",
+      "conclusion": "success",
+      "head_sha": "de26865f36df2205c29a470e51c65d5bf9beca4e",
+      "head_branch": "main",
+      "run_attempt": 1,
+      "url": "https://github.com/xngg1021/thm-tiered-hot-memory/actions/runs/34726430677"
+    },
+    {
+      "name": "THM Hermes integration",
+      "id": 34726430678,
+      "event": "push",
+      "status": "completed",
+      "conclusion": "success",
+      "head_sha": "de26865f36df2205c29a470e51c65d5bf9beca4e",
+      "head_branch": "main",
+      "run_attempt": 1,
+      "url": "https://github.com/xngg1021/thm-tiered-hot-memory/actions/runs/34726430678"
+    },
+    {
+      "name": "THM correctness",
+      "id": 34726430673,
+      "event": "push",
+      "status": "completed",
+      "conclusion": "success",
+      "head_sha": "de26865f36df2205c29a470e51c65d5bf9beca4e",
+      "head_branch": "main",
+      "run_attempt": 1,
+      "url": "https://github.com/xngg1021/thm-tiered-hot-memory/actions/runs/34726430673"
+    }
+  ],
+  "review": {
+    "clean_review_comment_id": 5649485866,
+    "clean_review_url": "https://github.com/xngg1021/thm-tiered-hot-memory/pull/21#issuecomment-5649485866",
+    "completed_at": "2026-09-12T23:48:00Z",
+    "head_sha": "d33fc70677e61d6733fdbc8c0f71bced6168dff4",
+    "request_comment_id": 5649457403,
+    "resolved_threads": 30,
+    "result": "Didn't find any major issues",
+    "reviewer": "chatgpt-codex-connector[bot]",
+    "status": "reviewed",
+    "summary_comment_id": 5648110047,
+    "unresolved_actionable": 0
+  },
+  "gate_receipt": {
+    "archive_v1_4_sha": "e6e4dda5835e3cb345207457d5491131c6959b2c",
+    "base_sha": "b96b82f027ca128072e3c0b3899331af1155b39e",
+    "expected_base_sha": "b96b82f027ca128072e3c0b3899331af1155b39e",
+    "expected_head_sha": "d33fc70677e61d6733fdbc8c0f71bced6168dff4",
+    "merge_method": "merge",
+    "pr_number": 21,
+    "receipt_sha256": "ad0cce7bdeb706feb55e5ddcc35ae277568608a11bbe5c9b2f8e233584fe7a68",
+    "remote_protection": "403 Resource not accessible by integration; administration unavailable",
+    "repository": "xngg1021/thm-tiered-hot-memory",
+    "review": {
+      "clean_review_comment_id": 5649485866,
+      "clean_review_url": "https://github.com/xngg1021/thm-tiered-hot-memory/pull/21#issuecomment-5649485866",
+      "completed_at": "2026-09-12T23:48:00Z",
+      "head_sha": "d33fc70677e61d6733fdbc8c0f71bced6168dff4",
+      "request_comment_id": 5649457403,
+      "resolved_threads": 30,
+      "result": "Didn't find any major issues",
+      "reviewer": "chatgpt-codex-connector[bot]",
+      "status": "reviewed",
+      "summary_comment_id": 5648110047,
+      "unresolved_actionable": 0
+    },
+    "schema": "thm-merge-gate/1",
+    "scope": "snapshot admission against freshly observed main; expected-head merge and exact-parent postcondition still required",
+    "workflow_ids": {
+      "THM Hermes integration": 34726090606,
+      "THM correctness": 34726090623,
+      "THM harness integrations": 34726090612
+    }
+  },
+  "merge_parent_receipt": {
+    "admission_sha256": "ad0cce7bdeb706feb55e5ddcc35ae277568608a11bbe5c9b2f8e233584fe7a68",
+    "parents": [
+      "b96b82f027ca128072e3c0b3899331af1155b39e",
+      "d33fc70677e61d6733fdbc8c0f71bced6168dff4"
+    ],
+    "status": "matched"
+  },
+  "local_unit_tests": 669,
+  "local_unit_skipped": 3,
+  "base_main": "b96b82f027ca128072e3c0b3899331af1155b39e",
+  "initial_head": "bb6808467fcd076e264dbbdfe4aebd4984f0b73a",
+  "parent_chain": [
+    {
+      "sha": "bb6808467fcd076e264dbbdfe4aebd4984f0b73a",
+      "tree": "b56ffe90dae62f26acf97aad294136333704b415",
+      "parents": [
+        "b96b82f027ca128072e3c0b3899331af1155b39e"
+      ],
+      "subject": "feat: implement bounded extension and storage lifecycles with gated residency actuator"
+    },
+    {
+      "sha": "214fa960000c2c8b71ede1f23eefbd24b40ebdff",
+      "tree": "111c0b25c009262a53d6c5940df889869dcb036b",
+      "parents": [
+        "bb6808467fcd076e264dbbdfe4aebd4984f0b73a"
+      ],
+      "subject": "Complete optional SDK execution, joint planning, outcome and CE protocols with expanded harness CI"
+    },
+    {
+      "sha": "daf5737c55e139135ea428a7a40fc027131b98da",
+      "tree": "0c2470ab59db62fb07ee4b13d445ce4f8844d930",
+      "parents": [
+        "214fa960000c2c8b71ede1f23eefbd24b40ebdff"
+      ],
+      "subject": "Prepare 1.5 implementation milestone with complete domain ledger, localized docs and guarded release checks"
+    },
+    {
+      "sha": "62215e772217e7fa9dadc9556c5d719eadcec3ed",
+      "tree": "0aea7bd1c15d70089aca82fbf9da6992db5bf6b8",
+      "parents": [
+        "daf5737c55e139135ea428a7a40fc027131b98da"
+      ],
+      "subject": "Preserve executable mode of the existing version-history guard"
+    },
+    {
+      "sha": "36b353ca51827a3a5b2f0c4c38972ab288e0c290",
+      "tree": "39c0f9879303d4802bd84b9266630a783499517e",
+      "parents": [
+        "62215e772217e7fa9dadc9556c5d719eadcec3ed"
+      ],
+      "subject": "Fix reviewed artifact/snapshot bounds, empty outcomes and complete harness dependency extra"
+    },
+    {
+      "sha": "f0bf5b00dceae7a700fa5eecf92dc6498513d95f",
+      "tree": "34b92ad1a1f8c888d565fb83d03f9a5d504ed3b8",
+      "parents": [
+        "36b353ca51827a3a5b2f0c4c38972ab288e0c290"
+      ],
+      "subject": "Close reviewed snapshot/artifact races and enforce environment callback process deadlines"
+    },
+    {
+      "sha": "02d62165e0403e36e322fdfd466e7d2f882ac952",
+      "tree": "a3eabcc4b37ff4ee3c82aace449e015caf85b346",
+      "parents": [
+        "f0bf5b00dceae7a700fa5eecf92dc6498513d95f"
+      ],
+      "subject": "fix: bind bounded reads to descriptors and interrupt storage callbacks"
+    },
+    {
+      "sha": "d00b237b0fbcae28a6f2b233c02006ea52729c4e",
+      "tree": "12bb9c14d54701858e93017c447a80bec58f0ecb",
+      "parents": [
+        "02d62165e0403e36e322fdfd466e7d2f882ac952"
+      ],
+      "subject": "fix: tolerate Darwin group cleanup only after owned worker exit"
+    },
+    {
+      "sha": "2bd6e5186a74c576a598ea264363ee7ef5b73118",
+      "tree": "e96a3f64d2eaefd20d147d24696c66d1d016d704",
+      "parents": [
+        "d00b237b0fbcae28a6f2b233c02006ea52729c4e"
+      ],
+      "subject": "fix: obtain complete Windows file identity during artifact enumeration"
+    },
+    {
+      "sha": "2b35fa93741d919ad8e5cb90e8fea7988dba1710",
+      "tree": "ab6c1b21b09e99839b45689be47871d801b1866c",
+      "parents": [
+        "f0bf5b00dceae7a700fa5eecf92dc6498513d95f"
+      ],
+      "subject": "Close descriptor races and enforce owned transport callback deadlines"
+    },
+    {
+      "sha": "fe3e85c9215536ad6aba1ad19b307c574534e707",
+      "tree": "4d64b413fce6bf6ae84f77f5a53109422b46a36c",
+      "parents": [
+        "02d62165e0403e36e322fdfd466e7d2f882ac952",
+        "2b35fa93741d919ad8e5cb90e8fea7988dba1710"
+      ],
+      "subject": "Reconcile concurrent descriptor and transport closeout fixes without dropping regressions"
+    },
+    {
+      "sha": "3e57c65fe7e44e062da8fadae50c395808cd8745",
+      "tree": "d9935d7c96ef97e98c27564ef47236639400b1b4",
+      "parents": [
+        "d00b237b0fbcae28a6f2b233c02006ea52729c4e",
+        "fe3e85c9215536ad6aba1ad19b307c574534e707"
+      ],
+      "subject": "Complete concurrent closeout reconciliation with 625 descriptor and deadline regressions"
+    },
+    {
+      "sha": "0d2506c50f86ab774c4d84ed162b398b2673b0fe",
+      "tree": "db5338b0394f36866e7a67f1af040521773a4a85",
+      "parents": [
+        "2bd6e5186a74c576a598ea264363ee7ef5b73118",
+        "3e57c65fe7e44e062da8fadae50c395808cd8745"
+      ],
+      "subject": "Complete final descriptor/deadline reconciliation with concurrent Windows and Darwin repairs"
+    },
+    {
+      "sha": "5256af3172ee66b641765cd315f8397303f80233",
+      "tree": "16b7cdbe472643fd1edc4280e91c3b59f788a317",
+      "parents": [
+        "0d2506c50f86ab774c4d84ed162b398b2673b0fe"
+      ],
+      "subject": "Close Darwin worker exit and reap race with bounded confirmation"
+    },
+    {
+      "sha": "4272697d8ba38d226553e14a80a3709499fb77c0",
+      "tree": "97f217e02b1b17be34a115689ba4db595521f393",
+      "parents": [
+        "5256af3172ee66b641765cd315f8397303f80233"
+      ],
+      "subject": "Require vanished process groups and close platform deadline races"
+    },
+    {
+      "sha": "7da55ef30d3dbd164a7583fa2c6a43dc581185bd",
+      "tree": "52ba1f208d9a649732187d8a9ecbf98872f53a3c",
+      "parents": [
+        "4272697d8ba38d226553e14a80a3709499fb77c0"
+      ],
+      "subject": "Preserve indeterminate publication outcomes and scope Linux accounting"
+    },
+    {
+      "sha": "c27321b27cb31ad359853eb615ec1a17aab6b5ef",
+      "tree": "de41af351f10e80a0b4c2b83298252b5b41c471d",
+      "parents": [
+        "7da55ef30d3dbd164a7583fa2c6a43dc581185bd"
+      ],
+      "subject": "Freeze bounded mounted publication and eliminate DiskANN build scratch"
+    },
+    {
+      "sha": "33a6349fea0f1229245218a2ba1be990079402ed",
+      "tree": "aea88175d7d10ee579d755c95663ffb6792daad1",
+      "parents": [
+        "c27321b27cb31ad359853eb615ec1a17aab6b5ef"
+      ],
+      "subject": "Enforce kernel-protected publication and preflight shard capacity"
+    },
+    {
+      "sha": "487b96b5c7e812e327b6a7eb9d0c415a59a49b46",
+      "tree": "819eb76a6092018755c0646dd1a95e29bca538c9",
+      "parents": [
+        "33a6349fea0f1229245218a2ba1be990079402ed"
+      ],
+      "subject": "Bind supplied CE observations to their source receipt"
+    },
+    {
+      "sha": "9e1b65c737a8ac38e374a3e7fa97b413bddfc0a5",
+      "tree": "14fd5c4af84ce748d3c4b5ff9b443ed6b02c1a41",
+      "parents": [
+        "487b96b5c7e812e327b6a7eb9d0c415a59a49b46"
+      ],
+      "subject": "Admit shard shapes before normalization and contain retirement errors"
+    },
+    {
+      "sha": "872dff5b9dbe82f4e5fb313400f46b95554eb87e",
+      "tree": "251c7ae80ebbcc5bba74ece1da46d8866c90d1b4",
+      "parents": [
+        "9e1b65c737a8ac38e374a3e7fa97b413bddfc0a5"
+      ],
+      "subject": "Retain mounted root identity and complete review admission/retirement regressions"
+    },
+    {
+      "sha": "ae86793d66a8b903cb5e6405c0981ec98e5a1c45",
+      "tree": "92365513776f60bd3119b2f4776b25af35dd7d01",
+      "parents": [
+        "872dff5b9dbe82f4e5fb313400f46b95554eb87e"
+      ],
+      "subject": "Recheck process exit after denied Linux accounting reads"
+    },
+    {
+      "sha": "2f3cff95c6583da082eb42ddca0140c05b871ae9",
+      "tree": "f3b9ecfef852fe96d01cb3bbda6acf9f04572cb7",
+      "parents": [
+        "ae86793d66a8b903cb5e6405c0981ec98e5a1c45"
+      ],
+      "subject": "Confirm procfs leader exit race and bind complete 646-test regression evidence"
+    },
+    {
+      "sha": "e230e422116d067ce5ebd2b3ec3504da91233a9a",
+      "tree": "43a4df12859569aac3f1ace52d8607cd0a87232b",
+      "parents": [
+        "2f3cff95c6583da082eb42ddca0140c05b871ae9"
+      ],
+      "subject": "Prevent helper loss across leader exit and close mounted Windows test handles in order"
+    },
+    {
+      "sha": "00669ae443d0ece402c2e66ae3b69d03c353a0e0",
+      "tree": "cc7fc4b249ee88f9c8bbda0eeada5aaa91a0c08b",
+      "parents": [
+        "e230e422116d067ce5ebd2b3ec3504da91233a9a"
+      ],
+      "subject": "Defer unprovable process-group accounting without exit waits or acceptance credit"
+    },
+    {
+      "sha": "b3928f2bd1c0fc5c0654929632f1c309e0f39851",
+      "tree": "876d2aeaca34452e6187ff036fa2ca7411b29bec",
+      "parents": [
+        "00669ae443d0ece402c2e66ae3b69d03c353a0e0"
+      ],
+      "subject": "Contain environment and storage descendants before loading callbacks"
+    },
+    {
+      "sha": "5bc8a181cd3a658568dc3ce174c2f8131b3ad2c8",
+      "tree": "71853b6dcba2b498fbba2ab8a02bf23b4a4fafbe",
+      "parents": [
+        "b3928f2bd1c0fc5c0654929632f1c309e0f39851"
+      ],
+      "subject": "Preserve bounded response metadata and verify descendant termination"
+    },
+    {
+      "sha": "e2d651f8ecf62d900c37edf504c4405d56b877bc",
+      "tree": "e826b2b4dad5ea2c2b065881b2b79cbdfa1c9564",
+      "parents": [
+        "5bc8a181cd3a658568dc3ce174c2f8131b3ad2c8"
+      ],
+      "subject": "Reject incomplete procfs group visibility and bind helper process identity"
+    },
+    {
+      "sha": "06776aa39c77eafdd7851cd6dd5a05e660af9695",
+      "tree": "5464f6401d1f6833d6404b480329a1fa0e53f6fa",
+      "parents": [
+        "b3928f2bd1c0fc5c0654929632f1c309e0f39851"
+      ],
+      "subject": "Apply inherited descendant containment to bounded provider workers"
+    },
+    {
+      "sha": "4808710cab765b07b6a4e2411bf519b1aef204a0",
+      "tree": "cba6adbc23979a5e08c31dd43ac6005b5e8ed054",
+      "parents": [
+        "06776aa39c77eafdd7851cd6dd5a05e660af9695"
+      ],
+      "subject": "Bind procfs accounting and helper regression to the correct PID namespace"
+    },
+    {
+      "sha": "a82d989c114ac5bd7885e9e0f0954c68992d5f71",
+      "tree": "a4dc09c3d916cde98dd7b0e78a15939e74f914e8",
+      "parents": [
+        "5bc8a181cd3a658568dc3ce174c2f8131b3ad2c8",
+        "4808710cab765b07b6a4e2411bf519b1aef204a0"
+      ],
+      "subject": "Merge worker containment and namespace identity with reviewed cleanup fixes"
+    },
+    {
+      "sha": "4570b23b88b08a444e91edc49f1be908edfbcce0",
+      "tree": "90f94c1533e35211dc8816964e186044e2b004c9",
+      "parents": [
+        "e2d651f8ecf62d900c37edf504c4405d56b877bc",
+        "a82d989c114ac5bd7885e9e0f0954c68992d5f71"
+      ],
+      "subject": "Merge complete worker containment with conservative process-group cleanup"
+    },
+    {
+      "sha": "a9975de8a3f50fae66d4006fdf458602b62f2750",
+      "tree": "81593a6d8200c7e9b9fc1d446f3fa3377a2a4c0a",
+      "parents": [
+        "4570b23b88b08a444e91edc49f1be908edfbcce0"
+      ],
+      "subject": "Preserve explicit encoder thread control inside the owned model worker"
+    },
+    {
+      "sha": "1a336600f9ca7e3002f503f471b02b5016edf90a",
+      "tree": "0ac0ff01cc70999318c2d749e3b0493cb749e935",
+      "parents": [
+        "a9975de8a3f50fae66d4006fdf458602b62f2750"
+      ],
+      "subject": "Bind CE CLI input limits to the validated file descriptor"
+    },
+    {
+      "sha": "e441dbc0b8f9f86e799caa8c9d598a0f1c6dac4d",
+      "tree": "c3f88bc2dd533192666a7f2d1a3b188bec08016f",
+      "parents": [
+        "1a336600f9ca7e3002f503f471b02b5016edf90a"
+      ],
+      "subject": "Read release admission snapshots through the validated descriptor"
+    },
+    {
+      "sha": "ec7373ea3d9e7f06bd0864c016f8bd7e095863b8",
+      "tree": "c6fff7f08fd89fbe4749627a0e72c7d20e7335b5",
+      "parents": [
+        "e441dbc0b8f9f86e799caa8c9d598a0f1c6dac4d"
+      ],
+      "subject": "Exhaust allocation cleanup while retaining failed ownership for explicit retry"
+    },
+    {
+      "sha": "d33fc70677e61d6733fdbc8c0f71bced6168dff4",
+      "tree": "e8521b03501a015e9f5fc8b94fa99ddb3b6080ab",
+      "parents": [
+        "ec7373ea3d9e7f06bd0864c016f8bd7e095863b8"
+      ],
+      "subject": "Bind release admission and acceptance to the observed main base"
+    }
+  ],
+  "tree": "e8521b03501a015e9f5fc8b94fa99ddb3b6080ab",
+  "parents": [
+    "b96b82f027ca128072e3c0b3899331af1155b39e",
+    "d33fc70677e61d6733fdbc8c0f71bced6168dff4"
+  ],
+  "archive_branch": "archive/v1.5.0-stable",
+  "final_main_semantics": "The accepted implementation main is this merge. Subsequent closeout-only descendants record workflow results without changing implementation bytes."
+}

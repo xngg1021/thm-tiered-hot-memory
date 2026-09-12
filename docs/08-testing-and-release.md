@@ -6,7 +6,7 @@ Provider/model tests cover public SDK call lifecycles, exact resident reuse, fai
 
 ## Evaluation Fabric release gates
 
-Run `python -m thm.evaluation --mode acceptance --wall-seconds 3300 --output .thm-evaluation/acceptance-01` for bounded offline local acceptance. [Full contract](18-evaluation-fabric.md). Correctness CI executes smoke on Linux/Windows/macOS, unit tests, README structural parity and existing documentation/history gates. Hermes and relevant harness gates remain separate. Full research workflows require manual full_research=true; no full dataset is a default gate. Clean exact-head Codex P1/P2 review and an expected-head normal merge precede post-merge CI. Package/stable remains 1.4.0.
+Run `python -m thm.evaluation --mode acceptance --wall-seconds 3300 --output .thm-evaluation/acceptance-01` for bounded offline local acceptance. [Full contract](18-evaluation-fabric.md). Correctness CI executes smoke on Linux/Windows/macOS, unit tests, README structural parity and existing documentation/history gates. Hermes and relevant harness gates remain separate. Full research workflows require manual full_research=true; no full dataset is a default gate. Clean exact-head Codex P1/P2 review and an expected-head normal merge precede post-merge CI. Current package/stable is 1.5.0; its accepted merge, archive and gates are bound in the [final release receipt](../reports/2026-09-12-v1.5-closeout.json).
 
 Run the public checks from the repository root:
 
@@ -105,3 +105,7 @@ See the [current corrective contract and short retest](19-post-local-corrective.
 6. Require successful main correctness, Hermes and harness. Create the new immutable archive at the accepted merge. Record tree/parents, checks and review in a forward-only closeout; verify all prior archives and close implementation PRs.
 
 Remote branch protection could not be administered through the current integration (403). Repo-local checks and guarded merge receipts implement the available discipline, but do not claim server enforcement of no-force-push.
+
+## 1.5 accepted closeout
+
+THM 1.5.0 is implementation/integration stable at `de26865f36df2205c29a470e51c65d5bf9beca4e`, normally merged by PR #21 from `d33fc70677e61d6733fdbc8c0f71bced6168dff4`. The immutable `archive/v1.5.0-stable` pins that accepted implementation main. Exact-head and post-merge correctness, Hermes and harness workflows passed; 669 local unit tests ran with zero failures/errors and 3 expected skips. The 28 domains are implemented with zero external implementation gaps; remaining hardware, target-machine, full-research, private-workload and real-environment work is evidence-only. [Final acceptance receipt](../reports/2026-09-12-v1.5-closeout.json). Remote branch-protection administration remains an integration 403 governance limitation.

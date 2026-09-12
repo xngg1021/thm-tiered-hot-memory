@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "repository": "xngg1021/thm-tiered-hot-memory",
-  "generated_from_commit": "214fa960000c2c8b71ede1f23eefbd24b40ebdff",
+  "generated_from_commit": "de26865f36df2205c29a470e51c65d5bf9beca4e",
   "generated_on": "2026-09-07",
   "policy": {
     "authoritative_history": "git commits",
@@ -115,6 +115,29 @@
         "harness_run": 34059895461,
         "retrieval_run": 34059936492,
         "retrieval_conclusion": "skipped-no-retrieval-path-change"
+      },
+      "recoverability": "exact-git-snapshot"
+    },
+    {
+      "id": "v1.5.0-stable",
+      "kind": "version-freeze",
+      "introduced_commit": "daf5737c55e139135ea428a7a40fc027131b98da",
+      "feature_head": "d33fc70677e61d6733fdbc8c0f71bced6168dff4",
+      "commit": "de26865f36df2205c29a470e51c65d5bf9beca4e",
+      "archive_branch": "archive/v1.5.0-stable",
+      "date": "2026-09-12",
+      "version": "1.5.0",
+      "version_evidence": "reports/2026-09-12-v1.5-closeout.json",
+      "state": "accepted implementation/integration stable: complete configured provider/storage/evaluation/actuator/CE surface; hardware and task acceptance separate",
+      "acceptance": {
+        "schema": "thm-implementation-acceptance/1",
+        "feature_pr": 21,
+        "correctness_run": 34726430673,
+        "hermes_run": 34726430678,
+        "harness_run": 34726430677,
+        "retrieval_validation": "bounded-five-benchmark-feature-ab-and-track-b",
+        "evidence_class": "implementation-and-integration",
+        "hardware_accepted": false
       },
       "recoverability": "exact-git-snapshot"
     }

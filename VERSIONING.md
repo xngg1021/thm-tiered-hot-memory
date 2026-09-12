@@ -6,7 +6,7 @@ The canonical accepted package version is stored in [`VERSION`](VERSION) and mus
 
 ## Stable version
 
-Current package implementation milestone: **1.5.0**. Its accepted merge and post-merge gates are bound in the full-power completion ledger; the immutable archive is created only after those gates pass.
+Current accepted implementation/integration milestone: **1.5.0**, frozen at `de26865f36df2205c29a470e51c65d5bf9beca4e`. Exact-head and main gates are recorded in the [post-merge closeout](reports/2026-09-12-v1.5-closeout.json).
 
 The immutable recovery pointer for that implementation milestone remains:
 
