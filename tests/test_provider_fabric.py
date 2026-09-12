@@ -432,9 +432,31 @@ class ServiceTests(unittest.TestCase):
             with mock.patch.object(ChildBudget, 'check', checked):
                 self.assertTrue(explorer.submit({'operation':'probe','provider':'host.device'},lambda r:(results.append(r),done.set())))
                 self.assertTrue(done.wait(6),explorer.last_receipt)
+            if results[0].get('reason') == 'ProcessGroupAccountingUnavailable':
+                self.assertEqual(results[0]['status'], 'deferred')
+                self.assertEqual(results[0]['generation_calls'], 0)
+                self.assertNotIn('availability', results[0])
+                self.assertTrue(accounting_errors)
+                return
             self.assertIn('availability', results[0], {'callback': results[0], 'receipt': explorer.last_receipt,
                                                      'accounting_errors': accounting_errors})
             self.assertEqual(results[0]['availability'],'available')
+        finally:
+            explorer.close()
+
+    def test_unprovable_group_accounting_defers_probe_without_acceptance(self):
+        from thm.runtime.fabric.resources import ChildBudget, ProcessGroupAccountingUnavailable
+        explorer = BoundedShadowExplorer(wall_seconds=5)
+        done = threading.Event(); results = []
+        try:
+            with mock.patch.object(ChildBudget, 'check', side_effect=ProcessGroupAccountingUnavailable('missing group lifetime')):
+                self.assertTrue(explorer.submit({'operation': 'probe', 'provider': 'host.device'},
+                                                lambda r: (results.append(r), done.set())))
+                self.assertTrue(done.wait(6))
+            self.assertEqual(results[0]['status'], 'deferred')
+            self.assertEqual(results[0]['reason'], 'ProcessGroupAccountingUnavailable')
+            self.assertEqual(results[0]['generation_calls'], 0)
+            self.assertNotIn('availability', results[0])
         finally:
             explorer.close()
 

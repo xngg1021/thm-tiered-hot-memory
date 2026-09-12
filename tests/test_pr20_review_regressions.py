@@ -12,7 +12,7 @@ import numpy as np
 from thm.runtime.fabric.explorer import BoundedShadowExplorer
 from thm.runtime.fabric.models import WarmModelWorker
 from thm.runtime.fabric.registry import builtin_registry
-from thm.runtime.fabric.resources import ChildBudget
+from thm.runtime.fabric.resources import ChildBudget, ProcessGroupAccountingUnavailable
 from thm.runtime.fabric.service import ResidentExecutor, RuntimeService
 
 
@@ -156,7 +156,7 @@ class LinuxTreeBudgetTests(unittest.TestCase):
                 observed = budget._linux_usage(root, pgid=100)
             self.assertEqual(observed['processes'], 1)
 
-    def test_proc_permission_exit_race_requires_confirmed_leader_termination(self):
+    def test_proc_permission_exit_race_always_rejects_unprovable_accounting(self):
         import subprocess
         for scenario in ('exited-leader', 'live-leader', 'helper'):
             with self.subTest(scenario=scenario), tempfile.TemporaryDirectory() as temp:
@@ -174,18 +174,9 @@ class LinuxTreeBudgetTests(unittest.TestCase):
                 with mock.patch.object(os, 'sysconf', return_value=100, create=True), \
                      mock.patch.object(os, 'getpgid', return_value=100, create=True), \
                      mock.patch.object(Path, 'read_text', protected_read):
-                    if scenario == 'exited-leader':
-                        self.assertIsNone(budget._linux_usage(root, pgid=100))
-                    elif scenario == 'helper':
-                        with self.assertRaisesRegex(RuntimeError, 'helper accounting unavailable'):
-                            budget._linux_usage(root, pgid=100)
-                    else:
-                        with self.assertRaises(PermissionError):
-                            budget._linux_usage(root, pgid=100)
-                if scenario == 'helper':
-                    budget.process.wait.assert_not_called()
-                else:
-                    budget.process.wait.assert_called_once_with(timeout=.2)
+                    with self.assertRaises(ProcessGroupAccountingUnavailable):
+                        budget._linux_usage(root, pgid=100)
+                budget.process.wait.assert_not_called()
 
     def test_denied_leader_never_waits_away_a_captured_helper(self):
         budget = self._budget()
@@ -206,7 +197,7 @@ class LinuxTreeBudgetTests(unittest.TestCase):
             with mock.patch.object(os, 'sysconf', return_value=100, create=True), \
                  mock.patch.object(os, 'getpgid', return_value=100, create=True), \
                  mock.patch.object(Path, 'read_text', denied_leader):
-                with self.assertRaisesRegex(RuntimeError, 'helper accounting unavailable'):
+                with self.assertRaises(ProcessGroupAccountingUnavailable):
                     budget._linux_usage(root, pgid=100)
             budget.process.wait.assert_not_called()
             self.assertTrue((root/'101').exists())

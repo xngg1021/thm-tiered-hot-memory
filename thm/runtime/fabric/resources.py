@@ -4,6 +4,10 @@ from pathlib import Path
 import sys
 
 
+class ProcessGroupAccountingUnavailable(RuntimeError):
+    """A candidate cannot prove its owned process-group resource budget."""
+
+
 def linux_worker_lifetime():
     """Return durable Linux usage evidence before the trusted worker exits.
 
@@ -132,9 +136,6 @@ class ChildBudget:
                     owned.append(root)
             except ProcessLookupError:
                 continue
-        # Capture membership before a leader read can enter an exit wait. A
-        # helper could disappear during that wait without lifetime accounting.
-        has_helpers = any(int(root.name) != self.process.pid for root in owned)
         for root in owned:
             try:
                 fields = (root/'stat').read_text().rsplit(')', 1)[1].split()
@@ -147,28 +148,11 @@ class ChildBudget:
             except (FileNotFoundError, ProcessLookupError):
                 continue
             except PermissionError as denied:
-                if has_helpers:
-                    raise RuntimeError('shadow helper accounting unavailable during leader exit') from denied
-                # Re-read state after a denied sample; exited entries do not
-                # represent live resource usage. Preserve the concurrent fix.
-                try:
-                    current = (root/'stat').read_text().rsplit(')', 1)[1].split()
-                except (FileNotFoundError, ProcessLookupError):
-                    continue
-                if current and current[0] in ('Z', 'X', 'x'):
-                    continue
-                # The leader can lose its /proc I/O access during exit before
-                # waitpid observes it. Confirm termination with a bounded wait;
-                # its trusted lifetime receipt is still mandatory on acceptance.
-                # Never waive accounting for a live leader or any helper.
-                if int(root.name) != self.process.pid:
-                    raise
-                import subprocess
-                try:
-                    self.process.wait(timeout=.2)
-                except subprocess.TimeoutExpired:
-                    raise denied
-                continue
+                # A snapshot cannot exclude helpers joining after enumeration.
+                # Neither leader exit nor a later readable/dead sample proves
+                # lifetime group accounting, so never wait and accept here.
+                raise ProcessGroupAccountingUnavailable(
+                    'shadow process-group lifetime accounting unavailable') from denied
             members += 1
             rss += int(status.get('VmRSS', '0 kB').split()[0])*1024
             cpu += (int(fields[11])+int(fields[12]))/ticks

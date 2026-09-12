@@ -1,4 +1,4 @@
-"""A denied procfs read is tolerable only after verified process exit."""
+"""A denied procfs read never certifies complete process-group accounting."""
 from pathlib import Path
 import os
 import subprocess
@@ -7,11 +7,11 @@ from types import SimpleNamespace
 import unittest
 from unittest import mock
 
-from thm.runtime.fabric.resources import ChildBudget
+from thm.runtime.fabric.resources import ChildBudget, ProcessGroupAccountingUnavailable
 
 
 class ProcExitAccountingTests(unittest.TestCase):
-    def test_denied_io_rechecks_dead_state_and_live_denial_remains_error(self):
+    def test_late_helper_and_leader_exit_never_make_denied_io_acceptable(self):
         for state in ('Z', 'X', 'S'):
             with self.subTest(state=state), tempfile.TemporaryDirectory() as temp:
                 root = Path(temp)
@@ -23,6 +23,10 @@ class ProcExitAccountingTests(unittest.TestCase):
                 original = Path.read_text
                 def read(path, *args, **kwargs):
                     if path.name == 'io':
+                        # This member joins after the parent's directory and
+                        # membership snapshot, exactly the review's blind spot.
+                        helper = root / '101'; helper.mkdir()
+                        (helper / 'stat').write_text(stat.replace('100 (worker)', '101 (helper)'))
                         (process / 'stat').write_text(stat.replace(') S ', ') ' + state + ' '))
                         raise PermissionError('proc I/O became unavailable')
                     return original(path, *args, **kwargs)
@@ -32,11 +36,10 @@ class ProcExitAccountingTests(unittest.TestCase):
                 with mock.patch.object(os, 'sysconf', return_value=100, create=True), \
                      mock.patch.object(os, 'getpgid', return_value=100, create=True), \
                      mock.patch.object(Path, 'read_text', read):
-                    if state == 'S':
-                        with self.assertRaises(PermissionError):
-                            budget._linux_usage(root)
-                    else:
-                        self.assertIsNone(budget._linux_usage(root))
+                    with self.assertRaises(ProcessGroupAccountingUnavailable):
+                        budget._linux_usage(root)
+                budget.process.wait.assert_not_called()
+
 
 
 if __name__ == '__main__':
