@@ -83,8 +83,18 @@ class AgentMemory:
             if len(encoded) > SNAPSHOT_MAX_BYTES:
                 raise ValueError('bounded memory snapshot required')
             root.mkdir(parents=True, exist_ok=True)
-            with (root/'thm-memory.json').open('xb') as handle:
-                handle.write(encoded)
+            import os
+            import tempfile
+            fd, temporary = tempfile.mkstemp(prefix='.thm-memory-', suffix='.pending', dir=root)
+            try:
+                with os.fdopen(fd, 'wb') as handle:
+                    if handle.write(encoded) != len(encoded):
+                        raise OSError('short snapshot write')
+                    handle.flush()
+                    os.fsync(handle.fileno())
+                os.link(temporary, root/'thm-memory.json')  # atomic create-only publication
+            finally:
+                Path(temporary).unlink(missing_ok=True)
 
     def restore(self, input_dir):
         import json

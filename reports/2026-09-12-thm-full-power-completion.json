@@ -4,7 +4,7 @@
   "repository": "xngg1021/thm-tiered-hot-memory",
   "version": "1.5.0",
   "implementation_status": "implemented",
-  "implementation_sha256": "40b4b2744c945fa1917f74eb83f13ca610582fe0c88439feb84fa53cb6462572",
+  "implementation_sha256": "e4375156b9f888cad5de8fd9f68131dd2175a7d2810908d487684e6e03ae78fc",
   "archive_branch": "archive/v1.5.0-stable",
   "accepted_merge_commit": null,
   "historical": {
@@ -45,7 +45,10 @@
       "Bound path artifact bundle traversal and bytes before hashing/loading",
       "Match snapshot save and restore UTF-8 byte bounds",
       "Reject empty partial outcome attachments",
-      "Resolve LangGraph/Deep Agents through the advertised harness extra and constraints"
+      "Resolve LangGraph/Deep Agents through the advertised harness extra and constraints",
+      "Atomically publish snapshots with fsync and create-only link",
+      "Load path artifacts from a bounded verified private copy",
+      "Enforce environment callback and cleanup deadlines in an owned process tree"
     ]
   },
   "domains": [
@@ -1862,7 +1865,7 @@
     }
   ],
   "validation": {
-    "local_unit_tests": 600,
+    "local_unit_tests": 603,
     "local_unit_skipped": 2,
     "numeric_audit_tests": 10,
     "benchmark_fixtures": 5,

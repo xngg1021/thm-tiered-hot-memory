@@ -95,3 +95,5 @@ The [implementation guide](../docs/24-full-power-implementation.md) explains con
 ## Exact-head review repairs
 
 Four actionable findings were repaired with regressions: path-based preparation now bounds complete bundle size/traversal before hashing and loading; snapshot save and restore share a UTF-8 byte limit; empty outcome attachment cannot create measured evidence; and the advertised harness extra includes LangGraph/Deep Agents, exercised through a constraints-only CI install. The complete local suite now has 600 tests (two platform/dependency skips).
+
+A second completed review added three lifecycle repairs: atomic snapshot publication and retry after failed fsync; session-owned verified artifact copies that survive source replacement; and process-tree deadlines covering environment reset, policy, step and close. Corresponding failure/race/timeout regressions bring the local suite to 603 tests (two platform/dependency skips).

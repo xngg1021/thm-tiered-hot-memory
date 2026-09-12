@@ -72,7 +72,7 @@ def byte_size(value):
     raise TypeError('byte-addressable tensor/transfer input required')
 
 
-def bounded_artifact_digest(source, maximum_bytes):
+def bounded_artifact_digest(source, maximum_bytes, *, copy_root=None):
     """Match the model-bundle identity while bounding traversal and every read."""
     import hashlib
     import os
@@ -114,7 +114,14 @@ def bounded_artifact_digest(source, maximum_bytes):
     rows, consumed = [], 0
     for path, expected_size in sorted(files):
         h, length = hashlib.sha256(), 0
-        with path.open('rb') as stream:
+        from contextlib import ExitStack
+        with ExitStack() as stack:
+            stream = stack.enter_context(path.open('rb'))
+            target = None
+            if copy_root is not None:
+                destination = Path(copy_root) / path.relative_to(root)
+                destination.parent.mkdir(parents=True, exist_ok=True)
+                target = stack.enter_context(destination.open('xb'))
             while True:
                 block = stream.read(min(1024*1024, maximum_bytes-consumed+1))
                 if not block:
@@ -123,6 +130,11 @@ def bounded_artifact_digest(source, maximum_bytes):
                 if consumed > maximum_bytes:
                     raise MemoryError('artifact grew beyond preparation budget')
                 h.update(block)
+                if target is not None and target.write(block) != len(block):
+                    raise OSError('short artifact staging write')
+            if target is not None:
+                target.flush()
+                os.fsync(target.fileno())
         if length != expected_size:
             raise ValueError('artifact changed while hashing')
         rows.append({'name': path.relative_to(root).as_posix(), 'sha256': h.hexdigest(), 'bytes': length})
@@ -148,6 +160,12 @@ class ExtensionSession:
         self.calls, self.failure, self.started = 0, None, clock()
         self.sequence = 0
         self.source_shape = None
+        self._artifact_directory = None
+
+    def _discard_staged(self):
+        if self._artifact_directory is not None:
+            self._artifact_directory.cleanup()
+            self._artifact_directory = None
 
     def _event(self, stage, **fields):
         self.events.append({'stage': stage, 'sequence': self.sequence, **fields})
@@ -180,6 +198,7 @@ class ExtensionSession:
             except Exception:
                 self._event('cleanup', status='failed')
             self.handle = self.artifact = None
+            self._discard_staged()
             raise
         self._event(stage, status='completed', elapsed_ms=(self.clock()-start)*1000)
         return value
@@ -190,6 +209,12 @@ class ExtensionSession:
             if self.state != 'new':
                 raise ValueError('prepare requires new session')
             import hashlib
+            if (isinstance(source, (bytes, bytearray, memoryview)) or hasattr(source, 'nbytes')) and byte_size(source) > self.config.max_input_bytes:
+                raise MemoryError('extension preparation input budget')
+            if isinstance(source, (bytearray, memoryview)):
+                source = bytes(source)
+            elif hasattr(source, 'tobytes') and callable(getattr(source, 'copy', None)):
+                source = source.copy()
             if isinstance(source, (bytes, bytearray, memoryview)) or hasattr(source, 'nbytes'):
                 if byte_size(source) > self.config.max_input_bytes:
                     raise MemoryError('extension preparation input budget')
@@ -199,8 +224,19 @@ class ExtensionSession:
             elif hasattr(source, 'tobytes'):
                 observed = hashlib.sha256(source.tobytes()).hexdigest()
             else:
-                observed = bounded_artifact_digest(source, self.config.max_input_bytes)
+                import tempfile
+                from pathlib import Path
+                original = Path(source)
+                source_was_file = original.is_file()
+                self._artifact_directory = tempfile.TemporaryDirectory(prefix='thm-artifact-')
+                try:
+                    observed = bounded_artifact_digest(original, self.config.max_input_bytes, copy_root=self._artifact_directory.name)
+                    source = Path(self._artifact_directory.name) / original.name if source_was_file else Path(self._artifact_directory.name)
+                except Exception:
+                    self._discard_staged()
+                    raise
             if observed != self.config.source_sha256:
+                self._discard_staged()
                 raise ValueError('extension source checksum mismatch')
             self.artifact = self._call('prepare', self.binding.prepare, source, self.config)
             self.state = 'prepared'
@@ -250,6 +286,7 @@ class ExtensionSession:
                 self.binding.close()
             finally:
                 self.handle = self.artifact = None
+                self._discard_staged()
                 self.state = 'invalidated'
                 self._event('invalidate', reason=reason)
 
@@ -272,6 +309,7 @@ class ExtensionSession:
                 try:
                     self.binding.close()
                 finally:
+                    self._discard_staged()
                     self.handle, self.artifact, self.state = None, None, 'closed'
                     self._event('close')
 

@@ -24,3 +24,35 @@ FIXTURES = {
  'memoryarena': [{'id': 'fixture-arena', 'questions': ['Find the observatory code', 'Reuse the code'],
                   'answers': ['cobalt', 'cobalt'], 'backgrounds': ['An observatory has a code.', 'Reuse earlier experience.']}],
 }
+
+
+class DeterministicEnvironment:
+    """Pickleable fake environment; delay injection tests the external process bound."""
+    def __init__(self, delay_stage=None, marker=None):
+        self.delay_stage,self.marker=delay_stage,marker
+
+    def _delay(self,stage):
+        if self.delay_stage==stage:
+            if self.marker:
+                from pathlib import Path
+                Path(self.marker).write_text(stage)
+            import time
+            time.sleep(30)
+
+    def reset(self, task_id):
+        self._delay('reset')
+        return 'block-policy' if self.delay_stage=='policy' else 'observation'
+
+    def step(self,action):
+        self._delay('step')
+        return {'observation':'done','done':True,'success':action=='right'}
+
+    def close(self):
+        self._delay('close')
+
+
+def deterministic_environment_policy(query, observation, memory):
+    if observation=='block-policy':
+        import time
+        time.sleep(30)
+    return 'right'

@@ -63,11 +63,11 @@ class OutcomeBridgeTests(unittest.TestCase):
             export_evidence(receipt(), source_commit='c'*40, observations={'physical_read': Measurement(1, 'ms', 1, 'sum', 'a'*64)})
 
     def test_fake_environment_and_official_scorer_are_separate(self):
-        closed = []
-        env = types.SimpleNamespace(reset=lambda i:'observation', step=lambda a:dict(observation='done',done=True,success=a=='right'), close=lambda:closed.append(True))
+        from thm.evaluation.fixtures import DeterministicEnvironment, deterministic_environment_policy
+        env = DeterministicEnvironment()
         task = Task('a', 'scope', 'query', ())
-        r, trace = EnvironmentRunner(env, EnvironmentIdentity('memoryarena','fixture','a'*64)).run(task, lambda q,o,m:'right')
-        self.assertTrue(r['environment_success']); self.assertFalse(r['task_outcome_accepted']); self.assertEqual(closed,[True])
+        r, trace = EnvironmentRunner(env, EnvironmentIdentity('memoryarena','fixture','a'*64)).run(task, deterministic_environment_policy)
+        self.assertTrue(r['environment_success']); self.assertFalse(r['task_outcome_accepted']); self.assertTrue(r['environment_closed']); self.assertEqual(r['execution_boundary'],'owned-process-tree')
         scorer = OfficialScorerBridge(lambda answer,ground_truth,rubric:float(answer==ground_truth),evaluator_id='official-fixture',implementation_sha256='b'*64)
         score = scorer.score(task, GroundTruth('a', answer='gold'), 'gold', trace_sha256=hashlib.sha256(trace).hexdigest())
         self.assertEqual(score['answer_accuracy'],1)
@@ -100,6 +100,29 @@ class OutcomeBridgeTests(unittest.TestCase):
             self.assertFalse((root/'oversized'/'thm-memory.json').exists())
             a.save(root/'accepted');b=AgentMemory(root/'b.db','scope');b.restore(root/'accepted')
             self.assertEqual(a.documents,b.documents);a.close();b.close()
+
+    def test_snapshot_atomic_failure_retry_and_existing_destination(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root=Path(tmp);memory=AgentMemory(root/'source.db','scope');memory.add('database port 5439')
+            with mock.patch('os.fsync',side_effect=OSError('disk full')):
+                with self.assertRaises(OSError):memory.save(root/'snapshot')
+            self.assertFalse((root/'snapshot'/'thm-memory.json').exists())
+            self.assertEqual(list((root/'snapshot').glob('*.pending')),[])
+            memory.save(root/'snapshot');original=(root/'snapshot'/'thm-memory.json').read_bytes()
+            with self.assertRaises(FileExistsError):memory.save(root/'snapshot')
+            self.assertEqual((root/'snapshot'/'thm-memory.json').read_bytes(),original)
+            memory.close()
+
+    def test_environment_reset_policy_step_and_close_are_interruptible(self):
+        import time
+        from thm.evaluation.fixtures import DeterministicEnvironment, deterministic_environment_policy
+        task=Task('a','scope','query',())
+        for stage in ('reset','policy','step','close'):
+            with self.subTest(stage=stage):
+                runner=EnvironmentRunner(DeterministicEnvironment(stage),EnvironmentIdentity('memoryarena','fixture','a'*64),wall_seconds=1)
+                start=time.monotonic()
+                with self.assertRaises(TimeoutError):runner.run(task,deterministic_environment_policy)
+                self.assertLess(time.monotonic()-start,7)
 
     def test_empty_partial_outcome_never_becomes_measured(self):
         original=receipt()

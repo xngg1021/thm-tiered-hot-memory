@@ -36,6 +36,21 @@ class SDKTests(unittest.TestCase):
             (root/'external.bin').write_bytes(b'0123456789')
             with self.assertRaises(MemoryError):bounded_artifact_digest(path,15)
 
+    def test_path_binding_loads_owned_verified_snapshot_after_source_changes(self):
+        from dataclasses import replace
+        from thm.runtime.fabric.inference import artifact_digest
+        with tempfile.TemporaryDirectory() as tmp:
+            path=Path(tmp)/'model.pt';path.write_bytes(b'original')
+            cfg=replace(config('aws.neuron',b'ignored'),source_sha256=artifact_digest(path))
+            captured=[]
+            def prepare(p,c):captured.append(p);return p
+            binding=FunctionBinding(operations=('inference',),prepare=prepare,compile=lambda p,c:p.read_bytes(),load=lambda x,c:x,execute=lambda h,o,x:h,close=lambda:None)
+            session=ExtensionSession(cfg,binding);session.prepare(path)
+            self.assertNotEqual(captured[0],path);self.assertEqual(captured[0].read_bytes(),b'original')
+            path.write_bytes(b'replaced and much bigger');session.compile();session.load()
+            self.assertEqual(session.execute('inference',b'input',generation='g'),b'original')
+            staged=captured[0];session.close();self.assertFalse(staged.exists())
+
     def test_diskann_build_load_search_and_owned_cleanup(self):
         matrix=np.array([[1,2],[3,4]],dtype=np.float32); calls=[]
         class Index:
