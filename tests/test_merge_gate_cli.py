@@ -22,13 +22,13 @@ class MergeGateCLIInputTests(unittest.TestCase):
         self.output = io.StringIO()
 
     def run_cli(self):
-        with mock.patch.object(sys, 'argv', ['verify_merge_gate.py', str(self.path), '--expected-head', 'a'*40]), \
+        with mock.patch.object(sys, 'argv', ['verify_merge_gate.py', str(self.path), '--expected-head', 'a'*40, '--expected-base', 'b'*40]), \
              contextlib.redirect_stdout(self.output):
             gate.main()
 
     def test_direct_clean_interpreter_execution_from_another_directory(self):
         result = subprocess.run([sys.executable, '-S', str(Path(gate.__file__).resolve()),
-                                 str(self.path), '--expected-head', 'a'*40], cwd=self.root,
+                                 str(self.path), '--expected-head', 'a'*40, '--expected-base', 'b'*40], cwd=self.root,
                                 capture_output=True, text=True, timeout=10)
         self.assertEqual(result.returncode, 0, result.stderr)
         receipt = json.loads(result.stdout)

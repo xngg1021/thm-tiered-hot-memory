@@ -2,7 +2,9 @@
 """Validate an explicitly fetched GitHub snapshot before an expected-head merge.
 
 This is an offline admission check, not remote branch protection. The actual
-merge must still pass expected_head_sha to GitHub to close the inspection race.
+caller must fetch main immediately before admission, pass expected_head_sha to
+GitHub, and verify the returned merge parents before accepting the release.
+GitHub's merge API does not expose an atomic expected-base guard.
 """
 import argparse
 import hashlib
@@ -20,7 +22,7 @@ ARCHIVE = 'e6e4dda5835e3cb345207457d5491131c6959b2c'
 REQUIRED = ('THM correctness', 'THM Hermes integration', 'THM harness integrations')
 
 
-def verify(snapshot, *, expected_head):
+def verify(snapshot, *, expected_head, expected_base):
     if not re.fullmatch('[0-9a-f]{40}', expected_head):
         raise ValueError('full expected head required')
     if snapshot.get('repository') != REPOSITORY or snapshot.get('head_sha') != expected_head:
@@ -29,8 +31,10 @@ def verify(snapshot, *, expected_head):
         raise ValueError('open ready successor targeting main required')
     if type(snapshot.get('pr_number')) is not int or snapshot['pr_number'] <= 0:
         raise ValueError('valid PR required')
-    if not re.fullmatch('[0-9a-f]{40}', snapshot.get('base_sha', '')):
-        raise ValueError('full base identity required')
+    if not re.fullmatch('[0-9a-f]{40}', expected_base):
+        raise ValueError('full freshly observed base identity required')
+    if snapshot.get('base_sha') != expected_base:
+        raise ValueError('base changed; refresh snapshot and repeat admission')
     if snapshot.get('archive_v1_4_sha') != ARCHIVE:
         raise ValueError('historical archive moved')
     if snapshot.get('merge_method') != 'merge' or snapshot.get('force_push') is not False:
@@ -59,20 +63,36 @@ def verify(snapshot, *, expected_head):
     elif review.get('status') != 'reviewed':
         raise ValueError('review state unsupported')
     out = {'schema': 'thm-merge-gate/1', 'repository': REPOSITORY, 'pr_number': snapshot['pr_number'],
-           'expected_head_sha': expected_head, 'base_sha': snapshot['base_sha'], 'merge_method': 'merge',
+           'expected_head_sha': expected_head, 'expected_base_sha': expected_base,
+           'base_sha': snapshot['base_sha'], 'merge_method': 'merge',
            'workflow_ids': admitted, 'review': review, 'archive_v1_4_sha': ARCHIVE,
            'remote_protection': snapshot.get('remote_protection', 'unknown'),
-           'scope': 'snapshot admission; GitHub expected-head guard still required'}
+           'scope': 'snapshot admission against freshly observed main; expected-head merge and exact-parent postcondition still required'}
     raw = json.dumps(out, sort_keys=True, separators=(',', ':'), allow_nan=False).encode()
     return {**out, 'receipt_sha256': hashlib.sha256(raw).hexdigest()}
+
+
+def verify_merge_result(receipt, *, parents):
+    """Reject an intervening base/head change before archive/release acceptance."""
+    body = {k: v for k, v in receipt.items() if k != 'receipt_sha256'}
+    raw = json.dumps(body, sort_keys=True, separators=(',', ':'), allow_nan=False).encode()
+    if receipt.get('receipt_sha256') != hashlib.sha256(raw).hexdigest():
+        raise ValueError('invalid admission receipt')
+    expected = [receipt['expected_base_sha'], receipt['expected_head_sha']]
+    if list(parents) != expected:
+        raise ValueError('merge parents changed; release not accepted; refresh evidence and repeat admission')
+    return {'status': 'matched', 'parents': expected, 'admission_sha256': receipt['receipt_sha256']}
 
 
 def main():
     p=argparse.ArgumentParser(description=__doc__)
     p.add_argument('snapshot', type=Path);p.add_argument('--expected-head', required=True)
+    p.add_argument('--expected-base', required=True,
+                   help='main SHA independently fetched immediately before admission')
     args=p.parse_args()
     raw = bounded_file_bytes(args.snapshot, 8*1024*1024).decode('utf-8')
-    print(json.dumps(verify(json.loads(raw),expected_head=args.expected_head),indent=2))
+    print(json.dumps(verify(json.loads(raw),expected_head=args.expected_head,
+                            expected_base=args.expected_base),indent=2))
 
 
 if __name__ == '__main__':main()

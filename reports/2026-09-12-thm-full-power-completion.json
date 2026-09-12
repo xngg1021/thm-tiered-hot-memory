@@ -4,7 +4,7 @@
   "repository": "xngg1021/thm-tiered-hot-memory",
   "version": "1.5.0",
   "implementation_status": "implemented",
-  "implementation_sha256": "5ed3c2bb0dbe7f3f354c92676d1b03ab37485559aa17f9b193560237d550b837",
+  "implementation_sha256": "c14b0eb34cb6de1afbb7b641c0ec7cb1b288b2a135704065fc704ba82cf37da6",
   "archive_branch": "archive/v1.5.0-stable",
   "accepted_merge_commit": null,
   "historical": {
@@ -75,7 +75,9 @@
       "Apply inherited descendant containment to model and shadow workers before provider execution; keep Darwin backend preparation within the already-owned worker",
       "Restore isolated=True on the already-owned model worker: LocalEncoder uses it to authorize explicit thread control and does not launch nested workers; exercise actual Torch/ORT/OpenVINO constructor paths with local fixtures",
       "Read CE CLI input through one non-link regular-file descriptor with an 8 MB streaming bound; reject special-file replacement and growth before parsing or output creation",
-      "Read merge admission snapshots through one checked regular descriptor under the original 8 MiB streaming bound; reject substitutions/growth and retain clean-interpreter standalone execution"
+      "Read merge admission snapshots through one checked regular descriptor under the original 8 MiB streaming bound; reject substitutions/growth and retain clean-interpreter standalone execution",
+      "Require independently freshly observed main SHA for merge admission; verify actual ordered merge parents against the checksum-bound receipt before archive acceptance",
+      "Attempt all allocation evictions before reporting cleanup errors; retain failed ownership for explicit retry and preserve deferred in-flight lease release"
     ],
     "ci_repairs": [
       "Preserve concurrent d00b237 Darwin EPERM cleanup fix; live-worker permission failures remain errors",
@@ -1911,7 +1913,7 @@
     }
   ],
   "validation": {
-    "local_unit_tests": 665,
+    "local_unit_tests": 669,
     "local_unit_skipped": 3,
     "numeric_audit_tests": 10,
     "benchmark_fixtures": 5,
