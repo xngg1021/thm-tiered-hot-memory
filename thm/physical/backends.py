@@ -8,6 +8,7 @@ from dataclasses import asdict, dataclass
 import hashlib
 import os
 from pathlib import Path
+import shutil
 import threading
 import time
 import uuid
@@ -15,6 +16,7 @@ import uuid
 from thm.runtime.fabric.contracts import identity
 from .adapters import EXTENSIONS
 from .contracts import TransferExtent
+from thm._bounded_files import bounded_file_bytes, validated_descriptor
 
 
 FAMILIES = tuple(dict.fromkeys((*EXTENSIONS, 'sata', 'sas', 'stacked-block', 'storage-spaces',
@@ -129,35 +131,75 @@ class MountedFilesystemTransport:
                     raise OSError('short storage stage write')
                 f.flush()
                 os.fsync(f.fileno())
-            self.pending[transaction] = (path, key)
+            self.pending[transaction] = (path, key, len(data))
         except Exception:
             path.unlink(missing_ok=True)
             raise
 
     def commit(self, transaction):
-        path, key = self.pending[transaction]
+        path, key, maximum = self.pending[transaction]
         destination = self._path(key)
-        if sha(path.read_bytes()) != key:
+        # Read the untrusted mounted entry once, through its checked descriptor.
+        # Only these bounded, checksum-validated bytes become publication input.
+        data = bounded_file_bytes(path, maximum)
+        if sha(data) != key:
             raise ValueError('staged content changed')
+        publication = self.root / ('.thm-' + transaction + '.publication')
+        publication.mkdir(mode=0o700)  # private, create-only, same-filesystem workspace
         try:
-            os.link(path, destination)  # create-only publication; no overwrite race
-        except FileExistsError:
-            if sha(destination.read_bytes()) != key:
-                raise ValueError('existing object corrupt')
+            owned = publication / 'payload'
+            with validated_descriptor(publication, directory=True) as (directory_fd, _):
+                if os.name == 'posix':
+                    fd = os.open('payload', os.O_RDWR | os.O_CREAT | os.O_EXCL | os.O_NOFOLLOW,
+                                 0o600, dir_fd=directory_fd)
+                    stream = os.fdopen(fd, 'w+b')
+                else:
+                    stream = owned.open('x+b')
+                with stream:
+                    if stream.write(data) != len(data):
+                        raise OSError('short storage publication write')
+                    stream.flush(); os.fsync(stream.fileno())
+                    stream.seek(0)
+                    if stream.read(len(data) + 1) != data:
+                        raise ValueError('owned publication changed')
+                try:
+                    # This inode belongs to the private workspace, never the
+                    # mutable mounted pending pathname inspected above.
+                    if os.name == 'posix':
+                        os.link('payload', destination, src_dir_fd=directory_fd, follow_symlinks=False)
+                    else:
+                        os.link(owned, destination)
+                except FileExistsError:
+                    if sha(bounded_file_bytes(destination, maximum)) != key:
+                        raise ValueError('existing object corrupt')
+        finally:
+            shutil.rmtree(publication)
         path.unlink()
         del self.pending[transaction]
 
     def abort(self, transaction):
         value = self.pending.pop(transaction, None)
         (value[0] if value else self._pending_path(transaction)).unlink(missing_ok=True)
+        publication = self.root / ('.thm-' + transaction + '.publication')
+        if publication.exists():
+            shutil.rmtree(publication)  # rmtree refuses a substituted directory symlink
 
     def read(self, key, offset, length):
-        with self._path(key).open('rb') as f:
-            f.seek(offset)
-            return f.read(length)
+        with validated_descriptor(self._path(key)) as (fd, info):
+            if offset + length > info.st_size:
+                raise ValueError('short storage extent')
+            os.lseek(fd, offset, os.SEEK_SET)
+            chunks, remaining = [], length
+            while remaining:
+                block = os.read(fd, min(remaining, 1024 * 1024))
+                if not block:
+                    break
+                chunks.append(block); remaining -= len(block)
+            return b''.join(chunks)
 
     def size(self, key):
-        return self._path(key).stat().st_size
+        with validated_descriptor(self._path(key)) as (_, info):
+            return info.st_size
 
     def close(self):
         for transaction in list(self.pending):

@@ -94,6 +94,53 @@ class LostS3Acknowledgement(FakeS3Client):
         raise OSError('PUT acknowledgement lost')
 
 
+class MountedPublicationTests(unittest.TestCase):
+    def test_pending_growth_and_substitution_are_bounded_before_publication(self):
+        for kind in ('growth', 'symlink', 'fifo'):
+            if kind == 'fifo' and not hasattr(os, 'mkfifo'):
+                continue
+            if kind == 'symlink' and os.name == 'nt':
+                continue
+            with self.subTest(kind=kind), tempfile.TemporaryDirectory() as tmp:
+                transport=MountedFilesystemTransport(tmp);transaction='a'*32
+                data=b'abc';key=hashlib.sha256(data).hexdigest()
+                transport.stage(transaction,key,data)
+                path=transport.pending[transaction][0]
+                if kind=='growth':path.write_bytes(b'x'*4096)
+                else:
+                    path.unlink()
+                    if kind=='fifo':os.mkfifo(path)
+                    else:
+                        target=Path(tmp)/'foreign';target.write_bytes(data);path.symlink_to(target)
+                with mock.patch('thm.physical.backends.os.link', side_effect=AssertionError('must reject before publishing')):
+                    with self.assertRaises((ValueError,OSError)):
+                        transport.commit(transaction)
+                self.assertFalse((Path(tmp)/(key+'.seg')).exists())
+                transport.abort(transaction)
+
+    def test_only_frozen_private_inode_is_linked_and_existing_reads_are_bounded(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            transport=MountedFilesystemTransport(tmp);transaction='b'*32
+            data=b'original';key=hashlib.sha256(data).hexdigest()
+            transport.stage(transaction,key,data);pending=transport.pending[transaction][0]
+            link=os.link
+            def replace_original(source,destination,**kwargs):
+                self.assertNotEqual(Path(source),pending)
+                pending.write_bytes(b'replaced original while publishing')
+                inode=os.stat(source,dir_fd=kwargs.get('src_dir_fd')).st_ino
+                link(source,destination,**kwargs)
+                self.assertEqual(os.stat(destination).st_ino,inode)
+            with mock.patch('thm.physical.backends.os.link',replace_original):
+                transport.commit(transaction)
+            destination=Path(tmp)/(key+'.seg')
+            self.assertEqual(destination.read_bytes(),data)
+            self.assertEqual(list(Path(tmp).iterdir()),[destination])
+            transport.stage(transaction,key,data);destination.write_bytes(b'x'*4096)
+            with self.assertRaises(ValueError):transport.commit(transaction)
+            transport.abort(transaction)
+            self.assertEqual(list(Path(tmp).iterdir()),[destination])
+
+
 def s3_factory():
     return S3Transport(FakeS3Client(), 'fixture')
 

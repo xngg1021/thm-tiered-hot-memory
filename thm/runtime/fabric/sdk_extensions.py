@@ -213,7 +213,9 @@ class DiskANNBinding:
     """Explicit approximate memory index using the published diskannpy API.
 
     Candidate IDs/distances require a separate retrieval quality admission gate.
-    Builds stay in an owned temporary directory and are removed on close.
+    Construction uses the public in-memory insert API and never generates
+    scratch/index files. The session exposes search only after construction.
+    max_build_bytes bounds source bytes; generated disk bytes are always zero.
     """
     operations = ('search',)
     def __init__(self, *, complexity=64, graph_degree=32, max_build_bytes=64*1024*1024):
@@ -221,31 +223,41 @@ class DiskANNBinding:
             raise ValueError('positive DiskANN build bounds required')
         self.complexity, self.graph_degree, self.max_build_bytes = complexity, graph_degree, max_build_bytes
         self.directory = self.index = None
-        self.configuration = dict(complexity=complexity, graph_degree=graph_degree, max_build_bytes=max_build_bytes, metric='l2')
+        self.configuration = dict(complexity=complexity, graph_degree=graph_degree, max_build_bytes=max_build_bytes,
+                                  metric='l2', build_mode='memory-only', generated_disk_bytes=0)
 
     def prepare(self, source, config):
         import numpy as np
-        import tempfile
         if config.precision != 'fp32':
             raise ValueError('DiskANN binding requires fp32')
         array = np.ascontiguousarray(source, dtype=np.float32)
         if array.ndim != 2 or not array.size or not np.isfinite(array).all():
             raise ValueError('finite DiskANN matrix required')
-        if array.nbytes > self.max_build_bytes:
+        if array.nbytes > self.max_build_bytes or array.shape[0] >= 2**32:
             raise MemoryError('DiskANN source budget')
         self.api = importlib.import_module('diskannpy')
         self.shape = array.shape
-        self.directory = tempfile.TemporaryDirectory(prefix='thm-diskann-')
         return array
 
     def compile(self, artifact, config):
-        self.api.build_memory_index(data=artifact, distance_metric='l2', index_directory=self.directory.name,
-                                    complexity=self.complexity, graph_degree=self.graph_degree, num_threads=1)
-        return self.directory.name
+        import numpy as np
+        # The file-producing builder has no enforceable workspace quota. The
+        # published DynamicMemoryIndex API constructs the same provider's memory
+        # index directly; no build/save/from_file operation can consume disk.
+        self.index = self.api.DynamicMemoryIndex(distance_metric='l2', vector_dtype=np.float32,
+            dimensions=self.shape[1], max_vectors=self.shape[0], complexity=self.complexity,
+            graph_degree=self.graph_degree, num_threads=1, search_threads=1,
+            initial_search_complexity=self.complexity)
+        try:
+            self.index.batch_insert(artifact, np.arange(1, self.shape[0]+1, dtype=np.uint32), num_threads=1)
+        except BaseException:
+            self.index = None
+            raise
+        return self.index
 
     def load(self, artifact, config):
-        self.index = self.api.StaticMemoryIndex(index_directory=artifact, num_threads=1,
-                                               initial_search_complexity=self.complexity)
+        if artifact is not self.index or self.index is None:
+            raise ValueError('DiskANN constructed index identity required')
         return self.index
 
     def execute(self, handle, operation, inputs):
@@ -255,9 +267,9 @@ class DiskANNBinding:
             raise ValueError('invalid DiskANN query/k')
         out = handle.search(query=query, k_neighbors=k, complexity=max(k, self.complexity))
         ids, distances = np.asarray(out.identifiers), np.asarray(out.distances)
-        if ids.shape != (k,) or distances.shape != (k,) or not np.isfinite(distances).all() or any(int(i) != i or not 0 <= i < self.shape[0] for i in ids):
+        if ids.shape != (k,) or distances.shape != (k,) or not np.isfinite(distances).all() or any(int(i) != i or not 1 <= i <= self.shape[0] for i in ids):
             raise ValueError('invalid DiskANN result')
-        return {'identifiers': ids, 'distances': distances}
+        return {'identifiers': ids.astype(np.int64) - 1, 'distances': distances}
 
     def close(self):
         self.index = None

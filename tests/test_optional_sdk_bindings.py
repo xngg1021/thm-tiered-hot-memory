@@ -51,20 +51,44 @@ class SDKTests(unittest.TestCase):
             self.assertEqual(session.execute('inference',b'input',generation='g'),b'original')
             staged=captured[0];session.close();self.assertFalse(staged.exists())
 
-    def test_diskann_build_load_search_and_owned_cleanup(self):
+    def test_diskann_build_load_search_without_generated_files(self):
         matrix=np.array([[1,2],[3,4]],dtype=np.float32); calls=[]
         class Index:
             def __init__(self, **kw):calls.append(kw)
+            def batch_insert(self, vectors, vector_ids, num_threads):
+                np.testing.assert_equal(vectors, matrix)
+                np.testing.assert_equal(vector_ids, np.array([1,2],dtype=np.uint32))
+                self.insert_threads = num_threads
             def search(self, **kw):
                 self.kw=kw
-                return types.SimpleNamespace(identifiers=np.array([0]),distances=np.array([0.]))
-        api=types.SimpleNamespace(build_memory_index=lambda **kw:calls.append(kw),StaticMemoryIndex=Index)
-        with mock.patch.dict('sys.modules', {'diskannpy':api}):
+                return types.SimpleNamespace(identifiers=np.array([1]),distances=np.array([0.]))
+        forbidden=mock.Mock(side_effect=AssertionError('file-producing build must never run'))
+        api=types.SimpleNamespace(build_memory_index=forbidden,StaticMemoryIndex=forbidden,DynamicMemoryIndex=Index)
+        with mock.patch.dict('sys.modules', {'diskannpy':api}), \
+             mock.patch('tempfile.TemporaryDirectory', side_effect=AssertionError('no build scratch workspace')):
             binding=DiskANNBinding(); s=ExtensionSession(config('diskann',matrix.tobytes()),binding)
-            s.prepare(matrix);s.compile();root=Path(binding.directory.name);s.load()
+            s.prepare(matrix);s.compile();s.load()
             out=s.execute('search',{'query':matrix[0],'k':1},generation='g')
             self.assertEqual(out['identifiers'].tolist(),[0]);self.assertEqual(calls[0]['distance_metric'],'l2')
-            s.close();self.assertFalse(root.exists())
+            self.assertEqual(calls[0]['max_vectors'],2)
+            self.assertEqual(binding.configuration['generated_disk_bytes'],0)
+            forbidden.assert_not_called()
+            s.close();self.assertIsNone(binding.index);self.assertIsNone(binding.directory)
+
+    def test_diskann_failed_insert_and_source_budget_do_not_publish_handle(self):
+        matrix=np.array([[1,2],[3,4]],dtype=np.float32)
+        cfg=config('diskann',matrix.tobytes())
+        with self.assertRaises(MemoryError):
+            DiskANNBinding(max_build_bytes=matrix.nbytes-1).prepare(matrix,cfg)
+        class Index:
+            def __init__(self, **kw):pass
+            def batch_insert(self, *args, **kw):raise RuntimeError('partial insertion')
+        with mock.patch.dict('sys.modules', {'diskannpy':types.SimpleNamespace(DynamicMemoryIndex=Index)}):
+            binding=DiskANNBinding();session=ExtensionSession(cfg,binding)
+            session.prepare(matrix)
+            with self.assertRaisesRegex(RuntimeError,'partial insertion'):session.compile()
+            self.assertIsNone(binding.index);self.assertIsNone(session.handle)
+            session.close()
 
     def test_ttnn_bf16_is_explicit_and_resources_close(self):
         closed=[]; deallocated=[]
