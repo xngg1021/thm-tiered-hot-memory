@@ -1,0 +1,5 @@
+openai-agents==0.22.0
+langchain-core==1.6.2
+mcp==2.0.0
+langgraph==1.2.11
+deepagents==0.7.13

@@ -29,7 +29,7 @@ Core THM remains lightweight. Install only the adapter dependencies you use:
 python -m pip install -e '.[openai]'
 python -m pip install -e '.[langchain]'
 python -m pip install -e '.[mcp]'
-# or all Python harness integrations
+# or all Python harness integrations (Deep Agents requires Python >= 3.11)
 python -m pip install -e '.[harnesses]'
 ```
 

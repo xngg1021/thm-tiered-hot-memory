@@ -91,6 +91,21 @@ class OutcomeBridgeTests(unittest.TestCase):
                 self.assertTrue(result['taxonomy']['compute_profile'].startswith('explicit-encoder-'))
             self.assertFalse(RetrievalFeatures().entity)
 
+    def test_snapshot_save_rejects_utf8_overflow_before_publication(self):
+        from thm.evaluation import memory as module
+        with tempfile.TemporaryDirectory() as tmp:
+            root=Path(tmp);a=AgentMemory(root/'a.db','scope');a.add('漢字'*100)
+            with mock.patch.object(module,'SNAPSHOT_MAX_BYTES',700):
+                with self.assertRaises(ValueError):a.save(root/'oversized')
+            self.assertFalse((root/'oversized'/'thm-memory.json').exists())
+            a.save(root/'accepted');b=AgentMemory(root/'b.db','scope');b.restore(root/'accepted')
+            self.assertEqual(a.documents,b.documents);a.close();b.close()
+
+    def test_empty_partial_outcome_never_becomes_measured(self):
+        original=receipt()
+        with self.assertRaises(ValueError):attach_outcomes(original,[],trace_bytes=b'arbitrary',allow_partial=True)
+        self.assertEqual(original['layers']['LLM-agent-outcome']['status'],'not-run')
+
     def test_memory_snapshot_reopen_and_corruption(self):
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp); a = AgentMemory(root/'a.db','scope'); a.add('database port is 5439'); a.save(root/'saved'); a.close()

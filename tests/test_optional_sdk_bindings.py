@@ -19,6 +19,23 @@ def config(provider, source, **kw):
 
 
 class SDKTests(unittest.TestCase):
+    def test_path_artifact_budget_precedes_hashing_or_loading(self):
+        from dataclasses import replace
+        from thm.runtime.fabric.extensions import bounded_artifact_digest
+        from thm.runtime.fabric.inference import artifact_digest
+        with tempfile.TemporaryDirectory() as tmp:
+            root=Path(tmp);path=root/'model.pt';path.write_bytes(b'0123456789')
+            calls=[]
+            binding=FunctionBinding(operations=('inference',),prepare=lambda p,c:calls.append(p),compile=lambda x,c:x,load=lambda x,c:x,execute=lambda h,o,x:x,close=lambda:None)
+            cfg=replace(config('aws.neuron',b'ignored'),max_input_bytes=5)
+            for source in (path,root):
+                with mock.patch.object(Path,'open',side_effect=AssertionError('must reject before hashing')):
+                    with self.assertRaises(MemoryError):ExtensionSession(cfg,binding).prepare(source)
+            self.assertEqual(calls,[])
+            self.assertEqual(bounded_artifact_digest(path,10),artifact_digest(path))
+            (root/'external.bin').write_bytes(b'0123456789')
+            with self.assertRaises(MemoryError):bounded_artifact_digest(path,15)
+
     def test_diskann_build_load_search_and_owned_cleanup(self):
         matrix=np.array([[1,2],[3,4]],dtype=np.float32); calls=[]
         class Index:

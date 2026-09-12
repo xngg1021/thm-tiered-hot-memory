@@ -54,6 +54,8 @@ class AgentOutcome:
 def attach_outcomes(receipt, outcomes, *, trace_bytes, allow_partial=False):
     """Verify trace bytes and exact task coverage, not the evaluator's score truth."""
     outcomes = tuple(outcomes)
+    if not outcomes:
+        raise ValueError('at least one new measured outcome required')
     result = copy.deepcopy(receipt)
     claimed = result.pop('receipt_sha256', None)
     if claimed != digest(result):

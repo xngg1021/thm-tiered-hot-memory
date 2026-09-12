@@ -91,3 +91,7 @@ Linux Python 3.10–3.14, Windows/macOS 3.13; eight tokenizer versions; full uni
 The offline merge helper binds expected head, newest workflow attempt, historical archive and review state. GitHub merge still receives expected_head_sha and normal merge method. Post-merge run identities are recorded in a forward-only documentation descendant; no published history is rewritten.
 
 The [implementation guide](../docs/24-full-power-implementation.md) explains configured contracts, concrete SDK paths and the boundary between a host-consumable placement replica and authoritative source memory.
+
+## Exact-head review repairs
+
+Four actionable findings were repaired with regressions: path-based preparation now bounds complete bundle size/traversal before hashing and loading; snapshot save and restore share a UTF-8 byte limit; empty outcome attachment cannot create measured evidence; and the advertised harness extra includes LangGraph/Deep Agents, exercised through a constraints-only CI install. The complete local suite now has 600 tests (two platform/dependency skips).

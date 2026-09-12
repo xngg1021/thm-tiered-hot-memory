@@ -157,6 +157,7 @@ python -m pip install -e '.[tokenizer,semantic]'
 python -m pip install -e '.[openai]'
 python -m pip install -e '.[langchain]'
 python -m pip install -e '.[mcp]'
+# Deep Agents: Python >= 3.11
 python -m pip install -e '.[harnesses]'
 ```
 

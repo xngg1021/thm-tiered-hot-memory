@@ -72,6 +72,63 @@ def byte_size(value):
     raise TypeError('byte-addressable tensor/transfer input required')
 
 
+def bounded_artifact_digest(source, maximum_bytes):
+    """Match the model-bundle identity while bounding traversal and every read."""
+    import hashlib
+    import os
+    import stat
+    from pathlib import Path
+    from ..identity import digest
+    source = Path(source)
+    if source.is_symlink() or not source.exists():
+        raise ValueError('existing non-symlink artifact required')
+    root = source.parent if source.is_file() else source
+    if not root.is_dir() or root.is_symlink():
+        raise ValueError('local artifact bundle required')
+    pending, files, entries, total = [root], [], 0, 0
+    while pending:
+        directory = pending.pop()
+        with os.scandir(directory) as children:
+            for entry in children:
+                entries += 1
+                if entries > 4096:
+                    raise MemoryError('extension artifact entry budget')
+                info = entry.stat(follow_symlinks=False)
+                if stat.S_ISLNK(info.st_mode):
+                    raise ValueError('symlink artifact content refused')
+                if stat.S_ISDIR(info.st_mode):
+                    pending.append(Path(entry.path))
+                elif stat.S_ISREG(info.st_mode):
+                    if entry.name == 'thm-preparation.json':
+                        if Path(entry.path) == source:
+                            raise ValueError('preparation metadata is not a model artifact')
+                        continue
+                    total += info.st_size
+                    if total > maximum_bytes:
+                        raise MemoryError('extension artifact input budget')
+                    files.append((Path(entry.path), info.st_size))
+                else:
+                    raise ValueError('regular artifact files required')
+    if not files:
+        raise ValueError('empty artifact bundle')
+    rows, consumed = [], 0
+    for path, expected_size in sorted(files):
+        h, length = hashlib.sha256(), 0
+        with path.open('rb') as stream:
+            while True:
+                block = stream.read(min(1024*1024, maximum_bytes-consumed+1))
+                if not block:
+                    break
+                consumed += len(block); length += len(block)
+                if consumed > maximum_bytes:
+                    raise MemoryError('artifact grew beyond preparation budget')
+                h.update(block)
+        if length != expected_size:
+            raise ValueError('artifact changed while hashing')
+        rows.append({'name': path.relative_to(root).as_posix(), 'sha256': h.hexdigest(), 'bytes': length})
+    return digest(rows)
+
+
 class ExtensionSession:
     """Serial, generation-bound lifecycle. Deadlines gate results, not native preemption.
 
@@ -142,8 +199,7 @@ class ExtensionSession:
             elif hasattr(source, 'tobytes'):
                 observed = hashlib.sha256(source.tobytes()).hexdigest()
             else:
-                from .inference import artifact_digest
-                observed = artifact_digest(source)
+                observed = bounded_artifact_digest(source, self.config.max_input_bytes)
             if observed != self.config.source_sha256:
                 raise ValueError('extension source checksum mismatch')
             self.artifact = self._call('prepare', self.binding.prepare, source, self.config)

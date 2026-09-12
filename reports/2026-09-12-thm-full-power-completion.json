@@ -4,7 +4,7 @@
   "repository": "xngg1021/thm-tiered-hot-memory",
   "version": "1.5.0",
   "implementation_status": "implemented",
-  "implementation_sha256": "179ecfff6636a844387d2dc366ec74d00b4e04371c641f6dea100c70e20261ae",
+  "implementation_sha256": "40b4b2744c945fa1917f74eb83f13ca610582fe0c88439feb84fa53cb6462572",
   "archive_branch": "archive/v1.5.0-stable",
   "accepted_merge_commit": null,
   "historical": {
@@ -40,7 +40,13 @@
     "exact_head_workflows": [],
     "post_merge_workflows": [],
     "normal_merge": true,
-    "forward_only": true
+    "forward_only": true,
+    "review_repairs": [
+      "Bound path artifact bundle traversal and bytes before hashing/loading",
+      "Match snapshot save and restore UTF-8 byte bounds",
+      "Reject empty partial outcome attachments",
+      "Resolve LangGraph/Deep Agents through the advertised harness extra and constraints"
+    ]
   },
   "domains": [
     {
@@ -1856,7 +1862,7 @@
     }
   ],
   "validation": {
-    "local_unit_tests": 597,
+    "local_unit_tests": 600,
     "local_unit_skipped": 2,
     "numeric_audit_tests": 10,
     "benchmark_fixtures": 5,

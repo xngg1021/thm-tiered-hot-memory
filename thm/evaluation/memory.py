@@ -7,6 +7,9 @@ from .adapters import trajectory_documents
 from .contracts import nonempty
 
 
+SNAPSHOT_MAX_BYTES = 16_000_000
+
+
 class AgentMemory:
     """MemoryArena MemoryClient-compatible add/wrap_user_prompt interface.
 
@@ -71,20 +74,23 @@ class AgentMemory:
         import json
         from .contracts import digest
         root = Path(output_dir)
-        root.mkdir(parents=True, exist_ok=True)
         with self.lock:
             if self.closed:
                 raise ValueError('memory interface closed')
             body = {'schema': 'thm-agent-memory/1', 'scope': self.scope, 'budget': self.budget,
                     'documents': [asdict(d) for d in self.documents]}
-            with (root/'thm-memory.json').open('x', encoding='utf-8') as handle:
-                json.dump({**body, 'receipt_sha256': digest(body)}, handle, ensure_ascii=False, allow_nan=False)
+            encoded = json.dumps({**body, 'receipt_sha256': digest(body)}, ensure_ascii=False, allow_nan=False).encode('utf-8')
+            if len(encoded) > SNAPSHOT_MAX_BYTES:
+                raise ValueError('bounded memory snapshot required')
+            root.mkdir(parents=True, exist_ok=True)
+            with (root/'thm-memory.json').open('xb') as handle:
+                handle.write(encoded)
 
     def restore(self, input_dir):
         import json
         from .contracts import digest
         path = Path(input_dir)/'thm-memory.json'
-        if path.is_symlink() or path.stat().st_size > 16_000_000:
+        if path.is_symlink() or path.stat().st_size > SNAPSHOT_MAX_BYTES:
             raise ValueError('bounded memory snapshot required')
         value = json.loads(path.read_text(encoding='utf-8'))
         checksum = value.pop('receipt_sha256', None)
