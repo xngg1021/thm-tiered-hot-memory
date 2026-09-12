@@ -4,6 +4,7 @@ import argparse
 import json
 import math
 from pathlib import Path
+from ._bounded_files import bounded_file_bytes
 from .evaluation.contracts import digest, nonempty
 
 
@@ -140,9 +141,11 @@ def main():
     parser.add_argument('--source-commit')
     parser.add_argument('--evidence-sha256')
     args = parser.parse_args()
-    if args.input.stat().st_size > 8_000_000:
-        parser.error('bounded bridge input exceeds 8 MB')
-    value = json.loads(args.input.read_text(encoding='utf-8'))
+    try:
+        raw = bounded_file_bytes(args.input, 8_000_000).decode('utf-8')
+    except (OSError, ValueError) as exc:
+        parser.error('bridge input must be a stable UTF-8 regular file within 8 MB: ' + str(exc))
+    value = json.loads(raw)
     if args.operation == 'export':
         if not args.source_commit:
             parser.error('--source-commit required')
