@@ -9,11 +9,7 @@ Autor: Junfu Shi (SJF, xngg1021) · Licencia: [MIT](LICENSE)
 <!-- section:architecture -->
 ## Arquitectura de tres planos
 
-THM separa memoria lógica, ejecución de cómputo y almacenamiento físico. Evaluation Fabric mide estos planos sin añadir un algoritmo de memoria nuevo. La identidad de la fuente y el scope mantienen su autoridad en toda representación.
-
-Contratos de arquitectura y evidencia
-
-El package estable y el archivo siguen en 1.4.0. Runtime, Physical Storage Fabric y Evaluation Fabric permanecen Unreleased. Las mediciones existentes conservan protocolo, SHA de fuente y alcance; ningún benchmark sin ejecutar ni hardware sin medir cuenta como accepted evidence.
+THM separa memoria lógica, ejecución de cómputo y almacenamiento físico. La versión 1.5.0 integra estos planos, Evaluation Fabric, un actuador explícito de residencia y la Context Economics bridge independiente. La identidad y el ámbito de la fuente conservan la autoridad. La evidencia histórica de 1.4.0 mantiene su protocolo y SHA; la estabilidad de implementación no otorga aceptación de hardware ni tareas.
 
 <!-- section:philosophy -->
 ## Filosofía de diseño
@@ -59,6 +55,8 @@ La semántica de retrieval vive en el core de THM. Hermes tiene la integración 
 
 SearchIndex limitado por scope, empaquetado de evidencia bajo presupuesto y control de residencia en observación comparten un núcleo. T0–T3 describen residencia y acceso lógicos. Actividad, validez, fijación y búsqueda se registran por separado; promoción automática y escritura de presupuestos siguen desactivadas.
 
+El actuador explícito admite dry-run, reproducción, aprobación del plan exacto, cambios transaccionales de ubicación, reversión y auditoría. La mutación automática sigue en false por defecto; se comprueban validez de fuente, pin, demanda, capacidad y evidencia.
+
 <!-- section:tiers -->
 ## T0–T3 Memory Tiers
 
@@ -81,7 +79,7 @@ El runtime sin ajustes iniciales comienza con una ruta segura disponible, observ
 <!-- section:physical -->
 ## Plano de almacenamiento físico
 
-StorageProfile describe costes de acceso medidos; placement vincula una representación con un destino. PhysicalTelemetry registra I/O real de extents. Están implementadas y verificadas las rutas buffered/mmap del sistema de archivos local. CXL, DAX, SPDK, GDS y transportes remotos siguen siendo descriptores de extensión sin rendimiento de hardware validado.
+StorageProfile describe costes de acceso medidos, placement vincula una representación con un destino y PhysicalTelemetry registra E/S por intervalos. Archivos con búfer/mmap, transportes configurados transaccionales, S3, propiedad de asignaciones y ubicación conjunta cuentan con rutas ejecutables y fixtures. CXL, DAX, SPDK, GDS y las familias remotas comparten contratos de ciclo de vida acotados; la ejecución nativa y el rendimiento real requieren evidencia separada.
 
 [Physical Storage Fabric](docs/physical-storage-fabric.md)
 
@@ -99,6 +97,8 @@ Los fixtures solo verifican interfaces y búsqueda determinista. V2 funciona con
 | LLM-agent-outcome | Llamadas generación/judge, exactitud, éxito del entorno; not-run por defecto |
 
 [Evaluation Fabric](docs/18-evaluation-fabric.md)
+
+EnvironmentRunner proporciona un ciclo de entorno acotado y OfficialScorerBridge aísla las respuestas exclusivas del evaluador. Los adjuntos Outcome vinculan las tareas ejecutadas y trace SHA, con cobertura parcial, puntuaciones ausentes, agregados macro/micro y latencia/coste observados. THM exporta evidencia con unidades y denominadores a Context Economics y acepta recomendaciones explícitas de presupuesto y límites. THM T0–T3 y CE L0–L6 siguen siendo independientes.
 
 <!-- section:evidence -->
 ## Evidencia de retrieval medida
@@ -125,7 +125,7 @@ Estas cifras miden **packed retrieval evidence**, no precisión final de respues
 | --- | --- |
 | **Hermes Agent** | `MemoryProvider` nativo; setup/config, prefetch, optional live-turn sync, session boundary hooks, memory-write refresh semantics |
 | **OpenAI Agents SDK** | `FunctionTool` nativo read-only |
-| **LangChain / LangGraph / Deep Agents** | Superficie nativa `BaseRetriever` |
+| **LangChain / LangGraph / Deep Agents** | BaseRetriever nativo, nodo LangGraph ejecutable, herramientas recall/status de Deep Agents y construcción del grafo |
 | **MCP v2** | `thm_recall` y `thm_status` typed/read-only por stdio |
 | **OpenClaw** | Pinned compatibility probe mediante legacy MCP bridge |
 | **Claude Code / Codex CLI / Gemini CLI** | Pinned real-CLI discovery/call lifecycle sobre el mismo read-only recall core |
@@ -211,4 +211,4 @@ Unit/invariant evidence, retrieval benchmark, harness lifecycle y real task outc
 - [Zero-LLM retrieval frontier](docs/16-zero-llm-retrieval-frontier.md)
 - [Changelog](CHANGELOG.md)
 
-THM sigue siendo research software. 1.4.0 es el accepted/stable implementation milestone; el retrieval frontier posterior permanece explícitamente unreleased. Un número de versión nunca sustituye una evidence class.
+THM 1.5.0 es un hito de implementación con evidencia separada de integración, hardware, benchmarks y tareas. Los experimentos de recuperación rechazados siguen siendo reproducibles y desactivados por defecto.

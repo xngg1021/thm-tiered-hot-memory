@@ -9,11 +9,7 @@
 <!-- section:architecture -->
 ## 세 평면 아키텍처
 
-THM은 논리 메모리, 계산 실행, 물리 저장소를 분리합니다. Evaluation Fabric은 새 메모리 알고리즘을 추가하지 않고 세 평면을 측정합니다. 모든 표현에서 원본 식별자와 scope가 기준으로 유지됩니다.
-
-아키텍처 및 증거 계약
-
-안정 package와 archive는 1.4.0을 유지합니다. Runtime, Physical Storage Fabric, Evaluation Fabric은 Unreleased입니다. 기존 측정은 원래 protocol, source SHA, 범위를 유지하며 실행하지 않은 benchmark나 하드웨어는 accepted evidence가 아닙니다.
+THM은 논리 메모리, 계산 실행, 물리 저장소를 분리합니다. 1.5.0은 이 계층들과 Evaluation Fabric, 명시적 상주 실행기, 독립적인 Context Economics bridge를 하나의 구현 범위로 제공합니다. 소스 식별자와 범위가 계속 권위를 가집니다. 과거 1.4.0 증거는 원래 프로토콜과 SHA를 유지하며, 구현 안정성이 하드웨어나 작업 검증을 뜻하지는 않습니다.
 
 <!-- section:philosophy -->
 ## Design philosophy
@@ -59,6 +55,8 @@ Retrieval semantics는 THM core에 둡니다. Hermes는 가장 깊은 lifecycle 
 
 scope 기반 SearchIndex, 예산 내 증거 패킹, shadow 상주 제어는 같은 코어를 사용합니다. T0–T3는 논리적 상주 및 접근 방식을 나타냅니다. 활동, 유효성, 고정, 검색은 각각 기록하며 자동 승격과 예산 쓰기 반영은 꺼져 있습니다.
 
+명시적 실행기는 dry-run, 재생, 정확한 계획 승인, 트랜잭션 배치 갱신, 롤백, 감사를 지원합니다. 자동 변경 기본값은 false이며 소스 유효성, pin, 수요, 용량, 증거 검사를 유지합니다.
+
 <!-- section:tiers -->
 ## T0–T3 memory Tiers
 
@@ -81,7 +79,7 @@ T0–T3는 **THM memory Tier**입니다. 별도 프로젝트인 Context Economic
 <!-- section:physical -->
 ## 물리 저장소 평면
 
-StorageProfile은 실측 접근 비용, placement는 표현과 대상의 연결, PhysicalTelemetry는 실제 extent I/O를 기록합니다. 검증된 로컬 파일 시스템의 buffered/mmap 경로가 구현되어 있습니다. CXL, DAX, SPDK, GDS와 원격 전송은 확장 설명이며 하드웨어 성능은 검증되지 않았습니다.
+StorageProfile은 측정된 접근 비용을, placement는 표현과 대상의 연결을, PhysicalTelemetry는 구간 I/O를 기록합니다. 버퍼/mmap 파일, 트랜잭션 방식의 구성된 전송, S3, 할당 소유권, 공동 배치에 실행 경로와 fixture가 있습니다. CXL, DAX, SPDK, GDS와 원격 계열은 제한된 수명주기 계약을 공유하며, 네이티브 전송 실행과 실제 하드웨어 성능은 별도 증거가 필요합니다.
 
 [Physical Storage Fabric](docs/physical-storage-fabric.md)
 
@@ -99,6 +97,8 @@ Fixture는 인터페이스와 결정론적 검색만 검증합니다. V2는 텍�
 | LLM-agent-outcome | 생성/judge 호출, 정답률, 환경 성공률; 기본 not-run |
 
 [Evaluation Fabric](docs/18-evaluation-fabric.md)
+
+EnvironmentRunner는 제한된 환경 수명주기를 제공하고 OfficialScorerBridge는 평가기 전용 정답을 분리합니다. Outcome 첨부는 실행된 작업 ID와 trace SHA에 연결되며, 부분 결과, 누락 점수, 매크로/마이크로 집계, 관측된 지연/비용을 지원합니다. THM은 단위와 분모가 있는 증거를 Context Economics에 내보내고 명시적 예산 및 제약 조언을 받습니다. THM T0–T3와 CE L0–L6는 독립적입니다.
 
 <!-- section:evidence -->
 ## Measured retrieval evidence
@@ -125,7 +125,7 @@ Canonical LoCoMo Protocol 2는 1,532 fully resolved non-adversarial questions와
 | --- | --- |
 | **Hermes Agent** | Native `MemoryProvider`; setup/config, prefetch, optional live-turn sync, session boundary hooks, memory-write refresh semantics |
 | **OpenAI Agents SDK** | Native read-only `FunctionTool` |
-| **LangChain / LangGraph / Deep Agents** | Native `BaseRetriever` surface |
+| **LangChain / LangGraph / Deep Agents** | 네이티브 BaseRetriever, 실행 가능한 LangGraph 노드, Deep Agents recall/status 도구 및 그래프 구성 |
 | **MCP v2** | stdio 기반 typed read-only `thm_recall` / `thm_status` |
 | **OpenClaw** | legacy MCP bridge를 통한 pinned compatibility probe |
 | **Claude Code / Codex CLI / Gemini CLI** | pinned real-CLI discovery/call lifecycle, 동일 read-only recall core 사용 |
@@ -211,4 +211,4 @@ Unit/invariant evidence, retrieval benchmark, harness lifecycle, real task outco
 - [Zero-LLM retrieval frontier](docs/16-zero-llm-retrieval-frontier.md)
 - [Changelog](CHANGELOG.md)
 
-THM은 research software입니다. 1.4.0은 accepted/stable implementation milestone이고 후속 retrieval frontier는 명시적으로 unreleased입니다. Version identity는 evidence class를 대신하지 않습니다.
+THM 1.5.0은 구현 마일스톤이며 통합, 하드웨어, benchmark, 작업 증거를 별도로 기록합니다. 기각된 검색 실험은 재현 가능하게 보존되며 기본적으로 꺼져 있습니다.

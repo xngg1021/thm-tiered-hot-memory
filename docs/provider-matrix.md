@@ -122,3 +122,7 @@ Core installation adds no Torch, CUDA, ROCm, TensorRT-RTX, OpenVINO, QNN, CANN, 
 | CUDA / TensorRT-RTX / QNN / CANN / MUSA / MLU / MACA | Vendor SDK terms; optional and not redistributed |
 
 Official repository license sources were inspected where available. Unverified exact package SPDX values stay explicitly unresolved; absence of a GitHub license API response is not evidence of a license. See each provider source row for its actual API and distribution boundary.
+
+## Configured lifecycle coverage in 1.5
+
+All 19 NativeExtensionSeam entries additionally expose the complete configured L4 lifecycle and deterministic execution fixtures. The native/automatic catalog maturity above is deliberately unchanged: attaching a caller binding does not prove a vendor SDK executed. Five concrete optional Python bindings (PJRT, Neuron, TTNN, OpenCL, diskannpy) and a sharded multi-device index are implemented; their API call shapes and cleanup are fixture-validated. See [the executable API contract](24-full-power-implementation.md). All 71 catalog entries remain without new L5 acceptance.

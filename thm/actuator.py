@@ -44,6 +44,7 @@ class ResidencyPlacementStore:
         self.lock = threading.RLock()
         self.db.executescript('''
             CREATE TABLE IF NOT EXISTS placement_state (id INTEGER PRIMARY KEY CHECK(id=1), revision INTEGER NOT NULL, payload TEXT NOT NULL);
+            CREATE TABLE IF NOT EXISTS placement_events (sequence INTEGER PRIMARY KEY AUTOINCREMENT, receipt TEXT NOT NULL);
             CREATE TABLE IF NOT EXISTS placement_audit (plan_id TEXT PRIMARY KEY, revision INTEGER NOT NULL, before_json TEXT NOT NULL, after_sha TEXT NOT NULL, receipt TEXT NOT NULL);
         ''')
 
@@ -84,6 +85,7 @@ class ResidencyPlacementStore:
                 self.db.execute('UPDATE placement_state SET revision=revision+1,payload=? WHERE id=1', (raw,))
                 self.db.execute('INSERT INTO placement_audit VALUES (?,?,?,?,?)',
                                 (plan['plan_id'], old['revision']+1, json.dumps(before), identity(after), json.dumps(receipt)))
+                self.db.execute('INSERT INTO placement_events(receipt) VALUES (?)', (json.dumps(receipt),))
                 self.db.execute('COMMIT')
             except Exception:
                 self.db.execute('ROLLBACK')
@@ -98,6 +100,8 @@ class ResidencyPlacementStore:
                 if row is None or current['revision'] != row[0] or current['snapshot_sha256'] != row[2]:
                     raise ValueError('rollback would overwrite intervening placement')
                 self.db.execute('UPDATE placement_state SET revision=revision+1,payload=? WHERE id=1', (row[1],))
+                event = {'status': 'rolled-back', 'plan_id': plan_id, 'revision': current['revision']+1}
+                self.db.execute('INSERT INTO placement_events(receipt) VALUES (?)', (json.dumps(event),))
                 self.db.execute('COMMIT')
             except Exception:
                 self.db.execute('ROLLBACK')
@@ -106,7 +110,7 @@ class ResidencyPlacementStore:
 
     def audit(self):
         with self.lock:
-            return [json.loads(row[0]) for row in self.db.execute('SELECT receipt FROM placement_audit ORDER BY revision')]
+            return [json.loads(row[0]) for row in self.db.execute('SELECT receipt FROM placement_events ORDER BY sequence')]
 
     def close(self):
         self.db.close()

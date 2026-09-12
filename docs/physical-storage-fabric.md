@@ -1,6 +1,6 @@
-# Unreleased physical storage fabric and bounded verification
+# Physical storage fabric and bounded verification — 1.5
 
-## Joint provider execution — Unreleased
+## Joint provider execution — 1.5 implementation
 
 The [joint optimizer](22-runtime-optimizer.md) binds actual source placement, target residency, inference/vector/transfer providers and current generation. [Resident handles](23-vector-index-providers.md) amortize document uploads while preserving source authority. Physical placement changes invalidate the execution profile and can trigger a bounded replan. Model candidates own private profile-specific replicas. A cuFile/native transfer seam does not relabel buffered/mmap execution as GDS; unknown native I/O remains unknown.
 
@@ -8,7 +8,7 @@ The [joint optimizer](22-runtime-optimizer.md) binds actual source placement, ta
 
 [Evaluation Fabric](18-evaluation-fabric.md) carries serialized StorageProfile, profile ID, representation placement and extent I/O PhysicalTelemetry in a separate systems-runtime physical_probe. The probe uses bounded scratch with existing verify/read adapters. SQLite query I/O is unavailable and cannot inherit these microbenchmark counters. Logical T0–T3, compute profile and physical placement remain orthogonal; unknown capability observations and specialized hardware remain unvalidated.
 
-Package identity remains 1.4.0. This successor has no stable/release designation.
+Package identity is 1.5.0. Implementation stability and hardware acceptance are separate.
 
 ## Independent planes
 
@@ -25,7 +25,7 @@ T0–T3 retain their logical residency/access meaning. T0 is not DRAM and T3 is 
 
 ## Granularity
 
-`LogicalObjectRef` and `GenerationRef` bind source/parent/scope. `RepresentationRef` cannot acquire authority. `SegmentRef` carries parent, locator, character offsets and `complete=false`; existing default-off segment retrieval now emits that typed relation. Vector row identity contains source document ID and hash, while a shard packs many rows contiguously. `VectorShardRef`, `TransferExtent` and `AllocationExtent` represent independent vector, transfer and allocation units. A memory item is not an I/O unit. No allocator, physical prefetch or automatic residency controller is enabled.
+`LogicalObjectRef` and `GenerationRef` bind source/parent/scope. `RepresentationRef` cannot acquire authority. `SegmentRef` carries parent, locator, character offsets and `complete=false`; existing default-off segment retrieval now emits that typed relation. Vector row identity contains source document ID and hash, while a shard packs many rows contiguously. `VectorShardRef`, `TransferExtent` and `AllocationExtent` represent independent vector, transfer and allocation units. A memory item is not an I/O unit. Allocation and actuation APIs are explicit; no specialized allocator, physical prefetch or automatic residency controller is enabled by default.
 
 ## Observations and storage identity
 
@@ -42,10 +42,10 @@ Linux filesystem names alone do not establish local block storage: ext4/xfs/btrf
 | Portable local regular files | Immutable segments, buffered and mmap reads, extent adapter, explicit migration | Synthetic/local smoke only; target machine pending |
 | SQLite vectors_v2 | Existing JSON/BLOB profile path preserved | Existing evidence remains separately scoped |
 | PMem/DAX/CXL, NVMe/SATA/SAS, rotating/zoned media | Public observations where exposed; filesystem access only when mounted | Specialized access unvalidated |
-| DRAM/unified memory/VRAM | Representation descriptors; existing compute runtime handles dense arrays | Dedicated allocation adapter unavailable |
-| SMB/NFS/NAS, NVMe-oF, FC-NVMe, Ceph/RBD, Lustre, BeeGFS | Extension descriptors; mounted filesystem may be observed | Native fabric adapters unavailable |
-| DAOS, S3, HSM/tape/archive | Extension descriptors | Unavailable |
-| SPDK, NVIDIA GDS/cuFile | Extension descriptors | Unavailable; no direct-DMA claim |
+| DRAM/unified memory/VRAM | Owned generation/representation allocations and deferred lease eviction | Specialized allocators use explicit caller functions; hardware unvalidated |
+| SMB/NFS/NAS, NVMe-oF, FC-NVMe, Ceph/RBD, Lustre, BeeGFS | Configured transport lifecycle and mounted filesystem execution | Native protocol/deployment performance unvalidated |
+| DAOS, S3, HSM/tape/archive | Configured transport lifecycle; S3 client adapter | Deployment performance unvalidated |
+| SPDK, NVIDIA GDS/cuFile | Configured native transport lifecycle with deterministic failures/recovery | Native execution unvalidated; no direct-DMA claim |
 
 No tensor, NumPy, enterprise storage package, GPU, network, installation hook or backend auto-install is added to core. Dense retrieval still imports NumPy lazily as before.
 
@@ -125,9 +125,13 @@ Windows locality uses the resolved disk's public [MSFT_Disk BusType](https://lea
 
 macOS first resolves the containing mounted volume with `df -P` before calling `diskutil info -plist`; an ordinary descendant storage directory is not passed as diskutil's device operand. The parser preserves spaces in mount names and permits APFS mount paths outside the apparent directory ancestry. It uses explicit diskutil bus protocol evidence for local PCI-Express/NVMe/SATA/SAS/USB/Thunderbolt targets. Network protocols remain remote; unknown protocols, disk images and explicitly virtual devices stay unknown. Product names and the internal/external location alone do not establish local backing.
 
-Real Z6 G4 performance, the full LME matrix, specialized storage transports and retrieval-feature quality gains remain post-merge measured evidence. They do not block correctness-safe Unreleased merges. See the [repository reconciliation receipt](../reports/2026-09-09-open-pr-reconciliation-closeout.md).
+Real Z6 G4 performance, the full LME matrix, specialized storage transports and retrieval-feature quality gains remain post-merge measured evidence. They do not block implementation-stable merges. See the [repository reconciliation receipt](../reports/2026-09-09-open-pr-reconciliation-closeout.md).
 
 
 ## Post-local corrective evidence
 
 See the [current corrective contract and short retest](19-post-local-corrective.md). Z6 CPU/CUDA/auto-throughput and local NTFS/NVMe are machine-observed at b1f8119. Aggregate parity, strict parity, calibrated policy and post-fix acceptance remain separate claims. Auto-safe now allows a measured reference fallback; lack of acceleration does not itself fail correctness. No version/stable promotion or full-dataset acceptance is implied.
+
+## 1.5 implementation and evidence contract
+
+[1.5 implementation surface](24-full-power-implementation.md) defines the executable configured provider/storage lifecycle, allocation and joint-planning APIs, explicit actuator, five benchmark/environment/outcome interfaces, independent CE bridge, and LangGraph/Deep Agents lifecycle. Automatic memory mutation remains false and rejected features remain default-off. Hardware, full-research and real task evidence are separately recorded in the [completion ledger](../reports/2026-09-12-thm-full-power-completion.md).

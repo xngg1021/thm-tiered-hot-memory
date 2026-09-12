@@ -1,4 +1,4 @@
-# Zero-LLM heterogeneous runtime — Unreleased successor
+# Zero-LLM heterogeneous runtime — 1.5 implementation
 
 ## Current product successor
 
@@ -93,3 +93,7 @@ See [the local verification plan](../reports/2026-09-08-local-runtime-verificati
 ## Post-local corrective evidence
 
 See the [current corrective contract and short retest](19-post-local-corrective.md). Z6 CPU/CUDA/auto-throughput and local NTFS/NVMe are machine-observed at b1f8119. Aggregate parity, strict parity, calibrated policy and post-fix acceptance remain separate claims. Auto-safe now allows a measured reference fallback; lack of acceleration does not itself fail correctness. No version/stable promotion or full-dataset acceptance is implied.
+
+## 1.5 implementation and evidence contract
+
+[1.5 implementation surface](24-full-power-implementation.md) defines the executable configured provider/storage lifecycle, allocation and joint-planning APIs, explicit actuator, five benchmark/environment/outcome interfaces, independent CE bridge, and LangGraph/Deep Agents lifecycle. Automatic memory mutation remains false and rejected features remain default-off. Hardware, full-research and real task evidence are separately recorded in the [completion ledger](../reports/2026-09-12-thm-full-power-completion.md).

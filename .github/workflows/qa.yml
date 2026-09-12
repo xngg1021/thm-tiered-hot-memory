@@ -42,6 +42,7 @@ jobs:
       - run: python -m thm.evaluation --mode smoke --wall-seconds 120 --output "${{ runner.temp }}/evaluation-smoke"
       - run: python scripts/check_docs.py
       - run: python scripts/check_version_history.py
+      - run: python scripts/check_completion.py
       - name: Check committed whitespace
         shell: bash
         run: |

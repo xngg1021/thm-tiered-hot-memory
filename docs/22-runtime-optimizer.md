@@ -1,4 +1,4 @@
-# Runtime optimizer — Unreleased
+# Runtime optimizer — 1.5 implementation
 
 The optimizer seeks a material execution improvement within semantic and resource constraints. It can retain the current/reference path indefinitely when evidence is noisy, incomplete or incompatible. Normal use collects observations; a user benchmark is not a prerequisite.
 
@@ -55,3 +55,7 @@ Execution failure quarantines the relevant provider and regenerates a reference 
 ## Retrieval engineering ledger
 
 Whole-prefix token counts use only the public tokenizer callable, an exact-input LRU and bounded bytes. There is no private regex/BPE API dependency and no assumption that block counts are additive. Compatibility CI explicitly exercises cache hits for tiktoken 0.7.0, 0.8.0, 0.9.0, 0.10.0, 0.11.0, 0.12.0, 0.13.0 and 0.14.0 using in-memory vocabularies. The final packed output is counted independently. SQL query counts, tokenizer call/cache counts and k+1-versus-full-scan counters are engineering evidence, separate from fabric lifecycle correctness and real-hardware performance.
+
+## 1.5 implementation and evidence contract
+
+[1.5 implementation surface](24-full-power-implementation.md) defines the executable configured provider/storage lifecycle, allocation and joint-planning APIs, explicit actuator, five benchmark/environment/outcome interfaces, independent CE bridge, and LangGraph/Deep Agents lifecycle. Automatic memory mutation remains false and rejected features remain default-off. Hardware, full-research and real task evidence are separately recorded in the [completion ledger](../reports/2026-09-12-thm-full-power-completion.md).

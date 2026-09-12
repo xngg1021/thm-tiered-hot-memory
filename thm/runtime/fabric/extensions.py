@@ -90,6 +90,7 @@ class ExtensionSession:
         self.events = deque(maxlen=128)
         self.calls, self.failure, self.started = 0, None, clock()
         self.sequence = 0
+        self.source_shape = None
 
     def _event(self, stage, **fields):
         self.events.append({'stage': stage, 'sequence': self.sequence, **fields})
@@ -116,6 +117,7 @@ class ExtensionSession:
                             'invalid-contract' if isinstance(exc, (ValueError, TypeError)) else 'runtime-failure')
             self.state = 'quarantined'
             self._event(stage, status='failed', error=self.failure)
+            self.handle = self.artifact = None
             try:
                 self.binding.close()
             except Exception:
@@ -131,6 +133,10 @@ class ExtensionSession:
             if self.state != 'new':
                 raise ValueError('prepare requires new session')
             import hashlib
+            if isinstance(source, (bytes, bytearray, memoryview)) or hasattr(source, 'nbytes'):
+                if byte_size(source) > self.config.max_input_bytes:
+                    raise MemoryError('extension preparation input budget')
+            self.source_shape = tuple(source.shape) if hasattr(source, 'shape') else None
             if isinstance(source, (bytes, bytearray, memoryview)):
                 observed = hashlib.sha256(source).hexdigest()
             elif hasattr(source, 'tobytes'):
@@ -183,6 +189,7 @@ class ExtensionSession:
         with self.lock:
             if self.state == 'closed':
                 return
+            self.handle = self.artifact = None
             try:
                 self.binding.close()
             finally:
@@ -193,6 +200,9 @@ class ExtensionSession:
     def receipt(self):
         with self.lock:
             out = {'schema': 'thm-extension/1', 'config': self.config.public(), 'state': self.state,
+                   'source_shape': self.source_shape,
+                   'binding_identity': identity({'class': type(self.binding).__module__ + ':' + type(self.binding).__name__,
+                       'configuration': getattr(self.binding, 'configuration', {}), 'options': self.config.options}),
                    'calls': self.calls, 'events': list(self.events), 'error': self.failure,
                    'fallback': 'validated-reference', 'automatic_install': False,
                    'hardware_accepted': False, 'observed_kernel_dispatch': None,
@@ -202,6 +212,7 @@ class ExtensionSession:
     def close(self):
         with self.lock:
             if self.state != 'closed':
+                self.handle = self.artifact = None
                 try:
                     self.binding.close()
                 finally:

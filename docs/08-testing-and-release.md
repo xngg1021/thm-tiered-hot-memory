@@ -90,3 +90,18 @@ The opt-in Python entity projection and its Protocol 2 evidence are documented i
 ## Post-local corrective evidence
 
 See the [current corrective contract and short retest](19-post-local-corrective.md). Z6 CPU/CUDA/auto-throughput and local NTFS/NVMe are machine-observed at b1f8119. Aggregate parity, strict parity, calibrated policy and post-fix acceptance remain separate claims. Auto-safe now allows a measured reference fallback; lack of acceleration does not itself fail correctness. No version/stable promotion or full-dataset acceptance is implied.
+
+## 1.5 implementation and evidence contract
+
+[1.5 implementation surface](24-full-power-implementation.md) defines the executable configured provider/storage lifecycle, allocation and joint-planning APIs, explicit actuator, five benchmark/environment/outcome interfaces, independent CE bridge, and LangGraph/Deep Agents lifecycle. Automatic memory mutation remains false and rejected features remain default-off. Hardware, full-research and real task evidence are separately recorded in the [completion ledger](../reports/2026-09-12-thm-full-power-completion.md).
+
+## 1.5 exact-head release checklist
+
+1. Fetch the sole successor head and immutable archive refs; use a normal forward-only branch.
+2. Run correctness on Ubuntu Python 3.10–3.14 and Windows/macOS 3.13, eight tiktoken rows, numeric audit, all five evaluation fixtures, feature A/B and Track B regressions.
+3. Run Hermes and all harness lifecycle jobs on that exact head. Check docs, localization, package identity, completion census and version history.
+4. Resolve actionable P1/P2 reviews with forward fixes and regressions. Request exact-head review; an evidenced external service outage permits at most two attempts and is recorded separately.
+5. Validate the fetched snapshot with `scripts/verify_merge_gate.py --expected-head SHA SNAPSHOT`; merge through GitHub with the same `expected_head_sha` and method `merge`.
+6. Require successful main correctness, Hermes and harness. Create the new immutable archive at the accepted merge. Record tree/parents, checks and review in a forward-only closeout; verify all prior archives and close implementation PRs.
+
+Remote branch protection could not be administered through the current integration (403). Repo-local checks and guarded merge receipts implement the available discipline, but do not claim server enforcement of no-force-push.

@@ -11,6 +11,7 @@ class PJRTBinding:
     operations = ('score',)
     def __init__(self, *, backend='cpu', device_index=0):
         self.backend, self.device_index, self.handle = backend, device_index, None
+        self.configuration = dict(backend=backend, device_index=device_index)
 
     def prepare(self, source, config):
         import numpy as np
@@ -89,6 +90,7 @@ class TTNNBinding:
     operations = ('score',)
     def __init__(self, *, device_index=0):
         self.device_index, self.device, self.matrix = device_index, None, None
+        self.configuration = dict(device_index=device_index, precision='bf16')
 
     def prepare(self, source, config):
         import numpy as np
@@ -150,6 +152,7 @@ class OpenCLBinding:
     def __init__(self, *, platform_index=0, device_index=0):
         self.platform_index, self.device_index = platform_index, device_index
         self.resources = []
+        self.configuration = dict(platform_index=platform_index, device_index=device_index, kernel_sha256=__import__('hashlib').sha256(self.KERNEL.encode()).hexdigest())
 
     def prepare(self, source, config):
         import numpy as np
@@ -218,6 +221,7 @@ class DiskANNBinding:
             raise ValueError('positive DiskANN build bounds required')
         self.complexity, self.graph_degree, self.max_build_bytes = complexity, graph_degree, max_build_bytes
         self.directory = self.index = None
+        self.configuration = dict(complexity=complexity, graph_degree=graph_degree, max_build_bytes=max_build_bytes, metric='l2')
 
     def prepare(self, source, config):
         import numpy as np

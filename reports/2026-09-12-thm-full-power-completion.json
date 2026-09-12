@@ -1,0 +1,1901 @@
+{
+  "schema": "thm-full-power-completion/1",
+  "date": "2026-09-12",
+  "repository": "xngg1021/thm-tiered-hot-memory",
+  "version": "1.5.0",
+  "implementation_status": "implemented",
+  "implementation_sha256": "179ecfff6636a844387d2dc366ec74d00b4e04371c641f6dea100c70e20261ae",
+  "archive_branch": "archive/v1.5.0-stable",
+  "accepted_merge_commit": null,
+  "historical": {
+    "archive_v1_4_sha": "e6e4dda5835e3cb345207457d5491131c6959b2c",
+    "machine_evidence_sha": "bb1676007b0f86dec0267585c56136c82157ae54",
+    "machine_evidence_reclassified": false
+  },
+  "pr20": {
+    "base": "2d5c2adcf994edd8b7bb3c0546983ba9531af392",
+    "head": "62b616b0820749615a5dd3ab9bd9aa55abdc4d27",
+    "merge": "b96b82f027ca128072e3c0b3899331af1155b39e",
+    "head_tree": "43a6b08f6802b18b4f5c5ce045ba6cd8070520d9",
+    "exact_head_workflows": [
+      34711488892,
+      34711488961,
+      34711488928
+    ],
+    "post_merge_workflows": [
+      34712261941,
+      34712261953,
+      34712261948
+    ],
+    "review": {
+      "status": "reviewed",
+      "resolved_thread": "PRRT_kwDOUP17J86hyjxF",
+      "disposition": "Darwin RUSAGE_INFO_V2 disk counter ABI verified from Apple official resource.h; false positive resolved"
+    }
+  },
+  "release": {
+    "status": "candidate",
+    "pr": 21,
+    "head": null,
+    "exact_head_workflows": [],
+    "post_merge_workflows": [],
+    "normal_merge": true,
+    "forward_only": true
+  },
+  "domains": [
+    {
+      "domain": "logical T0–T3",
+      "status": "implemented",
+      "implementation_paths": [
+        "scripts/thm.py",
+        "thm/harness.py"
+      ],
+      "validation_paths": [
+        "tests/test_engine.py"
+      ],
+      "behavior": "Source-bound logical residency/access classes, explicit host lifecycle."
+    },
+    {
+      "domain": "metadata/authority",
+      "status": "implemented",
+      "implementation_paths": [
+        "thm/sources.py",
+        "thm/retrieval.py"
+      ],
+      "validation_paths": [
+        "tests/test_derived_database_guard.py"
+      ],
+      "behavior": "Derived indexes preserve native source, scope, generation, hashes and atomic replacement."
+    },
+    {
+      "domain": "activity/validity",
+      "status": "implemented",
+      "implementation_paths": [
+        "scripts/thm.py",
+        "thm/_residency_common.py"
+      ],
+      "validation_paths": [
+        "tests/test_engine.py",
+        "tests/test_residency_guardrails.py"
+      ],
+      "behavior": "Explicit events, validity/pin/stale guards; retrieval does not fabricate activity."
+    },
+    {
+      "domain": "retrieval",
+      "status": "implemented",
+      "implementation_paths": [
+        "thm/retrieval.py"
+      ],
+      "validation_paths": [
+        "tests/test_recall_extension.py",
+        "tests/test_ranking_guard.py"
+      ],
+      "behavior": "Scoped literal/sparse/dense/hybrid retrieval and budgeted complete/partial evidence."
+    },
+    {
+      "domain": "feature channels",
+      "status": "implemented",
+      "implementation_paths": [
+        "thm/features.py",
+        "thm/evaluation/runner.py"
+      ],
+      "validation_paths": [
+        "tests/test_frontier_projections.py",
+        "tests/test_full_power_protocols.py"
+      ],
+      "behavior": "Typed default-off entity/alias/temporal/query/segment/association channels, standalone A/B and Track B."
+    },
+    {
+      "domain": "residency",
+      "status": "implemented",
+      "implementation_paths": [
+        "thm/residency.py",
+        "thm/residency_control.py"
+      ],
+      "validation_paths": [
+        "tests/test_residency_control.py"
+      ],
+      "behavior": "Demand-aware shadow decisions and bounded value/carry objective."
+    },
+    {
+      "domain": "prefetch",
+      "status": "implemented",
+      "implementation_paths": [
+        "thm/residency_telemetry.py",
+        "thm/residency_directory.py"
+      ],
+      "validation_paths": [
+        "tests/test_miss_telemetry.py",
+        "tests/test_hermes_warm_directory.py"
+      ],
+      "behavior": "Locator-only demand-independent prefetch and pollution accounting."
+    },
+    {
+      "domain": "adaptive budget",
+      "status": "implemented",
+      "implementation_paths": [
+        "thm/residency_control.py",
+        "thm/economics_bridge.py"
+      ],
+      "validation_paths": [
+        "tests/test_residency_control.py",
+        "tests/test_full_power_protocols.py"
+      ],
+      "behavior": "Bounded shadow budget objective and explicit new-session recommendation import."
+    },
+    {
+      "domain": "actuator",
+      "status": "implemented",
+      "implementation_paths": [
+        "thm/actuator.py"
+      ],
+      "validation_paths": [
+        "tests/test_full_power_lifecycles.py"
+      ],
+      "behavior": "Dry-run, replay, exact approval, evidence-gated automatic placement replica, transaction/recovery/rollback audit; default false."
+    },
+    {
+      "domain": "source/index lifecycle",
+      "status": "implemented",
+      "implementation_paths": [
+        "thm/retrieval.py",
+        "thm/runtime/fabric/indexes.py"
+      ],
+      "validation_paths": [
+        "tests/test_physical_isolation.py",
+        "tests/test_model_fabric.py"
+      ],
+      "behavior": "Generation/profile/capacity CAS, handle ownership and fresh fallback."
+    },
+    {
+      "domain": "multi-harness",
+      "status": "implemented",
+      "implementation_paths": [
+        "thm/adapters/langgraph.py",
+        "research/harness_e2e.py"
+      ],
+      "validation_paths": [
+        "tests/test_harness_core.py",
+        "tests/test_mcp_legacy.py"
+      ],
+      "behavior": "Eleven canonical-core host/protocol surfaces; real installed SDK lifecycle CI, no model outcome."
+    },
+    {
+      "domain": "compute runtime",
+      "status": "implemented",
+      "implementation_paths": [
+        "thm/runtime/fabric/service.py"
+      ],
+      "validation_paths": [
+        "tests/test_runtime_successor.py",
+        "tests/test_pr20_review_regressions.py"
+      ],
+      "behavior": "Safe bootstrap, passive telemetry, bounded exploration, guarded session adoption and reference fallback."
+    },
+    {
+      "domain": "provider fabric",
+      "status": "implemented",
+      "implementation_paths": [
+        "thm/runtime/fabric/catalog.py",
+        "thm/runtime/fabric/extensions.py"
+      ],
+      "validation_paths": [
+        "tests/test_provider_adapters.py",
+        "tests/test_optional_sdk_bindings.py"
+      ],
+      "behavior": "71 catalog identities; 19 configured extension L4 contracts independently fixture-executed."
+    },
+    {
+      "domain": "model preparation",
+      "status": "implemented",
+      "implementation_paths": [
+        "thm/runtime/fabric/inference.py",
+        "thm/runtime/fabric/sdk_extensions.py"
+      ],
+      "validation_paths": [
+        "tests/test_model_fabric.py",
+        "tests/test_optional_sdk_bindings.py"
+      ],
+      "behavior": "Local immutable artifact/compile/load identity, no automatic model/SDK download."
+    },
+    {
+      "domain": "vector index",
+      "status": "implemented",
+      "implementation_paths": [
+        "thm/runtime/fabric/indexes.py",
+        "thm/runtime/fabric/multidevice.py"
+      ],
+      "validation_paths": [
+        "tests/test_provider_fabric.py",
+        "tests/test_full_power_protocols.py"
+      ],
+      "behavior": "Resident exact/native/approximate indexes, sharded ownership, deterministic merge, explicit quality admission."
+    },
+    {
+      "domain": "transfer",
+      "status": "implemented",
+      "implementation_paths": [
+        "thm/runtime/fabric/transfer.py",
+        "thm/physical/allocation.py"
+      ],
+      "validation_paths": [
+        "tests/test_provider_adapters.py",
+        "tests/test_full_power_protocols.py"
+      ],
+      "behavior": "Owned bytes, synchronization, extent/generation identity and specialized bindings."
+    },
+    {
+      "domain": "scheduler",
+      "status": "implemented",
+      "implementation_paths": [
+        "thm/runtime/fabric/optimizer.py",
+        "thm/runtime/fabric/explorer.py"
+      ],
+      "validation_paths": [
+        "tests/test_resource_budget.py",
+        "tests/test_pr20_review_regressions.py"
+      ],
+      "behavior": "Deadline queues, foreground/background separation, sticky preemption, process-tree and warm-worker accounting."
+    },
+    {
+      "domain": "physical storage",
+      "status": "implemented",
+      "implementation_paths": [
+        "thm/physical/backends.py",
+        "thm/physical/adapters.py"
+      ],
+      "validation_paths": [
+        "tests/test_full_power_lifecycles.py",
+        "tests/test_optional_sdk_bindings.py"
+      ],
+      "behavior": "42 configured family lifecycles plus portable buffered/mmap, mounted files and S3; native transport distinct."
+    },
+    {
+      "domain": "migration",
+      "status": "implemented",
+      "implementation_paths": [
+        "thm/physical/migration.py",
+        "thm/physical/segments.py"
+      ],
+      "validation_paths": [
+        "tests/test_physical_migration.py",
+        "tests/test_physical_segments.py"
+      ],
+      "behavior": "Immutable verified publication, atomic manifest switch, corruption/recovery and no source mutation."
+    },
+    {
+      "domain": "topology",
+      "status": "implemented",
+      "implementation_paths": [
+        "thm/physical/probe.py",
+        "thm/runtime/fabric/telemetry.py"
+      ],
+      "validation_paths": [
+        "tests/test_physical_probe.py",
+        "tests/test_provider_adapters.py"
+      ],
+      "behavior": "Public block/NUMA/PMem/DAX/CXL topology and optional NVML partition observation; unknown stays unknown."
+    },
+    {
+      "domain": "joint placement",
+      "status": "implemented",
+      "implementation_paths": [
+        "thm/physical/joint.py",
+        "thm/runtime/fabric/optimizer.py"
+      ],
+      "validation_paths": [
+        "tests/test_full_power_protocols.py",
+        "tests/test_physical_execution.py"
+      ],
+      "behavior": "Orthogonal identities, hard constraints, amortized costs, named orderings and fail-closed fallback."
+    },
+    {
+      "domain": "evaluation",
+      "status": "implemented",
+      "implementation_paths": [
+        "thm/evaluation/contracts.py",
+        "thm/evaluation/runner.py"
+      ],
+      "validation_paths": [
+        "tests/test_evaluation_fabric.py",
+        "tests/test_full_power_protocols.py"
+      ],
+      "behavior": "Three evidence layers, source/implementation hash, bounded fixture and explicit full-research paths."
+    },
+    {
+      "domain": "benchmark adapters",
+      "status": "implemented",
+      "implementation_paths": [
+        "thm/evaluation/adapters.py",
+        "thm/evaluation/memory.py"
+      ],
+      "validation_paths": [
+        "tests/test_evaluation_fabric.py"
+      ],
+      "behavior": "Five native parsers/source projections, evidence units, evaluator-only gold and persisted memory interfaces."
+    },
+    {
+      "domain": "agent outcome",
+      "status": "implemented",
+      "implementation_paths": [
+        "thm/evaluation/environment.py",
+        "thm/evaluation/outcomes.py"
+      ],
+      "validation_paths": [
+        "tests/test_full_power_protocols.py"
+      ],
+      "behavior": "Environment/scorer boundary, exact IDs/traces, partial/missing scores, macro/micro and observed cost/latency."
+    },
+    {
+      "domain": "CE bridge",
+      "status": "implemented",
+      "implementation_paths": [
+        "thm/economics_bridge.py"
+      ],
+      "validation_paths": [
+        "tests/test_full_power_protocols.py"
+      ],
+      "behavior": "Standalone bidirectional source/commit/unit/denominator-bound protocol; no CE dependency or taxonomy merge."
+    },
+    {
+      "domain": "privacy/provenance",
+      "status": "implemented",
+      "implementation_paths": [
+        "thm/runtime/fabric/contracts.py",
+        "thm/evaluation/identity.py",
+        "thm/runtime/fabric/extensions.py"
+      ],
+      "validation_paths": [
+        "tests/test_provider_fabric.py",
+        "tests/test_full_power_protocols.py"
+      ],
+      "behavior": "Private runtime/device/placement identities hashed; source and trace integrity, explicit evidence classes."
+    },
+    {
+      "domain": "version/release",
+      "status": "implemented",
+      "implementation_paths": [
+        "VERSION",
+        "VERSIONING.md",
+        "scripts/check_version_history.py",
+        "scripts/verify_merge_gate.py"
+      ],
+      "validation_paths": [
+        "tests/test_merge_gate.py"
+      ],
+      "behavior": "1.5 coherent package surface; immutable archives, exact-head normal merge and descendant closeout."
+    },
+    {
+      "domain": "governance",
+      "status": "implemented",
+      "implementation_paths": [
+        ".github/workflows/qa.yml",
+        ".github/workflows/hermes-e2e.yml",
+        ".github/workflows/harness-e2e.yml",
+        "scripts/verify_merge_gate.py"
+      ],
+      "validation_paths": [
+        "tests/test_merge_gate.py"
+      ],
+      "behavior": "Unconditional exact-head/main checks, offline guarded merge and archive verification; remote administration separately unavailable."
+    }
+  ],
+  "intentionally_rejected": [
+    {
+      "item": "default promotion of historical negative retrieval experiments",
+      "status": "intentionally-rejected",
+      "reason": "Negative held-out results do not justify default adoption; executable feature/research paths remain default-off.",
+      "source": "docs/16-zero-llm-retrieval-frontier.md"
+    },
+    {
+      "item": "retrieval/prefetch as activity or truth",
+      "status": "intentionally-rejected",
+      "reason": "Would self-train demand and violate source/activity/validity authority.",
+      "source": "docs/14-residency-control-plane.md"
+    },
+    {
+      "item": "automatic unaccepted memory mutation",
+      "status": "intentionally-rejected",
+      "reason": "No held-out task acceptance authorizes default policy mutation; explicit actuator is implemented and disabled by default.",
+      "source": "thm/actuator.py"
+    },
+    {
+      "item": "universal weighted hardware score or tier/CE taxonomy merge",
+      "status": "intentionally-rejected",
+      "reason": "Incomparable objectives and independent taxonomies require hard constraints and named orderings.",
+      "source": "thm/physical/joint.py"
+    }
+  ],
+  "evidence_only": [
+    {
+      "item": "ISA dispatch and clocks",
+      "status": "evidence-only-pending",
+      "evidence_state": "hardware-unvalidated"
+    },
+    {
+      "item": "ORT and OpenVINO on target machines",
+      "status": "evidence-only-pending",
+      "evidence_state": "hardware-unvalidated"
+    },
+    {
+      "item": "NVIDIA native execution/performance and MIG isolation",
+      "status": "evidence-only-pending",
+      "evidence_state": "hardware-unvalidated"
+    },
+    {
+      "item": "AMD native execution/performance",
+      "status": "evidence-only-pending",
+      "evidence_state": "hardware-unvalidated"
+    },
+    {
+      "item": "Intel XPU/NPU native execution/performance",
+      "status": "evidence-only-pending",
+      "evidence_state": "hardware-unvalidated"
+    },
+    {
+      "item": "Apple Silicon/ANE operator placement",
+      "status": "evidence-only-pending",
+      "evidence_state": "hardware-unvalidated"
+    },
+    {
+      "item": "Qualcomm/Windows HTP/NPU execution",
+      "status": "evidence-only-pending",
+      "evidence_state": "hardware-unvalidated"
+    },
+    {
+      "item": "Ascend native execution/performance",
+      "status": "evidence-only-pending",
+      "evidence_state": "hardware-unvalidated"
+    },
+    {
+      "item": "MUSA native execution/performance",
+      "status": "evidence-only-pending",
+      "evidence_state": "hardware-unvalidated"
+    },
+    {
+      "item": "Cambricon native execution/performance",
+      "status": "evidence-only-pending",
+      "evidence_state": "hardware-unvalidated"
+    },
+    {
+      "item": "MetaX native execution/performance",
+      "status": "evidence-only-pending",
+      "evidence_state": "hardware-unvalidated"
+    },
+    {
+      "item": "PJRT/Neuron/TTNN/Vulkan/OpenCL deployed execution",
+      "status": "evidence-only-pending",
+      "evidence_state": "environment-unvalidated"
+    },
+    {
+      "item": "FP16/BF16/INT8 quality and performance acceptance",
+      "status": "evidence-only-pending",
+      "evidence_state": "hardware-unvalidated"
+    },
+    {
+      "item": "PMem/DAX/CXL allocations and performance",
+      "status": "evidence-only-pending",
+      "evidence_state": "hardware-unvalidated"
+    },
+    {
+      "item": "SPDK/cuFile/GDS/direct-I/O native path and zero-copy counters",
+      "status": "evidence-only-pending",
+      "evidence_state": "hardware-unvalidated"
+    },
+    {
+      "item": "NVMe-oF/FC/Ceph/Lustre/BeeGFS/DAOS/S3/HSM deployed transport performance",
+      "status": "evidence-only-pending",
+      "evidence_state": "environment-unvalidated"
+    },
+    {
+      "item": "Full LoCoMo/LME-S/LME-V2/BEAM/MemoryArena campaign for the new surface",
+      "status": "evidence-only-pending",
+      "evidence_state": "full-research-not-run"
+    },
+    {
+      "item": "Real generative model/judge/agent environment outcomes",
+      "status": "evidence-only-pending",
+      "evidence_state": "environment-unvalidated"
+    },
+    {
+      "item": "Private memory corpus task outcome and automatic-actuator policy acceptance",
+      "status": "evidence-only-pending",
+      "evidence_state": "environment-unvalidated"
+    },
+    {
+      "item": "Private Context Economics workload optimum",
+      "status": "evidence-only-pending",
+      "evidence_state": "environment-unvalidated"
+    }
+  ],
+  "external_only": [
+    {
+      "item": "remote branch-protection administration",
+      "status": "externally-impossible",
+      "reason": "GitHub integration returns 403 Resource not accessible by integration for branch protection; no supported protection mutation capability. Main is unprotected. Repo-local gates implemented.",
+      "blocks_implementation": false
+    }
+  ],
+  "provider_census": {
+    "total": 71,
+    "native_catalog_maturity_counts": {
+      "L0": 7,
+      "L1": 12,
+      "L2": 1,
+      "L4": 51
+    },
+    "configured_extension_lifecycle_count": 19,
+    "concrete_python_sdk_bindings": [
+      "PJRTBinding",
+      "NeuronBinding",
+      "TTNNBinding",
+      "OpenCLBinding",
+      "DiskANNBinding"
+    ],
+    "hardware_accepted_count": 0,
+    "providers": [
+      {
+        "provider_id": "nvidia.cublaslt",
+        "factory": "thm.runtime.fabric.nvidia:CublasLtExact",
+        "native_catalog_maturity": "L4",
+        "configured_contract_maturity": null,
+        "implementation": "implemented",
+        "fixture_evidence": "fixture-validated",
+        "hardware_evidence": "hardware-unvalidated",
+        "supported_os": [
+          "Linux",
+          "Windows"
+        ]
+      },
+      {
+        "provider_id": "nvidia.cuda-graph",
+        "factory": "thm.runtime.fabric.nvidia:StableCudaGraph",
+        "native_catalog_maturity": "L4",
+        "configured_contract_maturity": null,
+        "implementation": "implemented",
+        "fixture_evidence": "fixture-validated",
+        "hardware_evidence": "hardware-unvalidated",
+        "supported_os": [
+          "Linux",
+          "Windows"
+        ]
+      },
+      {
+        "provider_id": "nvidia.nvml",
+        "factory": "thm.runtime.fabric.telemetry:NVMLTelemetry",
+        "native_catalog_maturity": "L4",
+        "configured_contract_maturity": null,
+        "implementation": "implemented",
+        "fixture_evidence": "fixture-validated",
+        "hardware_evidence": "hardware-unvalidated",
+        "supported_os": [
+          "Linux",
+          "Windows",
+          "Darwin"
+        ]
+      },
+      {
+        "provider_id": "amd.smi",
+        "factory": "thm.runtime.fabric.telemetry:AMDSystemTelemetry",
+        "native_catalog_maturity": "L4",
+        "configured_contract_maturity": null,
+        "implementation": "implemented",
+        "fixture_evidence": "fixture-validated",
+        "hardware_evidence": "hardware-unvalidated",
+        "supported_os": [
+          "Linux",
+          "Windows"
+        ]
+      },
+      {
+        "provider_id": "host.device",
+        "factory": "thm.runtime.fabric.hardware:HostDeviceProvider",
+        "native_catalog_maturity": "L4",
+        "configured_contract_maturity": null,
+        "implementation": "implemented",
+        "fixture_evidence": "fixture-validated",
+        "hardware_evidence": "hardware-unvalidated",
+        "supported_os": [
+          "Linux",
+          "Windows",
+          "Darwin"
+        ]
+      },
+      {
+        "provider_id": "host.exact",
+        "factory": "thm.runtime.fabric.indexes:ExactHost",
+        "native_catalog_maturity": "L4",
+        "configured_contract_maturity": null,
+        "implementation": "implemented",
+        "fixture_evidence": "fixture-validated",
+        "hardware_evidence": "hardware-unvalidated",
+        "supported_os": [
+          "Linux",
+          "Windows",
+          "Darwin"
+        ]
+      },
+      {
+        "provider_id": "host.hnsw",
+        "factory": "thm.runtime.fabric.indexes:HNSWGeneric",
+        "native_catalog_maturity": "L4",
+        "configured_contract_maturity": null,
+        "implementation": "implemented",
+        "fixture_evidence": "fixture-validated",
+        "hardware_evidence": "hardware-unvalidated",
+        "supported_os": [
+          "Linux",
+          "Windows",
+          "Darwin"
+        ]
+      },
+      {
+        "provider_id": "host.transfer",
+        "factory": "thm.runtime.fabric.transfer:HostTransfer",
+        "native_catalog_maturity": "L4",
+        "configured_contract_maturity": null,
+        "implementation": "implemented",
+        "fixture_evidence": "fixture-validated",
+        "hardware_evidence": "hardware-unvalidated",
+        "supported_os": [
+          "Linux",
+          "Windows",
+          "Darwin"
+        ]
+      },
+      {
+        "provider_id": "cpu.onnxruntime",
+        "factory": "thm.runtime.fabric.inference:OrtInference",
+        "native_catalog_maturity": "L4",
+        "configured_contract_maturity": null,
+        "implementation": "implemented",
+        "fixture_evidence": "fixture-validated",
+        "hardware_evidence": "hardware-unvalidated",
+        "supported_os": [
+          "Linux",
+          "Windows",
+          "Darwin"
+        ]
+      },
+      {
+        "provider_id": "intel.openvino-cpu",
+        "factory": "thm.runtime.fabric.inference:OpenVINOInference",
+        "native_catalog_maturity": "L4",
+        "configured_contract_maturity": null,
+        "implementation": "implemented",
+        "fixture_evidence": "fixture-validated",
+        "hardware_evidence": "hardware-unvalidated",
+        "supported_os": [
+          "Linux",
+          "Windows",
+          "Darwin"
+        ]
+      },
+      {
+        "provider_id": "cpu.inference",
+        "factory": "thm.runtime.fabric.inference:TorchInference",
+        "native_catalog_maturity": "L4",
+        "configured_contract_maturity": null,
+        "implementation": "implemented",
+        "fixture_evidence": "fixture-validated",
+        "hardware_evidence": "hardware-unvalidated",
+        "supported_os": [
+          "Linux",
+          "Windows",
+          "Darwin"
+        ]
+      },
+      {
+        "provider_id": "nvidia.inference",
+        "factory": "thm.runtime.fabric.inference:TorchInference",
+        "native_catalog_maturity": "L4",
+        "configured_contract_maturity": null,
+        "implementation": "implemented",
+        "fixture_evidence": "fixture-validated",
+        "hardware_evidence": "hardware-unvalidated",
+        "supported_os": [
+          "Linux",
+          "Windows"
+        ]
+      },
+      {
+        "provider_id": "nvidia.exact",
+        "factory": "thm.runtime.fabric.indexes:ExactAccelerator",
+        "native_catalog_maturity": "L4",
+        "configured_contract_maturity": null,
+        "implementation": "implemented",
+        "fixture_evidence": "fixture-validated",
+        "hardware_evidence": "hardware-unvalidated",
+        "supported_os": [
+          "Linux",
+          "Windows"
+        ]
+      },
+      {
+        "provider_id": "nvidia.transfer",
+        "factory": "thm.runtime.fabric.transfer:TorchTransfer",
+        "native_catalog_maturity": "L4",
+        "configured_contract_maturity": null,
+        "implementation": "implemented",
+        "fixture_evidence": "fixture-validated",
+        "hardware_evidence": "hardware-unvalidated",
+        "supported_os": [
+          "Linux",
+          "Windows"
+        ]
+      },
+      {
+        "provider_id": "amd.inference",
+        "factory": "thm.runtime.fabric.inference:TorchInference",
+        "native_catalog_maturity": "L4",
+        "configured_contract_maturity": null,
+        "implementation": "implemented",
+        "fixture_evidence": "fixture-validated",
+        "hardware_evidence": "hardware-unvalidated",
+        "supported_os": [
+          "Linux",
+          "Windows"
+        ]
+      },
+      {
+        "provider_id": "amd.exact",
+        "factory": "thm.runtime.fabric.indexes:ExactAccelerator",
+        "native_catalog_maturity": "L4",
+        "configured_contract_maturity": null,
+        "implementation": "implemented",
+        "fixture_evidence": "fixture-validated",
+        "hardware_evidence": "hardware-unvalidated",
+        "supported_os": [
+          "Linux",
+          "Windows"
+        ]
+      },
+      {
+        "provider_id": "amd.transfer",
+        "factory": "thm.runtime.fabric.transfer:TorchTransfer",
+        "native_catalog_maturity": "L4",
+        "configured_contract_maturity": null,
+        "implementation": "implemented",
+        "fixture_evidence": "fixture-validated",
+        "hardware_evidence": "hardware-unvalidated",
+        "supported_os": [
+          "Linux",
+          "Windows"
+        ]
+      },
+      {
+        "provider_id": "intel.inference",
+        "factory": "thm.runtime.fabric.inference:TorchInference",
+        "native_catalog_maturity": "L4",
+        "configured_contract_maturity": null,
+        "implementation": "implemented",
+        "fixture_evidence": "fixture-validated",
+        "hardware_evidence": "hardware-unvalidated",
+        "supported_os": [
+          "Linux",
+          "Windows"
+        ]
+      },
+      {
+        "provider_id": "intel.exact",
+        "factory": "thm.runtime.fabric.indexes:ExactAccelerator",
+        "native_catalog_maturity": "L4",
+        "configured_contract_maturity": null,
+        "implementation": "implemented",
+        "fixture_evidence": "fixture-validated",
+        "hardware_evidence": "hardware-unvalidated",
+        "supported_os": [
+          "Linux",
+          "Windows"
+        ]
+      },
+      {
+        "provider_id": "intel.transfer",
+        "factory": "thm.runtime.fabric.transfer:TorchTransfer",
+        "native_catalog_maturity": "L4",
+        "configured_contract_maturity": null,
+        "implementation": "implemented",
+        "fixture_evidence": "fixture-validated",
+        "hardware_evidence": "hardware-unvalidated",
+        "supported_os": [
+          "Linux",
+          "Windows"
+        ]
+      },
+      {
+        "provider_id": "apple.inference",
+        "factory": "thm.runtime.fabric.inference:TorchInference",
+        "native_catalog_maturity": "L4",
+        "configured_contract_maturity": null,
+        "implementation": "implemented",
+        "fixture_evidence": "fixture-validated",
+        "hardware_evidence": "hardware-unvalidated",
+        "supported_os": [
+          "Darwin"
+        ]
+      },
+      {
+        "provider_id": "apple.exact",
+        "factory": "thm.runtime.fabric.indexes:ExactAccelerator",
+        "native_catalog_maturity": "L4",
+        "configured_contract_maturity": null,
+        "implementation": "implemented",
+        "fixture_evidence": "fixture-validated",
+        "hardware_evidence": "hardware-unvalidated",
+        "supported_os": [
+          "Darwin"
+        ]
+      },
+      {
+        "provider_id": "apple.transfer",
+        "factory": "thm.runtime.fabric.transfer:TorchTransfer",
+        "native_catalog_maturity": "L4",
+        "configured_contract_maturity": null,
+        "implementation": "implemented",
+        "fixture_evidence": "fixture-validated",
+        "hardware_evidence": "hardware-unvalidated",
+        "supported_os": [
+          "Darwin"
+        ]
+      },
+      {
+        "provider_id": "ascend.inference",
+        "factory": "thm.runtime.fabric.inference:TorchInference",
+        "native_catalog_maturity": "L4",
+        "configured_contract_maturity": null,
+        "implementation": "implemented",
+        "fixture_evidence": "fixture-validated",
+        "hardware_evidence": "hardware-unvalidated",
+        "supported_os": [
+          "Linux"
+        ]
+      },
+      {
+        "provider_id": "ascend.exact",
+        "factory": "thm.runtime.fabric.indexes:ExactAccelerator",
+        "native_catalog_maturity": "L4",
+        "configured_contract_maturity": null,
+        "implementation": "implemented",
+        "fixture_evidence": "fixture-validated",
+        "hardware_evidence": "hardware-unvalidated",
+        "supported_os": [
+          "Linux"
+        ]
+      },
+      {
+        "provider_id": "ascend.transfer",
+        "factory": "thm.runtime.fabric.transfer:TorchTransfer",
+        "native_catalog_maturity": "L4",
+        "configured_contract_maturity": null,
+        "implementation": "implemented",
+        "fixture_evidence": "fixture-validated",
+        "hardware_evidence": "hardware-unvalidated",
+        "supported_os": [
+          "Linux"
+        ]
+      },
+      {
+        "provider_id": "musa.inference",
+        "factory": "thm.runtime.fabric.inference:TorchInference",
+        "native_catalog_maturity": "L4",
+        "configured_contract_maturity": null,
+        "implementation": "implemented",
+        "fixture_evidence": "fixture-validated",
+        "hardware_evidence": "hardware-unvalidated",
+        "supported_os": [
+          "Linux"
+        ]
+      },
+      {
+        "provider_id": "musa.exact",
+        "factory": "thm.runtime.fabric.indexes:ExactAccelerator",
+        "native_catalog_maturity": "L4",
+        "configured_contract_maturity": null,
+        "implementation": "implemented",
+        "fixture_evidence": "fixture-validated",
+        "hardware_evidence": "hardware-unvalidated",
+        "supported_os": [
+          "Linux"
+        ]
+      },
+      {
+        "provider_id": "musa.transfer",
+        "factory": "thm.runtime.fabric.transfer:TorchTransfer",
+        "native_catalog_maturity": "L4",
+        "configured_contract_maturity": null,
+        "implementation": "implemented",
+        "fixture_evidence": "fixture-validated",
+        "hardware_evidence": "hardware-unvalidated",
+        "supported_os": [
+          "Linux"
+        ]
+      },
+      {
+        "provider_id": "cambricon.inference",
+        "factory": "thm.runtime.fabric.inference:TorchInference",
+        "native_catalog_maturity": "L4",
+        "configured_contract_maturity": null,
+        "implementation": "implemented",
+        "fixture_evidence": "fixture-validated",
+        "hardware_evidence": "hardware-unvalidated",
+        "supported_os": [
+          "Linux"
+        ]
+      },
+      {
+        "provider_id": "cambricon.exact",
+        "factory": "thm.runtime.fabric.indexes:ExactAccelerator",
+        "native_catalog_maturity": "L4",
+        "configured_contract_maturity": null,
+        "implementation": "implemented",
+        "fixture_evidence": "fixture-validated",
+        "hardware_evidence": "hardware-unvalidated",
+        "supported_os": [
+          "Linux"
+        ]
+      },
+      {
+        "provider_id": "cambricon.transfer",
+        "factory": "thm.runtime.fabric.transfer:TorchTransfer",
+        "native_catalog_maturity": "L4",
+        "configured_contract_maturity": null,
+        "implementation": "implemented",
+        "fixture_evidence": "fixture-validated",
+        "hardware_evidence": "hardware-unvalidated",
+        "supported_os": [
+          "Linux"
+        ]
+      },
+      {
+        "provider_id": "metax.inference",
+        "factory": "thm.runtime.fabric.inference:TorchInference",
+        "native_catalog_maturity": "L4",
+        "configured_contract_maturity": null,
+        "implementation": "implemented",
+        "fixture_evidence": "fixture-validated",
+        "hardware_evidence": "hardware-unvalidated",
+        "supported_os": [
+          "Linux"
+        ]
+      },
+      {
+        "provider_id": "metax.exact",
+        "factory": "thm.runtime.fabric.indexes:ExactAccelerator",
+        "native_catalog_maturity": "L4",
+        "configured_contract_maturity": null,
+        "implementation": "implemented",
+        "fixture_evidence": "fixture-validated",
+        "hardware_evidence": "hardware-unvalidated",
+        "supported_os": [
+          "Linux"
+        ]
+      },
+      {
+        "provider_id": "metax.transfer",
+        "factory": "thm.runtime.fabric.transfer:TorchTransfer",
+        "native_catalog_maturity": "L4",
+        "configured_contract_maturity": null,
+        "implementation": "implemented",
+        "fixture_evidence": "fixture-validated",
+        "hardware_evidence": "hardware-unvalidated",
+        "supported_os": [
+          "Linux"
+        ]
+      },
+      {
+        "provider_id": "nvidia.rtx-native",
+        "factory": "thm.runtime.fabric.rtx:TensorRTRTXInference",
+        "native_catalog_maturity": "L4",
+        "configured_contract_maturity": null,
+        "implementation": "implemented",
+        "fixture_evidence": "fixture-validated",
+        "hardware_evidence": "hardware-unvalidated",
+        "supported_os": [
+          "Linux",
+          "Windows"
+        ]
+      },
+      {
+        "provider_id": "nvidia.tensorrt-rtx",
+        "factory": "thm.runtime.fabric.inference:OrtInference",
+        "native_catalog_maturity": "L4",
+        "configured_contract_maturity": null,
+        "implementation": "implemented",
+        "fixture_evidence": "fixture-validated",
+        "hardware_evidence": "hardware-unvalidated",
+        "supported_os": [
+          "Linux",
+          "Windows"
+        ]
+      },
+      {
+        "provider_id": "amd.migraphx",
+        "factory": "thm.runtime.fabric.inference:MIGraphXInference",
+        "native_catalog_maturity": "L4",
+        "configured_contract_maturity": null,
+        "implementation": "implemented",
+        "fixture_evidence": "fixture-validated",
+        "hardware_evidence": "hardware-unvalidated",
+        "supported_os": [
+          "Linux"
+        ]
+      },
+      {
+        "provider_id": "amd.migraphx-ep",
+        "factory": "thm.runtime.fabric.inference:OrtInference",
+        "native_catalog_maturity": "L4",
+        "configured_contract_maturity": null,
+        "implementation": "implemented",
+        "fixture_evidence": "fixture-validated",
+        "hardware_evidence": "hardware-unvalidated",
+        "supported_os": [
+          "Linux",
+          "Windows"
+        ]
+      },
+      {
+        "provider_id": "intel.openvino",
+        "factory": "thm.runtime.fabric.inference:OpenVINOInference",
+        "native_catalog_maturity": "L4",
+        "configured_contract_maturity": null,
+        "implementation": "implemented",
+        "fixture_evidence": "fixture-validated",
+        "hardware_evidence": "hardware-unvalidated",
+        "supported_os": [
+          "Linux",
+          "Windows",
+          "Darwin"
+        ]
+      },
+      {
+        "provider_id": "apple.coreml",
+        "factory": "thm.runtime.fabric.inference:CoreMLInference",
+        "native_catalog_maturity": "L4",
+        "configured_contract_maturity": null,
+        "implementation": "implemented",
+        "fixture_evidence": "fixture-validated",
+        "hardware_evidence": "hardware-unvalidated",
+        "supported_os": [
+          "Darwin"
+        ]
+      },
+      {
+        "provider_id": "qualcomm.qnn",
+        "factory": "thm.runtime.fabric.inference:OrtInference",
+        "native_catalog_maturity": "L4",
+        "configured_contract_maturity": null,
+        "implementation": "implemented",
+        "fixture_evidence": "fixture-validated",
+        "hardware_evidence": "hardware-unvalidated",
+        "supported_os": [
+          "Windows",
+          "Linux"
+        ]
+      },
+      {
+        "provider_id": "windows.directml",
+        "factory": "thm.runtime.fabric.inference:OrtInference",
+        "native_catalog_maturity": "L4",
+        "configured_contract_maturity": null,
+        "implementation": "implemented",
+        "fixture_evidence": "fixture-validated",
+        "hardware_evidence": "hardware-unvalidated",
+        "supported_os": [
+          "Windows"
+        ]
+      },
+      {
+        "provider_id": "nvidia.cuvs.brute_force",
+        "factory": "thm.runtime.fabric.native:CuvsProvider",
+        "native_catalog_maturity": "L4",
+        "configured_contract_maturity": null,
+        "implementation": "implemented",
+        "fixture_evidence": "fixture-validated",
+        "hardware_evidence": "hardware-unvalidated",
+        "supported_os": [
+          "Linux"
+        ]
+      },
+      {
+        "provider_id": "nvidia.cuvs.cagra",
+        "factory": "thm.runtime.fabric.native:CuvsProvider",
+        "native_catalog_maturity": "L4",
+        "configured_contract_maturity": null,
+        "implementation": "implemented",
+        "fixture_evidence": "fixture-validated",
+        "hardware_evidence": "hardware-unvalidated",
+        "supported_os": [
+          "Linux"
+        ]
+      },
+      {
+        "provider_id": "nvidia.cuvs.ivf_flat",
+        "factory": "thm.runtime.fabric.native:CuvsProvider",
+        "native_catalog_maturity": "L4",
+        "configured_contract_maturity": null,
+        "implementation": "implemented",
+        "fixture_evidence": "fixture-validated",
+        "hardware_evidence": "hardware-unvalidated",
+        "supported_os": [
+          "Linux"
+        ]
+      },
+      {
+        "provider_id": "nvidia.cuvs.ivf_pq",
+        "factory": "thm.runtime.fabric.native:CuvsProvider",
+        "native_catalog_maturity": "L4",
+        "configured_contract_maturity": null,
+        "implementation": "implemented",
+        "fixture_evidence": "fixture-validated",
+        "hardware_evidence": "hardware-unvalidated",
+        "supported_os": [
+          "Linux"
+        ]
+      },
+      {
+        "provider_id": "nvidia.cuvs.ivf_sq",
+        "factory": "thm.runtime.fabric.native:CuvsProvider",
+        "native_catalog_maturity": "L4",
+        "configured_contract_maturity": null,
+        "implementation": "implemented",
+        "fixture_evidence": "fixture-validated",
+        "hardware_evidence": "hardware-unvalidated",
+        "supported_os": [
+          "Linux"
+        ]
+      },
+      {
+        "provider_id": "nvidia.cuvs.tiered_index",
+        "factory": "thm.runtime.fabric.native:CuvsProvider",
+        "native_catalog_maturity": "L4",
+        "configured_contract_maturity": null,
+        "implementation": "implemented",
+        "fixture_evidence": "fixture-validated",
+        "hardware_evidence": "hardware-unvalidated",
+        "supported_os": [
+          "Linux"
+        ]
+      },
+      {
+        "provider_id": "nvidia.cuvs.vamana",
+        "factory": "thm.runtime.fabric.native:CuvsProvider",
+        "native_catalog_maturity": "L2",
+        "configured_contract_maturity": null,
+        "implementation": "implemented",
+        "fixture_evidence": "fixture-validated",
+        "hardware_evidence": "hardware-unvalidated",
+        "supported_os": [
+          "Linux"
+        ]
+      },
+      {
+        "provider_id": "metax.mcfaiss",
+        "factory": "thm.runtime.fabric.native:McFaissProvider",
+        "native_catalog_maturity": "L4",
+        "configured_contract_maturity": null,
+        "implementation": "implemented",
+        "fixture_evidence": "fixture-validated",
+        "hardware_evidence": "hardware-unvalidated",
+        "supported_os": [
+          "Linux"
+        ]
+      },
+      {
+        "provider_id": "windows.catalog",
+        "factory": "thm.runtime.fabric.native:WindowsMLCatalog",
+        "native_catalog_maturity": "L4",
+        "configured_contract_maturity": null,
+        "implementation": "implemented",
+        "fixture_evidence": "fixture-validated",
+        "hardware_evidence": "hardware-unvalidated",
+        "supported_os": [
+          "Windows"
+        ]
+      },
+      {
+        "provider_id": "nvidia.cufile",
+        "factory": "thm.runtime.fabric.native:NativeExtensionSeam",
+        "native_catalog_maturity": "L1",
+        "configured_contract_maturity": "L4",
+        "implementation": "implemented",
+        "fixture_evidence": "fixture-validated",
+        "hardware_evidence": "hardware-unvalidated",
+        "supported_os": [
+          "Linux",
+          "Windows",
+          "Darwin"
+        ]
+      },
+      {
+        "provider_id": "amd.hipblaslt",
+        "factory": "thm.runtime.fabric.native:NativeExtensionSeam",
+        "native_catalog_maturity": "L1",
+        "configured_contract_maturity": "L4",
+        "implementation": "implemented",
+        "fixture_evidence": "fixture-validated",
+        "hardware_evidence": "hardware-unvalidated",
+        "supported_os": [
+          "Linux",
+          "Windows",
+          "Darwin"
+        ]
+      },
+      {
+        "provider_id": "amd.rocblas",
+        "factory": "thm.runtime.fabric.native:NativeExtensionSeam",
+        "native_catalog_maturity": "L1",
+        "configured_contract_maturity": "L4",
+        "implementation": "implemented",
+        "fixture_evidence": "fixture-validated",
+        "hardware_evidence": "hardware-unvalidated",
+        "supported_os": [
+          "Linux",
+          "Windows",
+          "Darwin"
+        ]
+      },
+      {
+        "provider_id": "intel.onednn",
+        "factory": "thm.runtime.fabric.native:NativeExtensionSeam",
+        "native_catalog_maturity": "L1",
+        "configured_contract_maturity": "L4",
+        "implementation": "implemented",
+        "fixture_evidence": "fixture-validated",
+        "hardware_evidence": "hardware-unvalidated",
+        "supported_os": [
+          "Linux",
+          "Windows",
+          "Darwin"
+        ]
+      },
+      {
+        "provider_id": "intel.onemkl",
+        "factory": "thm.runtime.fabric.native:NativeExtensionSeam",
+        "native_catalog_maturity": "L1",
+        "configured_contract_maturity": "L4",
+        "implementation": "implemented",
+        "fixture_evidence": "fixture-validated",
+        "hardware_evidence": "hardware-unvalidated",
+        "supported_os": [
+          "Linux",
+          "Windows",
+          "Darwin"
+        ]
+      },
+      {
+        "provider_id": "intel.levelzero",
+        "factory": "thm.runtime.fabric.native:NativeExtensionSeam",
+        "native_catalog_maturity": "L1",
+        "configured_contract_maturity": "L4",
+        "implementation": "implemented",
+        "fixture_evidence": "fixture-validated",
+        "hardware_evidence": "hardware-unvalidated",
+        "supported_os": [
+          "Linux",
+          "Windows",
+          "Darwin"
+        ]
+      },
+      {
+        "provider_id": "apple.mpsgraph",
+        "factory": "thm.runtime.fabric.native:NativeExtensionSeam",
+        "native_catalog_maturity": "L1",
+        "configured_contract_maturity": "L4",
+        "implementation": "implemented",
+        "fixture_evidence": "fixture-validated",
+        "hardware_evidence": "hardware-unvalidated",
+        "supported_os": [
+          "Linux",
+          "Windows",
+          "Darwin"
+        ]
+      },
+      {
+        "provider_id": "apple.bnns",
+        "factory": "thm.runtime.fabric.native:NativeExtensionSeam",
+        "native_catalog_maturity": "L1",
+        "configured_contract_maturity": "L4",
+        "implementation": "implemented",
+        "fixture_evidence": "fixture-validated",
+        "hardware_evidence": "hardware-unvalidated",
+        "supported_os": [
+          "Linux",
+          "Windows",
+          "Darwin"
+        ]
+      },
+      {
+        "provider_id": "ascend.acl",
+        "factory": "thm.runtime.fabric.native:NativeExtensionSeam",
+        "native_catalog_maturity": "L1",
+        "configured_contract_maturity": "L4",
+        "implementation": "implemented",
+        "fixture_evidence": "fixture-validated",
+        "hardware_evidence": "hardware-unvalidated",
+        "supported_os": [
+          "Linux",
+          "Windows",
+          "Darwin"
+        ]
+      },
+      {
+        "provider_id": "musa.runtime",
+        "factory": "thm.runtime.fabric.native:NativeExtensionSeam",
+        "native_catalog_maturity": "L1",
+        "configured_contract_maturity": "L4",
+        "implementation": "implemented",
+        "fixture_evidence": "fixture-validated",
+        "hardware_evidence": "hardware-unvalidated",
+        "supported_os": [
+          "Linux",
+          "Windows",
+          "Darwin"
+        ]
+      },
+      {
+        "provider_id": "cambricon.cnrt",
+        "factory": "thm.runtime.fabric.native:NativeExtensionSeam",
+        "native_catalog_maturity": "L1",
+        "configured_contract_maturity": "L4",
+        "implementation": "implemented",
+        "fixture_evidence": "fixture-validated",
+        "hardware_evidence": "hardware-unvalidated",
+        "supported_os": [
+          "Linux",
+          "Windows",
+          "Darwin"
+        ]
+      },
+      {
+        "provider_id": "metax.runtime",
+        "factory": "thm.runtime.fabric.native:NativeExtensionSeam",
+        "native_catalog_maturity": "L1",
+        "configured_contract_maturity": "L4",
+        "implementation": "implemented",
+        "fixture_evidence": "fixture-validated",
+        "hardware_evidence": "hardware-unvalidated",
+        "supported_os": [
+          "Linux",
+          "Windows",
+          "Darwin"
+        ]
+      },
+      {
+        "provider_id": "google.pjrt",
+        "factory": "thm.runtime.fabric.native:NativeExtensionSeam",
+        "native_catalog_maturity": "L0",
+        "configured_contract_maturity": "L4",
+        "implementation": "implemented",
+        "fixture_evidence": "fixture-validated",
+        "hardware_evidence": "hardware-unvalidated",
+        "supported_os": [
+          "Linux",
+          "Windows",
+          "Darwin"
+        ]
+      },
+      {
+        "provider_id": "aws.neuron",
+        "factory": "thm.runtime.fabric.native:NativeExtensionSeam",
+        "native_catalog_maturity": "L0",
+        "configured_contract_maturity": "L4",
+        "implementation": "implemented",
+        "fixture_evidence": "fixture-validated",
+        "hardware_evidence": "hardware-unvalidated",
+        "supported_os": [
+          "Linux",
+          "Windows",
+          "Darwin"
+        ]
+      },
+      {
+        "provider_id": "tenstorrent.ttnn",
+        "factory": "thm.runtime.fabric.native:NativeExtensionSeam",
+        "native_catalog_maturity": "L0",
+        "configured_contract_maturity": "L4",
+        "implementation": "implemented",
+        "fixture_evidence": "fixture-validated",
+        "hardware_evidence": "hardware-unvalidated",
+        "supported_os": [
+          "Linux",
+          "Windows",
+          "Darwin"
+        ]
+      },
+      {
+        "provider_id": "portable.vulkan",
+        "factory": "thm.runtime.fabric.native:NativeExtensionSeam",
+        "native_catalog_maturity": "L0",
+        "configured_contract_maturity": "L4",
+        "implementation": "implemented",
+        "fixture_evidence": "fixture-validated",
+        "hardware_evidence": "hardware-unvalidated",
+        "supported_os": [
+          "Linux",
+          "Windows",
+          "Darwin"
+        ]
+      },
+      {
+        "provider_id": "portable.opencl",
+        "factory": "thm.runtime.fabric.native:NativeExtensionSeam",
+        "native_catalog_maturity": "L0",
+        "configured_contract_maturity": "L4",
+        "implementation": "implemented",
+        "fixture_evidence": "fixture-validated",
+        "hardware_evidence": "hardware-unvalidated",
+        "supported_os": [
+          "Linux",
+          "Windows",
+          "Darwin"
+        ]
+      },
+      {
+        "provider_id": "diskann",
+        "factory": "thm.runtime.fabric.native:NativeExtensionSeam",
+        "native_catalog_maturity": "L0",
+        "configured_contract_maturity": "L4",
+        "implementation": "implemented",
+        "fixture_evidence": "fixture-validated",
+        "hardware_evidence": "hardware-unvalidated",
+        "supported_os": [
+          "Linux",
+          "Windows",
+          "Darwin"
+        ]
+      },
+      {
+        "provider_id": "multi-device",
+        "factory": "thm.runtime.fabric.native:NativeExtensionSeam",
+        "native_catalog_maturity": "L0",
+        "configured_contract_maturity": "L4",
+        "implementation": "implemented",
+        "fixture_evidence": "fixture-validated",
+        "hardware_evidence": "hardware-unvalidated",
+        "supported_os": [
+          "Linux",
+          "Windows",
+          "Darwin"
+        ]
+      }
+    ]
+  },
+  "physical_backend_census": {
+    "total": 42,
+    "families": [
+      {
+        "family": "dram",
+        "implementation": "configured-transport-lifecycle",
+        "fixture_entrypoint": "thm.physical.backends:FixtureTransport",
+        "hardware_evidence": "environment-unvalidated"
+      },
+      {
+        "family": "unified-memory",
+        "implementation": "configured-transport-lifecycle",
+        "fixture_entrypoint": "thm.physical.backends:FixtureTransport",
+        "hardware_evidence": "environment-unvalidated"
+      },
+      {
+        "family": "vram",
+        "implementation": "configured-transport-lifecycle",
+        "fixture_entrypoint": "thm.physical.backends:FixtureTransport",
+        "hardware_evidence": "environment-unvalidated"
+      },
+      {
+        "family": "pmem",
+        "implementation": "configured-transport-lifecycle",
+        "fixture_entrypoint": "thm.physical.backends:FixtureTransport",
+        "hardware_evidence": "environment-unvalidated"
+      },
+      {
+        "family": "dax",
+        "implementation": "configured-transport-lifecycle",
+        "fixture_entrypoint": "thm.physical.backends:FixtureTransport",
+        "hardware_evidence": "environment-unvalidated"
+      },
+      {
+        "family": "cxl-type3",
+        "implementation": "configured-transport-lifecycle",
+        "fixture_entrypoint": "thm.physical.backends:FixtureTransport",
+        "hardware_evidence": "environment-unvalidated"
+      },
+      {
+        "family": "far-memory",
+        "implementation": "configured-transport-lifecycle",
+        "fixture_entrypoint": "thm.physical.backends:FixtureTransport",
+        "hardware_evidence": "environment-unvalidated"
+      },
+      {
+        "family": "nvme",
+        "implementation": "configured-transport-lifecycle",
+        "fixture_entrypoint": "thm.physical.backends:FixtureTransport",
+        "hardware_evidence": "environment-unvalidated"
+      },
+      {
+        "family": "sata-ssd",
+        "implementation": "configured-transport-lifecycle",
+        "fixture_entrypoint": "thm.physical.backends:FixtureTransport",
+        "hardware_evidence": "environment-unvalidated"
+      },
+      {
+        "family": "sas-ssd",
+        "implementation": "configured-transport-lifecycle",
+        "fixture_entrypoint": "thm.physical.backends:FixtureTransport",
+        "hardware_evidence": "environment-unvalidated"
+      },
+      {
+        "family": "cmr-hdd",
+        "implementation": "configured-transport-lifecycle",
+        "fixture_entrypoint": "thm.physical.backends:FixtureTransport",
+        "hardware_evidence": "environment-unvalidated"
+      },
+      {
+        "family": "smr-hdd",
+        "implementation": "configured-transport-lifecycle",
+        "fixture_entrypoint": "thm.physical.backends:FixtureTransport",
+        "hardware_evidence": "environment-unvalidated"
+      },
+      {
+        "family": "zns",
+        "implementation": "configured-transport-lifecycle",
+        "fixture_entrypoint": "thm.physical.backends:FixtureTransport",
+        "hardware_evidence": "environment-unvalidated"
+      },
+      {
+        "family": "usb",
+        "implementation": "configured-transport-lifecycle",
+        "fixture_entrypoint": "thm.physical.backends:FixtureTransport",
+        "hardware_evidence": "environment-unvalidated"
+      },
+      {
+        "family": "sd",
+        "implementation": "configured-transport-lifecycle",
+        "fixture_entrypoint": "thm.physical.backends:FixtureTransport",
+        "hardware_evidence": "environment-unvalidated"
+      },
+      {
+        "family": "emmc",
+        "implementation": "configured-transport-lifecycle",
+        "fixture_entrypoint": "thm.physical.backends:FixtureTransport",
+        "hardware_evidence": "environment-unvalidated"
+      },
+      {
+        "family": "ufs",
+        "implementation": "configured-transport-lifecycle",
+        "fixture_entrypoint": "thm.physical.backends:FixtureTransport",
+        "hardware_evidence": "environment-unvalidated"
+      },
+      {
+        "family": "smb",
+        "implementation": "configured-transport-lifecycle",
+        "fixture_entrypoint": "thm.physical.backends:FixtureTransport",
+        "hardware_evidence": "environment-unvalidated"
+      },
+      {
+        "family": "nfs",
+        "implementation": "configured-transport-lifecycle",
+        "fixture_entrypoint": "thm.physical.backends:FixtureTransport",
+        "hardware_evidence": "environment-unvalidated"
+      },
+      {
+        "family": "nas",
+        "implementation": "configured-transport-lifecycle",
+        "fixture_entrypoint": "thm.physical.backends:FixtureTransport",
+        "hardware_evidence": "environment-unvalidated"
+      },
+      {
+        "family": "nvme-tcp",
+        "implementation": "configured-transport-lifecycle",
+        "fixture_entrypoint": "thm.physical.backends:FixtureTransport",
+        "hardware_evidence": "environment-unvalidated"
+      },
+      {
+        "family": "nvme-rdma",
+        "implementation": "configured-transport-lifecycle",
+        "fixture_entrypoint": "thm.physical.backends:FixtureTransport",
+        "hardware_evidence": "environment-unvalidated"
+      },
+      {
+        "family": "fc-nvme",
+        "implementation": "configured-transport-lifecycle",
+        "fixture_entrypoint": "thm.physical.backends:FixtureTransport",
+        "hardware_evidence": "environment-unvalidated"
+      },
+      {
+        "family": "ceph-rbd",
+        "implementation": "configured-transport-lifecycle",
+        "fixture_entrypoint": "thm.physical.backends:FixtureTransport",
+        "hardware_evidence": "environment-unvalidated"
+      },
+      {
+        "family": "lustre",
+        "implementation": "configured-transport-lifecycle",
+        "fixture_entrypoint": "thm.physical.backends:FixtureTransport",
+        "hardware_evidence": "environment-unvalidated"
+      },
+      {
+        "family": "beegfs",
+        "implementation": "configured-transport-lifecycle",
+        "fixture_entrypoint": "thm.physical.backends:FixtureTransport",
+        "hardware_evidence": "environment-unvalidated"
+      },
+      {
+        "family": "daos",
+        "implementation": "configured-transport-lifecycle",
+        "fixture_entrypoint": "thm.physical.backends:FixtureTransport",
+        "hardware_evidence": "environment-unvalidated"
+      },
+      {
+        "family": "s3",
+        "implementation": "configured-transport-lifecycle",
+        "fixture_entrypoint": "thm.physical.backends:FixtureTransport",
+        "hardware_evidence": "environment-unvalidated"
+      },
+      {
+        "family": "hsm",
+        "implementation": "configured-transport-lifecycle",
+        "fixture_entrypoint": "thm.physical.backends:FixtureTransport",
+        "hardware_evidence": "environment-unvalidated"
+      },
+      {
+        "family": "tape",
+        "implementation": "configured-transport-lifecycle",
+        "fixture_entrypoint": "thm.physical.backends:FixtureTransport",
+        "hardware_evidence": "environment-unvalidated"
+      },
+      {
+        "family": "archive",
+        "implementation": "configured-transport-lifecycle",
+        "fixture_entrypoint": "thm.physical.backends:FixtureTransport",
+        "hardware_evidence": "environment-unvalidated"
+      },
+      {
+        "family": "spdk",
+        "implementation": "configured-transport-lifecycle",
+        "fixture_entrypoint": "thm.physical.backends:FixtureTransport",
+        "hardware_evidence": "environment-unvalidated"
+      },
+      {
+        "family": "gds-cufile",
+        "implementation": "configured-transport-lifecycle",
+        "fixture_entrypoint": "thm.physical.backends:FixtureTransport",
+        "hardware_evidence": "environment-unvalidated"
+      },
+      {
+        "family": "sata",
+        "implementation": "configured-transport-lifecycle",
+        "fixture_entrypoint": "thm.physical.backends:FixtureTransport",
+        "hardware_evidence": "environment-unvalidated"
+      },
+      {
+        "family": "sas",
+        "implementation": "configured-transport-lifecycle",
+        "fixture_entrypoint": "thm.physical.backends:FixtureTransport",
+        "hardware_evidence": "environment-unvalidated"
+      },
+      {
+        "family": "stacked-block",
+        "implementation": "configured-transport-lifecycle",
+        "fixture_entrypoint": "thm.physical.backends:FixtureTransport",
+        "hardware_evidence": "environment-unvalidated"
+      },
+      {
+        "family": "storage-spaces",
+        "implementation": "configured-transport-lifecycle",
+        "fixture_entrypoint": "thm.physical.backends:FixtureTransport",
+        "hardware_evidence": "environment-unvalidated"
+      },
+      {
+        "family": "raid",
+        "implementation": "configured-transport-lifecycle",
+        "fixture_entrypoint": "thm.physical.backends:FixtureTransport",
+        "hardware_evidence": "environment-unvalidated"
+      },
+      {
+        "family": "pinned-host",
+        "implementation": "configured-transport-lifecycle",
+        "fixture_entrypoint": "thm.physical.backends:FixtureTransport",
+        "hardware_evidence": "environment-unvalidated"
+      },
+      {
+        "family": "staging",
+        "implementation": "configured-transport-lifecycle",
+        "fixture_entrypoint": "thm.physical.backends:FixtureTransport",
+        "hardware_evidence": "environment-unvalidated"
+      },
+      {
+        "family": "direct-io",
+        "implementation": "configured-transport-lifecycle",
+        "fixture_entrypoint": "thm.physical.backends:FixtureTransport",
+        "hardware_evidence": "environment-unvalidated"
+      },
+      {
+        "family": "async-io",
+        "implementation": "configured-transport-lifecycle",
+        "fixture_entrypoint": "thm.physical.backends:FixtureTransport",
+        "hardware_evidence": "environment-unvalidated"
+      }
+    ],
+    "portable_paths": [
+      "buffered",
+      "mmap",
+      "mounted-filesystem",
+      "configured-S3-client"
+    ],
+    "allocation_kinds": 8,
+    "hardware_accepted_count": 0
+  },
+  "benchmark_adapter_census": [
+    {
+      "name": "locomo",
+      "protocol": "LoCoMo Protocol 2",
+      "implementation": "implemented",
+      "fixture": "fixture-validated",
+      "full_campaign": "full-research-not-run",
+      "agent_outcome": "not-run"
+    },
+    {
+      "name": "longmemeval-s",
+      "protocol": "LongMemEval-S session coverage 1",
+      "implementation": "implemented",
+      "fixture": "fixture-validated",
+      "full_campaign": "full-research-not-run",
+      "agent_outcome": "not-run"
+    },
+    {
+      "name": "longmemeval-v2",
+      "protocol": "public trajectory states / text-only 1",
+      "implementation": "implemented",
+      "fixture": "fixture-validated",
+      "full_campaign": "full-research-not-run",
+      "agent_outcome": "not-run"
+    },
+    {
+      "name": "beam",
+      "protocol": "native batches/turns + probing_questions 1",
+      "implementation": "implemented",
+      "fixture": "fixture-validated",
+      "full_campaign": "full-research-not-run",
+      "agent_outcome": "not-run"
+    },
+    {
+      "name": "memoryarena",
+      "protocol": "native multi-session tasks / agent-benchmark 1",
+      "implementation": "implemented",
+      "fixture": "fixture-validated",
+      "full_campaign": "full-research-not-run",
+      "agent_outcome": "not-run"
+    }
+  ],
+  "harness_census": [
+    {
+      "name": "Hermes",
+      "path": "native MemoryProvider and session lifecycle",
+      "evidence": "integration-validated",
+      "agent_outcome": "not-run"
+    },
+    {
+      "name": "OpenAI Agents SDK",
+      "path": "FunctionTool invoke",
+      "evidence": "integration-validated",
+      "agent_outcome": "not-run"
+    },
+    {
+      "name": "LangChain",
+      "path": "BaseRetriever invoke",
+      "evidence": "integration-validated",
+      "agent_outcome": "not-run"
+    },
+    {
+      "name": "LangGraph",
+      "path": "StateGraph compile/invoke",
+      "evidence": "integration-validated",
+      "agent_outcome": "not-run"
+    },
+    {
+      "name": "Deep Agents",
+      "path": "create_deep_agent graph construction and recall/status tools",
+      "evidence": "integration-validated",
+      "agent_outcome": "not-run"
+    },
+    {
+      "name": "MCP v2",
+      "path": "typed stdio initialize/list/call",
+      "evidence": "integration-validated",
+      "agent_outcome": "not-run"
+    },
+    {
+      "name": "legacy MCP",
+      "path": "compatibility stdio lifecycle",
+      "evidence": "integration-validated",
+      "agent_outcome": "not-run"
+    },
+    {
+      "name": "OpenClaw",
+      "path": "pinned legacy bridge probe",
+      "evidence": "integration-validated",
+      "agent_outcome": "not-run"
+    },
+    {
+      "name": "Claude Code",
+      "path": "pinned real CLI discovery/call",
+      "evidence": "integration-validated",
+      "agent_outcome": "not-run"
+    },
+    {
+      "name": "Codex CLI",
+      "path": "pinned real CLI discovery/call",
+      "evidence": "integration-validated",
+      "agent_outcome": "not-run"
+    },
+    {
+      "name": "Gemini CLI",
+      "path": "pinned real CLI discovery/call",
+      "evidence": "integration-validated",
+      "agent_outcome": "not-run"
+    }
+  ],
+  "validation": {
+    "local_unit_tests": 597,
+    "local_unit_skipped": 2,
+    "numeric_audit_tests": 10,
+    "benchmark_fixtures": 5,
+    "feature_ab_cases": 30,
+    "track_b_modes": 2,
+    "os_python_matrix": [
+      "Ubuntu 3.10",
+      "Ubuntu 3.11",
+      "Ubuntu 3.12",
+      "Ubuntu 3.13",
+      "Ubuntu 3.14",
+      "Windows 3.13",
+      "macOS 3.13"
+    ],
+    "tiktoken_versions": [
+      "0.7.0",
+      "0.8.0",
+      "0.9.0",
+      "0.10.0",
+      "0.11.0",
+      "0.12.0",
+      "0.13.0",
+      "0.14.0"
+    ],
+    "model_calls": 0,
+    "judge_calls": 0
+  },
+  "counts": {
+    "implemented_domains": 28,
+    "intentionally_rejected_policies": 4,
+    "evidence_only_items": 20,
+    "external_only_governance_items": 1,
+    "implementation_external_gaps": 0
+  },
+  "boundaries": {
+    "automatic_mutation": false,
+    "fixtures_are_hardware_evidence": false,
+    "retrieval_is_answer_accuracy": false,
+    "logical_compute_physical_orthogonal": true,
+    "ce_taxonomy_independent": true
+  }
+}

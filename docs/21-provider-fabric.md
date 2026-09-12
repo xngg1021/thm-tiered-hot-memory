@@ -1,4 +1,4 @@
-# Provider Fabric — Unreleased
+# Provider Fabric — 1.5 implementation
 
 The fabric separates capability discovery, model inference, vector indexing and data transfer. Provider instances receive execution inputs and immutable identities; they have no memory-activity or source-authority handle. Optional SDKs load only when a provider is actually probed or invoked.
 
@@ -42,3 +42,7 @@ Accelerator indexes keep the document matrix/index resident. Search transfers qu
 Normalized samples distinguish request latency, stage clocks, process CPU seconds, device counters, RAM/VRAM, transfer bytes, startup/compile, energy and observed dispatch. Missing values remain null. NVML energy is a board counter; it cannot be attributed to one query without a matching measurement method. AMD SMI reports supported public activity values; no energy estimate is fabricated.
 
 No vendor SDK or model is part of core installation or redistributed by THM. The source audit records each upstream API and license boundary, including uncertain exact fork licenses. Vendor SDK terms remain separate from open-source wrapper licenses. See [optimizer evidence](22-runtime-optimizer.md) for admission and [source audit](provider-sources.json) for provenance.
+
+## 1.5 implementation and evidence contract
+
+[1.5 implementation surface](24-full-power-implementation.md) defines the executable configured provider/storage lifecycle, allocation and joint-planning APIs, explicit actuator, five benchmark/environment/outcome interfaces, independent CE bridge, and LangGraph/Deep Agents lifecycle. Automatic memory mutation remains false and rejected features remain default-off. Hardware, full-research and real task evidence are separately recorded in the [completion ledger](../reports/2026-09-12-thm-full-power-completion.md).

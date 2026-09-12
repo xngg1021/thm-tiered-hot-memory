@@ -136,6 +136,7 @@ class ActuatorTests(unittest.TestCase):
         self.assertEqual(self.store.snapshot()['entries'][0]['events'], [])
         self.assertEqual(len(self.store.audit()), 1)
         self.store.rollback(p['plan_id'])
+        self.assertEqual(self.store.audit()[-1]['status'], 'rolled-back')
         self.assertEqual(self.store.snapshot()['entries'], self.rows)
         with self.assertRaises(ValueError):
             self.store.rollback(p['plan_id'])

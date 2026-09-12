@@ -1,6 +1,6 @@
 # THM 项目文档总目录
 
-## Zero-touch Provider Fabric — Unreleased
+## Zero-touch Provider Fabric — 1.5 implementation
 
 The current product path is [zero-touch runtime](20-zero-touch-runtime.md): safe execution, passive observation, bounded background exploration and session-boundary admission. Read [Provider Fabric](21-provider-fabric.md), [optimizer](22-runtime-optimizer.md), [resident vector indexes](23-vector-index-providers.md), [support matrix](provider-matrix.md) and [source/license audit](provider-sources.json). Explicit research preparation/calibration remains available. No user benchmark, automatic SDK download or new stable release is required.
 
@@ -9,7 +9,7 @@ The current product path is [zero-touch runtime](20-zero-touch-runtime.md): safe
 Start with the [Evaluation Fabric](18-evaluation-fabric.md): logical memory, compute execution and physical storage are independent planes. The fabric binds all three to typed tasks, ground truth, results and receipts. Read [runtime](17-zero-llm-heterogeneous-runtime.md) and [physical storage](physical-storage-fabric.md) for execution details. Default acceptance is bounded and offline; full datasets require explicit full-research. Package/stable remains 1.4.0.
 
 <!-- current-v1.4-status:start -->
-> **Current release status — THM 1.4.0 accepted/stable implementation milestone.** Stable code/content milestone: `e6e4dda5835e3cb345207457d5491131c6959b2c`; immutable recovery pointer: `archive/v1.4.0-stable`. This document retains its original research/design/1.2/1.3 scope as historical foundation rather than rewriting old evidence as a new result. Current implementation state is tracked in [07-implementation-status.md](07-implementation-status.md), the 1.4 shadow control plane in [14-residency-control-plane.md](14-residency-control-plane.md), the opt-in Hermes T1 surface in [15-hermes-warm-directory.md](15-hermes-warm-directory.md), and the exact acceptance record in [the 1.4 closeout](../reports/2026-09-07-v1.4-closeout.md).
+> **THM 1.5.0 implementation surface.** Current code, configured extension contracts and evidence boundaries are described in [1.5 implementation surface](24-full-power-implementation.md). Historical results below retain their original protocol and source identity. The immutable 1.4.0 archive remains unchanged.
 <!-- current-v1.4-status:end -->
 
 默认项目主页为英文 [README](../README.md)，并提供多语言版本。当前实现与验证入口以本页、实现状态和对应版本文档为准；历史研究、设计和报告保留原始证据边界，不把旧目标自动算成当前能力。
@@ -77,10 +77,14 @@ The opt-in Python entity projection and its Protocol 2 evidence are documented i
 
 The optional zero-LLM hardware/profile/AutoTune runtime, identity-safe vector storage, batching and default-off deterministic retrieval experiments are implemented for local acceptance. Core installation stays model-free; no performance or feature admission is implied. See [runtime architecture](17-zero-llm-heterogeneous-runtime.md) and [local verification package](../reports/2026-09-08-local-runtime-verification-plan.md). Stable remains unchanged.
 
-- [Unreleased physical storage fabric and bounded verification](physical-storage-fabric.md)
+- [Physical storage fabric and bounded verification](physical-storage-fabric.md)
 - [2026-09-09 repository reconciliation and forward-only closeout](../reports/2026-09-09-open-pr-reconciliation-closeout.md)
 
 
 ## Post-local corrective evidence
 
 See the [current corrective contract and short retest](19-post-local-corrective.md). Z6 CPU/CUDA/auto-throughput and local NTFS/NVMe are machine-observed at b1f8119. The later [bb16760 retest](../reports/2026-09-09-post-fix-retest-bb16760.md) completed strict auto-safe admission, reference fallback, reuse and CPU batch 1/4/8/32 validation. Aggregate parity, strict parity and calibrated policy remain separate claims. Auto-safe now allows a measured reference fallback; lack of acceleration does not itself fail correctness. No version/stable promotion or full-dataset acceptance is implied.
+
+## 1.5 implementation and evidence contract
+
+[1.5 implementation surface](24-full-power-implementation.md) defines the executable configured provider/storage lifecycle, allocation and joint-planning APIs, explicit actuator, five benchmark/environment/outcome interfaces, independent CE bridge, and LangGraph/Deep Agents lifecycle. Automatic memory mutation remains false and rejected features remain default-off. Hardware, full-research and real task evidence are separately recorded in the [completion ledger](../reports/2026-09-12-thm-full-power-completion.md).

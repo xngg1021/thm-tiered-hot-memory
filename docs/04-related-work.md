@@ -9,7 +9,7 @@ The [provider source audit](provider-sources.json) records the public API/versio
 The [Evaluation Fabric source inventory](18-evaluation-fabric.md#upstream-interface-provenance) pins official LongMemEval-V2, BEAM and MemoryArena interface revisions. V2 uses trajectory insert/query; BEAM uses nested conversations and probing rubrics; MemoryArena couples sessions through actual agent/environment experience. These are evaluation interfaces, not additional memory algorithms or accepted THM dataset outcomes. LoCoMo and LongMemEval-S retain their respective document/session evidence units.
 
 <!-- current-v1.4-status:start -->
-> **Current release status — THM 1.4.0 accepted/stable implementation milestone.** Stable code/content milestone: `e6e4dda5835e3cb345207457d5491131c6959b2c`; immutable recovery pointer: `archive/v1.4.0-stable`. This document retains its original research/design/1.2/1.3 scope as historical foundation rather than rewriting old evidence as a new result. Current implementation state is tracked in [07-implementation-status.md](07-implementation-status.md), the 1.4 shadow control plane in [14-residency-control-plane.md](14-residency-control-plane.md), the opt-in Hermes T1 surface in [15-hermes-warm-directory.md](15-hermes-warm-directory.md), and the exact acceptance record in [the 1.4 closeout](../reports/2026-09-07-v1.4-closeout.md).
+> **THM 1.5.0 implementation surface.** Current code, configured extension contracts and evidence boundaries are described in [1.5 implementation surface](24-full-power-implementation.md). Historical results below retain their original protocol and source identity. The immutable 1.4.0 archive remains unchanged.
 <!-- current-v1.4-status:end -->
 
 读取日期：2026-09-06。本文比较选定公开系统，不是完整文献普查或性能排行榜。
@@ -183,3 +183,7 @@ GitHub 自动识别的 NOASSERTION 不能直接写成“无许可证”：Signet
 直接同类的功能主要是 D；源码抽查只覆盖 Mem0 的默认配置和 Codex 的 feature 元数据。各系统真实安装、故障恢复、删除级联、隔离、遥测与完整网络路径均未测试。Letta Cloud 等商业托管后端及 Mastra EE 的完整许可边界没有扩展判断。论文全部限于摘要与版本元数据。各项更细的范围和固定版本见[来源清单](related-work-sources.json)。
 
 本次未复制外部实现代码、未变更原公式或历史报告、未发布真实记忆。比较结论停留在可核实的公开证据和明确待测问题。
+
+## 1.5 implementation and evidence contract
+
+[1.5 implementation surface](24-full-power-implementation.md) defines the executable configured provider/storage lifecycle, allocation and joint-planning APIs, explicit actuator, five benchmark/environment/outcome interfaces, independent CE bridge, and LangGraph/Deep Agents lifecycle. Automatic memory mutation remains false and rejected features remain default-off. Hardware, full-research and real task evidence are separately recorded in the [completion ledger](../reports/2026-09-12-thm-full-power-completion.md).

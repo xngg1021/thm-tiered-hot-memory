@@ -72,6 +72,25 @@ class OutcomeBridgeTests(unittest.TestCase):
         score = scorer.score(task, GroundTruth('a', answer='gold'), 'gold', trace_sha256=hashlib.sha256(trace).hexdigest())
         self.assertEqual(score['answer_accuracy'],1)
 
+    def test_all_benchmarks_accept_independent_feature_ab_and_track_b(self):
+        from thm.evaluation.adapters import ADAPTERS
+        from thm.evaluation.fixtures import FIXTURES
+        from thm.evaluation.runner import run
+        from thm.features import RetrievalFeatures
+        class Encoder:
+            def __call__(self, texts, **kwargs):
+                return [[len(t)+1, sum(map(ord,t))%19+1] for t in texts]
+        with tempfile.TemporaryDirectory() as tmp:
+            for name,adapter in ADAPTERS.items():
+                for flag in ('entity','explicit_alias','temporal','query_grammar','segment','association'):
+                    result=run(adapter,FIXTURES[name],Path(tmp)/(name+flag),features={flag:True},provenance='deterministic-fixture')
+                    self.assertTrue(result['layers']['memory-dataplane']['features'][flag])
+                    self.assertEqual(result['layers']['LLM-agent-outcome']['status'],'not-run')
+            for mode in ('dense','hybrid'):
+                result=run(ADAPTERS['locomo'],FIXTURES['locomo'],Path(tmp)/mode,retrieval_mode=mode,encoder=Encoder(),model_id='fixture-encoder',provenance='deterministic-fixture')
+                self.assertTrue(result['taxonomy']['compute_profile'].startswith('explicit-encoder-'))
+            self.assertFalse(RetrievalFeatures().entity)
+
     def test_memory_snapshot_reopen_and_corruption(self):
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp); a = AgentMemory(root/'a.db','scope'); a.add('database port is 5439'); a.save(root/'saved'); a.close()

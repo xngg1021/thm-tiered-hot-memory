@@ -1,8 +1,8 @@
-# Zero-touch runtime — Unreleased
+# Zero-touch runtime — 1.5 implementation
 
 THM serves with a safe available execution path, observes real requests and explores a small number of alternatives during idle opportunities. Users supply their local data and, for semantic retrieval, an existing local model. Normal operation does not require a benchmark, a calibration script, a cloud account or a generative model call.
 
-Package/version remains **1.4.0**. The immutable stable archive remains `archive/v1.4.0-stable@e6e4dda5835e3cb345207457d5491131c6959b2c`. This successor starts at main `2d5c2adcf994edd8b7bb3c0546983ba9531af392`; its predecessor's actual post-fix hardware test is [bb16760](../reports/2026-09-09-post-fix-retest-bb16760.md). Those measurements are not measurements of this new runtime.
+Package/version is **1.5.0**. The immutable stable archive remains `archive/v1.4.0-stable@e6e4dda5835e3cb345207457d5491131c6959b2c`. This successor starts at main `2d5c2adcf994edd8b7bb3c0546983ba9531af392`; its predecessor's actual post-fix hardware test is [bb16760](../reports/2026-09-09-post-fix-retest-bb16760.md). Those measurements are not measurements of this new runtime.
 
 ## Normal operation
 
@@ -71,3 +71,7 @@ python -m thm runtime explain
 These commands inspect metadata by default. Explicit `--probe-provider` requests use a bounded process. `profile` and `invalidate-profile` expose the versioned local evidence store. The older explicit `prepare`/`autotune` commands remain research/diagnostic tools; they are not required product setup steps.
 
 See [Provider Fabric](21-provider-fabric.md), [optimizer](22-runtime-optimizer.md), [vector indexes](23-vector-index-providers.md), [support matrix](provider-matrix.md) and [physical storage](physical-storage-fabric.md).
+
+## 1.5 implementation and evidence contract
+
+[1.5 implementation surface](24-full-power-implementation.md) defines the executable configured provider/storage lifecycle, allocation and joint-planning APIs, explicit actuator, five benchmark/environment/outcome interfaces, independent CE bridge, and LangGraph/Deep Agents lifecycle. Automatic memory mutation remains false and rejected features remain default-off. Hardware, full-research and real task evidence are separately recorded in the [completion ledger](../reports/2026-09-12-thm-full-power-completion.md).

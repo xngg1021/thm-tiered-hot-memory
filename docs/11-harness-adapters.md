@@ -1,7 +1,7 @@
 # THM harness adapters — 1.3 foundation and 1.4 current integration
 
 <!-- current-v1.4-status:start -->
-> **Current release status — THM 1.4.0 accepted/stable implementation milestone.** Stable code/content milestone: `e6e4dda5835e3cb345207457d5491131c6959b2c`; immutable recovery pointer: `archive/v1.4.0-stable`. This document retains its original research/design/1.2/1.3 scope as historical foundation rather than rewriting old evidence as a new result. Current implementation state is tracked in [07-implementation-status.md](07-implementation-status.md), the 1.4 shadow control plane in [14-residency-control-plane.md](14-residency-control-plane.md), the opt-in Hermes T1 surface in [15-hermes-warm-directory.md](15-hermes-warm-directory.md), and the exact acceptance record in [the 1.4 closeout](../reports/2026-09-07-v1.4-closeout.md).
+> **THM 1.5.0 implementation surface.** Current code, configured extension contracts and evidence boundaries are described in [1.5 implementation surface](24-full-power-implementation.md). Historical results below retain their original protocol and source identity. The immutable 1.4.0 archive remains unchanged.
 <!-- current-v1.4-status:end -->
 
 THM 1.3 separates the retrieval engine from harness plumbing. `thm.harness.THMHarnessAdapter` opens an existing derived THM index read-only and returns only budget-packed evidence plus source identity. Harness adapters do not become the owner of native memory files and do not promote retrieval into verified usefulness.
@@ -157,3 +157,7 @@ MCP source records retain `complete`, `parent_id`, `span_start`, `span_end`, and
 ## Post-local corrective evidence
 
 See the [current corrective contract and short retest](19-post-local-corrective.md). Z6 CPU/CUDA/auto-throughput and local NTFS/NVMe are machine-observed at b1f8119. Aggregate parity, strict parity, calibrated policy and post-fix acceptance remain separate claims. Auto-safe now allows a measured reference fallback; lack of acceleration does not itself fail correctness. No version/stable promotion or full-dataset acceptance is implied.
+
+## 1.5 implementation and evidence contract
+
+[1.5 implementation surface](24-full-power-implementation.md) defines the executable configured provider/storage lifecycle, allocation and joint-planning APIs, explicit actuator, five benchmark/environment/outcome interfaces, independent CE bridge, and LangGraph/Deep Agents lifecycle. Automatic memory mutation remains false and rejected features remain default-off. Hardware, full-research and real task evidence are separately recorded in the [completion ledger](../reports/2026-09-12-thm-full-power-completion.md).

@@ -9,11 +9,7 @@ Autor: Junfu Shi (SJF, xngg1021) · Lizenz: [MIT](LICENSE)
 <!-- section:architecture -->
 ## Architektur mit drei Ebenen
 
-THM trennt logischen Speicher, Rechenausführung und physischen Speicher. Evaluation Fabric misst diese Ebenen ohne einen neuen Gedächtnisalgorithmus. Quellidentität und Scope bleiben für jede Darstellung maßgeblich.
-
-Architektur- und Evidenzverträge
-
-Stabiles Package und Archiv bleiben bei 1.4.0. Runtime, Physical Storage Fabric und Evaluation Fabric bleiben Unreleased. Vorhandene Messungen behalten Protokoll, Quell-SHA und Geltungsbereich; nicht ausgeführte Benchmarks und Hardware gelten nicht als accepted evidence.
+THM trennt logischen Speicher, Rechenausführung und physische Speicherung. Version 1.5.0 umfasst diese Ebenen, Evaluation Fabric, den expliziten Residenzaktor und die unabhängige Context Economics bridge. Quellidentität und Geltungsbereich bleiben maßgeblich. Historische Belege aus 1.4.0 behalten Protokoll und SHA; Implementierungsstabilität bedeutet keine Hardware- oder Aufgabenabnahme.
 
 <!-- section:philosophy -->
 ## Design philosophy
@@ -59,6 +55,8 @@ Retrieval-Semantik liegt im THM Core. Hermes hat die tiefste Lifecycle-Integrati
 
 Scope-begrenzter SearchIndex, Evidenzpackung unter Budget und Shadow-Residenzsteuerung nutzen denselben Kern. T0–T3 bezeichnen logische Residenz und Zugriff. Aktivität, Gültigkeit, Fixierung und Retrieval bleiben getrennt; automatische Hochstufung und Budgetrückschreiben bleiben deaktiviert.
 
+Der explizite Aktor unterstützt dry-run, Replay, Freigabe eines exakten Plans, transaktionale Platzierungsänderungen, Rollback und Audit. Automatische Änderungen bleiben standardmäßig false; Quellgültigkeit, pin, Nachfrage, Kapazität und Evidenz werden geprüft.
+
 <!-- section:tiers -->
 ## T0–T3 Memory Tiers
 
@@ -81,7 +79,7 @@ Die Zero-Touch-Laufzeit startet mit einem sicheren verfügbaren Pfad, beobachtet
 <!-- section:physical -->
 ## Physische Speicherebene
 
-StorageProfile beschreibt gemessene Zugriffskosten; Placement bindet eine Darstellung an ein Ziel. PhysicalTelemetry erfasst tatsächliche Extent-I/O. Verifizierte lokale buffered/mmap-Dateisystempfade sind implementiert. CXL, DAX, SPDK, GDS und Ferntransporte bleiben Erweiterungsbeschreibungen ohne validierte Hardwareleistung.
+StorageProfile beschreibt gemessene Zugriffskosten, placement bindet eine Repräsentation an ein Ziel und PhysicalTelemetry erfasst Bereichs-I/O. Gepufferte/mmap-Dateien, transaktionale konfigurierte Transporte, S3, Allokationseigentum und gemeinsame Platzierung besitzen ausführbare Pfade und Fixtures. CXL, DAX, SPDK, GDS und entfernte Familien teilen begrenzte Lebenszyklusverträge; native Transportausführung und Hardwareleistung erfordern gesonderte Belege.
 
 [Physical Storage Fabric](docs/physical-storage-fabric.md)
 
@@ -99,6 +97,8 @@ Fixtures prüfen nur Schnittstellen und deterministisches Retrieval. V2 arbeitet
 | LLM-agent-outcome | Generierungs-/Judge-Aufrufe, Antwortgenauigkeit, Umgebungserfolg; standardmäßig not-run |
 
 [Evaluation Fabric](docs/18-evaluation-fabric.md)
+
+EnvironmentRunner bietet einen begrenzten Umgebungslebenszyklus; OfficialScorerBridge isoliert Antworten für den Evaluator. Outcome-Anhänge binden ausgeführte Aufgaben-IDs und trace SHA und unterstützen Teilabdeckung, fehlende Bewertungen, Makro-/Mikroaggregate und beobachtete Latenz/Kosten. THM exportiert Belege mit Einheiten und Nennern an Context Economics und akzeptiert explizite Budget- und Grenzwertempfehlungen. THM T0–T3 und CE L0–L6 bleiben unabhängig.
 
 <!-- section:evidence -->
 ## Gemessene Retrieval-Evidenz
@@ -125,7 +125,7 @@ Diese Werte messen packed retrieval evidence, nicht finale Antwortgenauigkeit, U
 | --- | --- |
 | **Hermes Agent** | Native `MemoryProvider`; setup/config, prefetch, optional live-turn sync, session boundary hooks, memory-write refresh semantics |
 | **OpenAI Agents SDK** | Native read-only `FunctionTool` |
-| **LangChain / LangGraph / Deep Agents** | Native `BaseRetriever` surface |
+| **LangChain / LangGraph / Deep Agents** | Nativer BaseRetriever, ausführbarer LangGraph-Knoten, Deep Agents recall/status-Werkzeuge und Graphaufbau |
 | **MCP v2** | Typed read-only `thm_recall` und `thm_status` über stdio |
 | **OpenClaw** | Pinned compatibility probe über die legacy MCP bridge |
 | **Claude Code / Codex CLI / Gemini CLI** | Pinned real-CLI discovery/call lifecycle über denselben read-only recall core |
@@ -211,4 +211,4 @@ Unit/invariant evidence, retrieval benchmark, harness lifecycle und real task ou
 - [Zero-LLM retrieval frontier](docs/16-zero-llm-retrieval-frontier.md)
 - [Changelog](CHANGELOG.md)
 
-THM bleibt Research Software. 1.4.0 ist der accepted/stable implementation milestone; der folgende retrieval frontier bleibt ausdrücklich unreleased. Eine Versionsnummer ersetzt niemals eine Evidence Class.
+THM 1.5.0 ist ein Implementierungsmeilenstein mit getrennten Integrations-, Hardware-, Benchmark- und Aufgabenbelegen. Verworfenene Retrieval-Experimente bleiben reproduzierbar und standardmäßig deaktiviert.
