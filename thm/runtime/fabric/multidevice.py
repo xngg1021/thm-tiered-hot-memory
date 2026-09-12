@@ -23,12 +23,12 @@ class MultiDeviceIndex:
             new = []
             try:
                 for i, (provider, budget) in enumerate(zip(self.providers, self.budgets)):
-                    positions = list(range(i, len(ids), len(self.providers)))
+                    positions = range(i, len(ids), len(self.providers))
                     if not positions:
                         continue
-                    shard = matrix[positions]
-                    if shard.nbytes > budget:
+                    if len(positions) * matrix.shape[1] * matrix.dtype.itemsize > budget:
                         raise MemoryError('shard capacity exceeded')
+                    shard = matrix[list(positions)]
                     ref = replace(identity, device=f'shard:{i}', index_config=identity.index_config+f'/shard/{i}')
                     handle = provider.build(shard, [ids[j] for j in positions], ref)
                     new.append((provider, handle))

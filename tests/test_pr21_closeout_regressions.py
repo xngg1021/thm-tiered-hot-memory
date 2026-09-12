@@ -71,6 +71,22 @@ class LostMountedAcknowledgement(MountedFilesystemTransport):
         raise OSError('publication acknowledgement lost')
 
 
+class AttackedMountedPublication(MountedFilesystemTransport):
+    def commit(self, transaction):
+        from thm.physical import _atomic_publication as publication
+        publish = publication._publish_fd
+        def attack(fd, destination, directory_fd):
+            # A real same-credential process targets the review's discoverable
+            # private payload. Kernel lease conflict must stop publication.
+            path = str(self.root / ('.thm-' + transaction + '.publication') / 'payload')
+            subprocess.run([sys.executable, '-c',
+                'import os,sys; fd=os.open(sys.argv[1],os.O_WRONLY|os.O_NONBLOCK); os.write(fd,b"bad")',
+                path], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, timeout=5)
+            return publish(fd, destination, directory_fd)
+        with mock.patch.object(publication, '_publish_fd', attack):
+            return super().commit(transaction)
+
+
 class FakeS3Client:
     def __init__(self):
         self.objects = {}
@@ -123,6 +139,11 @@ class MountedPublicationTests(unittest.TestCase):
             transport=MountedFilesystemTransport(tmp);transaction='b'*32
             data=b'original';key=hashlib.sha256(data).hexdigest()
             transport.stage(transaction,key,data);pending=transport.pending[transaction][0]
+            if sys.platform == 'darwin':
+                with self.assertRaises(OSError):transport.commit(transaction)
+                self.assertFalse((Path(tmp)/(key+'.seg')).exists())
+                transport.abort(transaction)
+                return
             link=os.link
             def replace_original(source,destination,**kwargs):
                 self.assertNotEqual(Path(source),pending)
@@ -139,6 +160,32 @@ class MountedPublicationTests(unittest.TestCase):
             with self.assertRaises(ValueError):transport.commit(transaction)
             transport.abort(transaction)
             self.assertEqual(list(Path(tmp).iterdir()),[destination])
+
+    @unittest.skipUnless(os.name == 'posix', 'POSIX kernel lease capability gate')
+    def test_missing_kernel_protection_never_publishes(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            transport=MountedFilesystemTransport(tmp);transaction='c'*32
+            key=hashlib.sha256(b'abc').hexdigest();transport.stage(transaction,key,b'abc')
+            with mock.patch('fcntl.fcntl',side_effect=OSError('lease unavailable')):
+                with self.assertRaisesRegex(OSError,'kernel-protected'):
+                    transport.commit(transaction)
+            self.assertFalse((Path(tmp)/(key+'.seg')).exists())
+            transport.abort(transaction);self.assertFalse(any(Path(tmp).iterdir()))
+
+    @unittest.skipUnless(os.name == 'nt', 'Windows mandatory share denial')
+    def test_windows_payload_stays_write_protected_until_handle_rename(self):
+        from thm.physical import _atomic_publication as publication
+        with tempfile.TemporaryDirectory() as tmp:
+            transport=MountedFilesystemTransport(tmp);transaction='d'*32
+            data=b'abc';key=hashlib.sha256(data).hexdigest();transport.stage(transaction,key,data)
+            publish=publication._publish_fd
+            def attack(fd,destination,directory_fd):
+                path=Path(tmp)/('.thm-'+transaction+'.publication')/'payload'
+                with self.assertRaises(OSError):
+                    with path.open('wb') as writer:writer.write(b'bad')
+                return publish(fd,destination,directory_fd)
+            with mock.patch.object(publication,'_publish_fd',attack):transport.commit(transaction)
+            self.assertEqual((Path(tmp)/(key+'.seg')).read_bytes(),data)
 
 
 def s3_factory():
@@ -371,10 +418,24 @@ class TransportDeadlineTests(unittest.TestCase):
                         b.write(data, generation='g')
                     self.assertEqual(b.receipt()['journal'][-1]['state'], 'indeterminate-commit')
                     self.assertEqual(b.bytes_written, 0)
+                    if sys.platform == 'darwin' and isinstance(transport, MountedFilesystemTransport):
+                        self.assertFalse((Path(tmp)/(key+'.seg')).exists())
+                        b.close()
+                        continue
                     self.assertTrue(b.recover(key, generation='g')['verified'])
                     self.assertEqual(b.read(TransferExtent(key, 0, len(data)), generation='g'), data)
                     self.assertEqual(b.receipt()['journal'][-1]['state'], 'indeterminate-commit')
                     b.close()
+
+    @unittest.skipUnless(sys.platform.startswith('linux'), 'Linux real kernel lease attack')
+    def test_same_credential_writer_cannot_corrupt_publication(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            b=self.backend(AttackedMountedPublication(tmp),3)
+            with self.assertRaises(RuntimeError):b.write(b'abc',generation='g')
+            self.assertEqual(b.bytes_written,0)
+            self.assertEqual(b.journal[-1]['state'],'indeterminate-commit')
+            self.assertFalse((Path(tmp)/(hashlib.sha256(b'abc').hexdigest()+'.seg')).exists())
+            self.assertIsNone(b.worker.process)
 
     def test_nonpickleable_transport_fails_explicitly(self):
         with self.assertRaises(TypeError):

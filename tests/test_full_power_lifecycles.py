@@ -95,7 +95,8 @@ class StorageTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as tmp:
             b = StorageBackend(BackendConfig('cxl-type3', 'target', 'g'), MountedFilesystemTransport(tmp))
             self.addCleanup(b.close)
-            key = b.write(b'abc', generation='g')
+            key = hashlib.sha256(b'abc').hexdigest()
+            (Path(tmp) / (key + '.seg')).write_bytes(b'abc')
             with self.assertRaises(ValueError):
                 b.read(TransferExtent(key, 0, 1), generation='old')
             (Path(tmp) / (key + '.seg')).write_bytes(b'xyz')
@@ -106,6 +107,15 @@ class StorageTests(unittest.TestCase):
     def test_mounted_transport_reopen_and_checksum(self):
         with tempfile.TemporaryDirectory() as tmp:
             b = StorageBackend(BackendConfig('nfs', 'mounted', 'g'), MountedFilesystemTransport(tmp))
+            self.addCleanup(b.close)
+            import sys
+            if sys.platform == 'darwin':
+                # Stock Python lacks Apple's file-leases entitlement. Exercise
+                # the required fail-closed capability gate without publishing.
+                with self.assertRaises(OSError):b.write(b'abcdef',generation='g')
+                self.assertEqual(b.bytes_written,0)
+                self.assertFalse(any(Path(tmp).iterdir()))
+                return
             key = b.write(b'abcdef', generation='g'); b.close()
             b = StorageBackend(BackendConfig('nfs', 'mounted', 'g'), MountedFilesystemTransport(tmp))
             self.assertEqual(b.read(TransferExtent(key, 2, 2), generation='g'), b'cd')

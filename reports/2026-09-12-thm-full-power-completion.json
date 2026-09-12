@@ -4,7 +4,7 @@
   "repository": "xngg1021/thm-tiered-hot-memory",
   "version": "1.5.0",
   "implementation_status": "implemented",
-  "implementation_sha256": "52dabd7c6dddf995c7f5eaf4165df7e81eec82bd6ed8a605184a28ff171acce3",
+  "implementation_sha256": "c3798447f8c575ea4e1839c41e0308abed392acd2c5aaf14751e6a3602b03404",
   "archive_branch": "archive/v1.5.0-stable",
   "accepted_merge_commit": null,
   "historical": {
@@ -59,7 +59,9 @@
       "Keep lost commit acknowledgements indeterminate until explicitly verified; abort cannot certify rollback",
       "Filter unrelated Linux processes before reading protected accounting records",
       "Bound mounted pending/existing object descriptor reads and publish only a private frozen copy through a pinned directory",
-      "Eliminate DiskANN generated build files using the public memory-only construction/insertion API"
+      "Eliminate DiskANN generated build files using the public memory-only construction/insertion API",
+      "Retain kernel-enforced write exclusion through descriptor publication; unsupported mounted filesystems/OS permissions fail closed",
+      "Reject over-budget shards using prospective byte counts before NumPy advanced-index copies"
     ],
     "ci_repairs": [
       "Preserve concurrent d00b237 Darwin EPERM cleanup fix; live-worker permission failures remain errors",
@@ -536,7 +538,7 @@
       "evidence_state": "hardware-unvalidated"
     },
     {
-      "item": "NVMe-oF/FC/Ceph/Lustre/BeeGFS/DAOS/S3/HSM deployed transport performance",
+      "item": "NVMe-oF/FC/Ceph/Lustre/BeeGFS/DAOS/S3/HSM deployed transport performance and protected mounted-publication capability",
       "status": "evidence-only-pending",
       "evidence_state": "environment-unvalidated"
     },
@@ -1889,8 +1891,8 @@
     }
   ],
   "validation": {
-    "local_unit_tests": 632,
-    "local_unit_skipped": 2,
+    "local_unit_tests": 636,
+    "local_unit_skipped": 3,
     "numeric_audit_tests": 10,
     "benchmark_fixtures": 5,
     "feature_ab_cases": 30,

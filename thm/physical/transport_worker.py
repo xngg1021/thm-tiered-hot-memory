@@ -29,6 +29,7 @@ class TransportWorker:
         self.process = self.budget = self.workspace = None
         self.sequence = 0
         self.evidence = None
+        self.commit_seconds = None
 
     def _start(self, deadline):
         from thm.runtime.fabric.resources import ChildBudget
@@ -79,6 +80,9 @@ class TransportWorker:
                     if time.monotonic() >= deadline:
                         break
                     self.evidence = value['evidence']
+                    self.commit_seconds = value.get('commit_seconds')
+                    if self.commit_seconds not in (None, 1):
+                        raise ValueError('invalid transport commit protection budget')
                     if self.evidence not in ('fixture-validated', 'environment-unvalidated'):
                         raise ValueError('transport provenance required')
                     if value['sequence'] != self.sequence:
@@ -139,6 +143,8 @@ def main():
         except Exception as exc:
             value = dict(sequence=sequence, error=type(exc).__name__)
         value['evidence'] = transport.evidence
+        from .backends import MountedFilesystemTransport
+        value['commit_seconds'] = 1 if isinstance(transport, MountedFilesystemTransport) else None
         raw = pickle.dumps(value)
         if len(raw) > maximum:
             raw = pickle.dumps(dict(sequence=sequence, error='ValueError', evidence=transport.evidence))

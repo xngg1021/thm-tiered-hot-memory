@@ -149,26 +149,9 @@ class MountedFilesystemTransport:
         try:
             owned = publication / 'payload'
             with validated_descriptor(publication, directory=True) as (directory_fd, _):
-                if os.name == 'posix':
-                    fd = os.open('payload', os.O_RDWR | os.O_CREAT | os.O_EXCL | os.O_NOFOLLOW,
-                                 0o600, dir_fd=directory_fd)
-                    stream = os.fdopen(fd, 'w+b')
-                else:
-                    stream = owned.open('x+b')
-                with stream:
-                    if stream.write(data) != len(data):
-                        raise OSError('short storage publication write')
-                    stream.flush(); os.fsync(stream.fileno())
-                    stream.seek(0)
-                    if stream.read(len(data) + 1) != data:
-                        raise ValueError('owned publication changed')
+                from ._atomic_publication import publish_bytes
                 try:
-                    # This inode belongs to the private workspace, never the
-                    # mutable mounted pending pathname inspected above.
-                    if os.name == 'posix':
-                        os.link('payload', destination, src_dir_fd=directory_fd, follow_symlinks=False)
-                    else:
-                        os.link(owned, destination)
+                    publish_bytes(owned, data, destination, directory_fd)
                 except FileExistsError:
                     if sha(bounded_file_bytes(destination, maximum)) != key:
                         raise ValueError('existing object corrupt')
@@ -299,7 +282,10 @@ class StorageBackend:
                 # Publication can succeed even when its acknowledgement fails.
                 # Abort only clears pending state; it cannot prove rollback.
                 row['state'] = 'indeterminate-commit'
-                self._call('commit', transaction, deadline=deadline)
+                # Also bound kernel exclusion lifetime below Darwin's lease
+                # break interval. Unsupported protection fails before publish.
+                commit_deadline = min(deadline, time.monotonic() + self.worker.commit_seconds) if self.worker.commit_seconds else deadline
+                self._call('commit', transaction, deadline=commit_deadline)
                 row['state'] = 'published-unverified'
                 if not self.verify(key, _deadline=deadline):
                     raise ValueError('published content checksum mismatch')
@@ -382,6 +368,7 @@ class StorageBackend:
                  'bytes_written': self.bytes_written, 'bytes_requested': self.bytes_requested, 'journal': list(self.journal),
                  'direct_dma': None, 'zero_copy': None, 'hardware_accepted': False,
                  'execution_boundary': 'owned-process-tree', 'timeout_enforcement': 'owned-process-tree', 'timeout_seconds': self.config.timeout_seconds,
+                 'protected_mounted_commit_seconds': self.worker.commit_seconds,
                  'logical_mutation': False, 'fallback': 'local-filesystem', 'durability': self.config.durability}
         return {**value, 'receipt_sha256': identity(value)}
 

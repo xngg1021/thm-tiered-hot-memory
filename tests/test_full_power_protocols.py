@@ -159,6 +159,20 @@ class PhysicalComputeTests(unittest.TestCase):
         rows,_=p.search([[1,0]],2,generation='g'); self.assertEqual(rows[0][0],['a','b'])
         p.close()
 
+    def test_multidevice_capacity_refuses_before_advanced_index_copy(self):
+        class NoCopy(np.ndarray):
+            def __getitem__(self, key):
+                if isinstance(key, list):
+                    raise AssertionError('over-budget shard copied before admission')
+                return super().__getitem__(key)
+        matrix=np.ones((8,2),dtype=np.float32).view(NoCopy)
+        provider=mock.Mock();index=MultiDeviceIndex([provider],budgets=[1])
+        ident=IndexIdentity('s','g','ep','multi','1','cfg')
+        with mock.patch('numpy.asarray',return_value=matrix):
+            with self.assertRaisesRegex(MemoryError,'shard capacity'):
+                index.build(matrix,list(range(8)),ident)
+        provider.build.assert_not_called();index.close()
+
     def test_joint_unknown_fails_closed_and_named_order(self):
         c={k:k for k in ('logical_object','representation','compute_profile','placement','transfer_plan','resident_index','runtime_provider')}
         c.update(generation='g',profile_identity='p',semantic_safe=True,
