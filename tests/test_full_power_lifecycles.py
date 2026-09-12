@@ -92,9 +92,10 @@ class StorageTests(unittest.TestCase):
         self.assertEqual(b.journal[-1]['state'], 'indeterminate-commit')
 
     def test_corruption_and_generation_fail_closed(self):
-        with tempfile.TemporaryDirectory() as tmp:
+        from contextlib import ExitStack
+        with tempfile.TemporaryDirectory() as tmp, ExitStack() as cleanup:
             b = StorageBackend(BackendConfig('cxl-type3', 'target', 'g'), MountedFilesystemTransport(tmp))
-            self.addCleanup(b.close)
+            cleanup.callback(b.close)
             key = hashlib.sha256(b'abc').hexdigest()
             (Path(tmp) / (key + '.seg')).write_bytes(b'abc')
             with self.assertRaises(ValueError):

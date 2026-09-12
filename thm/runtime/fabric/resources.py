@@ -121,14 +121,22 @@ class ChildBudget:
             entries = list(proc_root.iterdir())
         except FileNotFoundError:
             return None
+        owned = []
         for root in entries:
             if not root.name.isdigit():
                 continue
             try:
                 # Filter with the public process-group syscall before opening
                 # potentially protected /proc records belonging to other users.
-                if os.getpgid(int(root.name)) != int(pgid):
-                    continue
+                if os.getpgid(int(root.name)) == int(pgid):
+                    owned.append(root)
+            except ProcessLookupError:
+                continue
+        # Capture membership before a leader read can enter an exit wait. A
+        # helper could disappear during that wait without lifetime accounting.
+        has_helpers = any(int(root.name) != self.process.pid for root in owned)
+        for root in owned:
+            try:
                 fields = (root/'stat').read_text().rsplit(')', 1)[1].split()
                 if len(fields) < 13 or int(fields[2]) != int(pgid):
                     continue
@@ -139,6 +147,8 @@ class ChildBudget:
             except (FileNotFoundError, ProcessLookupError):
                 continue
             except PermissionError as denied:
+                if has_helpers:
+                    raise RuntimeError('shadow helper accounting unavailable during leader exit') from denied
                 # Re-read state after a denied sample; exited entries do not
                 # represent live resource usage. Preserve the concurrent fix.
                 try:

@@ -176,6 +176,9 @@ class LinuxTreeBudgetTests(unittest.TestCase):
                      mock.patch.object(Path, 'read_text', protected_read):
                     if scenario == 'exited-leader':
                         self.assertIsNone(budget._linux_usage(root, pgid=100))
+                    elif scenario == 'helper':
+                        with self.assertRaisesRegex(RuntimeError, 'helper accounting unavailable'):
+                            budget._linux_usage(root, pgid=100)
                     else:
                         with self.assertRaises(PermissionError):
                             budget._linux_usage(root, pgid=100)
@@ -183,6 +186,30 @@ class LinuxTreeBudgetTests(unittest.TestCase):
                     budget.process.wait.assert_not_called()
                 else:
                     budget.process.wait.assert_called_once_with(timeout=.2)
+
+    def test_denied_leader_never_waits_away_a_captured_helper(self):
+        budget = self._budget()
+        with tempfile.TemporaryDirectory() as temp:
+            root = Path(temp)
+            self._proc(root, 100, 100, 100, 10, 5, 10, 20)
+            self._proc(root, 101, 100, 100, 10, 5, 10, 20)
+            def lose_helper(**kwargs):
+                for entry in (root/'101').iterdir(): entry.unlink()
+                (root/'101').rmdir()
+                return 0
+            budget.process.wait = mock.Mock(side_effect=lose_helper)
+            read_text = Path.read_text
+            def denied_leader(path, *args, **kwargs):
+                if path.parent.name == '100' and path.name == 'io':
+                    raise PermissionError('leader I/O unavailable')
+                return read_text(path, *args, **kwargs)
+            with mock.patch.object(os, 'sysconf', return_value=100, create=True), \
+                 mock.patch.object(os, 'getpgid', return_value=100, create=True), \
+                 mock.patch.object(Path, 'read_text', denied_leader):
+                with self.assertRaisesRegex(RuntimeError, 'helper accounting unavailable'):
+                    budget._linux_usage(root, pgid=100)
+            budget.process.wait.assert_not_called()
+            self.assertTrue((root/'101').exists())
 
     def test_reaped_helper_activity_fails_closed_in_lifetime_gate(self):
         budget = self._budget()
