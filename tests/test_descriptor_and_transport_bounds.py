@@ -86,14 +86,18 @@ class TransportBoundsTests(unittest.TestCase):
     def test_group_permission_error_only_ignored_after_worker_exit(self):
         from thm.physical.transport_worker import stop_tree
         import subprocess
-        for exited in (True,False,'exiting'):
-            with self.subTest(exited=exited):
-                process=mock.Mock();process.poll.return_value=0 if exited is True else None
-                if exited is False:process.wait.side_effect=subprocess.TimeoutExpired('worker',.2)
-                with mock.patch('os.killpg',side_effect=PermissionError):
-                    if exited:stop_tree(process,None)
+        for state in ('gone','exiting','live-leader','denied-helper','live-helper'):
+            with self.subTest(state=state):
+                process=mock.Mock();process.poll.return_value=0 if state=='gone' else None
+                if state=='live-leader':process.wait.side_effect=subprocess.TimeoutExpired('worker',.2)
+                group_result = (ProcessLookupError if state in ('gone','exiting') else
+                                PermissionError if state=='denied-helper' else None)
+                with mock.patch('os.killpg',side_effect=[PermissionError,group_result]) as kill:
+                    if state in ('gone','exiting'):stop_tree(process,None)
                     else:
                         with self.assertRaises(PermissionError):stop_tree(process,None)
+                if state != 'live-leader':self.assertEqual(kill.call_args.args[1],0)
+
 
 
 if __name__=='__main__':unittest.main()

@@ -159,6 +159,16 @@ class LinuxTreeBudgetTests(unittest.TestCase):
             with self.assertRaisesRegex(RuntimeError, 'lifetime resource evidence missing'):
                 budget.check_lifetime(None)
 
+    def test_leader_exit_between_proc_sample_and_poll_is_not_a_helper(self):
+        budget = self._budget()
+        budget.process = SimpleNamespace(pid=100, poll=lambda: 0)
+        observed = {'ram_bytes': 1, 'cpu_seconds': 0, 'bytes_read': 0,
+                    'bytes_written': 0, 'processes': 1}
+        with mock.patch('sys.platform', 'linux'), mock.patch.object(
+                budget, '_linux_usage', side_effect=[observed, None]) as scan:
+            budget.check()
+        self.assertEqual(scan.call_count, 2)
+
     def test_surviving_helper_after_leader_exit_fails_closed(self):
         budget = self._budget()
         budget.process = SimpleNamespace(pid=100, poll=lambda: 0)

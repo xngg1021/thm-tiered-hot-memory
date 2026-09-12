@@ -15,29 +15,7 @@ import tempfile
 import time
 
 
-def stop_tree(process, budget):
-    if os.name == 'posix':
-        try:
-            os.killpg(process.pid, signal.SIGKILL)
-        except ProcessLookupError:
-            pass
-        except PermissionError as denied:
-            # Darwin may reject the group during the leader's exit/reap window.
-            # A bounded wait distinguishes that race from a live denied worker.
-            try:
-                process.wait(timeout=.2)
-            except subprocess.TimeoutExpired:
-                raise denied
-    elif budget is not None:
-        budget.close()
-    elif process.poll() is None:
-        process.kill()  # no supplied code runs before Job Object attachment
-    if process.poll() is None:
-        process.kill()
-    process.wait(timeout=5)
-    if process.stdin and not process.stdin.closed:
-        process.stdin.close()
-
+from thm.runtime.fabric.resources import stop_owned_process_tree as stop_tree
 
 class TransportWorker:
     def __init__(self, definition, maximum):

@@ -62,6 +62,8 @@ class EnvironmentRunner:
             source.write_bytes(payload)
             env=dict(os.environ)
             env['PYTHONPATH']=os.pathsep.join(str(Path(p).resolve()) for p in sys.path if Path(p or '.').is_dir())
+            if time.monotonic()-start >= self.wall_seconds:
+                raise TimeoutError('environment deadline exhausted before launch')
             process=subprocess.Popen([sys.executable,'-m','thm.evaluation.environment_worker',str(source),str(output)],
                 stdin=subprocess.PIPE,stdout=subprocess.DEVNULL,stderr=subprocess.DEVNULL,
                 start_new_session=os.name=='posix',env=env)
@@ -92,20 +94,8 @@ class EnvironmentRunner:
                 receipt['execution_boundary']='owned-process-tree'
                 return {**receipt,'receipt_sha256':digest(receipt)},raw
             finally:
-                # Kill helpers even after the leader exits; a hung close is bounded too.
-                if os.name=='posix':
-                    try:os.killpg(process.pid,signal.SIGKILL)
-                    except ProcessLookupError:pass
-                    except PermissionError as denied:
-                        try:process.wait(timeout=.2)
-                        except subprocess.TimeoutExpired:raise denied
-                elif budget is not None:
-                    budget.close()
-                elif process.poll() is None:
-                    subprocess.run(['taskkill','/PID',str(process.pid),'/T','/F'],capture_output=True,timeout=5)
-                if process.poll() is None:process.kill()
-                process.wait(timeout=5)
-                if process.stdin and not process.stdin.closed:process.stdin.close()
+                from thm.runtime.fabric.resources import stop_owned_process_tree
+                stop_owned_process_tree(process, budget)
 
 
 def execute_environment(environment, identity, task, policy, memory_factory, maximum_steps):

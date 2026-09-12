@@ -421,6 +421,7 @@ class ServiceTests(unittest.TestCase):
         try:
             self.assertTrue(explorer.submit({'operation':'probe','provider':'host.device'},lambda r:(results.append(r),done.set())))
             self.assertTrue(done.wait(6),explorer.last_receipt)
+            self.assertIn('availability', results[0], {'callback': results[0], 'receipt': explorer.last_receipt})
             self.assertEqual(results[0]['availability'],'available')
         finally:
             explorer.close()

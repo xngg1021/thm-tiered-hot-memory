@@ -156,7 +156,11 @@ class ChildBudget:
             # still publish its result.  The process-group ID remains known even
             # after Popen has reaped the leader.
             if self.process.poll() is not None and observed.get('processes', 0):
-                raise RuntimeError('shadow helper survived worker leader')
+                # The leader may exit between /proc sampling and poll/reap.
+                # Re-scan after reaping before classifying a surviving helper.
+                remaining = self._linux_usage()
+                if remaining and remaining.get('processes', 0):
+                    raise RuntimeError('shadow helper survived worker leader')
             if self._over(observed):
                 raise RuntimeError('shadow observed resource budget exceeded')
         elif sys.platform == 'darwin':
@@ -233,3 +237,37 @@ class ChildBudget:
     def close(self):
         if self.job:
             self.kernel.CloseHandle(self.job); self.job = None
+
+
+def stop_owned_process_tree(process, budget):
+    import signal
+    import subprocess
+    if os.name == 'posix':
+        try:
+            os.killpg(process.pid, signal.SIGKILL)
+        except ProcessLookupError:
+            pass
+        except PermissionError as denied:
+            # Darwin may reject the group during the leader's exit/reap window.
+            # A bounded wait distinguishes that race from a live denied worker.
+            try:
+                process.wait(timeout=.2)
+            except subprocess.TimeoutExpired:
+                raise denied
+            try:
+                os.killpg(process.pid, 0)
+            except ProcessLookupError:
+                pass
+            except PermissionError:
+                raise denied
+            else:
+                raise denied  # a surviving group is never certified as cleaned
+    elif budget is not None:
+        budget.close()
+    elif process.poll() is None:
+        process.kill()  # no supplied code runs before Job Object attachment
+    if process.poll() is None:
+        process.kill()
+    process.wait(timeout=5)
+    if process.stdin and not process.stdin.closed:
+        process.stdin.close()
