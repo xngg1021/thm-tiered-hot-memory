@@ -1,4 +1,4 @@
-from dataclasses import replace
+from dataclasses import asdict, replace
 import hashlib
 import json
 from pathlib import Path
@@ -71,6 +71,19 @@ class OutcomeBridgeTests(unittest.TestCase):
         scorer = OfficialScorerBridge(lambda answer,ground_truth,rubric:float(answer==ground_truth),evaluator_id='official-fixture',implementation_sha256='b'*64)
         score = scorer.score(task, GroundTruth('a', answer='gold'), 'gold', trace_sha256=hashlib.sha256(trace).hexdigest())
         self.assertEqual(score['answer_accuracy'],1)
+
+    def test_bridge_observations_require_this_receipt_identity(self):
+        source = receipt()
+        valid = Measurement(12, 'token', 1, 'sum', source['receipt_sha256'])
+        for value in (valid, asdict(valid)):
+            exported = export_evidence(source, source_commit='c'*40,
+                                       observations={'full_history_tokens': value})
+            self.assertEqual(exported['measurements']['full_history_tokens']['value'], 12)
+        foreign = replace(valid, source_sha256='f'*64)
+        for value in (foreign, asdict(foreign)):
+            with self.assertRaisesRegex(ValueError, 'different source receipt'):
+                export_evidence(source, source_commit='c'*40,
+                                observations={'full_history_tokens': value})
 
     def test_all_benchmarks_accept_independent_feature_ab_and_track_b(self):
         from thm.evaluation.adapters import ADAPTERS
@@ -182,6 +195,45 @@ class PhysicalComputeTests(unittest.TestCase):
         self.assertEqual(r['predicted_latency_ms'],7)
         c['metrics']['transfer_ms']=None
         self.assertIsNone(planner.choose([c],objective='bulk',constraints={},current_generation='g',profile_identity='p')['selected'])
+
+    def test_multidevice_budget_precedes_float32_normalization(self):
+        ident = IndexIdentity('s','g','ep','multi','1','cfg')
+        index = MultiDeviceIndex([ExactHost(), ExactHost()], budgets=[8, 8])
+        for matrix in (np.ones((8, 2), dtype=np.float64), [[1, 1]]*8):
+            with mock.patch('numpy.asarray', side_effect=AssertionError('allocated before admission')) as convert:
+                with self.assertRaisesRegex(MemoryError, 'before normalization'):
+                    index.build(matrix, list(range(8)), ident)
+                convert.assert_not_called()
+        for matrix in (np.eye(2, dtype=np.float64), [[1, 0], [0, 1]]):
+            index.build(matrix, ['a', 'b'], ident)
+            self.assertEqual(index.search([[1, 0]], 1, generation='g')[0][0][0], ['a'])
+        index.close()
+
+    def test_multidevice_published_generation_survives_exhaustive_retirement(self):
+        ident = IndexIdentity('s','g','ep','multi','1','cfg')
+        index = MultiDeviceIndex([ExactHost(), ExactHost()], budgets=[64, 64])
+        index.build([[1, 0], [0, 1]], ['a', 'b'], ident)
+        attempts = []
+        failing = [True]
+        def retire_first():
+            attempts.append('first')
+            if failing[0]:
+                raise OSError('device close failed')
+        index.shards[0][1].close_callback = retire_first
+        index.shards[1][1].close_callback = lambda: attempts.append('second')
+        index.build([[0, 1], [1, 0]], ['a', 'b'], replace(ident, generation='new'))
+        self.assertEqual(attempts, ['first', 'second'])
+        rows, evidence = index.search([[1, 0]], 1, generation='new')
+        self.assertEqual(rows[0][0], ['b'])
+        self.assertEqual(evidence['retirement_errors'], [{'stage': 'retire', 'error': 'OSError'}])
+        with self.assertRaisesRegex(RuntimeError, 'retirement incomplete'):
+            index.build([[1, 0], [0, 1]], ['a', 'b'], ident)
+        self.assertEqual(index.generation, 'new')
+        self.assertEqual(len(index.retired), 1)
+        failing[0] = False
+        index.close()
+        self.assertEqual(index.retired, [])
+        self.assertEqual(attempts, ['first', 'second', 'first', 'first'])
 
     def test_all_native_seams_have_executable_configured_lifecycle(self):
         for spec in BUILTINS:

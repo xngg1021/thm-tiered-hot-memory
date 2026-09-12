@@ -4,7 +4,7 @@
   "repository": "xngg1021/thm-tiered-hot-memory",
   "version": "1.5.0",
   "implementation_status": "implemented",
-  "implementation_sha256": "c3798447f8c575ea4e1839c41e0308abed392acd2c5aaf14751e6a3602b03404",
+  "implementation_sha256": "ecd59ff25141dbee8b418d31570cb73b541b7a4918967007e25640fdca444b5d",
   "archive_branch": "archive/v1.5.0-stable",
   "accepted_merge_commit": null,
   "historical": {
@@ -61,7 +61,11 @@
       "Bound mounted pending/existing object descriptor reads and publish only a private frozen copy through a pinned directory",
       "Eliminate DiskANN generated build files using the public memory-only construction/insertion API",
       "Retain kernel-enforced write exclusion through descriptor publication; unsupported mounted filesystems/OS permissions fail closed",
-      "Reject over-budget shards using prospective byte counts before NumPy advanced-index copies"
+      "Reject over-budget shards using prospective byte counts before NumPy advanced-index copies",
+      "Preflight float32 shard capacity before normalization and reject ragged input before allocation",
+      "Bind supplied CE observations to the exported source receipt SHA256",
+      "Retain mounted root descriptor identity across relative operations and reject replacements before worker activation",
+      "Contain exhaustive old-shard retirement failures after publication and retain failed handles for bounded retry"
     ],
     "ci_repairs": [
       "Preserve concurrent d00b237 Darwin EPERM cleanup fix; live-worker permission failures remain errors",
@@ -1891,7 +1895,7 @@
     }
   ],
   "validation": {
-    "local_unit_tests": 636,
+    "local_unit_tests": 644,
     "local_unit_skipped": 3,
     "numeric_audit_tests": 10,
     "benchmark_fixtures": 5,

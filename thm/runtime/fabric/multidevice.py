@@ -10,16 +10,19 @@ class MultiDeviceIndex:
             raise ValueError('bounded provider/budget topology required')
         self.providers, self.budgets = tuple(providers), tuple(budgets)
         self.shards, self.ids, self.generation = [], (), None
+        self.retired, self.retirement_errors = [], []
         self.lock, self.closed = threading.RLock(), False
-        self.retirement_errors = []
 
-    def _retire(self, shards):
-        for _, handle in shards:
+    def _retire(self, handles, stage):
+        failed = []
+        for provider, handle in handles:
             try:
                 handle.close()
             except Exception as exc:
-                self.retirement_errors.append(type(exc).__name__)
-                self.retirement_errors = self.retirement_errors[-32:]
+                failed.append((provider, handle))
+                self.retirement_errors.append({'stage': stage, 'error': type(exc).__name__})
+        self.retirement_errors[:] = self.retirement_errors[-128:]
+        return failed
 
     def build(self, matrix, ids, identity):
         import numpy as np
@@ -40,15 +43,17 @@ class MultiDeviceIndex:
                 shape = (len(matrix), columns)
             else:
                 raise ValueError('array or rectangular sequence required')
-            if len(shape) != 2 or shape[0] != len(ids) or not len(ids) or len(set(ids)) != len(ids):
+            if len(shape) != 2 or shape[0] != len(ids) or not len(ids) or shape[1] < 1 or len(set(ids)) != len(ids):
                 raise ValueError('complete vector snapshot required')
             for i, budget in enumerate(self.budgets):
-                rows = len(range(i, shape[0], len(self.providers)))
-                if rows * shape[1] * 4 > budget:
-                    raise MemoryError('shard capacity exceeded')
+                if len(range(i, shape[0], len(self.providers))) * shape[1] * 4 > budget:
+                    raise MemoryError('shard capacity exceeded before normalization')
             matrix = np.asarray(matrix, dtype=np.float32)
-            if matrix.shape != shape or not np.isfinite(matrix).all():
+            if matrix.shape != tuple(shape) or len(set(ids)) != len(ids) or not np.isfinite(matrix).all():
                 raise ValueError('complete finite vector snapshot required')
+            self.retired = self._retire(self.retired, 'retry')
+            if self.retired:
+                raise RuntimeError('previous shard retirement incomplete')
             new = []
             try:
                 for i, (provider, budget) in enumerate(zip(self.providers, self.budgets)):
@@ -64,11 +69,13 @@ class MultiDeviceIndex:
                     if handle.bytes > budget:
                         raise MemoryError('native shard allocation exceeded capacity')
             except Exception:
-                self._retire(new)
+                self.retired.extend(self._retire(new, 'failed-build'))
                 raise
             old, self.shards = self.shards, new
             self.ids, self.generation = tuple(ids), identity.generation
-            self._retire(old)
+            # Publication succeeded. Cleanup failures are separate receipts and
+            # retained for bounded retry; they must not turn this into failure.
+            self.retired.extend(self._retire(old, 'retire'))
 
     def search(self, queries, top_k, *, generation):
         with self.lock:
@@ -100,6 +107,6 @@ class MultiDeviceIndex:
 
     def close(self):
         with self.lock:
-            self._retire(self.shards)
+            self.retired = self._retire(self.shards + self.retired, 'close')
             self.shards = []
             self.closed = True

@@ -1,5 +1,5 @@
 """Regression evidence for the final publication, descriptor and callback fixes."""
-from contextlib import contextmanager
+from contextlib import contextmanager, ExitStack
 from dataclasses import replace
 import hashlib
 import io
@@ -75,14 +75,14 @@ class AttackedMountedPublication(MountedFilesystemTransport):
     def commit(self, transaction):
         from thm.physical import _atomic_publication as publication
         publish = publication._publish_fd
-        def attack(fd, destination, directory_fd):
+        def attack(fd, destination, directory_fd, **kwargs):
             # A real same-credential process targets the review's discoverable
             # private payload. Kernel lease conflict must stop publication.
             path = str(self.root / ('.thm-' + transaction + '.publication') / 'payload')
             subprocess.run([sys.executable, '-c',
                 'import os,sys; fd=os.open(sys.argv[1],os.O_WRONLY|os.O_NONBLOCK); os.write(fd,b"bad")',
                 path], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, timeout=5)
-            return publish(fd, destination, directory_fd)
+            return publish(fd, destination, directory_fd, **kwargs)
         with mock.patch.object(publication, '_publish_fd', attack):
             return super().commit(transaction)
 
@@ -111,14 +111,48 @@ class LostS3Acknowledgement(FakeS3Client):
 
 
 class MountedPublicationTests(unittest.TestCase):
+    def test_replaced_root_is_rejected_before_first_operation_and_worker_transfer(self):
+        import pickle
+        with tempfile.TemporaryDirectory() as tmp, ExitStack() as cleanup:
+            root = Path(tmp)/'root'; root.mkdir()
+            transport = MountedFilesystemTransport(root); cleanup.callback(transport.close)
+            transferred = pickle.loads(pickle.dumps(transport)); cleanup.callback(transferred.close)
+            root.rename(Path(tmp)/'original'); root.mkdir()
+            for candidate in (transport, transferred):
+                with self.assertRaisesRegex(ValueError, 'root identity changed'):
+                    candidate.stage('a'*32, hashlib.sha256(b'abc').hexdigest(), b'abc')
+            self.assertEqual(list(root.iterdir()), [])
+
+    def test_open_root_identity_survives_rename_or_windows_denies_it(self):
+        with tempfile.TemporaryDirectory() as tmp, ExitStack() as cleanup:
+            root = Path(tmp)/'root'; root.mkdir(); moved = Path(tmp)/'original'
+            transport = MountedFilesystemTransport(root); cleanup.callback(transport.close)
+            data = b'abc'; key = hashlib.sha256(data).hexdigest(); transaction = 'e'*32
+            transport.stage(transaction, key, data)
+            if os.name == 'nt':
+                with self.assertRaises(OSError): root.rename(moved)
+                actual = root
+            else:
+                root.rename(moved); root.mkdir(); actual = moved
+            if sys.platform == 'darwin':
+                with self.assertRaises(OSError): transport.commit(transaction)
+                transport.abort(transaction)
+                (actual/(key+'.seg')).write_bytes(data)
+            else:
+                transport.commit(transaction)
+            self.assertEqual(transport.size(key), len(data))
+            self.assertEqual(transport.read(key, 0, len(data)), data)
+            self.assertEqual((actual/(key+'.seg')).read_bytes(), data)
+            if os.name == 'posix': self.assertEqual(list(root.iterdir()), [])
+
     def test_pending_growth_and_substitution_are_bounded_before_publication(self):
         for kind in ('growth', 'symlink', 'fifo'):
             if kind == 'fifo' and not hasattr(os, 'mkfifo'):
                 continue
             if kind == 'symlink' and os.name == 'nt':
                 continue
-            with self.subTest(kind=kind), tempfile.TemporaryDirectory() as tmp:
-                transport=MountedFilesystemTransport(tmp);transaction='a'*32
+            with self.subTest(kind=kind), tempfile.TemporaryDirectory() as tmp, ExitStack() as cleanup:
+                transport=MountedFilesystemTransport(tmp);cleanup.callback(transport.close);transaction='a'*32
                 data=b'abc';key=hashlib.sha256(data).hexdigest()
                 transport.stage(transaction,key,data)
                 path=transport.pending[transaction][0]
@@ -135,8 +169,8 @@ class MountedPublicationTests(unittest.TestCase):
                 transport.abort(transaction)
 
     def test_only_frozen_private_inode_is_linked_and_existing_reads_are_bounded(self):
-        with tempfile.TemporaryDirectory() as tmp:
-            transport=MountedFilesystemTransport(tmp);transaction='b'*32
+        with tempfile.TemporaryDirectory() as tmp, ExitStack() as cleanup:
+            transport=MountedFilesystemTransport(tmp);cleanup.callback(transport.close);transaction='b'*32
             data=b'original';key=hashlib.sha256(data).hexdigest()
             transport.stage(transaction,key,data);pending=transport.pending[transaction][0]
             if sys.platform == 'darwin':
@@ -150,7 +184,7 @@ class MountedPublicationTests(unittest.TestCase):
                 pending.write_bytes(b'replaced original while publishing')
                 inode=os.stat(source,dir_fd=kwargs.get('src_dir_fd')).st_ino
                 link(source,destination,**kwargs)
-                self.assertEqual(os.stat(destination).st_ino,inode)
+                self.assertEqual(os.stat(destination,dir_fd=kwargs.get('dst_dir_fd')).st_ino,inode)
             with mock.patch('thm.physical.backends.os.link',replace_original):
                 transport.commit(transaction)
             destination=Path(tmp)/(key+'.seg')
@@ -163,8 +197,8 @@ class MountedPublicationTests(unittest.TestCase):
 
     @unittest.skipUnless(os.name == 'posix', 'POSIX kernel lease capability gate')
     def test_missing_kernel_protection_never_publishes(self):
-        with tempfile.TemporaryDirectory() as tmp:
-            transport=MountedFilesystemTransport(tmp);transaction='c'*32
+        with tempfile.TemporaryDirectory() as tmp, ExitStack() as cleanup:
+            transport=MountedFilesystemTransport(tmp);cleanup.callback(transport.close);transaction='c'*32
             key=hashlib.sha256(b'abc').hexdigest();transport.stage(transaction,key,b'abc')
             with mock.patch('fcntl.fcntl',side_effect=OSError('lease unavailable')):
                 with self.assertRaisesRegex(OSError,'kernel-protected'):
@@ -175,15 +209,15 @@ class MountedPublicationTests(unittest.TestCase):
     @unittest.skipUnless(os.name == 'nt', 'Windows mandatory share denial')
     def test_windows_payload_stays_write_protected_until_handle_rename(self):
         from thm.physical import _atomic_publication as publication
-        with tempfile.TemporaryDirectory() as tmp:
-            transport=MountedFilesystemTransport(tmp);transaction='d'*32
+        with tempfile.TemporaryDirectory() as tmp, ExitStack() as cleanup:
+            transport=MountedFilesystemTransport(tmp);cleanup.callback(transport.close);transaction='d'*32
             data=b'abc';key=hashlib.sha256(data).hexdigest();transport.stage(transaction,key,data)
             publish=publication._publish_fd
-            def attack(fd,destination,directory_fd):
+            def attack(fd,destination,directory_fd,**kwargs):
                 path=Path(tmp)/('.thm-'+transaction+'.publication')/'payload'
                 with self.assertRaises(OSError):
                     with path.open('wb') as writer:writer.write(b'bad')
-                return publish(fd,destination,directory_fd)
+                return publish(fd,destination,directory_fd,**kwargs)
             with mock.patch.object(publication,'_publish_fd',attack):transport.commit(transaction)
             self.assertEqual((Path(tmp)/(key+'.seg')).read_bytes(),data)
 

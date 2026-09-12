@@ -33,7 +33,7 @@ class MultiDeviceAdmissionTests(unittest.TestCase):
         old[1].close_callback.assert_called_once()
         rows, receipt = index.search([[1, 0]], 1, generation='new')
         self.assertEqual(rows[0][0], ['b'])
-        self.assertEqual(receipt['retirement_errors'], ['RuntimeError'])
+        self.assertEqual(receipt['retirement_errors'], [{'stage': 'retire', 'error': 'RuntimeError'}])
         index.close()
 
 

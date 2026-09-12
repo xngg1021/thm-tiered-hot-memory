@@ -8,7 +8,6 @@ from dataclasses import asdict, dataclass
 import hashlib
 import os
 from pathlib import Path
-import shutil
 import threading
 import time
 import uuid
@@ -105,17 +104,64 @@ class MountedFilesystemTransport:
     """Atomic local/mounted publication; durability depends on the mounted service."""
     evidence = 'environment-unvalidated'
     def __init__(self, root):
-        self.root = Path(root)
-        if self.root.is_symlink() or not self.root.is_dir():
-            raise ValueError('existing non-symlink mounted root required')
+        self.root = Path(root).absolute()
+        with validated_descriptor(self.root, directory=True) as (_, info):
+            self.root_identity = (info.st_dev, info.st_ino)
+        self._root_fd = None
         self.pending = {}
+
+    def __getstate__(self):
+        if self.pending:
+            raise TypeError('active mounted transactions cannot be transferred')
+        return {**self.__dict__, '_root_fd': None}
+
+    def _root_descriptor(self):
+        if self._root_fd is None:
+            with validated_descriptor(self.root, directory=True) as (fd, info):
+                if (info.st_dev, info.st_ino) != self.root_identity:
+                    raise ValueError('configured mounted root identity changed')
+                self._root_fd = os.dup(fd)
+        return self._root_fd
+
+    def _entry(self, path):
+        fd = self._root_descriptor()
+        return (Path(path).name, fd) if os.name == 'posix' else (self.root / Path(path).name, None)
+
+    def _descriptor(self, path, *, directory=False):
+        name, fd = self._entry(path)
+        return validated_descriptor(name, directory=directory, dir_fd=fd)
+
+    def _read_bounded(self, path, maximum):
+        name, fd = self._entry(path)
+        return bounded_file_bytes(name, maximum, dir_fd=fd)
+
+    def _unlink(self, path):
+        name, fd = self._entry(path)
+        try:
+            os.unlink(name, dir_fd=fd)
+        except FileNotFoundError:
+            pass
+
+    def _remove_publication(self, path, expected=None):
+        try:
+            with self._descriptor(path, directory=True) as (fd, info):
+                if expected is not None and (info.st_dev, info.st_ino) != expected:
+                    raise ValueError('owned publication directory identity changed')
+                try:
+                    if os.name == 'posix':
+                        os.unlink('payload', dir_fd=fd)
+                    else:
+                        (path / 'payload').unlink()
+                except FileNotFoundError:
+                    pass
+        except FileNotFoundError:
+            return
+        name, fd = self._entry(path)
+        os.rmdir(name, dir_fd=fd)
 
     def _path(self, key):
         check_sha(key)
-        path = self.root / (key + '.seg')
-        if path.is_symlink():
-            raise ValueError('symlink object refused')
-        return path
+        return self.root / (key + '.seg')
 
     def _pending_path(self, transaction):
         if len(transaction) != 32 or any(c not in '0123456789abcdef' for c in transaction):
@@ -125,15 +171,21 @@ class MountedFilesystemTransport:
     def stage(self, transaction, key, data):
         check_sha(key)
         path = self._pending_path(transaction)
+        name, root_fd = self._entry(path)
+        created = False
         try:
-            with path.open('xb') as f:
+            fd = os.open(name, os.O_WRONLY | os.O_CREAT | os.O_EXCL | getattr(os, 'O_NOFOLLOW', 0),
+                         0o600, dir_fd=root_fd)
+            created = True
+            with os.fdopen(fd, 'wb') as f:
                 if f.write(data) != len(data):
                     raise OSError('short storage stage write')
                 f.flush()
                 os.fsync(f.fileno())
             self.pending[transaction] = (path, key, len(data))
         except Exception:
-            path.unlink(missing_ok=True)
+            if created:
+                self._unlink(path)
             raise
 
     def commit(self, transaction):
@@ -141,34 +193,36 @@ class MountedFilesystemTransport:
         destination = self._path(key)
         # Read the untrusted mounted entry once, through its checked descriptor.
         # Only these bounded, checksum-validated bytes become publication input.
-        data = bounded_file_bytes(path, maximum)
+        data = self._read_bounded(path, maximum)
         if sha(data) != key:
             raise ValueError('staged content changed')
         publication = self.root / ('.thm-' + transaction + '.publication')
-        publication.mkdir(mode=0o700)  # private, create-only, same-filesystem workspace
+        name, root_fd = self._entry(publication)
+        os.mkdir(name, mode=0o700, dir_fd=root_fd)
+        publication_identity = None
         try:
             owned = publication / 'payload'
-            with validated_descriptor(publication, directory=True) as (directory_fd, _):
+            with self._descriptor(publication, directory=True) as (directory_fd, info):
+                publication_identity = (info.st_dev, info.st_ino)
                 from ._atomic_publication import publish_bytes
                 try:
-                    publish_bytes(owned, data, destination, directory_fd)
+                    publish_bytes(owned, data, destination, directory_fd, destination_fd=self._root_descriptor())
                 except FileExistsError:
-                    if sha(bounded_file_bytes(destination, maximum)) != key:
+                    if sha(self._read_bounded(destination, maximum)) != key:
                         raise ValueError('existing object corrupt')
         finally:
-            shutil.rmtree(publication)
-        path.unlink()
+            self._remove_publication(publication, publication_identity)
+        self._unlink(path)
         del self.pending[transaction]
 
     def abort(self, transaction):
         value = self.pending.pop(transaction, None)
-        (value[0] if value else self._pending_path(transaction)).unlink(missing_ok=True)
+        self._unlink(value[0] if value else self._pending_path(transaction))
         publication = self.root / ('.thm-' + transaction + '.publication')
-        if publication.exists():
-            shutil.rmtree(publication)  # rmtree refuses a substituted directory symlink
+        self._remove_publication(publication)
 
     def read(self, key, offset, length):
-        with validated_descriptor(self._path(key)) as (fd, info):
+        with self._descriptor(self._path(key)) as (fd, info):
             if offset + length > info.st_size:
                 raise ValueError('short storage extent')
             os.lseek(fd, offset, os.SEEK_SET)
@@ -181,12 +235,24 @@ class MountedFilesystemTransport:
             return b''.join(chunks)
 
     def size(self, key):
-        with validated_descriptor(self._path(key)) as (_, info):
+        with self._descriptor(self._path(key)) as (_, info):
             return info.st_size
 
     def close(self):
-        for transaction in list(self.pending):
-            self.abort(transaction)
+        try:
+            for transaction in list(self.pending):
+                self.abort(transaction)
+        finally:
+            if self._root_fd is not None:
+                os.close(self._root_fd)
+                self._root_fd = None
+
+    def __del__(self):
+        if getattr(self, '_root_fd', None) is not None:
+            try:
+                os.close(self._root_fd)
+            except OSError:
+                pass
 
 
 class S3Transport:

@@ -65,8 +65,8 @@ def validated_descriptor(path, *, directory=False, expected=None, dir_fd=None):
         os.close(fd)
 
 
-def bounded_file_bytes(path, maximum):
-    with validated_descriptor(path) as (fd, info):
+def bounded_file_bytes(path, maximum, *, dir_fd=None):
+    with validated_descriptor(path, dir_fd=dir_fd) as (fd, info):
         if info.st_size > maximum:
             raise ValueError('bounded memory snapshot required')
         chunks, length = [], 0

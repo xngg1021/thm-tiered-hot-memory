@@ -31,7 +31,7 @@ def _windows_create(path):
         raise
 
 
-def _publish_fd(fd, destination, directory_fd):
+def _publish_fd(fd, destination, directory_fd, *, destination_fd=None):
     """Publish the protected descriptor, never resolve the mutable source name."""
     if os.name == 'nt':
         from ctypes import wintypes as w
@@ -52,14 +52,15 @@ def _publish_fd(fd, destination, directory_fd):
     elif sys.platform.startswith('linux'):
         # Passing dir_fd forces linkat(AT_SYMLINK_FOLLOW); /proc/self/fd resolves
         # the already-open protected inode even if its old name was replaced.
-        os.link('/proc/self/fd/' + str(fd), destination,
-                src_dir_fd=directory_fd, follow_symlinks=True)
+        os.link('/proc/self/fd/' + str(fd), Path(destination).name if destination_fd is not None else destination,
+                src_dir_fd=directory_fd, dst_dir_fd=destination_fd, follow_symlinks=True)
     elif sys.platform == 'darwin':
         libc = c.CDLL(None, use_errno=True)
         clone = libc.fclonefileat
         clone.argtypes = [c.c_int, c.c_int, c.c_char_p, c.c_uint32]
         clone.restype = c.c_int
-        if clone(fd, -2, os.fsencode(destination), 0):  # AT_FDCWD, create-only clone
+        if clone(fd, destination_fd if destination_fd is not None else -2,
+                 os.fsencode(Path(destination).name if destination_fd is not None else destination), 0):
             error = c.get_errno()
             if error == 17:
                 raise FileExistsError(str(destination))
@@ -68,7 +69,7 @@ def _publish_fd(fd, destination, directory_fd):
         raise OSError('protected mounted publication unavailable on this platform')
 
 
-def publish_bytes(path, data, destination, directory_fd):
+def publish_bytes(path, data, destination, directory_fd, *, destination_fd=None):
     """Validate and publish under a retained kernel exclusion boundary.
 
 StorageBackend bounds the whole mounted commit callback to one second. Linux
@@ -104,4 +105,4 @@ deadline; ordinary Python processes lacking its entitlement fail before publish.
         stream.seek(0)
         if stream.read(len(data) + 1) != data:
             raise ValueError('owned publication changed')
-        _publish_fd(fd, destination, directory_fd)
+        _publish_fd(fd, destination, directory_fd, destination_fd=destination_fd)
