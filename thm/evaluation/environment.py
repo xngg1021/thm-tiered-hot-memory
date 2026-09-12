@@ -96,8 +96,9 @@ class EnvironmentRunner:
                 if os.name=='posix':
                     try:os.killpg(process.pid,signal.SIGKILL)
                     except ProcessLookupError:pass
-                    except PermissionError:
-                        if process.poll() is None:raise
+                    except PermissionError as denied:
+                        try:process.wait(timeout=.2)
+                        except subprocess.TimeoutExpired:raise denied
                 elif budget is not None:
                     budget.close()
                 elif process.poll() is None:

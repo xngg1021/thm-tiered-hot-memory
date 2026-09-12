@@ -4,7 +4,7 @@
   "repository": "xngg1021/thm-tiered-hot-memory",
   "version": "1.5.0",
   "implementation_status": "implemented",
-  "implementation_sha256": "f6f3e9bbfef6831ad70dd4462073de625b595b8308bda55331267b8091acbea9",
+  "implementation_sha256": "3938f40a808c4183da6e01676fc5378c5202ff8221d654d6d1e01b04618dd9fb",
   "archive_branch": "archive/v1.5.0-stable",
   "accepted_merge_commit": null,
   "historical": {
@@ -58,7 +58,8 @@
     ],
     "ci_repairs": [
       "Preserve concurrent d00b237 Darwin EPERM cleanup fix; live-worker permission failures remain errors",
-      "Preserve concurrent 2bd6e51 Windows os.stat identity repair with descriptor-relative POSIX stat"
+      "Preserve concurrent 2bd6e51 Windows os.stat identity repair with descriptor-relative POSIX stat",
+      "Close Darwin exit/reap EPERM window using a bounded wait; live denied workers still fail"
     ]
   },
   "domains": [

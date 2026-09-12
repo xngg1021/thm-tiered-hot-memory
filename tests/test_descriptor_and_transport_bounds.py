@@ -85,9 +85,11 @@ class TransportBoundsTests(unittest.TestCase):
     @unittest.skipUnless(os.name=='posix','POSIX group cleanup')
     def test_group_permission_error_only_ignored_after_worker_exit(self):
         from thm.physical.transport_worker import stop_tree
-        for exited in (True,False):
+        import subprocess
+        for exited in (True,False,'exiting'):
             with self.subTest(exited=exited):
-                process=mock.Mock();process.poll.return_value=0 if exited else None
+                process=mock.Mock();process.poll.return_value=0 if exited is True else None
+                if exited is False:process.wait.side_effect=subprocess.TimeoutExpired('worker',.2)
                 with mock.patch('os.killpg',side_effect=PermissionError):
                     if exited:stop_tree(process,None)
                     else:

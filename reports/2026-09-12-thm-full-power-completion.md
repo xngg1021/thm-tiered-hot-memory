@@ -105,3 +105,5 @@ Remote corrective commit `02d62165e0403e36e322fdfd466e7d2f882ac952` was reconcil
 The concurrent macOS cleanup correction `d00b237b0fbcae28a6f2b233c02006ea52729c4e` is also preserved: an exited group may report EPERM on Darwin, while a permission failure for a live owned worker still propagates. Its regression is retained against the consolidated process boundary.
 
 The Windows enumeration repair from `2bd6e5186a74c576a598ea264363ee7ef5b73118` is preserved with its regression. File identities come from os.stat; on POSIX that stat is relative to the pinned directory descriptor.
+
+Exact-head macOS CI exposed the remaining exit/reap window: poll may briefly report a live leader after its process group becomes unsignalable. A bounded 200 ms wait now confirms actual exit before accepting EPERM. The regression covers exited, still-live and concurrently exiting workers.

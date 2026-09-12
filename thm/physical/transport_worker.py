@@ -21,10 +21,13 @@ def stop_tree(process, budget):
             os.killpg(process.pid, signal.SIGKILL)
         except ProcessLookupError:
             pass
-        except PermissionError:
-            # Darwin may report EPERM for a group containing only exited tasks.
-            if process.poll() is None:
-                raise
+        except PermissionError as denied:
+            # Darwin may reject the group during the leader's exit/reap window.
+            # A bounded wait distinguishes that race from a live denied worker.
+            try:
+                process.wait(timeout=.2)
+            except subprocess.TimeoutExpired:
+                raise denied
     elif budget is not None:
         budget.close()
     elif process.poll() is None:
