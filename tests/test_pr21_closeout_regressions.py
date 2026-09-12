@@ -3,6 +3,7 @@ from contextlib import contextmanager, ExitStack
 from dataclasses import replace
 import hashlib
 import io
+import json
 import os
 from pathlib import Path
 import subprocess
@@ -31,8 +32,12 @@ class BlockingTransport(FixtureTransport):
     def pause(self, stage):
         if self.hang == stage:
             if self.marker:
-                helper = subprocess.Popen([sys.executable, '-c', 'import time; time.sleep(60)'])
-                Path(self.marker).write_text(str(helper.pid))
+                subprocess.Popen([sys.executable, '-c',
+                    'import json,sys,time; from pathlib import Path; '
+                    'root=Path("/proc/self").resolve(); '
+                    'fields=(root/"stat").read_text().rsplit(")",1)[1].split(); '
+                    'Path(sys.argv[1]).write_text(json.dumps({"root":str(root),"start":fields[19]})); '
+                    'time.sleep(60)', self.marker])
             while True:
                 time.sleep(.05)
 
@@ -643,11 +648,14 @@ class TransportDeadlineTests(unittest.TestCase):
             with mock.patch.object(transport_worker, 'stop_tree', observe_stop):
                 with self.assertRaises(TimeoutError): b.write(b'abc',generation='g')
             self.assertTrue(marker.exists())
-            status=Path('/proc')/marker.read_text()/'stat'
+            recorded=json.loads(marker.read_text())
+            status=Path(recorded['root'])/'stat'
             if status.exists():
-                observed = status.read_text()
-                self.assertEqual(observed.rsplit(')',1)[1].split()[0], 'Z',
-                                 {'helper': observed, 'stopped': stopped, 'journal': b.journal})
+                observed=status.read_text()
+                fields=observed.rsplit(')',1)[1].split()
+                if fields[19]==recorded['start']:
+                    self.assertEqual(fields[0], 'Z',
+                                     {'helper': observed, 'stopped': stopped, 'journal': b.journal})
             b.close()
 
 

@@ -70,6 +70,8 @@ def replay(task):
 
 def main():
     envelope = json.loads(sys.stdin.read(2*1024*1024)); limits = envelope['limits']; task = envelope['task']
+    from thm._process_containment import install_descendant_containment
+    containment = install_descendant_containment()
     if os.name == 'posix':
         import resource
         resource.setrlimit(resource.RLIMIT_CPU, (max(1, int(limits['cpu'])), max(1, int(limits['cpu']))))
@@ -105,6 +107,7 @@ def main():
     else:
         raise ValueError('unknown bounded shadow operation')
     from .resources import linux_worker_lifetime
+    result = {**result, 'descendant_containment': containment}
     lifetime = linux_worker_lifetime()
     if lifetime is not None:
         result = {**result, '_resource_lifetime': lifetime}
