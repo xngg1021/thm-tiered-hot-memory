@@ -12,6 +12,13 @@ from urllib.parse import unquote, urlsplit
 
 ROOT = Path(__file__).resolve().parents[1]
 
+# Historical raw evidence is byte-immutable. These exact blobs predate 1.6 and
+# were published without a final newline; any byte change removes the exception.
+IMMUTABLE_RAW_JSON = {
+    'reports/local-verification-20260913/beam/beam-10m-sample.json': '00e4451f4f21e10edf7b830a2066503c76ed350371ec9f3b657cc9203dec80f8',
+    'reports/local-verification-20260913/beam/beam-all-results.json': '2bdeababeed33a0210d6417a931e98105ad41f86a40c3b56521577ed966672f6',
+}
+
 
 def _without_shell_comment(command, *, shell='bash', mask_substitutions=False):
     """Return the first command, excluding comments and outer separators."""
@@ -174,7 +181,8 @@ def check(root: Path) -> dict:
         except (OSError, UnicodeError) as exc:
             errors.append(f'{relative}: unavailable/invalid UTF-8 ({type(exc).__name__})')
             continue
-        if not raw.endswith(b'\n') or b'\r' in raw:
+        historical_raw = IMMUTABLE_RAW_JSON.get(relative) == hashlib.sha256(raw).hexdigest()
+        if (not raw.endswith(b'\n') or b'\r' in raw) and not historical_raw:
             errors.append(f'{relative}: require LF and final newline')
         if path.suffix == '.md':
             if any(line != line.rstrip() for line in text.splitlines()):

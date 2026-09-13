@@ -18,6 +18,7 @@ class ResidentExecutor:
         self.manager = ResidentHandleManager({device: memory_budget}); self.last = {}
         self.description = registry.describe(provider); self.admission = None
         self._snapshot_refs = {}; self._snapshot_seq = 0
+        self.topology_epoch = 0
 
     def _vector_snapshot_revision(self, matrix, ids):
         """Return a process-local revision for the exact loaded vector snapshot.
@@ -54,7 +55,8 @@ class ResidentExecutor:
         vector_snapshot = self._vector_snapshot_revision(matrix, ids)
         key = IndexIdentity(scope, generation, embedding_profile, self.provider_id,
                             identity(description['versions']),
-                            identity({'metric': 'inner_product', 'vector_snapshot': vector_snapshot}),
+                            identity({'metric': 'inner_product', 'vector_snapshot': vector_snapshot,
+                                      'topology_epoch': self.topology_epoch}),
                             device=self.device, placement=placement, runtime=identity(description))
         with self.manager.lock:
             self.manager.invalidate(scope=scope, generation=generation)
@@ -133,6 +135,7 @@ class RuntimeService:
         self.discovery_epoch = __import__('uuid').uuid4().hex
         from .models import ModelPortfolio
         self.models = ModelPortfolio(self)
+        self.topology_epoch = 0
 
     def submit(self, scope, query, *, workload='interactive', deadline=None, **settings):
         """Nonblocking online API. Compatible requests share one bounded queue."""
@@ -195,7 +198,8 @@ class RuntimeService:
         key = ProfileKey(self.graph.fingerprint, self.graph.os+':'+self.graph.build, identity(self.discovery),
                          identity(versions), getattr(p, 'source_manifest_sha256', 'none'),
                          getattr(p, 'derived_manifest_sha256', None) or 'none', getattr(p, 'dimension', 0),
-                         getattr(p, 'precision', 'fp32'), identity({'generation': generation[0], 'profile': getattr(p, 'id', None)}),
+                         getattr(p, 'precision', 'fp32'), identity({'generation': generation[0], 'profile': getattr(p, 'id', None),
+                                                                  'topology_epoch': self.topology_epoch}),
                          scale_bucket(count, getattr(p, 'dimension', 0), self.memory_budget),
                          identity(settings), identity(placement) if placement else 'sqlite-local', workload, self.policy, self.implementation,
                          shape_bucket=identity({'scope': scope, 'fanout': settings.get('candidate_limit', 100)}))
@@ -262,6 +266,7 @@ class RuntimeService:
                 if candidate.id not in self.executors:
                     self.executors[candidate.id] = ResidentExecutor(self.registry, candidate.provider, candidate.device, self.memory_budget)
                 executor = self.executors[candidate.id]
+                executor.topology_epoch = self.topology_epoch
                 executor.admission = (generation,getattr(getattr(self.encoder,'profile',None),'id',None)) if candidate.semantic_class == 'strict' else None
             from thm.physical.joint import JointComputeDataPlanner
             plan = JointComputeDataPlanner().plan(self.index, scope, embedding_profile=getattr(getattr(self.encoder, 'profile', None), 'id', None),

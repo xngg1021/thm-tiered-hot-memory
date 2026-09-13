@@ -41,6 +41,8 @@ jobs:
       - name: Native transport, fallback, topology, thermal and reliability regression
         env:
           THM_SYSCORE_EXECUTABLE: ${{ github.workspace }}/native/thm-syscore/target/debug/thm-syscore${{ matrix.suffix }}
-        run: python -m unittest discover -s tests -p test_agent_systems_v16.py -v
+        run: python -m unittest discover -s tests -p '*v16.py' -v
       - name: Headless core without native module
         run: python -S scripts/runtime_headless_probe.py
+      - name: Bounded end-to-end systems and reliability smoke
+        run: python -m thm systems smoke --output "${{ runner.temp }}/thm-systems-smoke.json"

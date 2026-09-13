@@ -5,6 +5,7 @@ import os
 from pathlib import Path
 import struct
 import subprocess
+import sys
 import tempfile
 import time
 from .contracts import finite, integer
@@ -24,13 +25,14 @@ class SysCore:
         self.failures = 0
         self.last = {}
 
-    def _request(self, operation, payload=b''):
+    def _request(self, operation, payload=b'', *, portable=False):
         request = bytes((1, operation)) + payload
-        if len(request) > 4098 or not self.executable:
+        if len(request) > 4098 or (not self.executable and not portable):
             raise ValueError('SysCore unavailable or request too large')
         # The bundled executable never spawns a child or loads user code. It waits
         # for this frame until the parent's Windows Job Object is attached.
-        process = subprocess.Popen([self.executable], stdin=subprocess.PIPE, stdout=subprocess.PIPE,
+        command=[sys.executable,'-m','thm.systems.portable_worker'] if portable else [self.executable]
+        process = subprocess.Popen(command, stdin=subprocess.PIPE, stdout=subprocess.PIPE,
             stderr=subprocess.DEVNULL, start_new_session=os.name == 'posix')
         budget = None
         started = time.monotonic()
@@ -40,9 +42,12 @@ class SysCore:
             if process.returncode or len(output) < 5 or len(output) > MAX_BYTES+5:
                 raise ValueError('invalid SysCore response')
             size = struct.unpack('<I', output[:4])[0]
-            if size != len(output)-4 or output[4] != 0:
-                raise RuntimeError(output[5:1024].decode(errors='replace'))
-            self.last = {'transport': 'thm-syscore/1', 'wall_seconds': time.monotonic()-started, 'native_executed': True}
+            if size != len(output)-4:
+                raise ValueError('SysCore response framing mismatch')
+            if output[4] != 0:
+                raise OSError(output[5:1024].decode(errors='replace'))
+            self.last = {'transport': 'pure-python' if portable else 'thm-syscore/1',
+                         'wall_seconds': time.monotonic()-started, 'native_executed': not portable}
             return output[5:]
         finally:
             stop_owned_process_tree(process, budget)
@@ -74,7 +79,7 @@ class SysCore:
                 return data
             except (OSError, RuntimeError, subprocess.TimeoutExpired):
                 self.failures += 1
-        data = bounded_file_bytes(path, MAX_BYTES)
+        data = self._request(1,os.fsencode(Path(path).absolute()),portable=True)
         if hashlib.sha256(data).hexdigest() != expected_sha256:
             raise ValueError('source bytes identity mismatch')
         self.last = {'transport': 'pure-python', 'native_executed': False, 'fallback_count': self.failures,
@@ -112,7 +117,8 @@ class NativeAsyncIO:
             self.syscore.timeout = min(original, remaining)
             try:
                 data = self.syscore.read_verified(path, sha)
-                rows.append({'identity': identity, 'status': 'complete', 'data': data,
+                on_time=time.monotonic()<=deadline
+                rows.append({'identity': identity, 'status': 'complete' if on_time else 'deadline', 'data': data if on_time else None,
                              'receipt': dict(self.syscore.last), 'zero_copy': False})
             except Exception as exc:
                 rows.append({'identity': identity, 'status': 'failed', 'error': str(exc), 'data': None})

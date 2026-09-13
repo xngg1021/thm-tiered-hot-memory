@@ -81,6 +81,8 @@ class DynamicTopologyFabric:
         self.failures = []
 
     def _publish(self):
+        for device in self.devices.values():
+            self._cancel(device, 'topology-epoch-invalidated')
         self.epoch += 1
         self._handles.clear()
 
@@ -212,4 +214,37 @@ class DynamicTopologyFabric:
         with self._lock:
             rows = [{**asdict(d), 'state': d.state.value, 'inflight': len(d.inflight)} for d in self.devices.values()]
             return {'schema': 'thm-topology/1', 'topology_epoch': self.epoch,
-                    'topology_identity': digest(rows), 'devices': rows}
+                    'topology_identity': digest([{k:v for k,v in row.items() if k!='inflight'} for row in rows]), 'devices': rows}
+
+
+class TopologyObserver:
+    """Compare native provider observations; changed capabilities require reprobe."""
+    def __init__(self,fabric,provider=None):
+        if provider is None:
+            from thm.runtime.fabric.hardware import HostDeviceProvider
+            provider=HostDeviceProvider()
+        self.fabric,self.provider=fabric,provider
+        self.previous={}
+        self.sequence=0
+
+    def poll(self):
+        graph=self.provider.discover()
+        rows={node.id:asdict(node) for node in graph.nodes}
+        if len(rows)>self.fabric.max_devices:
+            raise ValueError('native topology observation bound')
+        changes=[]
+        for key in sorted(set(rows)|set(self.previous)):
+            if rows.get(key)==self.previous.get(key):
+                continue
+            self.sequence+=1
+            if key not in rows:
+                event=TopologyEvent('provider-disappeared',key,self.sequence)
+            else:
+                row=rows[key]
+                event=TopologyEvent('reprobe',key,self.sequence,digest(row),str(row['properties'].get('driver','unknown')),
+                                    (row['kind'],))
+            self.fabric.event(event)
+            changes.append(asdict(event))
+        self.previous=rows
+        return {'events':changes,'topology':self.fabric.snapshot(),'evidence':'hardware-observed',
+                'qualification_automatic':False}

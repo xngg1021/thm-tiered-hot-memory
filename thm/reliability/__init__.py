@@ -145,6 +145,20 @@ class SelfVerificationEpochs:
         return self.cadence
 
 
+def recurrent_metrics(*, uptime, failures, recoveries, exposure_unit='wall_seconds', evidence='simulated'):
+    finite(uptime)
+    integer(failures)
+    if exposure_unit not in EXPOSURES or evidence not in ('simulated','hardware-observed','production-observed'):
+        raise ValueError('explicit exposure and evidence class required')
+    recoveries=tuple(finite(v) for v in recoveries)
+    if len(recoveries)>failures:
+        raise ValueError('more recoveries than failures')
+    return {'MTBF':uptime/failures if failures>=5 else None,
+            'MTTR':sum(recoveries)/len(recoveries) if len(recoveries)>=5 else None,
+            'uptime':uptime,'failures':failures,'exposure_unit':exposure_unit,'evidence':evidence,
+            'repair_process':'recurrent','hardware_acceptance':False}
+
+
 def accelerated_life(workload, *, events=128, seed=0, full_research=False):
     """Inject faults through the real workload's contract; record failed invariants."""
     import random
