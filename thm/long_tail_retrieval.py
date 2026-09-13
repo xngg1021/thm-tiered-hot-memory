@@ -97,14 +97,28 @@ class LongTailSearchIndex(SearchIndex):
                                       selected_evidence_count=len(chosen),track='0N',gold_used=False)
         return result
 
+    def _validate_search_options(self,scope,query,**kwargs):
+        result=super()._validate_search_options(scope,query,**kwargs)
+        if getattr(self,'event_graph',None) is not None and result[0].segment:
+            raise ValueError('event dependencies require complete-source packing; segment packing is incompatible')
+        return result
+
+    def _search(self,scope,query,**kwargs):
+        # search_many may prepare several lexical channels before serving any
+        # row. Rebuild attached graph channels at the actual query boundary so
+        # their source checks and dependency map belong to this query snapshot.
+        prepared=getattr(self,'_batch_lexical',None)
+        if getattr(self,'event_graph',None) is not None:self._batch_lexical=None
+        self.long_tail_receipt={'method':'empty','track':'0N'}
+        try:
+            result=super()._search(scope,query,**kwargs)
+            self.long_tail_receipt['track']='0G' if result.get('semantic_encoder_used') else '0N'
+            result['long_tail']=dict(self.long_tail_receipt)
+            return result
+        finally:self._batch_lexical=prepared
+
     def search(self, scope, query, **kwargs):
         # Receipts must not be borrowed from an unrelated cached query.
         with self._lock:
-            from thm.features import RetrievalFeatures
-            if getattr(self,'event_graph',None) is not None and RetrievalFeatures.parse(kwargs.get('features')).segment:
-                raise ValueError('event dependencies require complete-source packing; segment packing is incompatible')
             self._results.clear()
-            self.long_tail_receipt = {'method': 'empty', 'track': '0N'}
-            result = super().search(scope, query, **kwargs)
-            result['long_tail'] = dict(self.long_tail_receipt)
-            return result
+            return super().search(scope, query, **kwargs)

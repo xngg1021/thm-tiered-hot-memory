@@ -69,4 +69,40 @@ class ExpansionAndDependencies(unittest.TestCase):
                 finally:index.close()
 
 
+    def test_batch_segment_guard_runs_before_encoder_or_packing(self):
+        from thm.features import RetrievalFeatures
+        class Encoder:
+            model_id='fixture-batch'
+            def __call__(self,texts):raise AssertionError('rejected query must not encode')
+        with tempfile.TemporaryDirectory() as directory:
+            index=self._index(Path(directory)/'db',TokenCounter('utf8_bytes'))
+            try:
+                for mode in ('dense','hybrid'):
+                    with self.assertRaisesRegex(ValueError,'complete-source'):
+                        index.search_many('s',['latest target'],mode=mode,encoder=Encoder(),model_id='fixture-batch',
+                                          features=RetrievalFeatures(segment=True),overlap=True)
+            finally:index.close()
+
+    def test_overlapped_batch_keeps_each_queries_dependencies_and_receipt(self):
+        class Encoder:
+            model_id='fixture-batch'
+            def __call__(self,texts):return [[1.,0.] for text in texts]
+        with tempfile.TemporaryDirectory() as directory:
+            index=self._index(Path(directory)/'db',TokenCounter('utf8_bytes'));encoder=Encoder()
+            try:
+                index.embed('s',encoder,encoder.model_id)
+                settings=dict(mode='hybrid',encoder=encoder,model_id=encoder.model_id,budget=300)
+                queries=['latest target','neutral question']
+                singles=[index.search('s',query,**settings) for query in queries]
+                index._clear_caches()
+                batch=index.search_many('s',queries,overlap=True,query_batch_size=2,**settings)
+                self.assertTrue(batch[0]['batch_receipt']['overlap_active'])
+                self.assertEqual(batch[0]['long_tail']['track'],'0G')
+                self.assertNotIn('shared',[row['id'] for row in batch[0]['selected']])
+                for expected,actual in zip(singles,batch):
+                    self.assertEqual(actual['context'],expected['context'])
+                    self.assertEqual(actual['long_tail'],expected['long_tail'])
+            finally:index.close()
+
+
 if __name__=='__main__':unittest.main()
