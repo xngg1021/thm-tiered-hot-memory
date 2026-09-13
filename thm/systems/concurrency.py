@@ -67,7 +67,8 @@ class ElasticConcurrencyController:
     def dispatch(self, now):
         finite(now)
         with self._lock:
-            available = max(0, min(self.concurrency, self.worker_count)-len(self.active))
+            effective_workers = min(self.concurrency, self.worker_count)
+            available = max(0, effective_workers-len(self.active))
             selected = []
             for qos in QOS:
                 queue = self.queues[qos]
@@ -77,7 +78,7 @@ class ElasticConcurrencyController:
                     self.failures += 1
                 if qos in ('background', 'research', 'maintenance'):
                     background_active = sum(x.qos in ('background', 'research', 'maintenance') for x, _ in self.active.values())
-                    background_limit=int(self.concurrency*self.background_share)
+                    background_limit=int(effective_workers*self.background_share)
                     foreground_active=len(self.active)>background_active
                     foreground_queued=any(self.queues[name] for name in ('interactive','bulk'))
                     if self.background_share>0 and not foreground_active and not foreground_queued:
@@ -85,7 +86,7 @@ class ElasticConcurrencyController:
                     capacity = max(0, background_limit-background_active)
                 else:
                     capacity = available
-                count = min(available, capacity, self.batch_size, len(queue))
+                count = min(available, capacity, self.batch_size-len(selected), len(queue))
                 taken=0
                 while queue and taken<count:
                     item=queue[0]
@@ -99,7 +100,7 @@ class ElasticConcurrencyController:
                     self.waits.append(now-item.arrived)
                     selected.append(item)
                     available -= 1
-                if available == 0:
+                if available == 0 or len(selected) == self.batch_size:
                     break
             return tuple(selected)
 

@@ -73,6 +73,8 @@ Request/session/mutation/topology/soak/release self-checks verify integrity. Dee
 
 New raw artifacts above 1 MiB use a manifest plus local CAS, GitHub artifact reference, S3-compatible storage or LFS. Manifests retain SHA, size, MIME/schema, producer commit, dataset, workload and command. Historical raw Git artifacts remain unchanged; the two non-newline BEAM JSON blobs have exact-SHA document-check exceptions. A changed byte loses that exception.
 
+The admission check includes compressed raw formats such as `.json.gz`, `.jsonl.zst`, `.csv.bz2` and `.tar.xz`. CI compares the complete PR against its merge base, or the complete push against its previous ref; a new branch uses its merge base with `origin/main`. Local checks can supply `--base` explicitly. A missing comparison ref fails the check.
+
 ## CE and acceptance
 
 `thm.systems.economics` provides THM/CE v2 evidence/advice for the 1.6 runtime. It requires matching commit/task denominators and source receipts; byte counters are not token measurements. Energy, thermal, topology, queue, reliability and task metrics carry units and evidence classes. Incoming budget/provider/concurrency/energy/residency advice is optional, epoch-bound and expiring. CE L0–L6 remains independent of THM T0–T3; neither repository imports the other.

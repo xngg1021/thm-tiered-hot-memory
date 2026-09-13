@@ -74,7 +74,7 @@ class AgentSystemsRuntime:
                             self.base.pinned.clear()
                             self.base.index._vector_executor=None
                             self.base.index._results.clear()
-                            effective={k:v for k,v in settings.items() if k not in ('mode','encoder','model_id','scorer')}
+                            effective={k:v for k,v in settings.items() if k not in ('mode','encoder','model_id','scorer','deadline')}
                             result=self.base.index.search(scope,query,mode='sparse',**effective)
                         fallback='topology-epoch-changed'
                     finish=time.monotonic()

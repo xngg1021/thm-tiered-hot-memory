@@ -104,6 +104,10 @@ class LongTailSearchIndex(SearchIndex):
                 group.add(key);pending.extend(required.get(key,()))
             if missing or not group:continue
             proposal=chosen+[by_id[key] for key in sorted(group,key=order.get)]
+            if classify_query(query)=='ordering':
+                # Count the exact served order: nonadditive counters can change
+                # cost when the same complete source blocks are rearranged.
+                proposal.sort(key=lambda item:(item['timestamp'] or '',item['ord'],item['id']))
             packed=super()._pack_candidates(proposal,budget,query)
             if {item['id'] for item in packed[1]}!={item['id'] for item in proposal}:
                 continue

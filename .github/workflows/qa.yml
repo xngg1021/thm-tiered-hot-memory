@@ -45,6 +45,9 @@ jobs:
       - run: python scripts/check_version_history.py
       - run: python scripts/check_completion.py
       - run: python scripts/check_evidence_storage.py
+        env:
+          THM_EVIDENCE_EVENT: ${{ github.event_name }}
+          THM_EVIDENCE_BASE: ${{ github.event.pull_request.base.sha || github.event.before }}
       - name: Check committed whitespace
         shell: bash
         run: |
