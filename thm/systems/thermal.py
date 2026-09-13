@@ -306,7 +306,7 @@ class NvmlPowerControl:
 
 def operating_points(envelopes):
     rows = sorted((e.public() for e in envelopes), key=lambda e: e['concurrency'])
-    if len({(r['device'], r['workload'], r['batch_size'], r['duration'], r['thermal_state'], r['topology_epoch']) for r in rows}) > 1:
+    if len({(r['device'], r['workload'], r['batch_size'], r['duration'], r['thermal_state'], r['power_state'], r['topology_epoch']) for r in rows}) > 1:
         raise ValueError('operating-point comparison requires a common workload/state/epoch')
     result = []
     for before, after in zip(rows, rows[1:]):

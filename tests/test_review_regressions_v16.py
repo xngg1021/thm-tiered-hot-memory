@@ -162,3 +162,43 @@ class EvidenceConsistencyRegressions(unittest.TestCase):
         graph=EventGraph('scope',(a,b))
         self.assertTrue(all(row['state']=='unresolved-conflict' for row in graph.claims()))
         self.assertEqual([row.identity for row in graph.required_chain('b')],['a','b'])
+
+class WorkerOwnershipAndPowerRegressions(unittest.TestCase):
+    def test_idle_single_worker_accepts_each_background_class(self):
+        from thm.systems.concurrency import ElasticConcurrencyController,WorkItem
+        for qos in ('background','research','maintenance'):
+            runtime=AgentSystemsRuntime(SimpleNamespace(search=lambda *a,**k:{'ok':True},close=lambda:None))
+            try:self.assertTrue(runtime.search('s','q',workload=qos)['ok'])
+            finally:runtime.close()
+        ctrl=ElasticConcurrencyController(concurrency=1,worker_count=1)
+        ctrl.background_share=0
+        ctrl.submit(WorkItem('blocked','p','background',0,10),0)
+        self.assertFalse(ctrl.dispatch(1))
+
+    def test_cancelling_worker_holds_capacity_until_reaped(self):
+        from thm.systems.concurrency import ElasticConcurrencyController,WorkItem
+        ctrl=ElasticConcurrencyController(concurrency=1,worker_count=1)
+        ctrl.submit(WorkItem('old','p','interactive',0,1),0);ctrl.dispatch(0)
+        ctrl.submit(WorkItem('next','p','interactive',0,10),0)
+        self.assertEqual(ctrl.cancel_expired(2),('old',))
+        self.assertFalse(ctrl.dispatch(2));self.assertEqual(ctrl.receipt()['active'],1)
+        with self.assertRaises(ValueError):ctrl.acknowledge_cancel('old',2,reaped=False)
+        self.assertFalse(ctrl.dispatch(2))
+        ctrl.acknowledge_cancel('old',3,reaped=True)
+        self.assertEqual(ctrl.dispatch(3)[0].identity,'next')
+        self.assertEqual(ctrl.receipt()['failure_count'],1)
+
+    def test_queue_does_not_dispatch_expired_interior_item(self):
+        from thm.systems.concurrency import ElasticConcurrencyController,WorkItem
+        ctrl=ElasticConcurrencyController(concurrency=3,worker_count=3,batch_size=3)
+        for identity,deadline in [('one',10),('expired',1),('two',10)]:
+            ctrl.submit(WorkItem(identity,'p','interactive',0,deadline),0)
+        self.assertEqual([row.identity for row in ctrl.dispatch(2)],['one','two'])
+        self.assertEqual(ctrl.receipt()['failure_count'],1)
+
+    def test_operating_points_reject_changed_power_configuration(self):
+        from dataclasses import replace
+        from thm.systems.thermal import SustainablePerformanceEnvelope,operating_points
+        a=SustainablePerformanceEnvelope('gpu','work',1,1,10,'warm','cap-100w',(.1,.2))
+        with self.assertRaisesRegex(ValueError,'common workload'):
+            operating_points((a,replace(a,concurrency=2,power_state='cap-200w')))

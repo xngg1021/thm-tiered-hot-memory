@@ -105,4 +105,22 @@ class ExpansionAndDependencies(unittest.TestCase):
             finally:index.close()
 
 
+    def test_temporal_tip_and_neutral_queries_cannot_pack_intermediate_alone(self):
+        with tempfile.TemporaryDirectory() as directory:
+            index=LongTailSearchIndex(Path(directory)/'db',TokenCounter('utf8_bytes'))
+            try:
+                index.replace_scope('s',[Document('a','s','session',0,'large source '+('a'*1000)),
+                    Document('b','s','session',1,'middle event'),Document('c','s','session',2,'tip event')])
+                rows={row['id']:row for row in index.rows('s')}
+                events=[Event(key,'s',key,rows[key]['hash'],TimeInterval.parse(date),predecessor=parents)
+                    for key,date,parents in [('a','2026-01-01',()),('b','2026-02-01',('a',)),('c','2026-03-01',('b',))]]
+                index.attach_events(EventGraph('s',events))
+                for query in ('closest before 2026-04-01','middle event'):
+                    result=index.search('s',query,budget=300)
+                    self.assertNotIn('b',[row['id'] for row in result['selected']])
+                    self.assertNotIn('c',[row['id'] for row in result['selected']])
+                    self.assertEqual(index.required_source_sets['b'],frozenset({'a','b'}))
+            finally:index.close()
+
+
 if __name__=='__main__':unittest.main()

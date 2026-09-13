@@ -44,6 +44,7 @@ class ElasticConcurrencyController:
         self.background_share = .25
         self.queues = {q: deque() for q in QOS}
         self.active = {}
+        self.cancelling = set()
         self.known = set()
         self.latencies = deque(maxlen=2048)
         self.waits = deque(maxlen=2048)
@@ -76,14 +77,24 @@ class ElasticConcurrencyController:
                     self.failures += 1
                 if qos in ('background', 'research', 'maintenance'):
                     background_active = sum(x.qos in ('background', 'research', 'maintenance') for x, _ in self.active.values())
-                    capacity = max(0, int(self.concurrency*self.background_share)-background_active)
+                    background_limit=int(self.concurrency*self.background_share)
+                    foreground_active=len(self.active)>background_active
+                    foreground_queued=any(self.queues[name] for name in ('interactive','bulk'))
+                    if self.background_share>0 and not foreground_active and not foreground_queued:
+                        background_limit=max(1,background_limit)
+                    capacity = max(0, background_limit-background_active)
                 else:
                     capacity = available
                 count = min(available, capacity, self.batch_size, len(queue))
-                for _ in range(count):
-                    item = queue.popleft()
-                    if now < item.arrived:
-                        raise ValueError('clock regressed')
+                taken=0
+                while queue and taken<count:
+                    item=queue[0]
+                    if now < item.arrived:raise ValueError('clock regressed')
+                    queue.popleft()
+                    if item.deadline<=now:
+                        self.known.remove(item.identity);self.failures+=1
+                        continue
+                    taken+=1
                     self.active[item.identity] = (item, now)
                     self.waits.append(now-item.arrived)
                     selected.append(item)
@@ -98,17 +109,25 @@ class ElasticConcurrencyController:
             item, started = self.active[identity]
             if now < started:
                 raise ValueError('clock regressed')
+            failed=failed or identity in self.cancelling
+            self.cancelling.discard(identity)
             self.active.pop(identity)
             self.known.remove(identity)
             self.latencies.append(now-item.arrived)
             self.failures += bool(failed or now > item.deadline)
 
     def cancel_expired(self, now):
+        finite(now)
         with self._lock:
-            ids = [key for key, (item, _) in self.active.items() if item.deadline <= now]
-            for key in ids:
-                self.complete(key, now, failed=True)
-            return tuple(ids)  # worker owner must cancel/reap before capacity is reused
+            ids = [key for key, (item, _) in self.active.items() if item.deadline <= now and key not in self.cancelling]
+            self.cancelling.update(ids)
+            return tuple(ids)  # Capacity remains occupied until completion/reap acknowledgement.
+
+    def acknowledge_cancel(self,identity,now,*,reaped):
+        with self._lock:
+            if reaped is not True or identity not in self.cancelling:
+                raise ValueError('cancellation requires owned worker reaping acknowledgement')
+            self.complete(identity,now,failed=True)
 
     def feedback(self, thermal, pressure, *, now):
         with self._lock:
@@ -128,5 +147,5 @@ class ElasticConcurrencyController:
             return {'concurrency': self.concurrency, 'batch_size': self.batch_size,
                 'worker_count': self.worker_count, 'queue_depth': self.queue_depth,
                 'background_share': self.background_share, 'queue': {k: len(v) for k, v in self.queues.items()},
-                'active': len(self.active), 'latency': quantiles(self.latencies), 'queue_wait': quantiles(self.waits),
+                'active': len(self.active), 'cancelling':sorted(self.cancelling), 'latency': quantiles(self.latencies), 'queue_wait': quantiles(self.waits),
                 'failure_count': self.failures, 'device_assignment': {k: v[0].provider for k, v in self.active.items()}}

@@ -39,13 +39,28 @@ class LongTailSearchIndex(SearchIndex):
         sources=[]
         for event in selected[:candidate_limit]:
             chain=graph.required_chain(event.identity)
-            required=frozenset(e.source_id for e in chain)
-            self.required_source_sets[event.source_id]=self.required_source_sets.get(event.source_id,frozenset())|required
+            self._bind_chain_requirements(chain)
             sources.extend(rows[e.source_id]['rowid'] for e in chain)
         if sources:channels.append(list(dict.fromkeys(sources))[:candidate_limit])
         return channels
 
+    def _bind_chain_requirements(self,chain):
+        # required_chain is topologically ordered. Bind every intermediate
+        # event's own closure, including aliases sharing a source document.
+        closures={}
+        for event in chain:
+            required={event.source_id}
+            for parent in event.predecessor:required.update(closures[parent])
+            closures[event.identity]=required
+            self.required_source_sets[event.source_id]=self.required_source_sets.get(event.source_id,frozenset())|frozenset(required)
+
     def _pack_candidates(self, expanded, budget, query):
+        graph=getattr(self,'event_graph',None)
+        if graph is not None:
+            source_ids={row['id'] for row in expanded}
+            for event in graph.events.values():
+                if event.source_id in source_ids:
+                    self._bind_chain_requirements(graph.required_chain(event.identity))
         category = classify_query(query)
         query_terms = set(terms(query))
         candidates, blocks = [], {}
