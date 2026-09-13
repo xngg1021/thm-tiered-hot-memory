@@ -1,0 +1,162 @@
+[
+  {
+    "conversation": "1",
+    "category": "abstention",
+    "score": 1.0,
+    "question": "What are the qualifications or expertise of Johnny, who collaborated during the code review for tuning logic?",
+    "llm_response": "The provided context does not specify Johnny’s qualifications or expertise.",
+    "budget_used": 3988
+  },
+  {
+    "conversation": "1",
+    "category": "abstention",
+    "score": 1.0,
+    "question": "What was the agenda or format of the knowledge sharing session where the pipeline design document was shared?",
+    "llm_response": "The provided context does not specify an agenda or format for a knowledge sharing session where the pipeline design document was shared.",
+    "budget_used": 3986
+  },
+  {
+    "conversation": "1",
+    "category": "contradiction_resolution",
+    "score": 0.25,
+    "question": "Have I set up diagnostic logs to capture shard distribution errors in my sharding implementation?",
+    "llm_response": "No, you have not set up diagnostic logs to capture shard distribution errors in your sharding implementation.",
+    "budget_used": 3960
+  },
+  {
+    "conversation": "1",
+    "category": "contradiction_resolution",
+    "score": 0.0,
+    "question": "Do I usually include exact error messages when I ask about debugging strategies for vector lookups during dense search integration?",
+    "llm_response": "The context does not provide that information.",
+    "budget_used": 3994
+  },
+  {
+    "conversation": "1",
+    "category": "event_ordering",
+    "score": 0.0,
+    "question": "How did my discussions about the development phases of our RAG system progress from 2024-08-01 to 2024-10-22 in order? Mention ONLY and ONLY twenty items.",
+    "llm_response": "",
+    "budget_used": 3852
+  },
+  {
+    "conversation": "1",
+    "category": "event_ordering",
+    "score": 0.0,
+    "question": "Can you reconstruct the sequence in which I brought up the various error types and their handling challenges from 2024-11-01 to 2025-01-21 in order? Mention ONLY and ONLY eleven items.",
+    "llm_response": "",
+    "budget_used": 3518
+  },
+  {
+    "conversation": "1",
+    "category": "information_extraction",
+    "score": 1.0,
+    "question": "What detection rate and total number of test records did I mention when setting up logs to catch that specific error?",
+    "llm_response": "98% detection rate and 10,000 test records.",
+    "budget_used": 3864
+  },
+  {
+    "conversation": "1",
+    "category": "information_extraction",
+    "score": 0.0,
+    "question": "What version of the vector database am I evaluating for indexing over 1 million documents?",
+    "llm_response": "Milvus 2.2.0",
+    "budget_used": 3993
+  },
+  {
+    "conversation": "1",
+    "category": "instruction_following",
+    "score": 0.5,
+    "question": "What improvements can I make to speed up the process of handling queries?",
+    "llm_response": "- Use performance profiling to identify bottlenecks\n- Implement caching for repeated queries\n- Use indexing and parallel processing\n- Consider asynchronous I/O if I/O is a bottleneck\n- Reduce `efSearch` to speed up HNSW search\n- Lower `M` for less memory and faster search\n- Use `IndexHNSWFlat` for lower-dimensional vectors\n- Optimize `efConstruction` and fine-tune HNSW parameters\n- Continuously validate improvements against your target search speed",
+    "budget_used": 3898
+  },
+  {
+    "conversation": "1",
+    "category": "instruction_following",
+    "score": 1.0,
+    "question": "What targets should I consider when planning to handle increased load on my system?",
+    "llm_response": "Peak load latency targets, such as:  \n- 2,000 concurrent users: < 350ms for 90% of queries  \n- 5,000 concurrent users: < 500ms for 90% of queries",
+    "budget_used": 3909
+  },
+  {
+    "conversation": "1",
+    "category": "knowledge_update",
+    "score": 1.0,
+    "question": "How many tasks have I logged in Jira for the sprint on 2024-11-05, and what is my sprint completion target percentage?",
+    "llm_response": "17 tasks, 88%",
+    "budget_used": 3999
+  },
+  {
+    "conversation": "1",
+    "category": "knowledge_update",
+    "score": 0.0,
+    "question": "How many tasks are logged in Jira for load balancing, and what is the sprint completion target percentage?",
+    "llm_response": "",
+    "budget_used": 3953
+  },
+  {
+    "conversation": "1",
+    "category": "multi_session_reasoning",
+    "score": 0.0,
+    "question": "How many documents am I planning to handle in total when combining my Elasticsearch and Solr projects?",
+    "llm_response": "The provided context does not specify the number of documents.",
+    "budget_used": 3986
+  },
+  {
+    "conversation": "1",
+    "category": "multi_session_reasoning",
+    "score": 0.0,
+    "question": "How many queries per second am I aiming to support across sharding, load balancing, and partitioning efforts combined?",
+    "llm_response": "1.67 queries per second",
+    "budget_used": 3953
+  },
+  {
+    "conversation": "1",
+    "category": "preference_following",
+    "score": 0.0,
+    "question": "I'm planning to estimate costs for running multiple cloud instances. How would you suggest structuring the calculation to handle different providers and instance counts?",
+    "llm_response": "Define a dictionary mapping each provider to instance types and per-hour prices. For each calculation, accept the provider, instance type, and number of instances, then compute:\n\n`total_cost = price_per_hour * num_instances`\n\nTo handle multiple providers and instance counts, loop through each provider/instance type and multiply by the number of instances for each usage pattern. For example, the context builds a DataFrame with `instance_type`, `cloud_provider`, and `price`, then calculates `estimated_cost = price_per_hour * tasks * duration` or `total_cost = cost_per_hour * num_instances`.",
+    "budget_used": 4000
+  },
+  {
+    "conversation": "1",
+    "category": "preference_following",
+    "score": 0.5,
+    "question": "I'm setting up a system to handle a large number of vector searches. How would you suggest structuring the indexing and search process to keep things running smoothly?",
+    "llm_response": "Use an appropriate index for your workload (e.g., HNSW for fast/scalable searches, IVFPQ for memory efficiency), tune key parameters like `M`, `efConstruction`, `nlist`, and `nprobe`. Process searches in batches with controlled concurrency, distribute load across multiple Milvus nodes/instances, monitor memory/CPU/disk I/O, and regularly maintain indexes/compaction.",
+    "budget_used": 3984
+  },
+  {
+    "conversation": "1",
+    "category": "summarization",
+    "score": 0.0,
+    "question": "Can you summarize my overall progress and key developments in improving my vector search and logging capabilities 2024-08-01 to 2024-10-22?",
+    "llm_response": "",
+    "budget_used": 3946
+  },
+  {
+    "conversation": "1",
+    "category": "summarization",
+    "score": 0.0,
+    "question": "Can you summarize how my system architecture and performance optimization plans evolved from 2024-07-01 to 2024-07-29?",
+    "llm_response": "The provided context does not contain information about system architecture and performance optimization plans evolving from 2024-07-01 to 2024-07-29.",
+    "budget_used": 3834
+  },
+  {
+    "conversation": "1",
+    "category": "temporal_reasoning",
+    "score": 0.0,
+    "question": "How many days are there between when I launch the testing suite development and when I start the deployment preparation for the RAG system?",
+    "llm_response": "3 days",
+    "budget_used": 3949
+  },
+  {
+    "conversation": "1",
+    "category": "temporal_reasoning",
+    "score": 0.0,
+    "question": "How many days passed between when I started working on the context window management module and when I began developing the query rewriting pipelines for our RAG system?",
+    "llm_response": "",
+    "budget_used": 3973
+  }
+]

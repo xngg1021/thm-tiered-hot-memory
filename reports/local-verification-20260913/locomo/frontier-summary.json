@@ -1,0 +1,804 @@
+{
+  "schema": 1,
+  "split": "full",
+  "dataset_sha256": "79fa87e90f04081343b8c8debecb80a9a6842b76a7aa537dc9fdf651ea698ff4",
+  "fusion_weight": 0.25,
+  "generation_calls": 0,
+  "parameter_search": false,
+  "embedding_used": false,
+  "source_sha256": {
+    "research/recall/frontier_association.py": "9d6c100eed0f344377da6c846506dfa548689241bd5e7e9e449d73189b31a827",
+    "research/recall/lme_retrieval.py": "96f444b2986b080b3a817bdcc1bfeb43ec089f53d61779e83f3442b129ccbf69",
+    "research/recall/frontier_temporal.py": "8f1c9ff7f678db78c380cdabd1fd27bb212a162ff91eb4946582c3bbbc932919",
+    "research/recall/frontier_census.py": "95c3348e6b6f15495a317017133543ab4ef6c3a9ed9db190216b09171cd035aa",
+    "research/recall/benchmark.py": "326d45395d76f30a2f43ab41ae03654cfc61d500759b27f9de9e62bb382bfee3",
+    "research/recall/frontier_segments.py": "c100dc01b9229412351edf20b0aca48d1db44b65aa917b632ce0b361b523145e",
+    "research/recall/scoring.py": "2ce9b5a7f9ae2e3d1132ace746edb17207a5654d98450953dafcdc3ac91242e6",
+    "research/recall/frontier_ablation.py": "df22e3f1af8bb714921ef300c9b2161cbb17dc2e1f0d9d29c39f77a648c30637",
+    "research/recall/performance_probe.py": "fbcd04ec7e150dd27885eae84d00f6226e051852e4edcf51d6f3801155e05d1f",
+    "research/recall/frontier_resources.py": "4a8113924f739656aa449f1b64071ce5605079ce3b4eb17f6d36853824833a57",
+    "research/recall/frontier_entity.py": "fad7a73ef71f21513a98c78a3ddf971456e19cb1fa682d12089ccd3ee2585e79",
+    "research/recall/decay_replay.py": "19734cd4f4ce6f3a64b62b34734dd7986f7bf5332e453747f26336e9c68fed12",
+    "research/recall/decay_from_index.py": "6c0a1d93c5a93bbf773ba88d1d6d3cb1b7fb1e6d2f6d665a9bc6fec66b4a58c1",
+    "research/recall/hardware_parity.py": "ce5bd58256b18b6a414cc498bf9d8bffe1859ce324d69b4cfa378c2c47d12904",
+    "research/recall/frontier_report.py": "36b3868e70913ce12b94423f0a8f324019c28a04555ea32f99652b11dc799dc9",
+    "thm/harness.py": "1f44728a83f336fea7db1df270ba3c6e0414c6b17319561c530139bcf3aa155c",
+    "thm/residency_telemetry.py": "ef5e5c61bcfae469308f266c9ea9e1f1a8c7943ef5f8d42841897c4145b4ef2f",
+    "thm/answer_eval.py": "8726bef41d362eaafb40ee584e98d6fbdbb8f82de1919dc6497370b8c1cbef6a",
+    "thm/residency_control.py": "732e089ffb3dfe85b76dc218c78e42018228811d9b2216c4da0becf4b8b99ce7",
+    "thm/observations.py": "207fbb28331f8657b0d0acc4aa7b0ae244662b66ebab02092bf17ec5fcb8eac6",
+    "thm/residency.py": "c55a57ed50d5c20b6a92966bba09d10e01d683a31d9071757aea137193f68824",
+    "thm/policy.py": "7608ae82359d76326563044dfe6c81cffe22d012fdc2ee0e5a0fff0e0de8a00e",
+    "thm/__init__.py": "5fda537861c8619b433a67dbf699e7d8312a599300c9a3e5a9d170121b2e4af9",
+    "thm/features.py": "56686b6f0ad14e6d123a9b5bcff4bf63d3720f310758f9aaca774721f6f3ff3e",
+    "thm/_bounded_files.py": "b7b8fb73f274415dce79399a25458c7000eb06022513f314fde085215c544d37",
+    "thm/hermes_v14_plugin.py": "68b3ced303a30489ce46e4821e6207750e6446d22684982ef307fb53acb77fcf",
+    "thm/residency_directory.py": "4401303986c34e3b8d57e66b0caca800af57b81d387d3e171f02801723edfe49",
+    "thm/sources.py": "bd27b5c14c4bc55e9d369e1ca59b30e73911a332a5f80d0195abaa57054bfe1e",
+    "thm/economics_bridge.py": "972c411d4927a39577bb94ca0e6e8fabffb0480b4aa0fdc9e85320da19461ba3",
+    "thm/_residency_common.py": "12a805d6ac7dfc9d4fa10af5209cfc13a5f22e292610487aa86a6e0fd2ecd340",
+    "thm/retrieval.py": "adf79eea6027a49f3ef8a5f131ccbfe827c5b62602b847c7ff5e72f66592da58",
+    "thm/hermes_plugin.py": "25d25a3979faf5aca668a5e6298b0f1c3135ef314b3eb3327e27a06f9130657e",
+    "thm/entities.py": "ab6e635cd300304087bdb8a4fae947b0cc0488a402a182387edc1301c6db98c8",
+    "thm/sqlite_guard.py": "803eba1a9453387bc3331cd056ed7cd80f53cc272fb758463749df00aed16225",
+    "thm/__main__.py": "c054c3efb7bb400ae9a4d537519d91474d6b4e6353773ff98e02e22ba84e96aa",
+    "thm/_process_containment.py": "7c1412e4cb3eeb0a99cff0c5b486458b71912de5a8fc6f92e3ade2ba988c0bc7",
+    "thm/mcp_legacy_server.py": "ca46b9338df02c45ccf3ac716b441513b1f8dc92727e92a926cccc7c8d2d5dfa",
+    "thm/mcp_server.py": "7498e3d1cda3c0d7ce38c6962803564740dbd7c2055d825e04c9779d3e4e7ffa",
+    "thm/actuator.py": "335cd5388d247e2fda7f8c83d9b30dc097d24a93b84f247c0d7b6b241dc0df19"
+  },
+  "summaries": {
+    "baseline": {
+      "sparse@600": {
+        "main_categories_1_to_4": {
+          "questions": 1540,
+          "scorable": 1532,
+          "no_gold_questions": 4,
+          "partially_or_unresolved_questions": 4,
+          "parent_locator_coverage": 0.693864229765013,
+          "conservative_complete_evidence_coverage": 0.693864229765013,
+          "any_gold_hits": 1063,
+          "any_gold_hit_rate": 0.693864229765013,
+          "all_gold_hit_rate": 0.5652741514360313,
+          "macro_evidence_recall": 0.6242655135748504,
+          "micro_evidence_recall": 0.5138711054204012,
+          "candidate_any_gold_rate": 0.9242819843342036,
+          "empty_context_rate": 0,
+          "mean_budget_used": 583.9272727272727,
+          "latency_ms": {
+            "p50": 17.638750025071204,
+            "p95": 23.57427151291631,
+            "p99": 26.028117230162024,
+            "mean": 18.02774055909317
+          },
+          "mrr": 0.49735432467155705,
+          "ndcg": 0.5072407862532129,
+          "query_embedding_ms_mean": 0.0
+        },
+        "conversational_categories_1_2_4": {
+          "questions": 1444,
+          "scorable": 1440,
+          "no_gold_questions": 0,
+          "partially_or_unresolved_questions": 4,
+          "parent_locator_coverage": 0.7097222222222223,
+          "conservative_complete_evidence_coverage": 0.7097222222222223,
+          "any_gold_hits": 1022,
+          "any_gold_hit_rate": 0.7097222222222223,
+          "all_gold_hit_rate": 0.5868055555555556,
+          "macro_evidence_recall": 0.643390701343004,
+          "micro_evidence_recall": 0.54192037470726,
+          "candidate_any_gold_rate": 0.9409722222222222,
+          "empty_context_rate": 0,
+          "mean_budget_used": 584.4515235457063,
+          "latency_ms": {
+            "p50": 17.674875038210303,
+            "p95": 23.57281520962715,
+            "p99": 26.028013871982694,
+            "mean": 18.07418916925241
+          },
+          "mrr": 0.5111532738095238,
+          "ndcg": 0.5233557378056961,
+          "query_embedding_ms_mean": 0.0
+        },
+        "all_categories_diagnostic_only": {
+          "questions": 1986,
+          "scorable": 1978,
+          "no_gold_questions": 4,
+          "partially_or_unresolved_questions": 4,
+          "parent_locator_coverage": 0.7042467138523761,
+          "conservative_complete_evidence_coverage": 0.7042467138523761,
+          "any_gold_hits": 1393,
+          "any_gold_hit_rate": 0.7042467138523761,
+          "all_gold_hit_rate": 0.6016177957532861,
+          "macro_evidence_recall": 0.6488244523744544,
+          "micro_evidence_recall": 0.5486978237602569,
+          "candidate_any_gold_rate": 0.9352881698685541,
+          "empty_context_rate": 0,
+          "mean_budget_used": 584.0090634441087,
+          "latency_ms": {
+            "p50": 17.712187487632036,
+            "p95": 23.709677043370903,
+            "p99": 26.02692861109972,
+            "mean": 18.192312586865008
+          },
+          "mrr": 0.5025067408156387,
+          "ndcg": 0.5213941383911693,
+          "query_embedding_ms_mean": 0.0
+        },
+        "development": {
+          "questions": 233,
+          "scorable": 231,
+          "no_gold_questions": 2,
+          "partially_or_unresolved_questions": 0,
+          "parent_locator_coverage": 0.683982683982684,
+          "conservative_complete_evidence_coverage": 0.683982683982684,
+          "any_gold_hits": 158,
+          "any_gold_hit_rate": 0.683982683982684,
+          "all_gold_hit_rate": 0.5800865800865801,
+          "macro_evidence_recall": 0.6296536796536797,
+          "micro_evidence_recall": 0.5469255663430421,
+          "candidate_any_gold_rate": 0.9437229437229437,
+          "empty_context_rate": 0,
+          "mean_budget_used": 583.9098712446352,
+          "latency_ms": {
+            "p50": 16.48558408487588,
+            "p95": 22.33391683548689,
+            "p99": 23.808819064870477,
+            "mean": 17.015876825059497
+          },
+          "mrr": 0.5020545591974164,
+          "ndcg": 0.5170607355967406,
+          "query_embedding_ms_mean": 0.0
+        },
+        "held_out": {
+          "questions": 1307,
+          "scorable": 1301,
+          "no_gold_questions": 2,
+          "partially_or_unresolved_questions": 4,
+          "parent_locator_coverage": 0.6956187548039969,
+          "conservative_complete_evidence_coverage": 0.6956187548039969,
+          "any_gold_hits": 905,
+          "any_gold_hit_rate": 0.6956187548039969,
+          "all_gold_hit_rate": 0.5626441199077633,
+          "macro_evidence_recall": 0.6233088138329522,
+          "micro_evidence_recall": 0.5088495575221239,
+          "candidate_any_gold_rate": 0.9208301306687163,
+          "empty_context_rate": 0,
+          "mean_budget_used": 583.9303749043611,
+          "latency_ms": {
+            "p50": 17.77754200156778,
+            "p95": 23.732795484829698,
+            "p99": 26.033903032075614,
+            "mean": 18.208126366308047
+          },
+          "mrr": 0.49651977111623535,
+          "ndcg": 0.5054971980146619,
+          "query_embedding_ms_mean": 0.0
+        },
+        "by_category": {
+          "multi_hop": {
+            "questions": 282,
+            "scorable": 279,
+            "no_gold_questions": 0,
+            "partially_or_unresolved_questions": 3,
+            "parent_locator_coverage": 0.6164874551971327,
+            "conservative_complete_evidence_coverage": 0.6164874551971327,
+            "any_gold_hits": 172,
+            "any_gold_hit_rate": 0.6164874551971327,
+            "all_gold_hit_rate": 0.13978494623655913,
+            "macro_evidence_recall": 0.35298426499614954,
+            "micro_evidence_recall": 0.3217993079584775,
+            "candidate_any_gold_rate": 0.899641577060932,
+            "empty_context_rate": 0,
+            "mean_budget_used": 584.9539007092199,
+            "latency_ms": {
+              "p50": 17.05143752042204,
+              "p95": 23.223097558366135,
+              "p99": 26.044285451062024,
+              "mean": 17.70568409511912
+            },
+            "mrr": 0.37431871195312055,
+            "ndcg": 0.2933954076493816,
+            "query_embedding_ms_mean": 0.0
+          },
+          "temporal": {
+            "questions": 321,
+            "scorable": 321,
+            "no_gold_questions": 0,
+            "partially_or_unresolved_questions": 0,
+            "parent_locator_coverage": 0.7476635514018691,
+            "conservative_complete_evidence_coverage": 0.7476635514018691,
+            "any_gold_hits": 240,
+            "any_gold_hit_rate": 0.7476635514018691,
+            "all_gold_hit_rate": 0.6947040498442367,
+            "macro_evidence_recall": 0.721183800623053,
+            "micro_evidence_recall": 0.6773333333333333,
+            "candidate_any_gold_rate": 0.9190031152647975,
+            "empty_context_rate": 0,
+            "mean_budget_used": 583.4392523364486,
+            "latency_ms": {
+              "p50": 17.420458025299013,
+              "p95": 23.3695829520002,
+              "p99": 26.039974484592676,
+              "mean": 17.987995949933577
+            },
+            "mrr": 0.5797223458438412,
+            "ndcg": 0.605169841363387,
+            "query_embedding_ms_mean": 0.0
+          },
+          "open_domain": {
+            "questions": 96,
+            "scorable": 92,
+            "no_gold_questions": 4,
+            "partially_or_unresolved_questions": 0,
+            "parent_locator_coverage": 0.44565217391304346,
+            "conservative_complete_evidence_coverage": 0.44565217391304346,
+            "any_gold_hits": 41,
+            "any_gold_hit_rate": 0.44565217391304346,
+            "all_gold_hit_rate": 0.22826086956521738,
+            "macro_evidence_recall": 0.32491474850809887,
+            "micro_evidence_recall": 0.22596153846153846,
+            "candidate_any_gold_rate": 0.6630434782608695,
+            "empty_context_rate": 0,
+            "mean_budget_used": 576.0416666666666,
+            "latency_ms": {
+              "p50": 17.094853974413127,
+              "p95": 23.30045829876326,
+              "p99": 25.761180877452716,
+              "mean": 17.32907604794794
+            },
+            "mrr": 0.2813707729468599,
+            "ndcg": 0.255006761953475,
+            "query_embedding_ms_mean": 0.0
+          },
+          "single_hop": {
+            "questions": 841,
+            "scorable": 840,
+            "no_gold_questions": 0,
+            "partially_or_unresolved_questions": 1,
+            "parent_locator_coverage": 0.7261904761904762,
+            "conservative_complete_evidence_coverage": 0.7261904761904762,
+            "any_gold_hits": 610,
+            "any_gold_hit_rate": 0.7261904761904762,
+            "all_gold_hit_rate": 0.694047619047619,
+            "macro_evidence_recall": 0.7101190476190476,
+            "micro_evidence_recall": 0.6987681970884658,
+            "candidate_any_gold_rate": 0.9630952380952381,
+            "empty_context_rate": 0,
+            "mean_budget_used": 584.6694411414982,
+            "latency_ms": {
+              "p50": 17.92912499513477,
+              "p95": 23.743709083646536,
+              "p99": 25.791975017637014,
+              "mean": 18.23065344310132
+            },
+            "mrr": 0.5303987150415722,
+            "ndcg": 0.5684707436052115,
+            "query_embedding_ms_mean": 0.0
+          },
+          "adversarial": {
+            "questions": 446,
+            "scorable": 446,
+            "no_gold_questions": 0,
+            "partially_or_unresolved_questions": 0,
+            "parent_locator_coverage": 0.7399103139013453,
+            "conservative_complete_evidence_coverage": 0.7399103139013453,
+            "any_gold_hits": 330,
+            "any_gold_hit_rate": 0.7399103139013453,
+            "all_gold_hit_rate": 0.726457399103139,
+            "macro_evidence_recall": 0.7331838565022422,
+            "micro_evidence_recall": 0.7260869565217392,
+            "candidate_any_gold_rate": 0.9730941704035875,
+            "empty_context_rate": 0,
+            "mean_budget_used": 584.2914798206278,
+            "latency_ms": {
+              "p50": 18.041229515802115,
+              "p95": 24.247228517197073,
+              "p99": 25.91480206465349,
+              "mean": 18.76056577692919
+            },
+            "mrr": 0.5202051747455335,
+            "ndcg": 0.5700105856453157,
+            "query_embedding_ms_mean": 0.0
+          }
+        }
+      }
+    },
+    "entity": {
+      "sparse@600": {
+        "main_categories_1_to_4": {
+          "questions": 1540,
+          "scorable": 1532,
+          "no_gold_questions": 4,
+          "partially_or_unresolved_questions": 4,
+          "parent_locator_coverage": 0.7251958224543081,
+          "conservative_complete_evidence_coverage": 0.7251958224543081,
+          "any_gold_hits": 1111,
+          "any_gold_hit_rate": 0.7251958224543081,
+          "all_gold_hit_rate": 0.5946475195822454,
+          "macro_evidence_recall": 0.6549008932654726,
+          "micro_evidence_recall": 0.5510029876227059,
+          "candidate_any_gold_rate": 0.9242819843342036,
+          "empty_context_rate": 0,
+          "mean_budget_used": 584.1207792207792,
+          "latency_ms": {
+            "p50": 17.986791499424726,
+            "p95": 24.203468405175954,
+            "p99": 27.796467342413923,
+            "mean": 18.376673317692763
+          },
+          "mrr": 0.537434725848564,
+          "ndcg": 0.5435827447916336,
+          "query_embedding_ms_mean": 0.0
+        },
+        "conversational_categories_1_2_4": {
+          "questions": 1444,
+          "scorable": 1440,
+          "no_gold_questions": 0,
+          "partially_or_unresolved_questions": 4,
+          "parent_locator_coverage": 0.7402777777777778,
+          "conservative_complete_evidence_coverage": 0.7402777777777778,
+          "any_gold_hits": 1066,
+          "any_gold_hit_rate": 0.7402777777777778,
+          "all_gold_hit_rate": 0.6173611111111111,
+          "macro_evidence_recall": 0.6738421376990456,
+          "micro_evidence_recall": 0.5793911007025762,
+          "candidate_any_gold_rate": 0.9409722222222222,
+          "empty_context_rate": 0,
+          "mean_budget_used": 584.6738227146815,
+          "latency_ms": {
+            "p50": 18.024750519543886,
+            "p95": 24.141848279396065,
+            "p99": 27.50986977713182,
+            "mean": 18.393377593842303
+          },
+          "mrr": 0.5515963955026455,
+          "ndcg": 0.5599380121953497,
+          "query_embedding_ms_mean": 0.0
+        },
+        "all_categories_diagnostic_only": {
+          "questions": 1986,
+          "scorable": 1978,
+          "no_gold_questions": 4,
+          "partially_or_unresolved_questions": 4,
+          "parent_locator_coverage": 0.654196157735086,
+          "conservative_complete_evidence_coverage": 0.654196157735086,
+          "any_gold_hits": 1294,
+          "any_gold_hit_rate": 0.654196157735086,
+          "all_gold_hit_rate": 0.5505561172901922,
+          "macro_evidence_recall": 0.598487446148991,
+          "micro_evidence_recall": 0.5262219051016768,
+          "candidate_any_gold_rate": 0.9352881698685541,
+          "empty_context_rate": 0,
+          "mean_budget_used": 584.3157099697885,
+          "latency_ms": {
+            "p50": 18.036353983916342,
+            "p95": 24.104979587718844,
+            "p99": 27.452399942558273,
+            "mean": 18.44385764410359
+          },
+          "mrr": 0.4530092926958448,
+          "ndcg": 0.46997339341976596,
+          "query_embedding_ms_mean": 0.0
+        },
+        "development": {
+          "questions": 233,
+          "scorable": 231,
+          "no_gold_questions": 2,
+          "partially_or_unresolved_questions": 0,
+          "parent_locator_coverage": 0.7359307359307359,
+          "conservative_complete_evidence_coverage": 0.7359307359307359,
+          "any_gold_hits": 170,
+          "any_gold_hit_rate": 0.7359307359307359,
+          "all_gold_hit_rate": 0.6233766233766234,
+          "macro_evidence_recall": 0.6776334776334776,
+          "micro_evidence_recall": 0.598705501618123,
+          "candidate_any_gold_rate": 0.9437229437229437,
+          "empty_context_rate": 0,
+          "mean_budget_used": 583.5965665236051,
+          "latency_ms": {
+            "p50": 16.155957942828536,
+            "p95": 22.306758794002235,
+            "p99": 23.37243457324803,
+            "mean": 16.847975678490116
+          },
+          "mrr": 0.5419964955679242,
+          "ndcg": 0.5575019334866601,
+          "query_embedding_ms_mean": 0.0
+        },
+        "held_out": {
+          "questions": 1307,
+          "scorable": 1301,
+          "no_gold_questions": 2,
+          "partially_or_unresolved_questions": 4,
+          "parent_locator_coverage": 0.7232897770945427,
+          "conservative_complete_evidence_coverage": 0.7232897770945427,
+          "any_gold_hits": 941,
+          "any_gold_hit_rate": 0.7232897770945427,
+          "all_gold_hit_rate": 0.5895465026902382,
+          "macro_evidence_recall": 0.6508645927358729,
+          "micro_evidence_recall": 0.543756145526057,
+          "candidate_any_gold_rate": 0.9208301306687163,
+          "empty_context_rate": 0,
+          "mean_budget_used": 584.2142310635043,
+          "latency_ms": {
+            "p50": 18.148250062949955,
+            "p95": 24.39399561844766,
+            "p99": 28.474297036882508,
+            "mean": 18.64919554411527
+          },
+          "mrr": 0.5366247575125361,
+          "ndcg": 0.541111313132486,
+          "query_embedding_ms_mean": 0.0
+        },
+        "by_category": {
+          "multi_hop": {
+            "questions": 282,
+            "scorable": 279,
+            "no_gold_questions": 0,
+            "partially_or_unresolved_questions": 3,
+            "parent_locator_coverage": 0.6953405017921147,
+            "conservative_complete_evidence_coverage": 0.6953405017921147,
+            "any_gold_hits": 194,
+            "any_gold_hit_rate": 0.6953405017921147,
+            "all_gold_hit_rate": 0.2007168458781362,
+            "macro_evidence_recall": 0.422339348697583,
+            "micro_evidence_recall": 0.3829296424452134,
+            "candidate_any_gold_rate": 0.899641577060932,
+            "empty_context_rate": 0,
+            "mean_budget_used": 583.7375886524823,
+            "latency_ms": {
+              "p50": 17.408729065209627,
+              "p95": 24.563738098368045,
+              "p99": 28.606931261019778,
+              "mean": 18.210401308990303
+            },
+            "mrr": 0.4405259714399499,
+            "ndcg": 0.3560891847333872,
+            "query_embedding_ms_mean": 0.0
+          },
+          "temporal": {
+            "questions": 321,
+            "scorable": 321,
+            "no_gold_questions": 0,
+            "partially_or_unresolved_questions": 0,
+            "parent_locator_coverage": 0.7694704049844237,
+            "conservative_complete_evidence_coverage": 0.7694704049844237,
+            "any_gold_hits": 247,
+            "any_gold_hit_rate": 0.7694704049844237,
+            "all_gold_hit_rate": 0.7165109034267912,
+            "macro_evidence_recall": 0.7429906542056075,
+            "micro_evidence_recall": 0.7013333333333334,
+            "candidate_any_gold_rate": 0.9190031152647975,
+            "empty_context_rate": 0,
+            "mean_budget_used": 585.0560747663551,
+            "latency_ms": {
+              "p50": 17.91699999012053,
+              "p95": 24.752416997216642,
+              "p99": 33.078358648344924,
+              "mean": 18.517684457298497
+            },
+            "mrr": 0.6091430549374475,
+            "ndcg": 0.6322925800989947,
+            "query_embedding_ms_mean": 0.0
+          },
+          "open_domain": {
+            "questions": 96,
+            "scorable": 92,
+            "no_gold_questions": 4,
+            "partially_or_unresolved_questions": 0,
+            "parent_locator_coverage": 0.4891304347826087,
+            "conservative_complete_evidence_coverage": 0.4891304347826087,
+            "any_gold_hits": 45,
+            "any_gold_hit_rate": 0.4891304347826087,
+            "all_gold_hit_rate": 0.2391304347826087,
+            "macro_evidence_recall": 0.3584292412617221,
+            "micro_evidence_recall": 0.25961538461538464,
+            "candidate_any_gold_rate": 0.6630434782608695,
+            "empty_context_rate": 0,
+            "mean_budget_used": 575.8020833333334,
+            "latency_ms": {
+              "p50": 17.732645967043936,
+              "p95": 24.739312240853906,
+              "p99": 29.77041906560764,
+              "mean": 18.12541316394345
+            },
+            "mrr": 0.3157738095238095,
+            "ndcg": 0.2875872549943394,
+            "query_embedding_ms_mean": 0.0
+          },
+          "single_hop": {
+            "questions": 841,
+            "scorable": 840,
+            "no_gold_questions": 0,
+            "partially_or_unresolved_questions": 1,
+            "parent_locator_coverage": 0.7440476190476191,
+            "conservative_complete_evidence_coverage": 0.7440476190476191,
+            "any_gold_hits": 625,
+            "any_gold_hit_rate": 0.7440476190476191,
+            "all_gold_hit_rate": 0.7178571428571429,
+            "macro_evidence_recall": 0.7309523809523809,
+            "micro_evidence_recall": 0.7189249720044792,
+            "candidate_any_gold_rate": 0.9630952380952381,
+            "empty_context_rate": 0,
+            "mean_budget_used": 584.8418549346017,
+            "latency_ms": {
+              "p50": 18.21045798715204,
+              "p95": 23.768499959260225,
+              "p99": 25.695008388720456,
+              "mean": 18.407285809251132
+            },
+            "mrr": 0.5664965986394558,
+            "ndcg": 0.5999951628677513,
+            "query_embedding_ms_mean": 0.0
+          },
+          "adversarial": {
+            "questions": 446,
+            "scorable": 446,
+            "no_gold_questions": 0,
+            "partially_or_unresolved_questions": 0,
+            "parent_locator_coverage": 0.4103139013452915,
+            "conservative_complete_evidence_coverage": 0.4103139013452915,
+            "any_gold_hits": 183,
+            "any_gold_hit_rate": 0.4103139013452915,
+            "all_gold_hit_rate": 0.3991031390134529,
+            "macro_evidence_recall": 0.4047085201793722,
+            "micro_evidence_recall": 0.4,
+            "candidate_any_gold_rate": 0.9730941704035875,
+            "empty_context_rate": 0,
+            "mean_budget_used": 584.9887892376681,
+            "latency_ms": {
+              "p50": 18.173249962273985,
+              "p95": 23.988041502889246,
+              "p99": 25.615006557200108,
+              "mean": 18.67583939897506
+            },
+            "mrr": 0.16300982276318599,
+            "ndcg": 0.2171269218912878,
+            "query_embedding_ms_mean": 0.0
+          }
+        }
+      }
+    }
+  },
+  "builds": {
+    "baseline": [
+      {
+        "scope": "conv-26",
+        "documents": 419,
+        "index_seconds": 0.03401141706854105
+      },
+      {
+        "scope": "conv-30",
+        "documents": 369,
+        "index_seconds": 0.026539499987848103
+      },
+      {
+        "scope": "conv-41",
+        "documents": 663,
+        "index_seconds": 0.05093350005336106
+      },
+      {
+        "scope": "conv-42",
+        "documents": 629,
+        "index_seconds": 0.04372883297037333
+      },
+      {
+        "scope": "conv-43",
+        "documents": 680,
+        "index_seconds": 0.0488718330161646
+      },
+      {
+        "scope": "conv-44",
+        "documents": 675,
+        "index_seconds": 0.04741324996575713
+      },
+      {
+        "scope": "conv-47",
+        "documents": 689,
+        "index_seconds": 0.0480102919973433
+      },
+      {
+        "scope": "conv-48",
+        "documents": 681,
+        "index_seconds": 0.04685154103208333
+      },
+      {
+        "scope": "conv-49",
+        "documents": 509,
+        "index_seconds": 0.03657258301973343
+      },
+      {
+        "scope": "conv-50",
+        "documents": 568,
+        "index_seconds": 0.045063207973726094
+      }
+    ],
+    "entity": [
+      {
+        "scope": "conv-26",
+        "documents": 419,
+        "index_seconds": 0.033213207963854074
+      },
+      {
+        "scope": "conv-30",
+        "documents": 369,
+        "index_seconds": 0.026071124942973256
+      },
+      {
+        "scope": "conv-41",
+        "documents": 663,
+        "index_seconds": 0.05040300008840859
+      },
+      {
+        "scope": "conv-42",
+        "documents": 629,
+        "index_seconds": 0.04517375002615154
+      },
+      {
+        "scope": "conv-43",
+        "documents": 680,
+        "index_seconds": 0.05207874998450279
+      },
+      {
+        "scope": "conv-44",
+        "documents": 675,
+        "index_seconds": 0.04897100001107901
+      },
+      {
+        "scope": "conv-47",
+        "documents": 689,
+        "index_seconds": 0.050251916982233524
+      },
+      {
+        "scope": "conv-48",
+        "documents": 681,
+        "index_seconds": 0.04487750004045665
+      },
+      {
+        "scope": "conv-49",
+        "documents": 509,
+        "index_seconds": 0.03973133396357298
+      },
+      {
+        "scope": "conv-50",
+        "documents": 568,
+        "index_seconds": 0.04454170796088874
+      }
+    ]
+  },
+  "paired": {
+    "600": {
+      "development": {
+        "denominator": 231,
+        "wins": 14,
+        "losses": 2,
+        "ties": 215,
+        "delta_pp": 5.194805194805195,
+        "relative_percent": 7.594936708860759,
+        "cluster_bootstrap_95ci_pp": [
+          4.666666666666667,
+          6.172839506172839
+        ],
+        "bootstrap_unit": "conversation",
+        "bootstrap_seed": 20260907,
+        "replicates": 2000
+      },
+      "held_out": {
+        "denominator": 1301,
+        "wins": 55,
+        "losses": 19,
+        "ties": 1227,
+        "delta_pp": 2.7671022290545735,
+        "relative_percent": 3.977900552486188,
+        "cluster_bootstrap_95ci_pp": [
+          1.7945632605340542,
+          3.824735839251689
+        ],
+        "bootstrap_unit": "conversation",
+        "bootstrap_seed": 20260907,
+        "replicates": 2000
+      },
+      "all": {
+        "denominator": 1532,
+        "wins": 69,
+        "losses": 21,
+        "ties": 1442,
+        "delta_pp": 3.133159268929504,
+        "relative_percent": 4.51552210724365,
+        "cluster_bootstrap_95ci_pp": [
+          2.1651902211234724,
+          4.199162665945409
+        ],
+        "bootstrap_unit": "conversation",
+        "bootstrap_seed": 20260907,
+        "replicates": 2000
+      }
+    }
+  },
+  "category_paired_600": {
+    "1": {
+      "denominator": 236,
+      "wins": 16,
+      "losses": 0,
+      "ties": 220,
+      "delta_pp": 6.779661016949152,
+      "relative_percent": 10.738255033557047,
+      "cluster_bootstrap_95ci_pp": [
+        4.123358282728428,
+        9.166666666666666
+      ],
+      "bootstrap_unit": "conversation",
+      "bootstrap_seed": 20260907,
+      "replicates": 2000
+    },
+    "2": {
+      "denominator": 258,
+      "wins": 10,
+      "losses": 3,
+      "ties": 245,
+      "delta_pp": 2.7131782945736433,
+      "relative_percent": 3.8251366120218577,
+      "cluster_bootstrap_95ci_pp": [
+        0.37453183520599254,
+        5.532505910165482
+      ],
+      "bootstrap_unit": "conversation",
+      "bootstrap_seed": 20260907,
+      "replicates": 2000
+    },
+    "3": {
+      "denominator": 81,
+      "wins": 3,
+      "losses": 0,
+      "ties": 78,
+      "delta_pp": 3.7037037037037037,
+      "relative_percent": 8.571428571428571,
+      "cluster_bootstrap_95ci_pp": [
+        1.1235955056179776,
+        7.248144220572631
+      ],
+      "bootstrap_unit": "conversation",
+      "bootstrap_seed": 20260907,
+      "replicates": 2000
+    },
+    "4": {
+      "denominator": 726,
+      "wins": 26,
+      "losses": 16,
+      "ties": 684,
+      "delta_pp": 1.3774104683195592,
+      "relative_percent": 1.858736059479554,
+      "cluster_bootstrap_95ci_pp": [
+        -0.24540630982348774,
+        2.9096805575950824
+      ],
+      "bootstrap_unit": "conversation",
+      "bootstrap_seed": 20260907,
+      "replicates": 2000
+    }
+  },
+  "failure_census_v2": {
+    "baseline": {
+      "denominator": 1532,
+      "candidate_missing": 116,
+      "candidate_present_not_packed": 353,
+      "causal_labels": "Temporal/entity/association causes and stale/scope cases not inferred from category."
+    },
+    "entity": {
+      "denominator": 1532,
+      "candidate_missing": 116,
+      "candidate_present_not_packed": 305,
+      "causal_labels": "Temporal/entity/association causes and stale/scope cases not inferred from category."
+    }
+  },
+  "preregistered_admission": {
+    "checks": {
+      "any_gold_at_least_1pp": true,
+      "all_gold_nonnegative": true,
+      "no_category_regression_over_2pp": true,
+      "p95_ratio_at_most_1_25": true
+    },
+    "passed": true
+  }
+}
