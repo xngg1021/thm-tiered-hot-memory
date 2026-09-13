@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "thm-local-memory"
-version = "1.5.0"
+version = "1.6.0"
 description = "Local scoped retrieval, memory observations and shadow residency control for THM"
 requires-python = ">=3.10"
 license = {text = "MIT"}

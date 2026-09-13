@@ -11,6 +11,10 @@ Auteur : Junfu Shi (SJF, xngg1021) · Licence : [MIT](LICENSE)
 
 THM sépare mémoire logique, exécution de calcul et stockage physique. La version 1.5.0 réunit ces plans, Evaluation Fabric, un actionneur de résidence explicite et la Context Economics bridge indépendante. L’identité et la portée des sources restent souveraines. Les preuves historiques de 1.4.0 conservent protocole et SHA ; la stabilité de l’implémentation ne vaut pas validation matérielle ou métier.
 
+La version 1.6.0 ajoute un environnement système optionnel pour les agents : époques de topologie dynamique, observations thermiques et électriques, concurrence bornée, E/S natives, analyse de fiabilité, recherche déterministe en mémoire longue et preuves CE v2. « Hot » couvre les états logique, calculatoire, physique, thermique, économique, de demande et de fiabilité, sans créer de niveaux supplémentaires. Exécution native, performances soutenues et résultats des agents sont validés séparément.
+
+[1.6 runtime](docs/24-agent-systems-runtime.md) · [0-LLM ceiling](docs/25-long-tail-ceiling.md) · [1.6 completion](reports/2026-09-13-thm-1.6-full-power-completion.md)
+
 <!-- section:philosophy -->
 ## Philosophie de conception
 

@@ -11,6 +11,10 @@ Author: Junfu Shi (SJF, xngg1021) · License: [MIT](LICENSE)
 
 THM separates logical memory, compute execution and physical storage. Version 1.5.0 brings these planes, Evaluation Fabric, explicit residency actuation and the independent Context Economics bridge into one implementation surface. Source identity and scope remain authoritative. Historical 1.4.0 evidence retains its original protocol and SHA; implementation stability does not grant hardware or task acceptance.
 
+Version 1.6.0 adds an optional agent systems runtime: dynamic topology epochs, thermal and power observations, bounded concurrency, native I/O, reliability analysis, deterministic long-tail retrieval and CE v2 evidence. “Hot” includes logical, computational, physical, thermal, economic, demand and reliability state; these axes do not create new tiers. Native execution, sustained performance and agent outcomes have separate acceptance gates.
+
+[1.6 runtime](docs/24-agent-systems-runtime.md) · [0-LLM ceiling](docs/25-long-tail-ceiling.md) · [1.6 completion](reports/2026-09-13-thm-1.6-full-power-completion.md)
+
 <!-- section:philosophy -->
 ## Design philosophy
 

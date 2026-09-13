@@ -11,6 +11,10 @@ Autor: Junfu Shi (SJF, xngg1021) · Lizenz: [MIT](LICENSE)
 
 THM trennt logischen Speicher, Rechenausführung und physische Speicherung. Version 1.5.0 umfasst diese Ebenen, Evaluation Fabric, den expliziten Residenzaktor und die unabhängige Context Economics bridge. Quellidentität und Geltungsbereich bleiben maßgeblich. Historische Belege aus 1.4.0 behalten Protokoll und SHA; Implementierungsstabilität bedeutet keine Hardware- oder Aufgabenabnahme.
 
+Version 1.6.0 ergänzt eine optionale Agent-Systemlaufzeit mit dynamischen Topologie-Epochen, Wärme- und Leistungsmessung, begrenzter Parallelität, nativer E/A, Zuverlässigkeitsanalyse, deterministischer Langzeitabfrage und CE-v2-Nachweisen. „Hot“ beschreibt logischen, rechnerischen, physischen, thermischen, wirtschaftlichen, bedarfsbezogenen und zuverlässigkeitsbezogenen Zustand; daraus entstehen keine neuen Stufen. Native Ausführung, Dauerleistung und Agent-Ergebnisse werden getrennt geprüft.
+
+[1.6 runtime](docs/24-agent-systems-runtime.md) · [0-LLM ceiling](docs/25-long-tail-ceiling.md) · [1.6 completion](reports/2026-09-13-thm-1.6-full-power-completion.md)
+
 <!-- section:philosophy -->
 ## Design philosophy
 

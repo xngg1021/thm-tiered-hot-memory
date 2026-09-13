@@ -1,0 +1,14 @@
+{
+  "schema": "thm-mps-gate-correction/1",
+  "source_report": "reports/2026-09-13-apple-adaptation-audit.md",
+  "source_commit": "241c0b02067c47c54a0e85622d429fc18af22c50",
+  "evidence": "historical-summary-recomputation",
+  "new_hardware_execution": false,
+  "minimum_cosine": 0.9999998808,
+  "maximum_absolute_error": 1.825e-7,
+  "cosine_tolerance": 0.0001,
+  "absolute_tolerance": 0.0001,
+  "top5_order_identical": true,
+  "corrected_gate_on_reported_values": true,
+  "hardware_acceptance": false
+}

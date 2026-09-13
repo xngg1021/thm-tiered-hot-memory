@@ -1,5 +1,15 @@
 # Changelog
 
+## 1.6.0 — implementation under release validation, 2026-09-13
+
+- Add topology epochs and result publication guards, thermal/power envelopes, bounded concurrency/QoS and native Linux/Windows/macOS I/O with portable fallback.
+- Add optional dependency-free Rust SysCore, source-owned model/buffer lifetimes, public CUDA VMM, userfaultfd/libbpf/ETW research lifecycles and Apple MPSGraph/Accelerate execution.
+- Add source-bound temporal/event retrieval, exact/heuristic evidence selection, evaluator-only candidate/ranking/packing ceilings and unchanged five-adapter baselines.
+- Add agent/KV/tool identities, trace ablations, reliability/censoring/fault campaigns, CE v2 provenance and content-addressed evidence policy.
+- Correct the MPS cosine admission bug and CoreML audit wording without rewriting historical measurements. Package version does not imply hardware acceptance or a stable archive; the exact-head review/CI and normal-merge gates govern acceptance.
+
+See the [1.6 completion ledger](reports/2026-09-13-thm-1.6-full-power-completion.md).
+
 ## 1.5.0 — accepted implementation/integration stable, 2026-09-12
 
 THM 1.5.0 is implementation/integration stable at `de26865f36df2205c29a470e51c65d5bf9beca4e`, normally merged by PR #21 from `d33fc70677e61d6733fdbc8c0f71bced6168dff4`. The immutable `archive/v1.5.0-stable` pins that accepted implementation main. Exact-head and post-merge correctness, Hermes and harness workflows passed; 669 local unit tests ran with zero failures/errors and 3 expected skips. The 28 domains are implemented with zero external implementation gaps; remaining hardware, target-machine, full-research, private-workload and real-environment work is evidence-only. [Final acceptance receipt](reports/2026-09-12-v1.5-closeout.json). Remote branch-protection administration remains an integration 403 governance limitation.

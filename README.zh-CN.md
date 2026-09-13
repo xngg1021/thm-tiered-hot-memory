@@ -11,6 +11,10 @@
 
 THM 将逻辑记忆、计算执行和物理存储分开。1.5.0 将这些平面、Evaluation Fabric、显式驻留执行器和独立的 Context Economics bridge 纳入统一实现范围。源身份和作用域始终保持权威。历史 1.4.0 证据保留原始协议和 SHA；实现稳定不代表硬件或任务验收。
 
+1.6.0 新增可选 Agent 系统运行时：动态拓扑 epoch、热与功耗观测、有界并发、原生 I/O、可靠性分析、确定性长尾检索和 CE v2 证据。“Hot”涵盖逻辑、计算、物理、热、经济、需求与可靠性状态，这些维度不会创造新层级。原生执行、持续性能和 Agent 结果分别验收。
+
+[1.6 runtime](docs/24-agent-systems-runtime.md) · [0-LLM ceiling](docs/25-long-tail-ceiling.md) · [1.6 completion](reports/2026-09-13-thm-1.6-full-power-completion.md)
+
 <!-- section:philosophy -->
 ## 设计理念
 

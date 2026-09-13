@@ -19,7 +19,8 @@ from thm._bounded_files import bounded_file_bytes
 
 REPOSITORY = 'xngg1021/thm-tiered-hot-memory'
 ARCHIVE = 'e6e4dda5835e3cb345207457d5491131c6959b2c'
-REQUIRED = ('THM correctness', 'THM Hermes integration', 'THM harness integrations')
+ARCHIVE_V15 = 'de26865f36df2205c29a470e51c65d5bf9beca4e'
+REQUIRED = ('THM correctness', 'THM Hermes integration', 'THM harness integrations', 'THM systems native and reliability')
 
 
 def verify(snapshot, *, expected_head, expected_base):
@@ -37,6 +38,8 @@ def verify(snapshot, *, expected_head, expected_base):
         raise ValueError('base changed; refresh snapshot and repeat admission')
     if snapshot.get('archive_v1_4_sha') != ARCHIVE:
         raise ValueError('historical archive moved')
+    if snapshot.get('archive_v1_5_sha') != ARCHIVE_V15:
+        raise ValueError('1.5 stable archive moved')
     if snapshot.get('merge_method') != 'merge' or snapshot.get('force_push') is not False:
         raise ValueError('forward-only normal merge required')
     admitted = {}
@@ -65,7 +68,7 @@ def verify(snapshot, *, expected_head, expected_base):
     out = {'schema': 'thm-merge-gate/1', 'repository': REPOSITORY, 'pr_number': snapshot['pr_number'],
            'expected_head_sha': expected_head, 'expected_base_sha': expected_base,
            'base_sha': snapshot['base_sha'], 'merge_method': 'merge',
-           'workflow_ids': admitted, 'review': review, 'archive_v1_4_sha': ARCHIVE,
+           'workflow_ids': admitted, 'review': review, 'archive_v1_4_sha': ARCHIVE, 'archive_v1_5_sha':ARCHIVE_V15,
            'remote_protection': snapshot.get('remote_protection', 'unknown'),
            'scope': 'snapshot admission against freshly observed main; expected-head merge and exact-parent postcondition still required'}
     raw = json.dumps(out, sort_keys=True, separators=(',', ':'), allow_nan=False).encode()

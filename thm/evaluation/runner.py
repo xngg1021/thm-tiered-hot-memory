@@ -14,9 +14,12 @@ from .identity import implementation_identity
 
 
 def run(adapter, source, root, *, mode='acceptance', provenance='external-dataset',
-        full_research=False, budget=600, logical_tier='T3', features=None, retrieval_mode='sparse', encoder=None, model_id=None):
+        full_research=False, budget=600, logical_tier='T3', features=None, retrieval_mode='sparse', encoder=None, model_id=None,
+        long_tail=False, ceiling=False):
     from thm.features import RetrievalFeatures
     features = RetrievalFeatures.parse(features)
+    if type(long_tail) is not bool or type(ceiling) is not bool:
+        raise ValueError('explicit research flags required')
     if retrieval_mode not in ('literal', 'sparse', 'dense', 'hybrid'):
         raise ValueError('invalid retrieval operating point')
     if retrieval_mode in ('dense', 'hybrid') and (encoder is None or not model_id):
@@ -49,7 +52,11 @@ def run(adapter, source, root, *, mode='acceptance', provenance='external-datase
             raise ValueError('task exceeds bounded corpus limit; use explicit full-research')
         total_docs += len(docs)
         source_bytes += nbytes
-        index = SearchIndex(root / f'{len(rows)}.sqlite', TokenCounter('utf8_bytes'))
+        index_class = SearchIndex
+        if long_tail:
+            from thm.long_tail_retrieval import LongTailSearchIndex
+            index_class = LongTailSearchIndex
+        index = index_class(root / f'{len(rows)}.sqlite', TokenCounter('utf8_bytes'))
         try:
             index.replace_scope(task.scope, docs)
             if retrieval_mode in ('dense', 'hybrid'):
@@ -64,7 +71,26 @@ def run(adapter, source, root, *, mode='acceptance', provenance='external-datase
         parents = tuple(unit_map[x] for x in out.get('parent_locator_ids', selected) if x in unit_map)
         result = Result(task.id, gold, selected, units, parents, out['budget_used'],
                         out['timing_ms']['total'], len(out['selected']))
-        rows.append(result.public())
+        public = result.public()
+        if ceiling:
+            import json
+            from thm.long_tail import EvidenceCandidate
+            from .ceiling import RetrievalCeilingReport
+            lookup = {d.id: d for d in docs}
+            candidate_ids = tuple(out.get('candidate_ids', ()))
+            packing_ids=tuple(out.get('packing_ids', ()))
+            records = {}
+            for key in dict.fromkeys(candidate_ids+packing_ids):
+                document = lookup[key]
+                label = json.dumps({'id':document.id,'speaker':document.speaker,'date':document.timestamp},ensure_ascii=False)
+                cost = len((f'[source {label}]\n'+document.text).encode())+2
+                records[key]=EvidenceCandidate(key,cost,0,frozenset({unit_map[key]}))
+            public['ceiling'] = RetrievalCeilingReport(task.id,frozenset(gold.evidence_ids),tuple(records[key] for key in candidate_ids),
+                tuple(out.get('pre_expansion_ranked_ids', ())),selected,budget+2 if budget else 0,
+                packing_ids=packing_ids,packing_candidates=tuple(records[key] for key in packing_ids)).public()
+        if long_tail:
+            public['long_tail'] = out.get('long_tail')
+        rows.append(public)
     if not rows:
         raise ValueError('empty campaign')
     taxonomy = Taxonomy(logical_tier=logical_tier, compute_profile=(

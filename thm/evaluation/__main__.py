@@ -18,6 +18,8 @@ def main():
     p.add_argument('--benchmark', choices=tuple(ADAPTERS))
     p.add_argument('--dataset', type=Path)
     p.add_argument('--features-json', default='{}', help='Typed default-off RetrievalFeatures JSON')
+    p.add_argument('--long-tail', action='store_true', help='Opt-in deterministic joint selection')
+    p.add_argument('--ceiling', action='store_true', help='Evaluator-only budget and candidate loss decomposition')
     p.add_argument('--output', type=Path, required=True)
     p.add_argument('--wall-seconds', type=int, default=3300)
     p.add_argument('--worker', action='store_true', help=argparse.SUPPRESS)
@@ -61,7 +63,8 @@ def main():
                 source = FIXTURES[name]
             receipt = run(ADAPTERS[name], source, args.output / name, mode=args.mode,
                           provenance='external-dataset' if args.dataset else 'deterministic-fixture',
-                          full_research=args.full_research, features=json.loads(args.features_json))
+                          full_research=args.full_research, features=json.loads(args.features_json),
+                          long_tail=args.long_tail, ceiling=args.ceiling)
             receipts.append(receipt)
         physical = storage_probe(args.output / 'physical-scratch')
         for receipt in receipts:

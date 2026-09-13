@@ -53,6 +53,9 @@ def _resident_unit_cost(counter: TokenCounter, source_text: dict[str, str]):
 
 def main(argv=None):
     argv = list(sys.argv[1:] if argv is None else argv)
+    if argv[:1] == ['systems']:
+        from .systems.cli import main as systems_main
+        return systems_main(argv[1:])
     if argv[:1] == ["storage"]:
         from .physical.cli import main as storage_main
         return storage_main(argv[1:])

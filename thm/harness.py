@@ -25,8 +25,12 @@ class HarnessConfig:
     model_path: str | None = None
     model_id: str | None = None
     features: RetrievalFeatures | dict | None = None
+    systems: bool = False
+    long_tail: bool = False
 
     def validate(self) -> None:
+        if type(self.systems) is not bool or type(self.long_tail) is not bool:
+            raise ValueError('systems and long_tail require explicit booleans')
         RetrievalFeatures.parse(self.features)
         if not isinstance(self.db, str) or not self.db.strip():
             raise ValueError("db is required")
@@ -63,11 +67,18 @@ class THMHarnessAdapter:
         if not path.is_file():
             raise ValueError("THM retrieval database does not exist; import sources first")
         counter = TokenCounter(self.config.counter)
-        self._index = SearchIndex(path, counter, readonly=True)
+        index_class = SearchIndex
+        if self.config.long_tail:
+            from .long_tail_retrieval import LongTailSearchIndex
+            index_class = LongTailSearchIndex
+        self._index = index_class(path, counter, readonly=True)
         if self.config.mode in ("dense", "hybrid"):
             self._encoder = SentenceEncoder(self.config.model_path, self.config.model_id)
         from .runtime.fabric.service import RuntimeService
         self._runtime = RuntimeService(self._index, encoder=self._encoder, model_id=self.config.model_id)
+        if self.config.systems:
+            from .systems.runtime import AgentSystemsRuntime
+            self._runtime = AgentSystemsRuntime(self._runtime)
 
     def recall(self, query: str) -> dict:
         if not isinstance(query, str) or not query.strip():
@@ -110,6 +121,8 @@ class THMHarnessAdapter:
                 "features":out.get("features"),
                 "runtime_receipt":out.get("runtime_receipt"),
                 "execution_plan":out.get("execution_plan"),
+                "systems_receipt":out.get("systems_receipt"),
+                "long_tail":out.get("long_tail"),
             }
 
     def runtime_status(self):

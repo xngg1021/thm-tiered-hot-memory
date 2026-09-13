@@ -108,3 +108,7 @@ See the [current corrective contract and short retest](19-post-local-corrective.
 ## 1.5 accepted closeout
 
 THM 1.5.0 is implementation/integration stable at `de26865f36df2205c29a470e51c65d5bf9beca4e`, normally merged by PR #21 from `d33fc70677e61d6733fdbc8c0f71bced6168dff4`. The immutable `archive/v1.5.0-stable` pins that accepted implementation main. Exact-head and post-merge correctness, Hermes and harness workflows passed; 669 local unit tests ran with zero failures/errors and 3 expected skips. The 28 domains are implemented with zero external implementation gaps; remaining hardware, target-machine, full-research, private-workload and real-environment work is evidence-only. [Final acceptance receipt](../reports/2026-09-12-v1.5-closeout.json). Remote branch-protection administration remains an integration 403 governance limitation.
+
+## 1.6 agent systems runtime
+
+See [runtime and native evidence](24-agent-systems-runtime.md), [long-tail retrieval ceilings](25-long-tail-ceiling.md) and [the current completion ledger](../reports/2026-09-13-thm-1.6-full-power-completion.md). Historical 1.5 records retain their original identities and evidence scope.

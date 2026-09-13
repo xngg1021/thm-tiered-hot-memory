@@ -1,0 +1,14 @@
+[package]
+name = "thm-syscore"
+version = "1.6.0"
+edition = "2021"
+license = "MIT"
+description = "Optional bounded native I/O substrate for THM"
+
+[features]
+default = []
+native-io = []
+
+[profile.release]
+panic = "abort"
+strip = true

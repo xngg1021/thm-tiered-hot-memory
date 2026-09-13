@@ -82,3 +82,11 @@ for name, vendor, family, libraries in [
                          options=(('libraries', libraries),), maturity=1))
 for name in ('google.pjrt', 'aws.neuron', 'tenstorrent.ttnn', 'portable.vulkan', 'portable.opencl', 'diskann', 'multi-device'):
     BUILTINS.append(spec(name, name.split('.')[0], name, 'native:NativeExtensionSeam', operations=('extension',), maturity=0))
+
+
+# Public Apple primitives now have a built-in executable path, without claiming
+# BNNS/ANE/AMX dispatch or upgrading fixture evidence to hardware acceptance.
+from dataclasses import replace as _replace
+BUILTINS=[_replace(row,factory='thm.runtime.fabric.native:AppleNativePrimitive',maturity=2,
+                  supported_os=('Darwin',),supported_operations=('extension','matrix'))
+          if row.provider_id in ('apple.mpsgraph','apple.bnns') else row for row in BUILTINS]

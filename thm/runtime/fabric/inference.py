@@ -278,11 +278,35 @@ class CoreMLInference(LocalInferenceBase):
         if unit not in ('CPU_ONLY', 'CPU_AND_GPU', 'CPU_AND_NE', 'ALL'):
             raise ValueError('unsupported Core ML compute units')
         start = time.perf_counter()
-        self.model = ct.models.MLModel(artifact.locator, compute_units=getattr(ct.ComputeUnit, unit))
+        from thm.systems.artifacts import model_snapshot
+        source=Path(artifact.locator)
+        self.close()
+        owner=model_snapshot(source.parent if source.is_file() else source)
+        try:
+            snapshot,manifest=owner.__enter__()
+            consumed=snapshot/source.name if source.is_file() else snapshot
+            if artifact_digest(consumed)!=artifact.source_sha:
+                raise ValueError('CoreML owned model identity changed')
+            self.model=ct.models.MLModel(str(consumed),compute_units=getattr(ct.ComputeUnit,unit))
+            if artifact_digest(consumed)!=artifact.source_sha:
+                raise ValueError('CoreML changed its model during load')
+        except BaseException:
+            import sys
+            owner.__exit__(*sys.exc_info())
+            self.model=None
+            raise
+        self._snapshot_owner=owner
         self.artifact = artifact
         self.last = {'startup_ms': (time.perf_counter()-start)*1000, 'allowed_compute_units': unit,
-                     'observed_ane_kernel': None}
+                     'observed_ane_kernel': None,'ANE_placement':'placement_unobservable',
+                     'consumed_model_sha':artifact.source_sha,'model_manifest_sha':manifest['sha256']}
         return self
 
     def encode_many(self, inputs):
         return self._run(lambda x: self.model.predict(x), inputs)
+
+    def close(self):
+        self.model=None
+        owner=getattr(self,'_snapshot_owner',None)
+        self._snapshot_owner=None
+        if owner is not None:owner.__exit__(None,None,None)

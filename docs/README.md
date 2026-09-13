@@ -89,3 +89,7 @@ See the [current corrective contract and short retest](19-post-local-corrective.
 ## 1.5 implementation and evidence contract
 
 [1.5 implementation surface](24-full-power-implementation.md) defines the executable configured provider/storage lifecycle, allocation and joint-planning APIs, explicit actuator, five benchmark/environment/outcome interfaces, independent CE bridge, and LangGraph/Deep Agents lifecycle. Automatic memory mutation remains false and rejected features remain default-off. Hardware, full-research and real task evidence are separately recorded in the [completion ledger](../reports/2026-09-12-thm-full-power-completion.md).
+
+## 1.6 agent systems runtime
+
+See [runtime and native evidence](24-agent-systems-runtime.md), [long-tail retrieval ceilings](25-long-tail-ceiling.md) and [the current completion ledger](../reports/2026-09-13-thm-1.6-full-power-completion.md). Historical 1.5 records retain their original identities and evidence scope.

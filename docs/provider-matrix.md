@@ -80,8 +80,8 @@ Counts: L0: 7, L1: 12, L2: 1, L4: 51.
 | `intel.onednn` | oneDNN | L1 | ctypes.util.find_library and explicit extension bridge |
 | `intel.onemkl` | oneMKL | L1 | ctypes.util.find_library and explicit extension bridge |
 | `intel.levelzero` | LevelZero | L1 | ctypes.util.find_library and explicit extension bridge |
-| `apple.mpsgraph` | MPSGraph-MPS | L1 | ctypes.util.find_library and explicit extension bridge |
-| `apple.bnns` | Accelerate-BNNS | L1 | ctypes.util.find_library and explicit extension bridge |
+| `apple.mpsgraph` | MPSGraph-MPS | L2 | built-in public MPSGraph matrix lifecycle; hardware performance unvalidated |
+| `apple.bnns` | Accelerate-BNNS | L2 | built-in Accelerate CBLAS matrix A/B; BNNS/AMX dispatch not inferred |
 | `ascend.acl` | AscendCL-ACLNN | L1 | ctypes.util.find_library and explicit extension bridge |
 | `musa.runtime` | MUSA-muBLAS-muDNN | L1 | ctypes.util.find_library and explicit extension bridge |
 | `cambricon.cnrt` | CNRT-CNNL-CNDrv | L1 | ctypes.util.find_library and explicit extension bridge |

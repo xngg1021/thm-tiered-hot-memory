@@ -1,8 +1,8 @@
 {
   "schema_version": 1,
   "repository": "xngg1021/thm-tiered-hot-memory",
-  "generated_from_commit": "de26865f36df2205c29a470e51c65d5bf9beca4e",
-  "generated_on": "2026-09-07",
+  "generated_from_commit": "8a64e30622178cb294d8d89f0ba60d003619fcef",
+  "generated_on": "2026-09-13",
   "policy": {
     "authoritative_history": "git commits",
     "archive_branches": "immutable milestone pointers; do not move after publication",
@@ -176,6 +176,11 @@
     {
       "commit": "b96b82f027ca128072e3c0b3899331af1155b39e",
       "description": "PR #20 normally merged: zero-touch Provider Fabric with exact-head correctness, Hermes and harness."
+    },
+    {
+      "name": "v1.6 agent systems runtime development begins",
+      "commit": "71151f54e69adade74053db85cf50783c5193529",
+      "note": "Forward-only PR #22; package declaration and acceptance recorded by later commits; archive/v1.5.0-stable unchanged."
     }
   ],
   "not_exactly_recoverable_from_this_repository": [

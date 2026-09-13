@@ -246,3 +246,37 @@ class NativeExtensionSeam:
             self.session.close()
         if self.bridge:
             self.bridge.close()
+
+
+class AppleNativePrimitive(NativeExtensionSeam):
+    """Built-in public matrix execution; explicit extension configuration remains valid."""
+    def __init__(self,spec):
+        super().__init__(spec)
+        self.primitive=None
+
+    def load(self):
+        if self.session is not None:return super().load()
+        from thm.systems.apple import MPSGraphBinding, AccelerateVector
+        if self.primitive is None:
+            self.primitive=MPSGraphBinding() if self.spec.provider_id=='apple.mpsgraph' else AccelerateVector()
+        return self
+
+    def execute(self,inputs,**options):
+        if self.session is not None or self.bridge is not None:return super().execute(inputs,**options)
+        if options.get('operation','matmul')!='matmul' or set(inputs)!= {'left','right'}:
+            raise ValueError('public matrix operation requires left/right')
+        self.load()
+        return self.primitive.matmul(inputs['left'],inputs['right'])
+
+    def probe(self):
+        result=super().probe()
+        result.update(execution='built-in-public-matrix',maturity=self.spec.maturity)
+        return result
+
+    def telemetry(self):
+        if self.primitive is None:return super().telemetry()
+        return {'provider':self.spec.provider_id,**self.primitive.last,'hardware_validation':'unvalidated'}
+
+    def close(self):
+        if self.primitive is not None:self.primitive.close();self.primitive=None
+        super().close()

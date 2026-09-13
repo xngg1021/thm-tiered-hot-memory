@@ -1,0 +1,48 @@
+name: THM systems native and reliability
+on:
+  push:
+  pull_request:
+permissions:
+  contents: read
+jobs:
+  native:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: ubuntu-latest
+            suffix: ''
+          - os: windows-latest
+            suffix: '.exe'
+          - os: macos-latest
+            suffix: ''
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: ilammy/msvc-dev-cmd@v1
+        if: runner.os == 'Windows'
+      - run: python -m pip install . "numpy>=1.26,<3"
+      - name: Dependency-free portable native build and Rust tests
+        working-directory: native/thm-syscore
+        run: cargo test --locked --offline
+      - name: OS native I/O build and Rust tests
+        working-directory: native/thm-syscore
+        run: cargo test --locked --offline --features native-io
+      - name: Build the executable transport
+        working-directory: native/thm-syscore
+        run: cargo build --locked --offline --features native-io
+      - name: Native transport, fallback, topology, thermal and reliability regression
+        env:
+          THM_SYSCORE_EXECUTABLE: ${{ github.workspace }}/native/thm-syscore/target/debug/thm-syscore${{ matrix.suffix }}
+        run: python -m unittest discover -s tests -p '*v16.py' -v
+      - name: Headless core without native module
+        run: python -S scripts/runtime_headless_probe.py
+      - name: Bounded end-to-end systems and reliability smoke
+        run: python -m thm systems smoke --output "${{ runner.temp }}/thm-systems-smoke.json"
