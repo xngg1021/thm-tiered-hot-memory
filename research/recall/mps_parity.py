@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Compare a local encoder's CPU vs MPS embedding for numeric and retrieval parity.
 
-Positive evidence requires every text's cosine parity (>= --parity-tol) plus an
+Positive evidence requires every text's cosine distance (<= --parity-tol) plus an
 identical top-k retrieval order, mirroring the CPU/GPU parity contract used by
 research/recall/hardware_parity.py for full retrieval artifacts. Throughput and
 device memory are recorded but are not pass/fail evidence.
@@ -13,6 +13,9 @@ from __future__ import annotations
 
 import argparse
 import json
+import math
+import platform
+import importlib.metadata
 import sys
 import time
 from pathlib import Path
@@ -21,6 +24,17 @@ import numpy as np
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
 from research.evidence_io import require_new_output, write_new_text
+from thm.systems.artifacts import model_snapshot
+from thm.runtime.identity import manifest
+
+
+def parity_gate(cosines, max_abs_error, order_identical, *, cosine_tolerance=1e-4, absolute_tolerance=1e-4):
+    if not 0 <= cosine_tolerance < 1 or not 0 <= absolute_tolerance < 1:
+        raise ValueError('finite nonnegative parity tolerances below one required')
+    if not cosines or any(not math.isfinite(x) or not -1.00001 <= x <= 1.00001 for x in cosines):
+        return False
+    return bool(math.isfinite(max_abs_error) and 0 <= max_abs_error <= absolute_tolerance and
+                1.0-min(cosines) <= cosine_tolerance and order_identical)
 
 DEFAULT_TEXTS = [
     "When is my meeting with Ashlee scheduled?",
@@ -65,8 +79,12 @@ def main() -> int:
     ap.add_argument('--batch-size', type=int, default=64)
     ap.add_argument('--bench-iterations', type=int, default=20)
     ap.add_argument('--parity-tol', type=float, default=1e-4)
+    ap.add_argument('--absolute-tol', type=float, default=1e-4)
     ap.add_argument('--output', default=None, help='fresh JSON receipt path')
     args = ap.parse_args()
+    if not 1 <= args.top_k <= 10000 or not 1 <= args.batch_size <= 256 or not 1 <= args.bench_iterations <= 100:
+        ap.error('bounded top-k, batch size and iterations required')
+    parity_gate([1.], 0., True, cosine_tolerance=args.parity_tol, absolute_tolerance=args.absolute_tol)
 
     path = Path(args.model_path).resolve()
     if not (path / 'model.safetensors').is_file() and not (path / 'pytorch_model.bin').is_file():
@@ -83,8 +101,15 @@ def main() -> int:
     else:
         texts = DEFAULT_TEXTS
 
-    ref_model = load_encoder(path, args.ref_device)
-    test_model = load_encoder(path, args.test_device)
+    if not texts or len(texts) > 10000 or args.top_k > len(texts):
+        ap.error('nonempty bounded texts and top-k <= corpus size required')
+    with model_snapshot(path) as (snapshot, model_manifest):
+        before_load_sha = manifest(snapshot)['sha256']
+        ref_model = load_encoder(snapshot, args.ref_device)
+        test_model = load_encoder(snapshot, args.test_device)
+        after_load_sha = manifest(snapshot)['sha256']
+        if before_load_sha != after_load_sha:
+            raise ValueError('model bytes changed during load')
 
     ref_vecs = encode(ref_model, texts, args.batch_size)
     test_vecs = encode(test_model, texts, args.batch_size)
@@ -118,11 +143,24 @@ def main() -> int:
     if args.test_device == 'mps' and hasattr(torch.mps, 'current_allocated_memory'):
         mps_bytes = int(torch.mps.current_allocated_memory())
 
-    parity_ok = bool(min(cosines) >= args.parity_tol) and top_ref == top_test
+    parity_ok = parity_gate(cosines, max_abs, top_ref == top_test,
+                            cosine_tolerance=args.parity_tol, absolute_tolerance=args.absolute_tol)
 
     receipt = {
         'model_id': args.model_id,
         'model_path': str(path),
+        'schema': 'thm-mps-parity/2',
+        'model_sha': model_manifest['sha256'],
+        'model_manifest_sha': model_manifest['sha256'],
+        'model_manifest': model_manifest,
+        'before_load_sha': before_load_sha,
+        'after_load_sha': after_load_sha,
+        'hardware_model': platform.uname().machine,
+        'architecture': platform.machine(),
+        'macOS_version': platform.mac_ver()[0],
+        'torch_version': torch.__version__,
+        'sentence_transformers_version': importlib.metadata.version('sentence-transformers'),
+        'batch_size': args.batch_size,
         'platform': {'torch': torch.__version__, 'machine': sys.platform,
                      'mps_available': bool(torch.backends.mps.is_available())},
         'ref_device': args.ref_device,
@@ -133,7 +171,9 @@ def main() -> int:
             'max_abs_error': max_abs,
             'mean_abs_error': mean_abs,
             'parity_tol': args.parity_tol,
-            'parity_ok': bool(min(cosines) >= args.parity_tol),
+            'absolute_tolerance': args.absolute_tol,
+            'parity_ok': parity_gate(cosines, max_abs, True, cosine_tolerance=args.parity_tol,
+                                     absolute_tolerance=args.absolute_tol),
         },
         'retrieval_parity': {
             'query': args.query,
