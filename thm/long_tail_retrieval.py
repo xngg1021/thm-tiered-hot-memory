@@ -14,13 +14,17 @@ class LongTailSearchIndex(SearchIndex):
         channels=super()._lexical_channels(scope,query,mode,candidate_limit)
         graph=getattr(self,'event_graph',None)
         self.required_source_sets={}
+        self.allowed_source_ids=None
+        self.matched_event_source_ids=frozenset()
         if graph is None:return channels
         if graph.scope!=scope:
             raise ValueError('event graph scope mismatch')
         rows={r['id']:r for r in self.rows(scope)}
+        events_by_source={}
         for event in graph.events.values():
             if event.source_id not in rows or event.source_sha256!=rows[event.source_id]['hash']:
                 raise ValueError('stale event representation/source identity')
+            events_by_source.setdefault(event.source_id,[]).append(event)
         import re
         from thm.long_tail import TimeInterval
         category=classify_query(query)
@@ -53,13 +57,35 @@ class LongTailSearchIndex(SearchIndex):
             else:selected=tuple(sorted(graph.events.values(),key=lambda event:(event.time.start,event.time.end,event.identity)))
         elif category in ('update','contradiction','multi-hop'):
             selected=tuple(graph.events.values())
-        sources=[]
+        sources=[];allowed=set()
         for event in selected[:candidate_limit]:
             chain=graph.required_chain(event.identity)
             self._bind_chain_requirements(chain)
             sources.extend(rows[e.source_id]['rowid'] for e in chain)
+            allowed.update(e.source_id for e in chain)
+        if matches or ('after' in bounds and 'before' in bounds) or category=='ordering':
+            self.matched_event_source_ids=frozenset(event.source_id for event in selected[:candidate_limit])
+            pending=list(allowed);visited=set()
+            while pending:
+                source=pending.pop()
+                if source in visited:continue
+                visited.add(source)
+                # A complete document may contain several events. Preserve the
+                # dependencies of every event carried by an admitted source.
+                for event in events_by_source[source]:
+                    chain=graph.required_chain(event.identity)
+                    self._bind_chain_requirements(chain)
+                    for parent in chain:
+                        sources.append(rows[parent.source_id]['rowid'])
+                        if parent.source_id not in allowed:
+                            allowed.add(parent.source_id);pending.append(parent.source_id)
+            self.allowed_source_ids=frozenset(allowed)
         if sources:channels.append(list(dict.fromkeys(sources))[:candidate_limit])
         return channels
+
+    def _filter_candidates(self,rows):
+        allowed=getattr(self,'allowed_source_ids',None)
+        return rows if allowed is None else [row for row in rows if row['id'] in allowed]
 
     def _bind_chain_requirements(self,chain):
         # required_chain is topologically ordered. Bind every intermediate
@@ -157,9 +183,16 @@ class LongTailSearchIndex(SearchIndex):
         prepared=getattr(self,'_batch_lexical',None)
         if getattr(self,'event_graph',None) is not None:self._batch_lexical=None
         self.long_tail_receipt={'method':'empty','track':'0N'}
+        self.allowed_source_ids=None
+        self.matched_event_source_ids=frozenset()
         try:
             result=super()._search(scope,query,**kwargs)
             self.long_tail_receipt['track']='0G' if result.get('semantic_encoder_used') else '0N'
+            self.long_tail_receipt['source_constraint']={'active':self.allowed_source_ids is not None,
+                'allowed_source_count':len(self.allowed_source_ids) if self.allowed_source_ids is not None else None,
+                'required_dependency_sources_included':True,
+                'selected_source_roles':{row['id']:('matched-event' if row['id'] in self.matched_event_source_ids else 'required-dependency')
+                    for row in result.get('selected',[])} if self.allowed_source_ids is not None else {}}
             result['long_tail']=dict(self.long_tail_receipt)
             return result
         finally:self._batch_lexical=prepared

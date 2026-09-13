@@ -57,6 +57,10 @@ Native read failures can fall back. Source checksum mismatch cannot be accepted 
 
 Thermal backpressure uses bounded temperature slope and headroom. Stale/unknown information conservatively reduces background work. PSI stall time and latency tails constrain admission alongside utilization. `interactive`, `bulk`, `background`, `research` and `maintenance` remain independent QoS classes. Expired work remains in a cancelling state and occupies its slot until the worker owner acknowledges reaping or completion. A positive background share retains one idle slot when no foreground work contends; a zero share still blocks background dispatch. Operating-point comparisons require the same declared power state. The controller bounds worker/concurrency/batch/queue state; it does not promise throughput gains on unmeasured machines.
 
+The existing RuntimeService keeps its three compatible execution/profile workloads. The agent wrapper routes research and maintenance execution through its background workload while retaining the original QoS queue and reporting both requested QoS and execution workload in the systems receipt.
+
+The controller tracks the caller's absolute deadline, with a 30-second default when none is supplied. Search receipts leave native-path evidence unavailable unless a SysCore operation is owned by that request; shared SysCore history is not attributed to a new trajectory. Verified I/O reports per-operation fallback counts separately from the SysCore object's cumulative failure counter.
+
 S0 observes. S1 applies reversible process/domain hints when supported. S2 power/clock/fan/quota/allocation changes require explicit capability, permission, opt-in, accepted evidence and rollback. The default executes none of those changes. No BIOS edits, driver installation, SDK downloading or global power-plan change occurs automatically.
 
 ## Agent program / KV / tools

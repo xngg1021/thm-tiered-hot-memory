@@ -710,6 +710,10 @@ class SearchIndex:
             channels.append(self._fts('lexical', scope, [t for t in tokens if t not in STOP], candidate_limit, True))
         return channels
 
+    def _filter_candidates(self, rows):
+        """Extension boundary for source constraints, including all expansions."""
+        return rows
+
     def _materialize(self, scope, generation, rowids):
         by_id = {}
         missing = []
@@ -814,7 +818,7 @@ class SearchIndex:
         fusion_ms=(time.perf_counter()-fusion_start)*1000
         material_start=time.perf_counter()
         by_rowid = self._materialize(scope, generation[0], ordered)
-        ranked = [by_rowid[rid] for rid in ordered]
+        ranked = self._filter_candidates([by_rowid[rid] for rid in ordered])
         material_ms=(time.perf_counter()-material_start)*1000
         candidate_ids = [r['id'] for r in ranked]
         ranked = self._rank_candidates(scope, query, ranked)
@@ -829,6 +833,10 @@ class SearchIndex:
         if features.association:
             from .features import expand
             ranked,expansion_receipt=expand(ranked,self.rows(scope),features)
+        ranked = self._filter_candidates(ranked)
+        if expansion_receipt:
+            admitted={row['id'] for row in ranked}
+            expansion_receipt=[edge for edge in expansion_receipt if edge['from'] in admitted and edge['to'] in admitted]
         ranked_ids = [r['id'] for r in ranked]
         retrieval_ms = (time.perf_counter() - start) * 1000
         # Optional adjacent context is actual text, not automatic credit for unseen IDs.
@@ -841,6 +849,7 @@ class SearchIndex:
                 if item['rowid'] not in seen:
                     seen.add(item['rowid'])
                     expanded.append(item)
+        expanded = self._filter_candidates(expanded)
         neighbor_ms=(time.perf_counter()-expansion_start)*1000
         if features.segment:
             from .features import pack_segments

@@ -171,6 +171,23 @@ class SequenceAndReplayRegressions(unittest.TestCase):
 
 
 class EpochAndTemporalBoundaryRegressions(unittest.TestCase):
+    def test_research_and_maintenance_run_through_real_runtime_service(self):
+        from thm.runtime.fabric.service import RuntimeService
+        for qos in ('research','maintenance'):
+            with tempfile.TemporaryDirectory() as directory:
+                index=SearchIndex(Path(directory)/'index',TokenCounter('utf8_bytes'))
+                index.replace_scope('s',[Document('d','s','session',0,'source evidence')])
+                base=RuntimeService(index,policy='reference',background=False)
+                runtime=AgentSystemsRuntime(base)
+                try:
+                    with patch('thm.systems.runtime.psi_snapshot',return_value={'resources':{}}):
+                        result=runtime.search('s','source',workload=qos)
+                    self.assertEqual(result['selected'][0]['id'],'d')
+                    self.assertEqual(result['systems_receipt']['qos'],qos)
+                    self.assertEqual(result['systems_receipt']['runtime_workload'],'background')
+                    self.assertEqual(result['systems_receipt']['queue']['active'],0)
+                finally:runtime.close();index.close()
+
     def test_start_epoch_waits_for_atomic_fabric_and_base_update(self):
         advanced=threading.Event();release=threading.Event();called=threading.Event()
         errors=[];results=[]
@@ -242,6 +259,104 @@ class EpochAndTemporalBoundaryRegressions(unittest.TestCase):
                 with self.assertRaisesRegex(ValueError,'two-sided'):
                     index.search('s','after 2026-03-01 and before 2026-01-01')
             finally:index.close()
+
+
+class ConstraintAndTaskEvidenceRegressions(unittest.TestCase):
+    def test_syscore_read_fallback_counts_are_per_operation(self):
+        import hashlib
+        from thm.systems.syscore import SysCore,TransportError
+        core=SysCore(__file__);request=core._request
+        def transport(operation,payload=b'',**kwargs):
+            if not kwargs.get('portable'):raise TransportError('fixture native failure')
+            core.capabilities()  # A separate failed negotiation must not inflate this read's count.
+            return request(operation,payload,**kwargs)
+        data=Path(__file__).read_bytes();sha=hashlib.sha256(data).hexdigest()
+        with patch.object(core,'_request',transport):
+            for _ in range(2):
+                self.assertEqual(core.read_verified(__file__,sha),data)
+                self.assertEqual(core.last['fallback_count'],1)
+        self.assertEqual(core.failures,4)
+
+    def test_temporal_constraint_survives_all_channels_expansion_and_batching(self):
+        from thm.features import RetrievalFeatures
+        from thm.long_tail import Event,EventGraph,TimeInterval
+        class Encoder:
+            model_id='constraint-fixture'
+            def __call__(self,texts):return [[1.,0.] for text in texts]
+        with tempfile.TemporaryDirectory() as directory:
+            index=LongTailSearchIndex(Path(directory)/'index',TokenCounter('utf8_bytes'))
+            try:
+                dates=['2025-12-31','2026-01-01','2026-02-01','2026-03-01','2026-04-01']
+                index.replace_scope('s',[Document(str(i),'s','session',i,'events after before first last',source='shared-source') for i in range(5)])
+                rows={row['id']:row for row in index.rows('s')}
+                def graph(dependency=False):
+                    return EventGraph('s',[Event(str(i),'s',str(i),rows[str(i)]['hash'],TimeInterval.parse(date),
+                        predecessor=('0',) if dependency and i==2 else ()) for i,date in enumerate(dates)])
+                index.attach_events(graph());encoder=Encoder();index.embed('s',encoder,encoder.model_id)
+                features=RetrievalFeatures(explicit_alias=True,aliases=(('events','4'),),association=True,max_neighbors=16)
+                query='events after 2026-01-01 and before 2026-03-01'
+                def check(result,expected):
+                    for field in ('candidate_ids','pre_expansion_ranked_ids','ranked_ids','packing_ids'):
+                        self.assertEqual(set(result[field]),expected,field)
+                    self.assertEqual({row['id'] for row in result['selected']},expected)
+                    self.assertTrue(result['long_tail']['source_constraint']['active'])
+                    self.assertTrue(all(edge['to'] in expected for edge in result['candidate_expansion']))
+                for mode in ('literal','sparse','dense','hybrid'):
+                    settings={'encoder':encoder,'model_id':encoder.model_id} if mode in ('dense','hybrid') else {}
+                    check(index.search('s',query,mode=mode,budget=2000,neighbor_turns=2,features=features,**settings),{'2'})
+                for query,expected in [('which events were first?',{'0'}),('which events were last?',{'4'}),('events after 2027-01-01',set())]:
+                    check(index.search('s',query,budget=2000,neighbor_turns=2,features=features),expected)
+                queries=['events after 2026-01-01 and before 2026-03-01','which events were last?']
+                batch=index.search_many('s',queries,mode='hybrid',encoder=encoder,model_id=encoder.model_id,
+                    overlap=True,query_batch_size=2,budget=2000,neighbor_turns=2,features=features)
+                check(batch[0],{'2'});check(batch[1],{'4'})
+                index.attach_events(graph(dependency=True))
+                result=index.search('s',queries[0],budget=2000,neighbor_turns=2,features=features)
+                check(result,{'0','2'})
+                self.assertEqual(result['long_tail']['source_constraint']['selected_source_roles'],{'0':'required-dependency','2':'matched-event'})
+            finally:index.close()
+
+    def test_temporal_source_constraint_closes_all_events_sharing_a_document(self):
+        from thm.long_tail import Event,EventGraph,TimeInterval
+        with tempfile.TemporaryDirectory() as directory:
+            index=LongTailSearchIndex(Path(directory)/'index',TokenCounter('utf8_bytes'))
+            try:
+                index.replace_scope('s',[Document(key,'s','session',i,'events after before') for i,key in enumerate(('shared','p1','p2'))])
+                rows={row['id']:row for row in index.rows('s')}
+                specs=[('a','p1','2025-01-01',()),('b','p2','2025-02-01',()),
+                       ('one','shared','2026-01-01',('a',)),('two','shared','2026-02-01',('b',))]
+                index.attach_events(EventGraph('s',[Event(key,'s',source,rows[source]['hash'],TimeInterval.parse(date),predecessor=parents)
+                    for key,source,date,parents in specs]))
+                result=index.search('s','events after 2026-01-15 and before 2026-02-15',budget=2000)
+                self.assertEqual({row['id'] for row in result['selected']},{'shared','p1','p2'})
+            finally:index.close()
+
+    def test_controller_receipt_uses_effective_caller_deadline(self):
+        for deadline,finish,expected_failures in [(10,15,1),(100,40,0),(None,40,1)]:
+            base=SimpleNamespace(search=lambda *a,**k:{'ok':True},close=lambda:None)
+            runtime=AgentSystemsRuntime(base)
+            try:
+                with patch('thm.systems.runtime.time.monotonic',side_effect=[0,1,finish]),patch('thm.systems.runtime.psi_snapshot',return_value={'resources':{}}):
+                    result=runtime.search('s','query',deadline=deadline)
+                self.assertEqual(result['systems_receipt']['deadline'],30 if deadline is None else deadline)
+                self.assertEqual(result['systems_receipt']['queue']['failure_count'],expected_failures)
+            finally:runtime.close()
+
+    def test_shared_syscore_history_is_not_attributed_to_current_search(self):
+        import hashlib
+        from thm.systems.syscore import SysCore
+        core=SysCore();data=Path(__file__).read_bytes()
+        core.read_verified(__file__,hashlib.sha256(data).hexdigest())
+        prior=dict(core.last)
+        runtime=AgentSystemsRuntime(SimpleNamespace(search=lambda *a,**k:{'ok':True},close=lambda:None),syscore=core)
+        try:
+            for evidence in (prior,{'native_executed':True,'transport':'prior-fixture','fallback_count':7}):
+                core.last=evidence.copy()
+                with patch('thm.systems.runtime.psi_snapshot',return_value={'resources':{}}):result=runtime.search('s','query')
+                self.assertIsNone(result['systems_receipt']['native_path'])
+                self.assertEqual(result['systems_receipt']['native_path_reason'],'no-request-owned-syscore-operation')
+                self.assertEqual(core.last,evidence)
+        finally:runtime.close()
 
 
 if __name__=='__main__':unittest.main()

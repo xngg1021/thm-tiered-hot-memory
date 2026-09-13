@@ -40,7 +40,9 @@ class AgentSystemsRuntime:
             self.sequence+=1
             identity=f'{self.session}:{self.sequence}'
             arrived=time.monotonic()
-            item=WorkItem(identity,self.session,workload,arrived,arrived+30)
+            deadline=settings.get('deadline')
+            deadline=arrived+30 if deadline is None else deadline
+            item=WorkItem(identity,self.session,workload,arrived,deadline)
             if not self.controller.submit(item,arrived):
                 raise OverflowError('agent admission queue full')
             batch=self.controller.dispatch(arrived)
@@ -62,7 +64,8 @@ class AgentSystemsRuntime:
                 stalls={name:(value['rows'].get('some',{}).get('avg10',0)/100 if value['rows'] else None)
                         for name,value in pressure['resources'].items()}
                 control=self.controller.feedback(self.samples,stalls,now=time.monotonic())
-                result=self.base.search(scope,query,workload=workload,**settings)
+                runtime_workload='background' if workload in ('research','maintenance') else workload
+                result=self.base.search(scope,query,workload=runtime_workload,**settings)
                 # Linearize epoch validation, fallback and publication against events.
                 with self.topology._lock:
                     fallback=None
@@ -82,9 +85,11 @@ class AgentSystemsRuntime:
                     finish=time.monotonic()
                     self.controller.complete(identity,finish)
                     self.last={'schema':'thm-agent-runtime/1','program':self.session,'trajectory':identity,
+                        'qos':workload,'runtime_workload':runtime_workload,
                         'session':self.session,'topology':self.topology.snapshot(),'topology_epoch':self.topology.epoch,
                         'thermal_power':[sample.public() for sample in self.samples], 'pressure':pressure,
-                        'queue':self.controller.receipt(),'native_path':dict(self.syscore.last),
+                        'queue':self.controller.receipt(),'deadline':deadline,'native_path':None,
+                        'native_path_reason':'no-request-owned-syscore-operation',
                         'fallback':fallback,'task_completion_time':finish-arrived,
                         'TUFR':None,'TUFR_reason':'host must mark useful output',
                         'source_memory_mutation':False,'evidence':'systems-runtime'}
