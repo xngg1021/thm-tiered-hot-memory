@@ -143,3 +143,22 @@ class NativeBoundRegressions(unittest.TestCase):
         with tempfile.TemporaryDirectory() as directory:
             path=Path(directory)/'sensor';path.write_text('1'*129)
             self.assertIsNone(read_number(path))
+
+class EvidenceConsistencyRegressions(unittest.TestCase):
+    def test_envelope_does_not_mix_devices_or_hide_mid_window_reset(self):
+        from dataclasses import replace
+        from thm.systems.thermal import ThermalSample,SustainablePerformanceEnvelope
+        sample=ThermalSample('cpu',0,1,'counter',energy_j=10,evidence='simulated')
+        with self.assertRaisesRegex(ValueError,'one device'):
+            SustainablePerformanceEnvelope('gpu','work',1,1,1,'warm','unknown',(.1,),thermal=(sample,))
+        rows=(sample,replace(sample,sample_timestamp=1,energy_j=1),replace(sample,sample_timestamp=2,energy_j=12))
+        receipt=SustainablePerformanceEnvelope('cpu','work',1,1,2,'warm','unknown',(.1,),thermal=rows).public()
+        self.assertIsNone(receipt['energy_per_operation'])
+
+    def test_conflict_marks_both_endpoints_and_chain_respects_predecessors(self):
+        from thm.long_tail import Event,EventGraph,TimeInterval
+        a=Event('a','scope','a','a'*64,TimeInterval.parse('2026-02-01'))
+        b=Event('b','scope','b','b'*64,TimeInterval.parse('2026-01-01'),predecessor=('a',),contradicts=('a',))
+        graph=EventGraph('scope',(a,b))
+        self.assertTrue(all(row['state']=='unresolved-conflict' for row in graph.claims()))
+        self.assertEqual([row.identity for row in graph.required_chain('b')],['a','b'])

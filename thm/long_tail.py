@@ -167,9 +167,10 @@ class EventGraph:
 
     def claims(self):
         superseded = {key for e in self.events.values() for key in e.supersedes}
+        conflicts={key for e in self.events.values() for key in e.contradicts}|{e.identity for e in self.events.values() if e.contradicts}
         return [{'identity': e.identity, 'source_id': e.source_id, 'source_sha256': e.source_sha256,
                  'state': 'revoked' if e.revoked else 'superseded' if e.identity in superseded else
-                          'unresolved-conflict' if e.contradicts else 'source-claim',
+                          'unresolved-conflict' if e.identity in conflicts else 'source-claim',
                  'contradicts': list(e.contradicts), 'source_truth_adjudicated': False} for e in self.events.values()]
 
     def required_chain(self, identity, limit=64):
@@ -185,7 +186,13 @@ class EventGraph:
             if len(seen) > limit:
                 raise ValueError('evidence chain bound')
             pending.extend(self.events[key].predecessor)
-        return tuple(sorted((self.events[key] for key in seen), key=lambda e: (e.time.start, e.identity)))
+        ordered=[]
+        while seen:
+            available=[self.events[key] for key in seen if not set(self.events[key].predecessor)&seen]
+            if not available:raise ValueError('cyclic event relation')
+            event=min(available,key=lambda row:(row.time.start,row.identity))
+            ordered.append(event);seen.remove(event.identity)
+        return tuple(ordered)
 
 
 def classify_query(query):

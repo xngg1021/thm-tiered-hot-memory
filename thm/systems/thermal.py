@@ -221,8 +221,10 @@ class SustainablePerformanceEnvelope:
         finite(self.duration, minimum=1e-9)
         if self.thermal_state not in ('cold', 'warm', 'thermally_soaked'):
             raise ValueError('invalid soak state')
-        if len(self.latencies) > 1_000_000 or len(self.thermal) > 10000:
+        if len(self.latencies) > 1_000_000 or len(self.queue_wait)>1_000_000 or len(self.thermal) > 10000:
             raise ValueError('envelope bounds')
+        if any(row.device!=self.device for row in self.thermal):
+            raise ValueError('thermal envelope requires one device identity')
         for value in self.latencies + self.queue_wait:
             finite(value)
 
@@ -231,11 +233,11 @@ class SustainablePerformanceEnvelope:
             vals = [getattr(t, name) for t in self.thermal if getattr(t, name) is not None]
             return sum(vals)/len(vals) if vals else None
         energy = None
-        if len(self.thermal) >= 2:
-            first, last = self.thermal[0], self.thermal[-1]
-            if (first.device == last.device and first.source == last.source and first.energy_j is not None and
-                    last.energy_j is not None and last.energy_j >= first.energy_j and last.sample_timestamp > first.sample_timestamp):
-                energy = last.energy_j-first.energy_j
+        counters=[row for row in self.thermal if row.energy_j is not None]
+        if len(counters)>=2 and len({row.source for row in counters})==1:
+            continuous=all(after.sample_timestamp>before.sample_timestamp and after.energy_j>=before.energy_j
+                           for before,after in zip(counters,counters[1:]))
+            if continuous:energy=counters[-1].energy_j-counters[0].energy_j
         return {'device': self.device, 'workload': self.workload, 'concurrency': self.concurrency,
             'batch_size': self.batch_size, 'duration': self.duration, 'thermal_state': self.thermal_state,
             'power_state': self.power_state, 'topology_epoch': self.topology_epoch,
