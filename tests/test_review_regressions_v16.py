@@ -127,3 +127,19 @@ class SourceAndOracleRegressions(unittest.TestCase):
                 with self.assertRaisesRegex(ValueError,'stale event'):
                     index.search('s','event before 2026-02-01')
             finally:index.close()
+
+class NativeBoundRegressions(unittest.TestCase):
+    def test_graph_output_allocation_is_bounded_before_framework_import(self):
+        import numpy as np
+        from thm.systems.apple import MPSGraphBinding
+        graph=MPSGraphBinding(api=object())
+        for left,right in ((np.ones((2000,1)),np.ones((1,2000))),
+                           (np.empty((0,1)),np.ones((1,1)))):
+            with self.assertRaisesRegex(ValueError,'bounded compatible'):
+                graph.matmul(left,right)
+
+    def test_numeric_sensor_rejects_oversized_payload(self):
+        from thm.systems.thermal import read_number
+        with tempfile.TemporaryDirectory() as directory:
+            path=Path(directory)/'sensor';path.write_text('1'*129)
+            self.assertIsNone(read_number(path))

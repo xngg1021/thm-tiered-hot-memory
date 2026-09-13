@@ -59,12 +59,12 @@ class MPSGraphBinding:
 
     def matmul(self,left,right):
         import numpy as np
-        from Foundation import NSData
         a=np.ascontiguousarray(left,dtype=np.float32); b=np.ascontiguousarray(right,dtype=np.float32)
-        if a.ndim!=2 or b.ndim!=2 or a.shape[1]!=b.shape[0] or a.size+b.size>1_000_000:
+        if a.ndim!=2 or b.ndim!=2 or a.shape[1]!=b.shape[0] or not min(*a.shape,*b.shape) or a.size+b.size+a.shape[0]*b.shape[1]>1_000_000:
             raise ValueError('bounded compatible matrices required')
         if not np.isfinite(a).all() or not np.isfinite(b).all():
             raise ValueError('finite matrix values required')
+        from Foundation import NSData
         graph=self.api.MPSGraph.alloc().init()
         dtype=getattr(self.api,'MPSDataTypeFloat32',0x10000000|32)
         ta=graph.constantWithData_shape_dataType_(NSData.dataWithBytes_length_(a.tobytes(),a.nbytes),list(a.shape),dtype)

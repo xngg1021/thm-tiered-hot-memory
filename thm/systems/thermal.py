@@ -61,7 +61,9 @@ class ThermalPowerProvider(Protocol):
 
 def read_number(path, divisor=1):
     try:
-        text = Path(path).read_text()[:128]
+        with Path(path).open() as stream:
+            text=stream.read(129)
+        if len(text)>128:return None
         value = float(text.strip()) / divisor
         return value if math.isfinite(value) else None
     except (OSError, ValueError):

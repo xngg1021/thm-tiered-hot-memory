@@ -77,12 +77,13 @@ class SysCore:
         return {'schema': 'thm-syscore/1', 'native_io': False, 'fallback': 'pure-python', 'max_bytes': MAX_BYTES}
 
     def read_verified(self, path, expected_sha256, *, native_io=True, deadline=None):
+        if deadline is not None:finite(deadline)
         deadline = min(deadline, time.monotonic()+self.timeout) if deadline is not None else time.monotonic()+self.timeout
         if len(expected_sha256) != 64 or any(x not in '0123456789abcdef' for x in expected_sha256):
             raise ValueError('expected content identity required')
         if self.executable:
             try:
-                data = self._request(2 if native_io else 1, os.fsencode(Path(path).resolve()), deadline=deadline)
+                data = self._request(2 if native_io else 1, os.fsencode(Path(path).absolute()), deadline=deadline)
                 if hashlib.sha256(data).hexdigest() != expected_sha256:
                     raise ValueError('native consumed bytes identity mismatch')
                 return data
