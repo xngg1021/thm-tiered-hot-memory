@@ -48,7 +48,9 @@ class AgentSystemsRuntime:
                 self.controller.queues[workload].remove(item)
                 self.controller.known.remove(identity)
                 raise RuntimeError('background work deferred by pressure policy')
-            epoch=self.topology.epoch
+            with self.topology._lock:
+                epoch=self.topology.epoch
+                self.base.topology_epoch=epoch
             try:
                 if self.thermal is not None:
                     try:

@@ -24,9 +24,24 @@ class LongTailSearchIndex(SearchIndex):
         import re
         from thm.long_tail import TimeInterval
         category=classify_query(query)
-        matches=re.findall(r'\b\d{4}(?:-\d{2})?(?:-\d{2})?\b',query)
+        date_pattern=r'(\d{4}(?:-\d{2})?(?:-\d{2})?)'
+        matches=re.findall(r'(?<![A-Za-z0-9])'+date_pattern+r'(?![A-Za-z0-9])',query)
         selected=()
-        if matches:
+        bounds={}
+        for operation,value in re.findall(r'\b(after|before)\s+'+date_pattern,query,re.I):
+            bounds.setdefault(operation.lower(),set()).add(value)
+        for value,operation in re.findall(date_pattern+r'\s*(之后|之前)',query):
+            bounds.setdefault('after' if operation=='之后' else 'before',set()).add(value)
+        if 'after' in bounds and 'before' in bounds:
+            if any(len(values)!=1 for values in bounds.values()):
+                raise ValueError('ambiguous two-sided temporal bounds')
+            lower=TimeInterval.parse(next(iter(bounds['after'])))
+            upper=TimeInterval.parse(next(iter(bounds['before'])))
+            if not lower.before(upper):raise ValueError('invalid two-sided temporal bounds')
+            reference=TimeInterval(lower.start,upper.end,'range')
+            selected=tuple(event for event in graph.select('date-range',reference)
+                           if event.time.after(lower) and event.time.before(upper))
+        elif matches:
             reference=TimeInterval.parse(matches[0])
             operation='closest-before' if 'closest before' in query.lower() else 'closest-after' if 'closest after' in query.lower() else \
                 'before' if re.search(r'before|之前',query,re.I) else 'after' if re.search(r'after|之后',query,re.I) else 'date-range'
@@ -58,11 +73,14 @@ class LongTailSearchIndex(SearchIndex):
 
     def _pack_candidates(self, expanded, budget, query):
         graph=getattr(self,'event_graph',None)
+        self.event_order_keys={}
         if graph is not None:
             source_ids={row['id'] for row in expanded}
             for event in graph.events.values():
                 if event.source_id in source_ids:
                     self._bind_chain_requirements(graph.required_chain(event.identity))
+                    key=(event.time.start.isoformat(),event.time.end.isoformat())
+                    self.event_order_keys[event.source_id]=min(self.event_order_keys.get(event.source_id,key),key)
         category = classify_query(query)
         query_terms = set(terms(query))
         candidates, blocks = [], {}
@@ -74,7 +92,9 @@ class LongTailSearchIndex(SearchIndex):
             # Tokenizer and caller counters use the existing exact final packer.
             from thm.retrieval import TokenCounter
             if type(self.counter) is not TokenCounter or self.counter.encode is not None:
-                self.long_tail_receipt = {'method': 'heuristic', 'reason': 'nonadditive-counter', 'query_class': category}
+                self.long_tail_receipt = {'method': 'heuristic', 'reason': 'nonadditive-counter', 'query_class': category,
+                                         'ordering_basis':'event-interval' if graph is not None else 'source-timestamp',
+                                         'ordering_granularity':'complete-source-block'}
                 return self._pack_dependency_closures(expanded,budget,query)
             overlap = query_terms & set(terms(row['text']))
             units = frozenset(overlap)
@@ -84,12 +104,18 @@ class LongTailSearchIndex(SearchIndex):
         chosen = set(selection['ids'])
         rows = [row for row in expanded if row['id'] in chosen]
         if category == 'ordering':
-            rows.sort(key=lambda row: (row['timestamp'] or '', row['ord'], row['id']))
+            rows.sort(key=self._ordering_key)
         context, selected, units = super()._pack_candidates(rows, budget, query)
         self.long_tail_receipt = {'method': selection['method'], 'query_class': category,
+                                 'ordering_basis':'event-interval' if graph is not None else 'source-timestamp',
+                                 'ordering_granularity':'complete-source-block',
                                  'candidate_count': len(candidates), 'selection_ids': selection['ids'],
                                  'selected_evidence_count': len(selected), 'track': '0N', 'gold_used': False}
         return context, selected, units
+
+    def _ordering_key(self,row):
+        start,end=self.event_order_keys.get(row['id'],(row['timestamp'] or '',row['timestamp'] or ''))
+        return (not bool(start),start,end,row['ord'],row['id'])
 
     def _pack_dependency_closures(self,expanded,budget,query):
         """Keep exact final counting while admitting every dependency group atomically."""
@@ -109,7 +135,7 @@ class LongTailSearchIndex(SearchIndex):
             if classify_query(query)=='ordering':
                 # Count the exact served order: nonadditive counters can change
                 # cost when the same complete source blocks are rearranged.
-                proposal.sort(key=lambda item:(item['timestamp'] or '',item['ord'],item['id']))
+                proposal.sort(key=self._ordering_key)
             packed=super()._pack_candidates(proposal,budget,query)
             if {item['id'] for item in packed[1]}!={item['id'] for item in proposal}:
                 continue

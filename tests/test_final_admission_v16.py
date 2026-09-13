@@ -170,4 +170,78 @@ class SequenceAndReplayRegressions(unittest.TestCase):
         self.assertEqual(row['task_completion_time'],18)
 
 
+class EpochAndTemporalBoundaryRegressions(unittest.TestCase):
+    def test_start_epoch_waits_for_atomic_fabric_and_base_update(self):
+        advanced=threading.Event();release=threading.Event();called=threading.Event()
+        errors=[];results=[]
+        class Base:
+            topology_epoch=0
+            def __setattr__(self,name,value):
+                if name=='topology_epoch' and threading.current_thread().name=='epoch-event':
+                    advanced.set()
+                    if not release.wait(2):raise TimeoutError('test release missing')
+                object.__setattr__(self,name,value)
+            def search(self,*args,**kwargs):
+                called.set();return {'base_epoch':self.topology_epoch}
+            def close(self):pass
+        runtime=AgentSystemsRuntime(Base())
+        def capture(action):
+            try:action()
+            except BaseException as error:errors.append(error)
+        event=threading.Thread(name='epoch-event',target=lambda:capture(lambda:runtime.event(TopologyEvent('reprobe','gpu',1))))
+        search=threading.Thread(target=lambda:capture(lambda:results.append(runtime.search('s','query'))))
+        try:
+            event.start();self.assertTrue(advanced.wait(1))
+            search.start();self.assertFalse(called.wait(.05))
+        finally:
+            release.set();event.join(2)
+            if search.ident is not None:search.join(2)
+            runtime.close()
+        self.assertFalse(errors)
+        self.assertFalse(event.is_alive() or search.is_alive())
+        self.assertEqual(results[0]['base_epoch'],1)
+        self.assertEqual(results[0]['systems_receipt']['topology_epoch'],1)
+        self.assertIsNone(results[0]['systems_receipt']['fallback'])
+
+    def test_ordering_uses_event_dates_instead_of_publication_dates(self):
+        from thm.long_tail import Event,EventGraph,TimeInterval
+        tokenizer=TokenCounter('utf8_bytes');tokenizer.encode=lambda text:list(text)
+        for counter in (TokenCounter('utf8_bytes'),tokenizer,lambda text:len(text)):
+            with tempfile.TemporaryDirectory() as directory:
+                index=LongTailSearchIndex(Path(directory)/'index',counter)
+                try:
+                    index.replace_scope('s',[Document('january','s','session',0,'alpine comet',timestamp='2026-03-01'),
+                        Document('february','s','session',1,'bronze river',timestamp='2026-01-01')])
+                    rows={row['id']:row for row in index.rows('s')}
+                    index.attach_events(EventGraph('s',[Event(key,'s',key,rows[key]['hash'],TimeInterval.parse(date))
+                        for key,date in [('january','2026-01-01'),('february','2026-02-01')]]))
+                    result=index.search('s','describe the sequence',budget=1000)
+                    self.assertEqual([row['id'] for row in result['selected']],['january','february'])
+                    self.assertEqual(result['long_tail']['ordering_basis'],'event-interval')
+                    self.assertEqual(result['long_tail']['ordering_granularity'],'complete-source-block')
+                finally:index.close()
+
+    def test_two_sided_temporal_queries_intersect_strict_bounds(self):
+        from thm.long_tail import Event,EventGraph,TimeInterval
+        with tempfile.TemporaryDirectory() as directory:
+            index=LongTailSearchIndex(Path(directory)/'index',TokenCounter('utf8_bytes'))
+            try:
+                dates=['2025-12-31','2026-01-01','2026-02-01','2026-03-01','2026-04-01']
+                index.replace_scope('s',[Document(str(i),'s','session',i,'alpine comet') for i in range(len(dates))])
+                rows={row['id']:row for row in index.rows('s')}
+                index.attach_events(EventGraph('s',[Event(str(i),'s',str(i),rows[str(i)]['hash'],TimeInterval.parse(date))
+                    for i,date in enumerate(dates)]))
+                for query in ('events after 2026-01-01 and before 2026-03-01',
+                              'events before 2026-03-01 and after 2026-01-01',
+                              '2026-01-01之后，2026-03-01之前'):
+                    result=index.search('s',query,budget=1000)
+                    self.assertEqual([row['id'] for row in result['selected']],['2'])
+                for query,expected in [('2026-03-01之前',{'0','1','2'}),('2026-01-01之后',{'2','3','4'})]:
+                    result=index.search('s',query,budget=1000)
+                    self.assertEqual({row['id'] for row in result['selected']},expected)
+                with self.assertRaisesRegex(ValueError,'two-sided'):
+                    index.search('s','after 2026-03-01 and before 2026-01-01')
+            finally:index.close()
+
+
 if __name__=='__main__':unittest.main()
