@@ -44,6 +44,7 @@ jobs:
       - run: python scripts/check_docs.py
       - run: python scripts/check_version_history.py
       - run: python scripts/check_completion.py
+      - run: python scripts/check_evidence_storage.py
       - name: Check committed whitespace
         shell: bash
         run: |

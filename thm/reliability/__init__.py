@@ -134,9 +134,12 @@ class SelfVerificationEpochs:
         if kind not in self.counts:
             raise ValueError('unknown verification epoch')
         self.counts[kind] += 1
-        due = kind != 'request' or self.counts[kind] % self.cadence == 0
+        if len(invariants)>64:
+            raise ValueError('self-check invariant bound')
+        due = True
         failures = [name for name, check in invariants.items() if not check()] if due else []
-        return {'epoch': kind, 'count': self.counts[kind], 'checked': due, 'failures': failures, 'passed': not failures}
+        return {'epoch': kind, 'count': self.counts[kind], 'checked': due, 'failures': failures, 'passed': not failures,
+                'deep_check_due':kind!='request' or self.counts[kind]%self.cadence==0}
 
     def adapt(self, report):
         if report.get('runs', 0) >= 20 and report.get('failures', 0) >= 5:

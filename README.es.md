@@ -11,6 +11,10 @@ Autor: Junfu Shi (SJF, xngg1021) · Licencia: [MIT](LICENSE)
 
 THM separa memoria lógica, ejecución de cómputo y almacenamiento físico. La versión 1.5.0 integra estos planos, Evaluation Fabric, un actuador explícito de residencia y la Context Economics bridge independiente. La identidad y el ámbito de la fuente conservan la autoridad. La evidencia histórica de 1.4.0 mantiene su protocolo y SHA; la estabilidad de implementación no otorga aceptación de hardware ni tareas.
 
+La versión 1.6.0 incorpora un entorno de sistemas opcional para agentes: épocas de topología dinámica, observación térmica y energética, concurrencia acotada, E/S nativa, análisis de fiabilidad, recuperación determinista de memoria extensa y evidencia CE v2. «Hot» abarca estados lógicos, de cómputo, físicos, térmicos, económicos, de demanda y de fiabilidad; no crea niveles nuevos. La ejecución nativa, el rendimiento sostenido y los resultados de los agentes se validan por separado.
+
+[1.6 runtime](docs/24-agent-systems-runtime.md) · [0-LLM ceiling](docs/25-long-tail-ceiling.md) · [1.6 completion](reports/2026-09-13-thm-1.6-full-power-completion.md)
+
 <!-- section:philosophy -->
 ## Filosofía de diseño
 

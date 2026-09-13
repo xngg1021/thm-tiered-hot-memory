@@ -15,6 +15,10 @@ from thm.runtime.fabric.resources import ChildBudget, stop_owned_process_tree
 MAX_BYTES = 1048576
 
 
+class TransportError(ValueError):
+    """Retryable frame/protocol failure; distinct from source identity failure."""
+
+
 class SysCore:
     def __init__(self, executable=None, *, timeout=2.):
         finite(timeout, minimum=.001)
@@ -25,7 +29,11 @@ class SysCore:
         self.failures = 0
         self.last = {}
 
-    def _request(self, operation, payload=b'', *, portable=False):
+    def _request(self, operation, payload=b'', *, portable=False, deadline=None):
+        deadline = time.monotonic()+self.timeout if deadline is None else deadline
+        remaining = deadline-time.monotonic()
+        if remaining <= 0:
+            raise TimeoutError('SysCore operation deadline exhausted')
         request = bytes((1, operation)) + payload
         if len(request) > 4098 or (not self.executable and not portable):
             raise ValueError('SysCore unavailable or request too large')
@@ -37,13 +45,13 @@ class SysCore:
         budget = None
         started = time.monotonic()
         try:
-            budget = ChildBudget(process, memory=256*1024**2, cpu=self.timeout+1, io=8*MAX_BYTES)
-            output, _ = process.communicate(struct.pack('<I', len(request))+request, timeout=self.timeout)
+            budget = ChildBudget(process, memory=256*1024**2, cpu=remaining+1, io=8*MAX_BYTES)
+            output, _ = process.communicate(struct.pack('<I', len(request))+request, timeout=max(.000001, deadline-time.monotonic()))
             if process.returncode or len(output) < 5 or len(output) > MAX_BYTES+5:
-                raise ValueError('invalid SysCore response')
+                raise TransportError('invalid SysCore response')
             size = struct.unpack('<I', output[:4])[0]
             if size != len(output)-4:
-                raise ValueError('SysCore response framing mismatch')
+                raise TransportError('SysCore response framing mismatch')
             if output[4] != 0:
                 raise OSError(output[5:1024].decode(errors='replace'))
             self.last = {'transport': 'pure-python' if portable else 'thm-syscore/1',
@@ -68,18 +76,19 @@ class SysCore:
                 self.failures += 1
         return {'schema': 'thm-syscore/1', 'native_io': False, 'fallback': 'pure-python', 'max_bytes': MAX_BYTES}
 
-    def read_verified(self, path, expected_sha256, *, native_io=True):
+    def read_verified(self, path, expected_sha256, *, native_io=True, deadline=None):
+        deadline = min(deadline, time.monotonic()+self.timeout) if deadline is not None else time.monotonic()+self.timeout
         if len(expected_sha256) != 64 or any(x not in '0123456789abcdef' for x in expected_sha256):
             raise ValueError('expected content identity required')
         if self.executable:
             try:
-                data = self._request(2 if native_io else 1, os.fsencode(Path(path).resolve()))
+                data = self._request(2 if native_io else 1, os.fsencode(Path(path).resolve()), deadline=deadline)
                 if hashlib.sha256(data).hexdigest() != expected_sha256:
                     raise ValueError('native consumed bytes identity mismatch')
                 return data
-            except (OSError, RuntimeError, subprocess.TimeoutExpired):
+            except (OSError, RuntimeError, TransportError, subprocess.TimeoutExpired):
                 self.failures += 1
-        data = self._request(1,os.fsencode(Path(path).absolute()),portable=True)
+        data = self._request(1,os.fsencode(Path(path).absolute()),portable=True,deadline=deadline)
         if hashlib.sha256(data).hexdigest() != expected_sha256:
             raise ValueError('source bytes identity mismatch')
         self.last = {'transport': 'pure-python', 'native_executed': False, 'fallback_count': self.failures,
@@ -113,17 +122,13 @@ class NativeAsyncIO:
             if remaining <= 0:
                 rows.append({'identity': identity, 'status': 'deadline', 'data': None})
                 continue
-            original = self.syscore.timeout
-            self.syscore.timeout = min(original, remaining)
             try:
-                data = self.syscore.read_verified(path, sha)
+                data = self.syscore.read_verified(path, sha, deadline=deadline)
                 on_time=time.monotonic()<=deadline
                 rows.append({'identity': identity, 'status': 'complete' if on_time else 'deadline', 'data': data if on_time else None,
                              'receipt': dict(self.syscore.last), 'zero_copy': False})
             except Exception as exc:
                 rows.append({'identity': identity, 'status': 'failed', 'error': str(exc), 'data': None})
-            finally:
-                self.syscore.timeout = original
         return rows
 
     def close(self):

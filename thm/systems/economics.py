@@ -30,6 +30,8 @@ class RuntimeMeasurement:
             finite(self.value, minimum=-273.15 if self.unit == 'celsius' else 0)
             if not self.denominator:
                 raise ValueError('measurement requires observations')
+            if self.unit=='fraction' and self.value>1:
+                raise ValueError('fraction outside [0,1]')
         if self.evidence not in ('simulated', 'hardware-observed', 'production-observed', 'callable-fixture', 'unavailable'):
             raise ValueError('runtime evidence class required')
         if self.evidence == 'unavailable' and self.value is not None:
@@ -58,6 +60,9 @@ def export_systems_evidence(evaluation_receipt, *, source_commit, systems_receip
         row = value if isinstance(value,RuntimeMeasurement) else RuntimeMeasurement(**value)
         if row.unit != RUNTIME_UNITS[name] or row.source_sha256 != sha:
             raise ValueError('measurement unit/source mismatch')
+        record={k:v for k,v in asdict(row).items() if k!='source_sha256'}
+        if body.get('measurements',{}).get(name)!=record:
+            raise ValueError('measurement record not covered by source receipt')
         selected[name] = row
     output = {k:v for k,v in base.items() if k != 'receipt_sha256'}
     output.update(schema='thm-ce-evidence/2', bridge_version='1.6', systems_receipt_sha256=sha,
@@ -96,6 +101,7 @@ class RuntimeEconomicAdvice:
 
 
 def import_systems_advice(value, *, expected_evidence_sha256, topology_epoch, now):
+    finite(now)
     body=verify_envelope(value,'ce-thm-advice/2')
     if body.get('automatic_mutation') is not False or body.get('taxonomy') != {'THM':'T0-T3','CE':'L0-L6'}:
         raise ValueError('advice authority violation')

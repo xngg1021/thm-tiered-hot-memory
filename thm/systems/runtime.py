@@ -28,9 +28,10 @@ class AgentSystemsRuntime:
 
     def event(self, event):
         # Epoch changes can be observed even while an in-flight search is running.
-        snapshot=self.topology.event(event)
-        self.base.topology_epoch=snapshot['topology_epoch']
-        return snapshot
+        with self.topology._lock:
+            snapshot=self.topology.event(event)
+            self.base.topology_epoch=snapshot['topology_epoch']
+            return snapshot
 
     def search(self, scope, query, *, workload='interactive', **settings):
         with self.lock:
@@ -60,31 +61,33 @@ class AgentSystemsRuntime:
                         for name,value in pressure['resources'].items()}
                 control=self.controller.feedback(self.samples,stalls,now=time.monotonic())
                 result=self.base.search(scope,query,workload=workload,**settings)
-                fallback=None
-                if self.topology.epoch!=epoch:
-                    # Discard stale provider output, close device-bound state and
-                    # rebuild from the source index in the reference sparse path.
-                    with self.base.lock,self.base.index._lock:
-                        for executor in self.base.executors.values():
-                            executor.close()
-                        self.base.executors.clear()
-                        self.base.pinned.clear()
-                        self.base.index._vector_executor=None
-                        self.base.index._results.clear()
-                        effective={k:v for k,v in settings.items() if k not in ('mode','encoder','model_id','scorer')}
-                        result=self.base.index.search(scope,query,mode='sparse',**effective)
-                    fallback='topology-epoch-changed'
-                finish=time.monotonic()
-                self.controller.complete(identity,finish)
-                self.last={'schema':'thm-agent-runtime/1','program':self.session,'trajectory':identity,
-                    'session':self.session,'topology':self.topology.snapshot(),'topology_epoch':self.topology.epoch,
-                    'thermal_power':[sample.public() for sample in self.samples], 'pressure':pressure,
-                    'queue':self.controller.receipt(),'native_path':dict(self.syscore.last),
-                    'fallback':fallback,'task_completion_time':finish-arrived,
-                    'TUFR':None,'TUFR_reason':'host must mark useful output',
-                    'source_memory_mutation':False,'evidence':'systems-runtime'}
-                result['systems_receipt']=dict(self.last)
-                return result
+                # Linearize epoch validation, fallback and publication against events.
+                with self.topology._lock:
+                    fallback=None
+                    if self.topology.epoch!=epoch:
+                        # Discard stale provider output, close device-bound state and
+                        # rebuild from the source index in the reference sparse path.
+                        with self.base.lock,self.base.index._lock:
+                            for executor in self.base.executors.values():
+                                executor.close()
+                            self.base.executors.clear()
+                            self.base.pinned.clear()
+                            self.base.index._vector_executor=None
+                            self.base.index._results.clear()
+                            effective={k:v for k,v in settings.items() if k not in ('mode','encoder','model_id','scorer')}
+                            result=self.base.index.search(scope,query,mode='sparse',**effective)
+                        fallback='topology-epoch-changed'
+                    finish=time.monotonic()
+                    self.controller.complete(identity,finish)
+                    self.last={'schema':'thm-agent-runtime/1','program':self.session,'trajectory':identity,
+                        'session':self.session,'topology':self.topology.snapshot(),'topology_epoch':self.topology.epoch,
+                        'thermal_power':[sample.public() for sample in self.samples], 'pressure':pressure,
+                        'queue':self.controller.receipt(),'native_path':dict(self.syscore.last),
+                        'fallback':fallback,'task_completion_time':finish-arrived,
+                        'TUFR':None,'TUFR_reason':'host must mark useful output',
+                        'source_memory_mutation':False,'evidence':'systems-runtime'}
+                    result['systems_receipt']=dict(self.last)
+                    return result
             except BaseException:
                 if identity in self.controller.active:
                     self.controller.complete(identity,time.monotonic(),failed=True)

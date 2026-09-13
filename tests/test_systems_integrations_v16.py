@@ -39,10 +39,16 @@ class Integrations(unittest.TestCase):
         with tempfile.TemporaryDirectory() as directory:
             result=run(ADAPTERS['locomo'],FIXTURES['locomo'],Path(directory)/'run',provenance='deterministic-fixture')
         ids=[r['task_id'] for r in result['layers']['memory-dataplane']['rows']]
-        systems={'task_ids':ids,'source_commit':'a'*40,'topology_epoch':1}
+        systems={'task_ids':ids,'source_commit':'a'*40,'topology_epoch':1,
+                 'measurements':{'power':{'value':50,'unit':'watt','denominator':1,'evidence':'simulated',
+                                          'aggregation':'mean','exposure_unit':None}}}
         systems['receipt_sha256']=digest(systems)
         m=RuntimeMeasurement(50,'watt',1,systems['receipt_sha256'],'simulated')
         receipt=export_systems_evidence(result,source_commit='a'*40,systems_receipt=systems,measurements={'power':m})
+        for changed in ({'value':500},{'denominator':20},{'evidence':'hardware-observed'},{'aggregation':'sum'}):
+            with self.assertRaisesRegex(ValueError,'not covered'):
+                export_systems_evidence(result,source_commit='a'*40,systems_receipt=systems,
+                                        measurements={'power':replace(m,**changed)})
         self.assertEqual(receipt['schema'],'thm-ce-evidence/2')
         self.assertIsNone(receipt['measurements']['packed_tokens']['value'])
         self.assertEqual(receipt['systems_measurements']['power']['evidence'],'simulated')

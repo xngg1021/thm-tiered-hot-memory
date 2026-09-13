@@ -18,6 +18,7 @@ int64_t thm_native_read(const char *path, unsigned char *data, size_t capacity) 
     BOOL started=ReadFile(file,data,(DWORD)capacity,NULL,&ov);
     if(!started && GetLastError()!=ERROR_IO_PENDING) { CloseHandle(file); CloseHandle(port); return -4; }
     BOOL ok=GetQueuedCompletionStatus(port,&bytes,&key,&done,INFINITE);
+    if(done!=&ov) { CancelIoEx(file,&ov); GetOverlappedResult(file,&ov,&bytes,TRUE); ok=FALSE; }
     CloseHandle(file); CloseHandle(port);
     return ok && done==&ov ? (int64_t)bytes : -5;
 }
@@ -56,7 +57,10 @@ int64_t thm_native_read(const char *path, unsigned char *data, size_t capacity) 
         array[position]=position;
         atomic_fetch_add_explicit(tail,1,memory_order_release);
         int rc;
-        do { rc=(int)syscall(__NR_io_uring_enter,ring,1,1,IORING_ENTER_GETEVENTS,NULL,0); } while(rc<0 && errno==EINTR);
+        rc=(int)syscall(__NR_io_uring_enter,ring,1,1,IORING_ENTER_GETEVENTS,NULL,0);
+        /* An interrupted/failed enter may already own data. Exit the owned
+           process rather than return a buffer whose retirement is unknown. */
+        if(rc<0) _exit(74);
         if(rc>=0) {
             _Atomic unsigned *head=(_Atomic unsigned *)((char *)cq+p.cq_off.head);
             _Atomic unsigned *ctail=(_Atomic unsigned *)((char *)cq+p.cq_off.tail);
@@ -64,7 +68,8 @@ int64_t thm_native_read(const char *path, unsigned char *data, size_t capacity) 
             unsigned t=atomic_load_explicit(ctail,memory_order_acquire);
             unsigned cmask=*(unsigned *)((char *)cq+p.cq_off.ring_mask);
             struct io_uring_cqe *completion=(struct io_uring_cqe *)((char *)cq+p.cq_off.cqes);
-            if(t!=h && completion[h&cmask].user_data==1) result=completion[h&cmask].res;
+            if(t==h || completion[h&cmask].user_data!=1) _exit(74);
+            result=completion[h&cmask].res;
             atomic_store_explicit(head,h+1,memory_order_release);
         } else result=-errno;
     }

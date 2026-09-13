@@ -816,6 +816,7 @@ class SearchIndex:
         by_rowid = self._materialize(scope, generation[0], ordered)
         ranked = [by_rowid[rid] for rid in ordered]
         material_ms=(time.perf_counter()-material_start)*1000
+        candidate_ids = [r['id'] for r in ranked]
         ranked = self._rank_candidates(scope, query, ranked)
         if entity_projection:
             from .entities import reorder
@@ -857,6 +858,8 @@ class SearchIndex:
                 'runtime_diagnostics':dict(self._last_dense_diagnostics) if diagnostics else None,
                 'provider_verification':next(iter(self._last_dense_diagnostics.get('resident_receipt',{}).get('ranking_guards',[])),None),
                 'selected': selected, 'ranked_ids': ranked_ids, 'candidate_count': len(ranked),
+                'candidate_ids': list(dict.fromkeys(candidate_ids+[r['id'] for r in expanded])),
+                'packing_ids': [r['id'] for r in expanded],
                 'budget': budget, 'budget_used': final_units,
                 'counter': getattr(self.counter, 'name', 'caller_supplied'),
                 'timing_ms': {'fts':self._fts_elapsed_ms,'fusion':fusion_ms,'row_materialization':material_ms,'neighbor_expansion':neighbor_ms,

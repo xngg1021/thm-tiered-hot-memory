@@ -11,6 +11,10 @@
 
 THM 將邏輯記憶、計算執行和實體儲存分開。1.5.0 將這些平面、Evaluation Fabric、顯式駐留執行器與獨立的 Context Economics bridge 納入統一實作範圍。來源身分與作用域始終具有權威。歷史 1.4.0 證據保留原始協定和 SHA；實作穩定不代表硬體或任務驗收。
 
+1.6.0 新增可選 Agent 系統執行環境：動態拓撲 epoch、熱與功耗觀測、有界並行、原生 I/O、可靠性分析、確定性長尾檢索與 CE v2 證據。「Hot」涵蓋邏輯、計算、物理、熱、經濟、需求與可靠性狀態，這些維度不會建立新層級。原生執行、持續效能與 Agent 結果分別驗收。
+
+[1.6 runtime](docs/24-agent-systems-runtime.md) · [0-LLM ceiling](docs/25-long-tail-ceiling.md) · [1.6 completion](reports/2026-09-13-thm-1.6-full-power-completion.md)
+
 <!-- section:philosophy -->
 ## 設計理念
 

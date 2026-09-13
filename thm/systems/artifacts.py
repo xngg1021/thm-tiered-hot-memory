@@ -15,7 +15,8 @@ def model_snapshot(root, *, max_bytes=32*1024**3, max_files=10000):
     if len(expected['files']) > max_files or sum(row['bytes'] for row in expected['files']) > max_bytes:
         raise ValueError('model snapshot bound')
     with tempfile.TemporaryDirectory(prefix='thm-model-snapshot-') as directory:
-        target = Path(directory)
+        target = Path(directory)/(root.name or 'model')
+        target.mkdir()
         for row in expected['files']:
             source, destination = root/row['name'], target/row['name']
             destination.parent.mkdir(parents=True, exist_ok=True)

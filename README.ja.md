@@ -11,6 +11,10 @@
 
 THM は論理メモリ、計算実行、物理ストレージを分離します。1.5.0 は各プレーン、Evaluation Fabric、明示的な常駐アクチュエータ、独立した Context Economics bridge を実装範囲に統合します。ソースの識別子とスコープが常に権威を持ちます。1.4.0 の過去の証拠は元のプロトコルと SHA を保持し、実装の安定性はハードウェアやタスクの検証を意味しません。
 
+1.6.0 は、動的トポロジー epoch、熱・電力観測、上限付き並行制御、ネイティブ I/O、信頼性分析、決定論的な長期記憶検索、CE v2 証拠を備えた任意の Agent システムランタイムを追加します。「Hot」は論理・計算・物理・熱・経済・需要・信頼性の状態を表し、新しい階層には変換しません。ネイティブ実行、持続性能、Agent の成果は別々に検証します。
+
+[1.6 runtime](docs/24-agent-systems-runtime.md) · [0-LLM ceiling](docs/25-long-tail-ceiling.md) · [1.6 completion](reports/2026-09-13-thm-1.6-full-power-completion.md)
+
 <!-- section:philosophy -->
 ## Design philosophy
 

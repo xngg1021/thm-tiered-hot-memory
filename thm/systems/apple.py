@@ -8,6 +8,7 @@ from .contracts import finite
 
 class AccelerateVector:
     def __init__(self, library=None):
+        self.fixture=library is not None
         if library is None:
             if platform.system()!='Darwin':
                 raise OSError('Accelerate is unavailable on this platform')
@@ -34,7 +35,8 @@ class AccelerateVector:
         self.library.cblas_sgemm(101,111,111,m,n,k,1.,a.ctypes.data_as(ptr),k,b.ctypes.data_as(ptr),n,0.,out.ctypes.data_as(ptr),n)
         reference=a@b
         error=float(np.max(np.abs(out-reference)))
-        self.last={'native_path':'Accelerate-CBLAS','operation':'matmul','wall_seconds':time.perf_counter()-start,
+        self.last={'native_path':'Accelerate-CBLAS','operation':'matmul',
+            'evidence':'callable-fixture' if self.fixture else 'native-executed','wall_seconds':time.perf_counter()-start,
             'max_absolute_error':error,'parity_accepted':bool(np.allclose(out,reference,rtol=1e-5,atol=1e-5)),
             'NEON_observed':None,'AMX_observed':None,'hardware_acceptance':False,'zero_copy':False}
         if not self.last['parity_accepted']:
@@ -100,3 +102,15 @@ def coreml_placement_receipt(compute_units, observed_operators=None):
     return {'compute_units_requested':compute_units,'observed_operators':observed_operators,
             'ANE_placement':'placement_unobservable' if observed_operators is None else 'external-observation-required',
             'ANE_accepted':False}
+
+
+def hardware_model():
+    """Public macOS hw.model; architecture is a different receipt field."""
+    if platform.system()!='Darwin':return None
+    library=c.CDLL(None,use_errno=True)
+    library.sysctlbyname.argtypes=[c.c_char_p,c.c_void_p,c.POINTER(c.c_size_t),c.c_void_p,c.c_size_t]
+    size=c.c_size_t()
+    if library.sysctlbyname(b'hw.model',None,c.byref(size),None,0) or not 0<size.value<=1024:return None
+    buffer=c.create_string_buffer(size.value)
+    if library.sysctlbyname(b'hw.model',buffer,c.byref(size),None,0):return None
+    return buffer.value.decode('utf-8',errors='replace')

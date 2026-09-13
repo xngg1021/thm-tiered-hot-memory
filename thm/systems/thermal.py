@@ -1,5 +1,5 @@
 """Power observations, sustainable envelopes and conservative backpressure."""
-from dataclasses import asdict, dataclass, fields
+from dataclasses import asdict, dataclass, fields, replace
 import importlib
 import math
 from pathlib import Path
@@ -96,6 +96,8 @@ class LinuxThermalPowerProvider:
             result.append(ThermalSample(str(freq), stamp, 0, 'cpufreq',
                 effective_clock_hz=read_number(freq/'cpuinfo_cur_freq', .001),
                 requested_clock_hz=read_number(freq/'scaling_cur_freq', .001), energy_preference=preference))
+        if self.root!=Path('/sys'):
+            result=[replace(row,evidence='callable-fixture') for row in result]
         return result
 
     def sample(self):
@@ -241,7 +243,61 @@ class SustainablePerformanceEnvelope:
             'power': mean('power_w'), 'energy_per_operation': energy/len(self.latencies) if energy is not None and self.latencies else None,
             'throttle_residency': mean('throttle_residency'), 'memory_bandwidth': mean('memory_bandwidth'),
             'power_sources': sorted({t.source for t in self.thermal}),
+            'energy_attribution': 'device-counter-window divided by completed operations; workload exclusivity not established',
             'evidence_classes': sorted({t.evidence for t in self.thermal})}
+
+
+class ThermalActuator:
+    """Explicit S2 controls with read-before-write, rollback and audit receipts."""
+    CONTROLS=('power-cap','clock-range','fan-policy','cpu-quota','gpu-frequency','device-allocation')
+
+    def __init__(self,binding):
+        self.binding=binding
+        self.previous=[]
+
+    def apply(self,control,value,gate):
+        gate.require('S2')
+        if control not in self.CONTROLS or not self.binding.supports(control):
+            raise ValueError('unsupported native actuation')
+        previous=self.binding.read(control)
+        self.binding.validate(control,value)
+        self.previous.append((control,previous))
+        try:
+            self.binding.write(control,value)
+            observed=self.binding.read(control)
+        except BaseException:
+            self.rollback()
+            raise
+        return {'control':control,'requested':value,'observed':observed,'previous':previous,
+                'level':'S2','opt_in':True,'rollback_available':True,'evidence':self.binding.evidence}
+
+    def rollback(self):
+        while self.previous:
+            control,value=self.previous[-1]
+            self.binding.write(control,value)
+            self.previous.pop()
+
+
+class NvmlPowerControl:
+    def __init__(self,telemetry):
+        self.telemetry=telemetry
+        self.evidence='callable-fixture' if telemetry.fixture else 'native-executed'
+
+    def supports(self,control):
+        return control=='power-cap' and hasattr(self.telemetry.api,'nvmlDeviceSetPowerManagementLimit')
+
+    def read(self,control):
+        if not self.supports(control):raise ValueError('unsupported NVML control')
+        return self.telemetry.api.nvmlDeviceGetPowerManagementLimit(self.telemetry.handle)/1000
+
+    def validate(self,control,value):
+        finite(value)
+        low,high=self.telemetry.api.nvmlDeviceGetPowerManagementLimitConstraints(self.telemetry.handle)
+        if not low<=value*1000<=high:raise ValueError('power cap outside device constraints')
+
+    def write(self,control,value):
+        self.validate(control,value)
+        self.telemetry.api.nvmlDeviceSetPowerManagementLimit(self.telemetry.handle,int(value*1000))
 
 
 def operating_points(envelopes):

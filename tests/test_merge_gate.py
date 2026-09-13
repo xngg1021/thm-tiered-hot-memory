@@ -1,11 +1,11 @@
 import copy
 import unittest
-from scripts.verify_merge_gate import verify, verify_merge_result, REQUIRED, ARCHIVE, REPOSITORY
+from scripts.verify_merge_gate import verify, verify_merge_result, REQUIRED, ARCHIVE, ARCHIVE_V15, REPOSITORY
 
 
 def snapshot():
     return dict(repository=REPOSITORY,pr_number=21,head_sha='a'*40,base_sha='b'*40,base_ref='main',state='open',draft=False,
-        archive_v1_4_sha=ARCHIVE,merge_method='merge',force_push=False,
+        archive_v1_4_sha=ARCHIVE,archive_v1_5_sha=ARCHIVE_V15,merge_method='merge',force_push=False,
         workflow_runs=[dict(name=n,head_sha='a'*40,id=i+1,event='push',status='completed',conclusion='success') for i,n in enumerate(REQUIRED)],
         review=dict(status='reviewed',head_sha='a'*40,unresolved_actionable=0))
 
@@ -28,7 +28,7 @@ class MergeGateTests(unittest.TestCase):
 
     def test_changed_head_and_archive_refuse(self):
         s=snapshot();self.assertEqual(verify(s,expected_head='a'*40,expected_base='b'*40)['merge_method'],'merge')
-        for key in ('head_sha','archive_v1_4_sha'):
+        for key in ('head_sha','archive_v1_4_sha','archive_v1_5_sha'):
             changed=copy.deepcopy(s);changed[key]='c'*40
             with self.assertRaises(ValueError):verify(changed,expected_head='a'*40,expected_base='b'*40)
 

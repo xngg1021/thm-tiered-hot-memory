@@ -1,5 +1,5 @@
 """Evaluator-only candidate/oracle/ranking/packing decomposition."""
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from thm.long_tail import EvidenceCandidate, joint_select
 from thm.systems.contracts import integer
 
@@ -11,6 +11,16 @@ ANNOTATION_ISSUES = ('multiple-valid-evidence', 'missing-gold', 'parent-child-mi
 
 def _oracle(candidates, gold, budget, max_states=100000):
     """Exact coverage mask DP with an explicit inexact lower bound on overflow."""
+    if any(candidate.required_set for candidate in candidates):
+        # Dependency closure changes the state space: use the bounded subset
+        # optimizer and disclose a lower bound when exact enumeration is too large.
+        projected=tuple(replace(row,value=0,units=row.units&gold) for row in candidates)
+        selection=joint_select(projected,budget)
+        selected=set(selection['ids'])
+        covered=set().union(*(row.units for row in projected if row.identity in selected)) if selected else set()
+        exact=selection['method']=='exact'
+        return {'covered_units':len(covered),'any_gold':bool(covered),'all_gold':bool(gold) and gold<=covered,
+                'method':selection['method'],'ceiling_valid':exact,'lower_bound_only':not exact,'states':None}
     ids = {key: n for n, key in enumerate(sorted(gold))}
     states = {0: 0}
     exact = True
@@ -41,6 +51,7 @@ class RetrievalCeilingReport:
     ranked_ids: tuple[str, ...]
     packed_ids: tuple[str, ...]
     budget: int
+    packing_ids: tuple[str, ...] | None = None
     representation_loss: tuple[str, ...] = ()
     annotation_ambiguity: tuple[str, ...] = ()
 
@@ -55,8 +66,12 @@ class RetrievalCeilingReport:
             raise ValueError('duplicate candidate')
         if len(set(self.ranked_ids)) != len(self.ranked_ids) or len(set(self.packed_ids)) != len(self.packed_ids):
             raise ValueError('duplicate selected identity')
-        if not set(self.packed_ids) <= set(self.ranked_ids) <= set(by_id):
+        eligible_ids=self.ranked_ids if self.packing_ids is None else self.packing_ids
+        if (len(set(eligible_ids))!=len(eligible_ids) or not set(self.packed_ids)<=set(eligible_ids)<=set(by_id)
+                or not set(self.ranked_ids)<=set(by_id)):
             raise ValueError('candidate/ranked/packed identity mismatch')
+        if any(not by_id[key].required_set<=set(self.packed_ids) for key in self.packed_ids):
+            raise ValueError('packed evidence lacks required dependency')
         if sum(by_id[key].cost for key in self.packed_ids) > self.budget:
             raise ValueError('packed evidence exceeds declared budget')
         available = set().union(*(c.units for c in self.candidates)) if self.candidates else set()
@@ -64,14 +79,16 @@ class RetrievalCeilingReport:
         packed = set().union(*(by_id[key].units for key in self.packed_ids)) if self.packed_ids else set()
         oracle = _oracle(self.candidates, self.gold, self.budget)
         rank_oracle = _oracle(ranked, self.gold, self.budget)
+        packing_oracle = _oracle(tuple(by_id[key] for key in eligible_ids), self.gold, self.budget)
         accepted = len(packed & self.gold)
-        valid = oracle['ceiling_valid'] and rank_oracle['ceiling_valid']
+        valid = oracle['ceiling_valid'] and rank_oracle['ceiling_valid'] and packing_oracle['ceiling_valid']
         return {'schema': 'thm-retrieval-ceiling/1', 'task_id': self.task_id, 'gold_units': len(self.gold),
             'candidate_ceiling': {'covered_units': len(available & self.gold), 'any_gold': bool(available & self.gold),
                                   'all_gold': bool(self.gold) and self.gold <= available},
-            'budget_oracle': oracle, 'ranked_budget_oracle': rank_oracle,
+            'budget_oracle': oracle, 'ranked_budget_oracle': rank_oracle, 'packing_budget_oracle':packing_oracle,
+            'neighbor_expansion_gain':packing_oracle['covered_units']-rank_oracle['covered_units'] if valid else None,
             'ranking_loss': oracle['covered_units']-rank_oracle['covered_units'] if valid else None,
-            'packing_loss': rank_oracle['covered_units']-accepted if valid else None,
+            'packing_loss': packing_oracle['covered_units']-accepted if valid else None,
             'selected_coverage': accepted, 'representation_loss': list(self.representation_loss),
             'annotation_ambiguity': list(self.annotation_ambiguity), 'generation_calls': 0, 'judge_calls': 0,
             'representation_loss_automatically_estimated': False, 'gold_used_for_serving': False}

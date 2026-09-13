@@ -11,6 +11,10 @@
 
 THM은 논리 메모리, 계산 실행, 물리 저장소를 분리합니다. 1.5.0은 이 계층들과 Evaluation Fabric, 명시적 상주 실행기, 독립적인 Context Economics bridge를 하나의 구현 범위로 제공합니다. 소스 식별자와 범위가 계속 권위를 가집니다. 과거 1.4.0 증거는 원래 프로토콜과 SHA를 유지하며, 구현 안정성이 하드웨어나 작업 검증을 뜻하지는 않습니다.
 
+1.6.0은 동적 토폴로지 epoch, 열과 전력 관측, 제한된 동시성, 네이티브 I/O, 신뢰성 분석, 결정적 장기 기억 검색, CE v2 증거를 갖춘 선택적 Agent 시스템 런타임을 추가합니다. “Hot”은 논리·연산·물리·열·경제·수요·신뢰성 상태를 포함하며 새로운 계층을 만들지 않습니다. 네이티브 실행, 지속 성능, Agent 결과는 각각 검증합니다.
+
+[1.6 runtime](docs/24-agent-systems-runtime.md) · [0-LLM ceiling](docs/25-long-tail-ceiling.md) · [1.6 completion](reports/2026-09-13-thm-1.6-full-power-completion.md)
+
 <!-- section:philosophy -->
 ## Design philosophy
 

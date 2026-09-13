@@ -220,6 +220,7 @@ class DynamicTopologyFabric:
 class TopologyObserver:
     """Compare native provider observations; changed capabilities require reprobe."""
     def __init__(self,fabric,provider=None):
+        self.evidence='hardware-observed' if provider is None else getattr(provider,'evidence','callable-fixture')
         if provider is None:
             from thm.runtime.fabric.hardware import HostDeviceProvider
             provider=HostDeviceProvider()
@@ -246,5 +247,5 @@ class TopologyObserver:
             self.fabric.event(event)
             changes.append(asdict(event))
         self.previous=rows
-        return {'events':changes,'topology':self.fabric.snapshot(),'evidence':'hardware-observed',
+        return {'events':changes,'topology':self.fabric.snapshot(),'evidence':self.evidence,
                 'qualification_automatic':False}

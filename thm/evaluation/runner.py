@@ -77,7 +77,7 @@ def run(adapter, source, root, *, mode='acceptance', provenance='external-datase
             from thm.long_tail import EvidenceCandidate
             from .ceiling import RetrievalCeilingReport
             lookup = {d.id: d for d in docs}
-            candidate_ids = tuple(dict.fromkeys(out.get('ranked_ids', []) + list(selected)))
+            candidate_ids = tuple(out.get('candidate_ids', ()))
             candidates = []
             for key in candidate_ids:
                 document = lookup[key]
@@ -85,7 +85,8 @@ def run(adapter, source, root, *, mode='acceptance', provenance='external-datase
                 cost = len((f'[source {label}]\n'+document.text).encode())+2
                 candidates.append(EvidenceCandidate(key,cost,0,frozenset({unit_map[key]})))
             public['ceiling'] = RetrievalCeilingReport(task.id,frozenset(gold.evidence_ids),tuple(candidates),
-                candidate_ids,selected,budget+2 if budget else 0).public()
+                tuple(out.get('ranked_ids', ())),selected,budget+2 if budget else 0,
+                packing_ids=tuple(out.get('packing_ids', ()))).public()
         if long_tail:
             public['long_tail'] = out.get('long_tail')
         rows.append(public)

@@ -1,6 +1,8 @@
 import ctypes as c
 import hashlib
 import sys
+import os
+from pathlib import Path
 import types
 import unittest
 from unittest.mock import patch
@@ -115,3 +117,54 @@ class NativeContracts(unittest.TestCase):
 
 
 if __name__=='__main__':unittest.main()
+
+class ResearchNativeContracts(unittest.TestCase):
+    def test_userfault_defaults_off_and_lib_bpf_consumed_identity(self):
+        from thm.systems.linux_research import UserfaultfdBinding,LibbpfProbe
+        from thm.systems.contracts import PermissionGate
+        with self.assertRaises(PermissionError):UserfaultfdBinding()
+        gate=PermissionGate('S2',True,True,True,True,True)
+        with self.assertRaisesRegex(ValueError,'identity'):
+            LibbpfProbe(b'ELF','0'*64,lambda data:data,gate=gate,api=object())
+
+    def test_libbpf_owned_callback_bound_and_cleanup(self):
+        import ctypes as c
+        import hashlib
+        from thm.systems.linux_research import LibbpfProbe
+        from thm.systems.contracts import PermissionGate
+        class API:
+            closed=[]
+            def bpf_object__open_mem(self,data,size,opts):return 1
+            def libbpf_get_error(self,ptr):return 0
+            def bpf_object__load(self,obj):return 0
+            def bpf_object__next_program(self,obj,previous):return 2 if previous is None else None
+            def bpf_program__attach(self,program):return 3
+            def bpf_object__find_map_fd_by_name(self,obj,name):return 4
+            def ring_buffer__new(self,fd,callback,context,opts):self.callback=callback;return 5
+            def ring_buffer__poll(self,ring,timeout):
+                data=c.create_string_buffer(b'event');return self.callback(None,data,5)
+            def ring_buffer__free(self,ring):self.closed.append('ring')
+            def bpf_link__destroy(self,link):self.closed.append('link');return 0
+            def bpf_object__close(self,obj):self.closed.append('object')
+        api=API();gate=PermissionGate('S2',True,True,True,True,True)
+        probe=LibbpfProbe(b'ELF',hashlib.sha256(b'ELF').hexdigest(),lambda data:{'kind':'scheduler','raw':data.decode()},gate=gate,api=api)
+        self.assertEqual(probe.poll(.01,1)[0]['raw'],'event')
+        self.assertEqual(probe.evidence,'callable-fixture')
+        probe.close();self.assertEqual(api.closed,['ring','link','object'])
+
+    def test_etw_unique_session_stop_and_xml_bound(self):
+        from thm.systems.windows_trace import EtwProbe
+        from thm.systems.contracts import PermissionGate
+        gate=PermissionGate('S2',True,True,True,True,True)
+        with patch('thm.systems.windows_trace.platform.system',return_value='Windows'),patch.dict(os.environ,{'SystemRoot':'C:/Windows'}):
+            probe=EtwProbe('00000000-0000-0000-0000-000000000001',gate=gate)
+        commands=[]
+        def native(command,timeout=5):
+            commands.append(command)
+            if command[0]==probe.tracerpt:
+                Path(command[command.index('-o')+1]).write_text('<Events><Event><EventID>42</EventID></Event></Events>')
+        with patch.object(probe,'_run',native):
+            rows=probe.poll(0,2);probe.close()
+        self.assertEqual(rows[0]['fields']['EventID']['text'],'42')
+        self.assertEqual(commands[1],[probe.logman,'stop',probe.name,'-ets'])
+        self.assertFalse(probe.root.exists())
