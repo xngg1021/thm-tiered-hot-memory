@@ -6,7 +6,7 @@ Track A / 0N is deterministic lexical, rule, metadata, graph and temporal retrie
 
 `EventGraph` keeps source identities, actors, provenance parents, predecessor/successor structure, supersedes, contradicts and revocation. Cycles and foreign scopes are rejected. Newer timestamps alone do not settle truth. Explicit corrections mark prior claims superseded; unresolved contradictions remain unresolved. Graphs are derived representations, not additional memory tiers. Attached events are revalidated against current source hashes on every retrieval snapshot.
 
-`LongTailSearchIndex` reuses the existing scoped SearchIndex transaction and optional source-derived event channels. Query classes cover entity, temporal, multi-hop, preference, update, contradiction, ordering, locator and implicit questions. Joint selection considers bounded source costs, query-term coverage and required evidence sets. Small candidate sets use exact subset search; large sets disclose a heuristic. Exact UTF-8 costs include source wrappers and separators. Nonadditive token counters retain the validated reference packer and are explicitly labelled heuristic. These choices are default-off until appropriate held-out evidence justifies adoption.
+`LongTailSearchIndex` reuses the existing scoped SearchIndex transaction and optional source-derived event channels. Query classes cover entity, temporal, multi-hop, preference, update, contradiction, ordering, locator and implicit questions. Joint selection considers bounded source costs, query-term coverage and required evidence sets. Small candidate sets use exact subset search; large sets disclose a heuristic. Exact UTF-8 costs include source wrappers and separators. Nonadditive token counters use the exact reference counter with atomic dependency-closure admission and are explicitly labelled heuristic. Event dependencies require complete-source packing; combining an attached event graph with partial segment packing is rejected explicitly. These choices are default-off until appropriate held-out evidence justifies adoption.
 
 `RetrievalCeilingReport` is evaluator-only. Serving does not receive gold. Its per-task decomposition reports:
 
@@ -16,7 +16,7 @@ Track A / 0N is deterministic lexical, rule, metadata, graph and temporal retrie
 | Budget-fit oracle | Maximum gold-unit coverage possible within the same budget; any/all-gold feasibility |
 | Ranking loss | Oracle coverage lost after ranked eligibility selection |
 | Packing loss | Packing-eligible feasible coverage lost in the actual context |
-| Neighbor expansion gain | Feasible coverage added by the actual neighbor expansion, separate from ranked IDs |
+| Neighbor expansion gain | Feasible coverage added by neighbor/association expansion, separate from the pre-expansion candidate and ranked universes |
 | Representation loss | Explicit annotations for lexical/relation/temporal/semantic/coreference ambiguity |
 | Annotation ambiguity | Missing/multiple gold, parent-child mismatch, inference-only or ambiguous questions |
 

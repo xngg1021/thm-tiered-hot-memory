@@ -40,7 +40,7 @@ class LongTailSearchIndex(SearchIndex):
         for event in selected[:candidate_limit]:
             chain=graph.required_chain(event.identity)
             required=frozenset(e.source_id for e in chain)
-            self.required_source_sets[event.source_id]=required
+            self.required_source_sets[event.source_id]=self.required_source_sets.get(event.source_id,frozenset())|required
             sources.extend(rows[e.source_id]['rowid'] for e in chain)
         if sources:channels.append(list(dict.fromkeys(sources))[:candidate_limit])
         return channels
@@ -58,7 +58,7 @@ class LongTailSearchIndex(SearchIndex):
             from thm.retrieval import TokenCounter
             if type(self.counter) is not TokenCounter or self.counter.encode is not None:
                 self.long_tail_receipt = {'method': 'heuristic', 'reason': 'nonadditive-counter', 'query_class': category}
-                return super()._pack_candidates(expanded, budget, query)
+                return self._pack_dependency_closures(expanded,budget,query)
             overlap = query_terms & set(terms(row['text']))
             units = frozenset(overlap)
             required=getattr(self,'required_source_sets',{}).get(row['id'],frozenset())
@@ -74,9 +74,35 @@ class LongTailSearchIndex(SearchIndex):
                                  'selected_evidence_count': len(selected), 'track': '0N', 'gold_used': False}
         return context, selected, units
 
+    def _pack_dependency_closures(self,expanded,budget,query):
+        """Keep exact final counting while admitting every dependency group atomically."""
+        by_id={row['id']:row for row in expanded}
+        order={row['id']:position for position,row in enumerate(expanded)}
+        required=getattr(self,'required_source_sets',{})
+        chosen=[];selected_ids=set();result=('',[],0)
+        for row in expanded:
+            pending=[row['id']];group=set();missing=False
+            while pending:
+                key=pending.pop()
+                if key in group or key in selected_ids:continue
+                if key not in by_id:missing=True;break
+                group.add(key);pending.extend(required.get(key,()))
+            if missing or not group:continue
+            proposal=chosen+[by_id[key] for key in sorted(group,key=order.get)]
+            packed=super()._pack_candidates(proposal,budget,query)
+            if {item['id'] for item in packed[1]}!={item['id'] for item in proposal}:
+                continue
+            chosen=proposal;selected_ids={item['id'] for item in chosen};result=packed
+        self.long_tail_receipt.update(dependencies_atomic=True,selection_ids=[row['id'] for row in chosen],
+                                      selected_evidence_count=len(chosen),track='0N',gold_used=False)
+        return result
+
     def search(self, scope, query, **kwargs):
         # Receipts must not be borrowed from an unrelated cached query.
         with self._lock:
+            from thm.features import RetrievalFeatures
+            if getattr(self,'event_graph',None) is not None and RetrievalFeatures.parse(kwargs.get('features')).segment:
+                raise ValueError('event dependencies require complete-source packing; segment packing is incompatible')
             self._results.clear()
             self.long_tail_receipt = {'method': 'empty', 'track': '0N'}
             result = super().search(scope, query, **kwargs)

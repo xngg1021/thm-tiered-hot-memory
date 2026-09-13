@@ -824,6 +824,7 @@ class SearchIndex:
         if features.temporal or features.query_grammar:
             from .features import reorder
             ranked = reorder(ranked,query,features)
+        pre_expansion_ranked_ids = [r['id'] for r in ranked]
         expansion_receipt=[]
         if features.association:
             from .features import expand
@@ -858,7 +859,8 @@ class SearchIndex:
                 'runtime_diagnostics':dict(self._last_dense_diagnostics) if diagnostics else None,
                 'provider_verification':next(iter(self._last_dense_diagnostics.get('resident_receipt',{}).get('ranking_guards',[])),None),
                 'selected': selected, 'ranked_ids': ranked_ids, 'candidate_count': len(ranked),
-                'candidate_ids': list(dict.fromkeys(candidate_ids+[r['id'] for r in expanded])),
+                'candidate_ids': candidate_ids,
+                'pre_expansion_ranked_ids': pre_expansion_ranked_ids,
                 'packing_ids': [r['id'] for r in expanded],
                 'budget': budget, 'budget_used': final_units,
                 'counter': getattr(self.counter, 'name', 'caller_supplied'),

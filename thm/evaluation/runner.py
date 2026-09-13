@@ -78,15 +78,16 @@ def run(adapter, source, root, *, mode='acceptance', provenance='external-datase
             from .ceiling import RetrievalCeilingReport
             lookup = {d.id: d for d in docs}
             candidate_ids = tuple(out.get('candidate_ids', ()))
-            candidates = []
-            for key in candidate_ids:
+            packing_ids=tuple(out.get('packing_ids', ()))
+            records = {}
+            for key in dict.fromkeys(candidate_ids+packing_ids):
                 document = lookup[key]
                 label = json.dumps({'id':document.id,'speaker':document.speaker,'date':document.timestamp},ensure_ascii=False)
                 cost = len((f'[source {label}]\n'+document.text).encode())+2
-                candidates.append(EvidenceCandidate(key,cost,0,frozenset({unit_map[key]})))
-            public['ceiling'] = RetrievalCeilingReport(task.id,frozenset(gold.evidence_ids),tuple(candidates),
-                tuple(out.get('ranked_ids', ())),selected,budget+2 if budget else 0,
-                packing_ids=tuple(out.get('packing_ids', ()))).public()
+                records[key]=EvidenceCandidate(key,cost,0,frozenset({unit_map[key]}))
+            public['ceiling'] = RetrievalCeilingReport(task.id,frozenset(gold.evidence_ids),tuple(records[key] for key in candidate_ids),
+                tuple(out.get('pre_expansion_ranked_ids', ())),selected,budget+2 if budget else 0,
+                packing_ids=packing_ids,packing_candidates=tuple(records[key] for key in packing_ids)).public()
         if long_tail:
             public['long_tail'] = out.get('long_tail')
         rows.append(public)

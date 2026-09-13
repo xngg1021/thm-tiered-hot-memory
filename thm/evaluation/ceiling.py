@@ -52,23 +52,31 @@ class RetrievalCeilingReport:
     packed_ids: tuple[str, ...]
     budget: int
     packing_ids: tuple[str, ...] | None = None
+    packing_candidates: tuple[EvidenceCandidate, ...] = ()
     representation_loss: tuple[str, ...] = ()
     annotation_ambiguity: tuple[str, ...] = ()
 
     def public(self):
         integer(self.budget, maximum=1048576)
-        if len(self.gold) > 256 or len(self.candidates) > 1000:
+        if len(self.gold) > 256 or len(self.candidates) > 1000 or len(self.packing_candidates)>1000:
             raise ValueError('bounded ceiling input required')
         if not set(self.representation_loss) <= set(REPRESENTATION_FAILURES) or not set(self.annotation_ambiguity) <= set(ANNOTATION_ISSUES):
             raise ValueError('unknown annotated failure class')
         by_id = {c.identity: c for c in self.candidates}
         if len(by_id) != len(self.candidates):
             raise ValueError('duplicate candidate')
+        candidate_ids=set(by_id)
+        if len({row.identity for row in self.packing_candidates})!=len(self.packing_candidates):
+            raise ValueError('duplicate packing candidate')
+        for row in self.packing_candidates:
+            if row.identity in by_id and row!=by_id[row.identity]:
+                raise ValueError('candidate/packing record mismatch')
+            by_id[row.identity]=row
         if len(set(self.ranked_ids)) != len(self.ranked_ids) or len(set(self.packed_ids)) != len(self.packed_ids):
             raise ValueError('duplicate selected identity')
         eligible_ids=self.ranked_ids if self.packing_ids is None else self.packing_ids
         if (len(set(eligible_ids))!=len(eligible_ids) or not set(self.packed_ids)<=set(eligible_ids)<=set(by_id)
-                or not set(self.ranked_ids)<=set(by_id)):
+                or not set(self.ranked_ids)<=candidate_ids):
             raise ValueError('candidate/ranked/packed identity mismatch')
         if any(not by_id[key].required_set<=set(self.packed_ids) for key in self.packed_ids):
             raise ValueError('packed evidence lacks required dependency')
