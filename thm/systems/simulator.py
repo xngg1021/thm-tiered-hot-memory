@@ -1,5 +1,6 @@
 """Deterministic trace replay and a common-denominator A0-A11 ablation harness."""
 from dataclasses import asdict, dataclass
+from bisect import bisect_right
 import heapq
 from .contracts import digest, finite, integer, nonempty
 from .thermal import quantiles
@@ -60,16 +61,19 @@ class AgentSystemsSimulator:
             raise ValueError('duplicate task denominator')
         workers = [(0., i) for i in range(self.concurrency)]
         heapq.heapify(workers)
-        previous_prefix = set()
+        prefix_ready = {}
+        topology = sorted(self.topology_events,key=lambda row:row['time'])
+        topology_times = [row['time'] for row in topology]
         rows = []
         for task in sorted(tasks, key=lambda t: (t.arrival, t.task_id)):
             available, worker = heapq.heappop(workers)
             start = max(task.arrival, available)
             queue = start-task.arrival
-            topology = [r for r in self.topology_events if r['time'] <= start]
-            fallback = bool(topology and max(topology, key=lambda r:r['time'])['state'] != 'online')
-            reuse = ablation >= 4 and (task.session, task.prefix_identity) in previous_prefix and not fallback
-            previous_prefix.add((task.session, task.prefix_identity))
+            epoch_start = bisect_right(topology_times,start)
+            fallback = bool(epoch_start and topology[epoch_start-1]['state'] != 'online')
+            key = (task.user,task.session,task.prefix_identity,epoch_start)
+            ready = prefix_ready.get(key)
+            reuse = ablation >= 4 and ready is not None and ready <= start and not fallback
             # Each trace supplies measured/scenario durations; no universal speedup factor.
             prefill = 0. if reuse else task.prefill
             overlap = min(task.tool, task.decode) if ablation >= 6 else 0.
@@ -78,13 +82,31 @@ class AgentSystemsSimulator:
             multiplier = max(thermal, key=lambda r:r['time'])['service_multiplier'] if thermal else 1.
             duration *= multiplier
             finish = start+duration
+            epoch_finish = bisect_right(topology_times,finish)
+            if epoch_finish != epoch_start:
+                fallback = True
+                if reuse:
+                    # Epoch changes invalidate in-flight device output and KV.
+                    # Recomputing prefill can expose further topology events.
+                    reuse = False
+                    prefill = task.prefill
+                    duration += prefill*multiplier
+                    finish = start+duration
+                    epoch_finish = bisect_right(topology_times,finish)
+            if not fallback:
+                # Conservatively publish reusable state only at task completion.
+                # Scheduling a producer does not make its future state readable.
+                prefix_ready[key] = min(prefix_ready.get(key,finish),finish)
             heapq.heappush(workers, (finish, worker))
             rows.append({'task_id': task.task_id, 'user': task.user, 'session': task.session,
                 'queue_wait': queue, 'task_completion_time': finish-task.arrival,
                 'TUFR': None, 'TUFR_reason': 'trace lacks explicit useful-output marker',
-                'TTFT': queue+task.retrieval+task.context_assembly+prefill,
+                'TTFT': queue+(task.retrieval+task.context_assembly+prefill)*multiplier,
                 'kv_action': 'reuse' if reuse else 'recompute', 'kv_tier': 'HBM' if reuse else 'recompute',
-                'tool_exposed_latency': task.tool-overlap, 'fallback_count': int(fallback),
+                'prefix_available_at_start': ready if ready is not None and ready<=start and not fallback else None,
+                'start':start,'finish':finish,'topology_epoch_start':epoch_start,'topology_epoch_finish':epoch_finish,
+                'topology_events_during_task':epoch_finish-epoch_start,
+                'tool_exposed_latency': (task.tool-overlap)*multiplier, 'fallback_count': int(fallback),
                 'memory_evidence_recall': task.memory_evidence_recall, 'task_success': task.task_success,
                 'tokens': task.tokens, 'energy_per_task': None, 'thermal_multiplier': multiplier})
         elapsed = max(t[0] for t in workers)-min(t.arrival for t in tasks)

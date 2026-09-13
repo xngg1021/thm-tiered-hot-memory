@@ -27,6 +27,8 @@ python -m thm.evaluation --mode acceptance --ceiling --long-tail --wall-seconds 
 
 Long campaigns require `--full-research`. The default smoke uses deterministic inference timings and real bounded THM retrieval, publication rejection, process timeout/reaping and source-identity checks. A raw trace is replayed with `python -m thm systems replay --trace trace.json`. It contains `tasks` matching `AgentTaskTrace`, optional topology events, thermal service multipliers, concurrency and ablation number. Replay outputs are always simulated.
 
+Replay publishes reusable prefix state conservatively at producer completion, scoped by user, session, prefix and topology epoch. Concurrent requests cannot borrow unfinished state. Events through completion invalidate device reuse; a fallback that restores prefill extends the simulated window, and all events in that extended window are accounted for. Durations remain trace scenarios, without an invented hardware fallback speedup.
+
 ## Native execution and evidence
 
 | Surface | Executable boundary | Evidence interpretation |

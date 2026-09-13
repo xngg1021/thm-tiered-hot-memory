@@ -114,4 +114,60 @@ class EvidenceAdmissionRegressions(unittest.TestCase):
                         self.assertIn('new.json.gz',errors[0])
 
 
+class SequenceAndReplayRegressions(unittest.TestCase):
+    def test_generic_ordering_expands_all_events_without_lexical_matches(self):
+        from thm.long_tail import Event,EventGraph,TimeInterval
+        for counter in (TokenCounter('utf8_bytes'),lambda text:len(text)):
+            with tempfile.TemporaryDirectory() as directory:
+                index=LongTailSearchIndex(Path(directory)/'index',counter)
+                try:
+                    index.replace_scope('s',[Document(key,'s','session',position,text,timestamp=date)
+                        for position,(key,text,date) in enumerate([
+                            ('c','cobalt wind','2026-03-01'),('a','alpine comet','2026-01-01'),('b','bronze river','2026-02-01')])])
+                    rows=index.rows('s')
+                    index.attach_events(EventGraph('s',[Event(row['id'],'s',row['id'],row['hash'],TimeInterval.parse(row['timestamp'])) for row in rows]))
+                    for query in ('what was the order of events?','describe the sequence','顺序'):
+                        result=index.search('s',query,budget=1000)
+                        self.assertEqual([row['id'] for row in result['selected']],['a','b','c'])
+                    self.assertEqual([row['id'] for row in index.search('s','which was first?')['selected']],['a'])
+                    self.assertEqual([row['id'] for row in index.search('s','which was last?')['selected']],['c'])
+                finally:index.close()
+
+    def test_kv_reuse_waits_for_completed_producer_and_respects_user_scope(self):
+        from thm.systems.simulator import AgentTaskTrace,AgentSystemsSimulator
+        tasks=[AgentTaskTrace(key,user,'session',arrival,0,0,4,2,0,0,'prefix')
+               for key,user,arrival in [('a','u',0),('b','u',0),('c','u',7),('d','other-user',10)]]
+        rows=AgentSystemsSimulator(concurrency=2).replay(tasks,ablation=4)['rows']
+        self.assertEqual([row['kv_action'] for row in rows],['recompute','recompute','reuse','recompute'])
+        self.assertEqual(rows[1]['start'],0)
+        self.assertEqual(rows[1]['finish'],6)
+        self.assertEqual(rows[2]['prefix_available_at_start'],6)
+
+    def test_mid_request_topology_change_extends_window_and_invalidates_prefix(self):
+        from thm.systems.simulator import AgentTaskTrace,AgentSystemsSimulator
+        tasks=[AgentTaskTrace('a','u','s',0,0,0,2,0,0,0,'prefix'),
+               AgentTaskTrace('b','u','s',3,0,0,4,2,0,0,'prefix'),
+               AgentTaskTrace('c','u','s',10,0,0,4,2,0,0,'prefix'),
+               AgentTaskTrace('d','u','s',17,0,0,4,2,0,0,'prefix')]
+        result=AgentSystemsSimulator(concurrency=2,topology_events=[{'time':4,'state':'lost'},{'time':7,'state':'online'}]).replay(tasks,ablation=4)
+        rows=result['rows'];changed=rows[1]
+        self.assertEqual(changed['kv_action'],'recompute')
+        self.assertEqual(changed['finish'],9)
+        self.assertEqual(changed['topology_events_during_task'],2)
+        self.assertEqual(changed['topology_epoch_finish'],2)
+        self.assertEqual(changed['fallback_count'],1)
+        self.assertIsNone(changed['prefix_available_at_start'])
+        self.assertEqual(rows[2]['kv_action'],'recompute')
+        self.assertEqual(rows[3]['kv_action'],'reuse')
+        self.assertEqual(result['fallback_count'],1)
+
+    def test_thermal_scenario_scales_reported_prefill_and_tool_latency(self):
+        from thm.systems.simulator import AgentTaskTrace,AgentSystemsSimulator
+        task=AgentTaskTrace('t','u','s',0,1,1,2,1,3,1,'prefix')
+        row=AgentSystemsSimulator(thermal_trace=[{'time':0,'service_multiplier':2}]).replay([task])['rows'][0]
+        self.assertEqual(row['TTFT'],8)
+        self.assertEqual(row['tool_exposed_latency'],6)
+        self.assertEqual(row['task_completion_time'],18)
+
+
 if __name__=='__main__':unittest.main()

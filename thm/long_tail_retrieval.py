@@ -33,7 +33,9 @@ class LongTailSearchIndex(SearchIndex):
             if len(matches)>=2 and operation=='date-range':reference=TimeInterval.parse(matches[0]+'/'+matches[1])
             selected=graph.select(operation,reference)
         elif category=='ordering':
-            selected=graph.select('first' if re.search(r'first|最早',query,re.I) else 'last')
+            if re.search(r'\bfirst\b|最早',query,re.I):selected=graph.select('first')
+            elif re.search(r'\blast\b|最后',query,re.I):selected=graph.select('last')
+            else:selected=tuple(sorted(graph.events.values(),key=lambda event:(event.time.start,event.time.end,event.identity)))
         elif category in ('update','contradiction','multi-hop'):
             selected=tuple(graph.events.values())
         sources=[]
